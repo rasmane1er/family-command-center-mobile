@@ -12,6 +12,8 @@ import { MarketplaceScreen } from '../screens/operations/MarketplaceScreen';
 import { TimeEconomyScreen } from '../screens/operations/TimeEconomyScreen';
 import { SmartHomeScreen } from '../screens/operations/SmartHomeScreen';
 import { EmergencyModeScreen } from '../screens/operations/EmergencyModeScreen';
+import { ShoppingListScreen } from '../screens/operations/ShoppingListScreen';
+import { RecipesScreen } from '../screens/operations/RecipesScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -30,6 +32,8 @@ export function OperationsNavigator() {
       <Stack.Screen name="Marketplace" component={MarketplaceScreen} />
       <Stack.Screen name="TimeEconomy" component={TimeEconomyScreen} />
       <Stack.Screen name="SmartHome" component={SmartHomeScreen} />
+      <Stack.Screen name="ShoppingList" component={ShoppingListScreen} />
+      <Stack.Screen name="Recipes" component={RecipesScreen} />
     </Stack.Navigator>
   );
 }

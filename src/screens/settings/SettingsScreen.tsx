@@ -19,6 +19,10 @@ import { useWealthStore } from '../../store/useWealthStore';
 import { useNotificationsStore } from '../../store/useNotificationsStore';
 import { useMoodStore } from '../../store/useMoodStore';
 import { useHabitsStore } from '../../store/useHabitsStore';
+import { useShoppingStore } from '../../store/useShoppingStore';
+import { useRecipesStore } from '../../store/useRecipesStore';
+import { useTimelineStore } from '../../store/useTimelineStore';
+import { usePollsStore } from '../../store/usePollsStore';
 
 const SUBSCRIPTION_TIERS = [
   { key: 'free', label: 'Free', price: '$0', color: colors.textSecondary, features: ['5 family members', 'Basic tasks & calendar', 'Limited AI queries'] },
@@ -46,6 +50,10 @@ export function SettingsScreen({ navigation }: any) {
   const { seedDemoData: seedNotifications } = useNotificationsStore();
   const { seedDemoData: seedMood } = useMoodStore();
   const { seedDemoData: seedHabits } = useHabitsStore();
+  const { seedDemoData: seedShopping } = useShoppingStore();
+  const { seedDemoData: seedRecipes } = useRecipesStore();
+  const { seedDemoData: seedTimeline } = useTimelineStore();
+  const { seedDemoData: seedPolls } = usePollsStore();
 
   const handleResetOnboarding = () => {
     Alert.alert(
@@ -75,6 +83,10 @@ export function SettingsScreen({ navigation }: any) {
     seedNotifications();
     seedMood();
     seedHabits();
+    seedShopping();
+    seedRecipes();
+    seedTimeline();
+    seedPolls();
     Alert.alert('Demo Data Loaded', 'The Johnson Family demo data has been loaded — including all advanced features!');
   };
 

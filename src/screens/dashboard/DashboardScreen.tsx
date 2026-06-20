@@ -367,6 +367,11 @@ export function DashboardScreen({ navigation }: any) {
               { label: 'Marketplace', icon: 'storefront', color: '#E65100', bg: '#FFF3E0', nav: 'Operations', screen: 'Marketplace' },
               { label: 'Meetings', icon: 'people', color: '#1565C0', bg: '#E3F2FD', nav: 'Family', screen: 'FamilyMeeting' },
               { label: 'AI Coach', icon: 'school', color: '#1A6B3C', bg: '#D5F5E3', nav: 'AI Assistant', screen: 'ParentingCoach' },
+              { label: 'Shopping', icon: 'cart', color: '#27AE60', bg: '#D5F5E3', nav: 'Operations', screen: 'ShoppingList' },
+              { label: 'Recipes', icon: 'restaurant', color: '#C0392B', bg: '#FDEDEC', nav: 'Operations', screen: 'Recipes' },
+              { label: 'Timeline', icon: 'time', color: '#7B2D8B', bg: '#F3E5F5', nav: 'Family', screen: 'FamilyTimeline' },
+              { label: 'Kids Mode', icon: 'game-controller', color: '#E91E63', bg: '#FCE4EC', nav: 'Family', screen: 'KidsMode' },
+              { label: 'Polls', icon: 'stats-chart', color: '#2980B9', bg: '#EBF5FB', nav: 'Family', screen: 'FamilyPolls' },
             ].map((f) => (
               <Pressable
                 key={f.label}
