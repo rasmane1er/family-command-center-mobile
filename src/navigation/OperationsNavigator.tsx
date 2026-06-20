@@ -14,6 +14,7 @@ import { SmartHomeScreen } from '../screens/operations/SmartHomeScreen';
 import { EmergencyModeScreen } from '../screens/operations/EmergencyModeScreen';
 import { ShoppingListScreen } from '../screens/operations/ShoppingListScreen';
 import { RecipesScreen } from '../screens/operations/RecipesScreen';
+import { TravelPlanningScreen } from '../screens/operations/TravelPlanningScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -34,6 +35,7 @@ export function OperationsNavigator() {
       <Stack.Screen name="SmartHome" component={SmartHomeScreen} />
       <Stack.Screen name="ShoppingList" component={ShoppingListScreen} />
       <Stack.Screen name="Recipes" component={RecipesScreen} />
+      <Stack.Screen name="TravelPlanning" component={TravelPlanningScreen} />
     </Stack.Navigator>
   );
 }

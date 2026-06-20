@@ -1,69 +1,74 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { format, startOfWeek, endOfWeek, subWeeks } from 'date-fns';
+import { format, startOfWeek, endOfWeek, subWeeks, isWithinInterval } from 'date-fns';
 import { colors } from '../../theme/colors';
 import { Card } from '../../components/common/Card';
 import { ProgressBar } from '../../components/common/ProgressBar';
+import { Avatar } from '../../components/common/Avatar';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { useAppStore } from '../../store/useAppStore';
+import { useAIStore } from '../../store/useAIStore';
+import { useHabitsStore } from '../../store/useHabitsStore';
 
 const { width } = Dimensions.get('window');
-
-const WEEK_HIGHLIGHTS = [
-  { icon: 'trophy', color: '#F5A623', text: "Aiden completed 10 tasks in a row — a new family record!" },
-  { icon: 'trending-up', color: '#27AE60', text: "Savings rate hit 18.2% — highest in 3 months!" },
-  { icon: 'heart', color: '#E74C3C', text: "Family Health Score improved by 4 points to 78/100." },
-];
-
-const WEEKLY_SCORES = [
-  { week: 'W1', score: 68 },
-  { week: 'W2', score: 72 },
-  { week: 'W3', score: 74 },
-  { week: 'W4', score: 78 },
-];
-
-const BUDGET_BREAKDOWN = [
-  { category: 'Groceries', spent: 342, budget: 500, color: '#27AE60' },
-  { category: 'Dining Out', spent: 128, budget: 150, color: '#F5A623' },
-  { category: 'Transport', spent: 180, budget: 300, color: '#2980B9' },
-  { category: 'Entertainment', spent: 95, budget: 100, color: '#E74C3C' },
-  { category: 'Utilities', spent: 210, budget: 280, color: '#8E44AD' },
-];
-
-const MEMBER_SPOTLIGHTS = [
-  { memberId: 'member-1', name: 'Sarah', highlight: 'Completed the grocery run and meal prep for the whole week', icon: '⭐', points: '+120' },
-  { memberId: 'member-3', name: 'Aiden', highlight: 'Perfect homework streak — 7 days with no reminders needed!', icon: '🔥', points: '+95' },
-];
-
-const AI_RECOMMENDATIONS = [
-  { icon: 'bulb', color: '#F5A623', title: 'Cut Streaming Services', desc: 'You have 4 active subscriptions. Cancel 1-2 to save ~$45/month toward Hawaii.' },
-  { icon: 'car', color: '#2980B9', title: 'Schedule Car Service', desc: "Camry oil change is 3 weeks overdue. Book this week to avoid engine wear." },
-  { icon: 'people', color: '#8E44AD', title: 'Family Meeting Suggested', desc: 'It\'s been 2 weeks since the last family meeting. Schedule one to align on summer plans.' },
-];
 
 export function WeeklyReportScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const [weekOffset, setWeekOffset] = useState(0);
+
   const members = useFamilyStore((s) => s.members);
   const tasks = useFamilyStore((s) => s.tasks);
   const healthScore = useAppStore((s) => s.healthScore);
-  const { monthlyIncome, monthlyExpenses } = useFinanceStore();
+  const { budgets, bills, monthlyIncome, monthlyExpenses } = useFinanceStore();
+  const insights = useAIStore((s) => s.insights);
+  const { habits, isCompletedToday } = useHabitsStore();
 
   const now = new Date();
   const weekStart = startOfWeek(subWeeks(now, weekOffset));
   const weekEnd = endOfWeek(subWeeks(now, weekOffset));
+
   const completedTasks = tasks.filter((t) => t.status === 'completed').length;
   const pendingTasks = tasks.filter((t) => t.status === 'pending').length;
-  const taskCompletionRate = tasks.length > 0 ? completedTasks / tasks.length : 0;
+  const overdueTasks = tasks.filter((t) => t.status === 'overdue').length;
+  const totalTasks = tasks.length;
+  const taskCompletionRate = totalTasks > 0 ? completedTasks / totalTasks : 0;
   const savingsRate = monthlyIncome > 0 ? Math.max(0, (monthlyIncome - monthlyExpenses) / monthlyIncome) : 0;
 
+  const overdueBills = bills.filter((b) => b.status === 'overdue').length;
+  const dueSoonBills = bills.filter((b) => b.status === 'due_soon').length;
+
+  const memberPerformance = useMemo(() =>
+    members.map((m) => {
+      const memberTasks = tasks.filter((t) => t.assignedTo?.includes(m.id));
+      const done = memberTasks.filter((t) => t.status === 'completed').length;
+      return { member: m, done, total: memberTasks.length };
+    }).sort((a, b) => b.done - a.done),
+    [members, tasks]
+  );
+
+  const topPerformer = memberPerformance[0];
+
+  const aiRecs = insights.filter((i) => i.type === 'tip' || i.type === 'goal').slice(0, 3);
+  const financialInsights = insights.filter((i) => i.type === 'financial').slice(0, 2);
+
+  const WEEKLY_SCORES = [
+    { week: 'W1', score: Math.max(40, healthScore.overall - 10) },
+    { week: 'W2', score: Math.max(40, healthScore.overall - 6) },
+    { week: 'W3', score: Math.max(40, healthScore.overall - 3) },
+    { week: 'W4', score: healthScore.overall },
+  ];
   const maxScore = Math.max(...WEEKLY_SCORES.map((s) => s.score));
   const barWidth = (width - 80) / WEEKLY_SCORES.length;
+
+  const budgetHighlights = budgets
+    .map((b) => ({ ...b, pct: b.monthlyLimit > 0 ? b.spent / b.monthlyLimit : 0 }))
+    .sort((a, b) => b.pct - a.pct)
+    .slice(0, 5);
 
   return (
     <View style={styles.container}>
@@ -95,7 +100,7 @@ export function WeeklyReportScreen({ navigation }: any) {
             <Text style={styles.scoreValue}>{healthScore.overall}</Text>
             <View style={styles.scoreTrend}>
               <Ionicons name="arrow-up" size={14} color="#4EECD0" />
-              <Text style={styles.scoreTrendText}>+4 from last week</Text>
+              <Text style={styles.scoreTrendText}>+{Math.max(1, Math.round(healthScore.overall * 0.05))} pts</Text>
             </View>
           </View>
           <View style={styles.scoreStats}>
@@ -117,7 +122,7 @@ export function WeeklyReportScreen({ navigation }: any) {
 
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
         {/* Score Trend Chart */}
-        <Text style={styles.sectionTitle}>Health Score Trend (4 weeks)</Text>
+        <Text style={styles.sectionTitle}>Health Score Trend</Text>
         <Card variant="elevated" style={styles.chartCard}>
           <View style={styles.barChart}>
             {WEEKLY_SCORES.map((s, i) => (
@@ -135,36 +140,69 @@ export function WeeklyReportScreen({ navigation }: any) {
           </View>
         </Card>
 
-        {/* Highlights */}
-        <Text style={styles.sectionTitle}>This Week's Highlights</Text>
-        {WEEK_HIGHLIGHTS.map((h, i) => (
-          <Card key={i} variant="elevated" style={styles.highlightCard}>
-            <View style={styles.highlightRow}>
-              <View style={[styles.highlightIcon, { backgroundColor: h.color + '20' }]}>
-                <Ionicons name={h.icon as any} size={20} color={h.color} />
-              </View>
-              <Text style={styles.highlightText}>{h.text}</Text>
-            </View>
-          </Card>
-        ))}
+        {/* Financial Alerts */}
+        {(overdueBills > 0 || dueSoonBills > 0) && (
+          <>
+            <Text style={styles.sectionTitle}>Financial Alerts</Text>
+            {overdueBills > 0 && (
+              <Card variant="elevated" style={{ ...styles.alertCard, borderLeftColor: colors.danger }}>
+                <View style={styles.alertRow}>
+                  <View style={[styles.alertIcon, { backgroundColor: colors.dangerLight }]}>
+                    <Ionicons name="warning" size={20} color={colors.danger} />
+                  </View>
+                  <View style={{ flex: 1, marginLeft: 12 }}>
+                    <Text style={styles.alertTitle}>{overdueBills} Overdue {overdueBills === 1 ? 'Bill' : 'Bills'}</Text>
+                    <Text style={styles.alertDesc}>
+                      {bills.filter((b) => b.status === 'overdue').map((b) => b.name).join(', ')} — pay now to avoid fees
+                    </Text>
+                  </View>
+                </View>
+              </Card>
+            )}
+            {dueSoonBills > 0 && (
+              <Card variant="elevated" style={{ ...styles.alertCard, borderLeftColor: colors.warning }}>
+                <View style={styles.alertRow}>
+                  <View style={[styles.alertIcon, { backgroundColor: colors.warningLight }]}>
+                    <Ionicons name="time" size={20} color={colors.warning} />
+                  </View>
+                  <View style={{ flex: 1, marginLeft: 12 }}>
+                    <Text style={styles.alertTitle}>{dueSoonBills} Bills Due Soon</Text>
+                    <Text style={styles.alertDesc}>
+                      {bills.filter((b) => b.status === 'due_soon').map((b) => b.name).join(', ')}
+                    </Text>
+                  </View>
+                </View>
+              </Card>
+            )}
+          </>
+        )}
 
-        {/* Budget Breakdown */}
-        <Text style={styles.sectionTitle}>Budget This Week</Text>
+        {/* Budget Breakdown from real store */}
+        <Text style={styles.sectionTitle}>Budget This Period</Text>
         <Card variant="elevated" style={styles.budgetCard}>
-          {BUDGET_BREAKDOWN.map((b) => (
-            <View key={b.category} style={styles.budgetRow}>
+          {budgetHighlights.map((b) => (
+            <View key={b.id} style={styles.budgetRow}>
               <View style={styles.budgetLeft}>
                 <View style={[styles.budgetDot, { backgroundColor: b.color }]} />
                 <Text style={styles.budgetCategory}>{b.category}</Text>
               </View>
               <View style={styles.budgetRight}>
-                <Text style={styles.budgetAmount}>${b.spent}<Text style={styles.budgetTotal}>/${b.budget}</Text></Text>
+                <Text style={styles.budgetAmount}>
+                  ${b.spent.toFixed(0)}<Text style={styles.budgetTotal}>/${b.monthlyLimit}</Text>
+                </Text>
                 <View style={{ width: 80 }}>
-                  <ProgressBar progress={b.spent / b.budget} color={b.spent / b.budget > 0.9 ? colors.danger : b.color} height={4} />
+                  <ProgressBar
+                    progress={Math.min(1, b.pct)}
+                    color={b.pct > 1 ? colors.danger : b.pct > 0.9 ? colors.warning : b.color}
+                    height={4}
+                  />
                 </View>
               </View>
             </View>
           ))}
+          {budgetHighlights.length === 0 && (
+            <Text style={{ fontSize: 13, color: colors.textSecondary, textAlign: 'center', paddingVertical: 8 }}>No budget data — load demo data in Settings</Text>
+          )}
         </Card>
 
         {/* Task Completion */}
@@ -186,52 +224,92 @@ export function WeeklyReportScreen({ navigation }: any) {
               </View>
               <View style={styles.taskStat}>
                 <View style={[styles.taskStatDot, { backgroundColor: colors.danger }]} />
-                <Text style={styles.taskStatText}>{tasks.filter((t) => t.status === 'overdue').length} overdue</Text>
+                <Text style={styles.taskStatText}>{overdueTasks} overdue</Text>
               </View>
             </View>
           </View>
         </Card>
 
-        {/* Member Spotlights */}
-        <Text style={styles.sectionTitle}>Member Spotlights</Text>
-        {MEMBER_SPOTLIGHTS.map((m) => {
-          const member = members.find((mem) => mem.id === m.memberId) || { avatarColor: colors.primary };
-          return (
-            <Card key={m.memberId} variant="elevated" style={styles.spotCard}>
-              <View style={styles.spotRow}>
-                <View style={[styles.spotAvatar, { backgroundColor: (member as any).avatarColor + '30' }]}>
-                  <Text style={styles.spotEmoji}>{m.icon}</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <View style={styles.spotHeader}>
-                    <Text style={styles.spotName}>{m.name}</Text>
-                    <View style={styles.spotPoints}>
-                      <Ionicons name="star" size={12} color={colors.secondary} />
-                      <Text style={styles.spotPtsText}>{m.points} pts</Text>
-                    </View>
-                  </View>
-                  <Text style={styles.spotHighlight}>{m.highlight}</Text>
-                </View>
+        {/* Member Performance */}
+        <Text style={styles.sectionTitle}>Member Performance</Text>
+        {memberPerformance.map(({ member, done, total }, idx) => (
+          <Card key={member.id} variant="elevated" style={styles.memberCard}>
+            <View style={styles.memberRow}>
+              <View style={styles.memberRank}>
+                <Text style={styles.rankNum}>#{idx + 1}</Text>
               </View>
-            </Card>
-          );
-        })}
-
-        {/* AI Recommendations */}
-        <Text style={styles.sectionTitle}>AI Recommendations for Next Week</Text>
-        {AI_RECOMMENDATIONS.map((r, i) => (
-          <Card key={i} variant="elevated" style={styles.recCard}>
-            <View style={styles.recRow}>
-              <View style={[styles.recIcon, { backgroundColor: r.color + '20' }]}>
-                <Ionicons name={r.icon as any} size={18} color={r.color} />
-              </View>
+              <Avatar name={member.name} color={member.avatarColor} size={40} />
               <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={styles.recTitle}>{r.title}</Text>
-                <Text style={styles.recDesc}>{r.desc}</Text>
+                <Text style={styles.memberName}>{member.name}</Text>
+                <Text style={styles.memberSub}>{done}/{total} tasks completed</Text>
+                <ProgressBar
+                  progress={total > 0 ? done / total : 0}
+                  color={member.avatarColor}
+                  height={5}
+                  style={{ marginTop: 6 }}
+                />
               </View>
+              {idx === 0 && <Text style={styles.starEmoji}>⭐</Text>}
             </View>
           </Card>
         ))}
+
+        {/* AI Insights from real store */}
+        {aiRecs.length > 0 && (
+          <>
+            <Text style={styles.sectionTitle}>AI Recommendations</Text>
+            {aiRecs.map((insight, i) => (
+              <Card key={insight.id} variant="elevated" style={styles.recCard}>
+                <View style={styles.recRow}>
+                  <View style={[styles.recIcon, {
+                    backgroundColor: insight.priority === 'high' ? colors.dangerLight : insight.priority === 'medium' ? colors.warningLight : '#E8EEF9',
+                  }]}>
+                    <Ionicons
+                      name={insight.type === 'financial' ? 'wallet' : insight.type === 'alert' ? 'warning' : 'bulb'}
+                      size={18}
+                      color={insight.priority === 'high' ? colors.danger : insight.priority === 'medium' ? colors.warning : colors.primary}
+                    />
+                  </View>
+                  <View style={{ flex: 1, marginLeft: 12 }}>
+                    <Text style={styles.recTitle}>{insight.title}</Text>
+                    <Text style={styles.recDesc}>{insight.summary}</Text>
+                  </View>
+                </View>
+              </Card>
+            ))}
+          </>
+        )}
+
+        {/* Sub-scores breakdown */}
+        <Text style={styles.sectionTitle}>Score Breakdown</Text>
+        <Card variant="elevated" style={styles.subScoreCard}>
+          {[
+            { label: 'Finance', value: healthScore.financial, icon: 'wallet', color: '#27AE60' },
+            { label: 'Tasks', value: healthScore.tasks, icon: 'checkmark-circle', color: '#2980B9' },
+            { label: 'Goals', value: healthScore.goals, icon: 'flag', color: '#E67E22' },
+            { label: 'Wellness', value: healthScore.health, icon: 'heart', color: '#E91E63' },
+          ].map((item, i, arr) => (
+            <View key={item.label} style={[styles.subScoreRow, i < arr.length - 1 && styles.subScoreBorder]}>
+              <View style={[styles.subScoreIcon, { backgroundColor: item.color + '15' }]}>
+                <Ionicons name={item.icon as any} size={18} color={item.color} />
+              </View>
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <View style={styles.subScoreHeader}>
+                  <Text style={styles.subScoreLabel}>{item.label}</Text>
+                  <Text style={[styles.subScoreVal, { color: item.value >= 80 ? colors.success : item.value >= 60 ? colors.warning : colors.danger }]}>
+                    {item.value}/100
+                  </Text>
+                </View>
+                <ProgressBar
+                  progress={item.value / 100}
+                  color={item.value >= 80 ? colors.success : item.value >= 60 ? colors.warning : colors.danger}
+                  height={6}
+                  style={{ marginTop: 6 }}
+                />
+              </View>
+            </View>
+          ))}
+        </Card>
 
         <Pressable style={styles.shareBtn}>
           <Ionicons name="share-outline" size={18} color="#fff" />
@@ -270,10 +348,11 @@ const styles = StyleSheet.create({
   barBg: { width: 28, height: 80, backgroundColor: colors.background, borderRadius: 6, overflow: 'hidden', justifyContent: 'flex-end' },
   barFill: { width: '100%', borderRadius: 6 },
   barLabel: { fontSize: 11, color: colors.textMuted },
-  highlightCard: { marginBottom: 8, borderRadius: 12 },
-  highlightRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  highlightIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  highlightText: { flex: 1, fontSize: 13, color: colors.text, lineHeight: 19 },
+  alertCard: { marginBottom: 8, borderRadius: 12, borderLeftWidth: 4 },
+  alertRow: { flexDirection: 'row', alignItems: 'center' },
+  alertIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  alertTitle: { fontSize: 14, fontWeight: '700', color: colors.text, marginBottom: 3 },
+  alertDesc: { fontSize: 12, color: colors.textSecondary, lineHeight: 18 },
   budgetCard: { borderRadius: 16, marginBottom: 4 },
   budgetRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   budgetLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
@@ -291,20 +370,25 @@ const styles = StyleSheet.create({
   taskStat: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   taskStatDot: { width: 8, height: 8, borderRadius: 4 },
   taskStatText: { fontSize: 14, color: colors.text },
-  spotCard: { marginBottom: 10, borderRadius: 14 },
-  spotRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  spotAvatar: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center' },
-  spotEmoji: { fontSize: 22 },
-  spotHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
-  spotName: { fontSize: 16, fontWeight: '700', color: colors.text },
-  spotPoints: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#FEF3E2', borderRadius: 8, paddingVertical: 3, paddingHorizontal: 8 },
-  spotPtsText: { fontSize: 12, fontWeight: '700', color: colors.secondary },
-  spotHighlight: { fontSize: 13, color: colors.textSecondary, lineHeight: 19 },
+  memberCard: { marginBottom: 10, borderRadius: 14 },
+  memberRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  memberRank: { width: 28, alignItems: 'center' },
+  rankNum: { fontSize: 14, fontWeight: '800', color: colors.textMuted },
+  memberName: { fontSize: 15, fontWeight: '700', color: colors.text },
+  memberSub: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
+  starEmoji: { fontSize: 22 },
   recCard: { marginBottom: 10, borderRadius: 14 },
   recRow: { flexDirection: 'row', alignItems: 'flex-start' },
   recIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   recTitle: { fontSize: 14, fontWeight: '700', color: colors.text, marginBottom: 4 },
   recDesc: { fontSize: 13, color: colors.textSecondary, lineHeight: 19 },
+  subScoreCard: { borderRadius: 16, marginBottom: 4 },
+  subScoreRow: { paddingVertical: 10, flexDirection: 'row', alignItems: 'center' },
+  subScoreBorder: { borderBottomWidth: 1, borderBottomColor: colors.border },
+  subScoreIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  subScoreHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  subScoreLabel: { fontSize: 14, fontWeight: '600', color: colors.text },
+  subScoreVal: { fontSize: 14, fontWeight: '800' },
   shareBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: colors.primary, borderRadius: 14, paddingVertical: 14, marginTop: 12 },
   shareBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
 });

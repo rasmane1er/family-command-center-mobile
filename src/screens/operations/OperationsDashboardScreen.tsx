@@ -12,12 +12,20 @@ import { useOperationsStore } from '../../store/useOperationsStore';
 const { width } = Dimensions.get('window');
 
 const OPS_MODULES = [
-  { key: 'Vehicles', icon: 'car', label: 'Vehicles', color: '#E74C3C', bg: '#FDEDEC', desc: 'Maintenance & insurance' },
-  { key: 'Pantry', icon: 'nutrition', label: 'Pantry', color: '#27AE60', bg: '#D5F5E3', desc: 'Track food inventory' },
-  { key: 'MealPlanning', icon: 'restaurant', label: 'Meal Planning', color: '#F5A623', bg: '#FEF3E2', desc: 'Weekly meal plans' },
+  { key: 'Pantry', icon: 'nutrition', label: 'Pantry', color: '#27AE60', bg: '#D5F5E3', desc: 'Food inventory' },
+  { key: 'ShoppingList', icon: 'cart', label: 'Shopping', color: '#1A6B3C', bg: '#D5F5E3', desc: 'Grocery lists' },
+  { key: 'Recipes', icon: 'restaurant', label: 'Recipes', color: '#C0392B', bg: '#FDEDEC', desc: 'Cook tonight' },
+  { key: 'MealPlanning', icon: 'calendar', label: 'Meal Plan', color: '#F5A623', bg: '#FEF3E2', desc: 'Weekly meals' },
+  { key: 'Vehicles', icon: 'car', label: 'Vehicles', color: '#E74C3C', bg: '#FDEDEC', desc: 'Maintenance' },
+  { key: 'TravelPlanning', icon: 'airplane', label: 'Travel', color: '#0E6655', bg: '#D1F2EB', desc: 'Trip planning' },
   { key: 'Documents', icon: 'folder', label: 'Documents', color: '#2980B9', bg: '#D6EAF8', desc: 'Secure vault' },
-  { key: 'Emergency', icon: 'shield-checkmark', label: 'Emergency', color: '#E74C3C', bg: '#FDEDEC', desc: 'Safety & contacts' },
-  { key: 'Rewards', icon: 'trophy', label: 'Rewards', color: '#F5A623', bg: '#FEF3E2', desc: 'Kids reward system' },
+  { key: 'SmartHome', icon: 'home', label: 'Smart Home', color: '#1565C0', bg: '#E3F2FD', desc: 'Devices & scenes' },
+  { key: 'Automation', icon: 'flash', label: 'Automation', color: '#6A1B9A', bg: '#F3E5F5', desc: 'Rules & triggers' },
+  { key: 'Emergency', icon: 'shield-checkmark', label: 'Emergency', color: '#E74C3C', bg: '#FDEDEC', desc: 'Safety & SOS' },
+  { key: 'EmergencyMode', icon: 'alert-circle', label: 'Emergency Mode', color: '#C0392B', bg: '#FDEDEC', desc: 'Activate alert' },
+  { key: 'Marketplace', icon: 'storefront', label: 'Marketplace', color: '#E65100', bg: '#FFF3E0', desc: 'Chore market' },
+  { key: 'TimeEconomy', icon: 'time', label: 'Time Economy', color: '#00838F', bg: '#E0F7FA', desc: 'Time tracking' },
+  { key: 'Rewards', icon: 'trophy', label: 'Rewards', color: '#F5A623', bg: '#FEF3E2', desc: 'Kids rewards' },
 ];
 
 export function OperationsDashboardScreen({ navigation }: any) {
