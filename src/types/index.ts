@@ -442,6 +442,201 @@ export type OnboardingStep =
   | 'goals_setup'
   | 'complete';
 
+// ===================== AI MEMORY ENGINE =====================
+
+export type MemoryType = 'preference' | 'habit' | 'milestone' | 'insight' | 'conflict' | 'health';
+
+export interface FamilyMemory {
+  id: string;
+  familyId: string;
+  memberId?: string;
+  type: MemoryType;
+  title: string;
+  content: string;
+  tags: string[];
+  isPinned: boolean;
+  sentiment: 'positive' | 'neutral' | 'negative';
+  createdAt: string;
+  lastAccessed: string;
+}
+
+// ===================== LEGACY VAULT =====================
+
+export type LegacyItemType = 'story' | 'photo' | 'letter' | 'video' | 'document' | 'milestone' | 'tradition' | 'recipe';
+
+export interface LegacyItem {
+  id: string;
+  familyId: string;
+  memberId?: string;
+  type: LegacyItemType;
+  title: string;
+  content: string;
+  date?: string;
+  tags: string[];
+  isPrivate: boolean;
+  isFeatured: boolean;
+  reactions: { memberId: string; emoji: string }[];
+  createdAt: string;
+}
+
+// ===================== HEALTH HUB =====================
+
+export type HealthMetricType = 'weight' | 'steps' | 'sleep' | 'water' | 'mood' | 'exercise' | 'bp' | 'glucose';
+
+export interface HealthRecord {
+  id: string;
+  familyId: string;
+  memberId: string;
+  metric: HealthMetricType;
+  value: number;
+  unit: string;
+  notes?: string;
+  date: string;
+}
+
+export interface HealthGoal {
+  id: string;
+  memberId: string;
+  metric: HealthMetricType;
+  target: number;
+  unit: string;
+  current: number;
+  deadline?: string;
+}
+
+// ===================== AUTOMATION ENGINE =====================
+
+export type TriggerType = 'time' | 'location' | 'event' | 'condition' | 'manual';
+export type ActionType = 'notify' | 'task' | 'message' | 'device' | 'reminder';
+
+export interface AutomationRule {
+  id: string;
+  familyId: string;
+  name: string;
+  description: string;
+  isActive: boolean;
+  trigger: { type: TriggerType; value: string; condition?: string };
+  action: { type: ActionType; value: string; target?: string };
+  runCount: number;
+  lastRun?: string;
+  icon: string;
+  color: string;
+}
+
+// ===================== FAMILY MARKETPLACE =====================
+
+export type ListingCategory = 'chores' | 'skills' | 'items' | 'favors' | 'lessons';
+
+export interface MarketplaceListing {
+  id: string;
+  familyId: string;
+  createdBy: string;
+  title: string;
+  description: string;
+  category: ListingCategory;
+  pointsValue: number;
+  isAvailable: boolean;
+  claimedBy?: string;
+  completedAt?: string;
+  icon: string;
+  tags: string[];
+  createdAt: string;
+}
+
+// ===================== CONFLICT RESOLVER =====================
+
+export type ConflictStatus = 'open' | 'in_mediation' | 'resolved' | 'escalated';
+
+export interface ConflictRecord {
+  id: string;
+  familyId: string;
+  title: string;
+  description: string;
+  partiesInvolved: string[];
+  status: ConflictStatus;
+  aiSuggestion?: string;
+  resolution?: string;
+  resolvedAt?: string;
+  createdAt: string;
+  severity: 'low' | 'medium' | 'high';
+}
+
+// ===================== TIME ECONOMY =====================
+
+export type TimeBlockCategory = 'work' | 'family' | 'self-care' | 'chores' | 'sleep' | 'leisure' | 'school' | 'fitness';
+
+export interface TimeBlock {
+  id: string;
+  familyId: string;
+  memberId: string;
+  category: TimeBlockCategory;
+  title: string;
+  startTime: string;
+  endTime: string;
+  date: string;
+  isRecurring: boolean;
+  color: string;
+  points?: number;
+}
+
+// ===================== WEALTH BUILDER =====================
+
+export type WealthCategory = 'stocks' | 'bonds' | 'real_estate' | 'crypto' | 'savings' | 'retirement' | 'business' | 'other';
+
+export interface WealthEntry {
+  id: string;
+  familyId: string;
+  name: string;
+  category: WealthCategory;
+  currentValue: number;
+  costBasis: number;
+  percentAllocation: number;
+  annualReturn?: number;
+  institution?: string;
+  lastUpdated: string;
+  notes?: string;
+}
+
+export interface WealthProjection {
+  year: number;
+  netWorth: number;
+  contributions: number;
+  returns: number;
+}
+
+// ===================== SMART HOME =====================
+
+export type DeviceType = 'light' | 'thermostat' | 'lock' | 'camera' | 'speaker' | 'appliance' | 'sensor' | 'hub';
+
+export interface SmartDevice {
+  id: string;
+  familyId: string;
+  name: string;
+  type: DeviceType;
+  room: string;
+  isOnline: boolean;
+  isOn?: boolean;
+  value?: number;
+  unit?: string;
+  battery?: number;
+  brand?: string;
+  lastSeen: string;
+}
+
+// ===================== REPUTATION SCORE =====================
+
+export interface ReputationScore {
+  memberId: string;
+  overall: number;
+  helpfulness: number;
+  taskCompletion: number;
+  teamwork: number;
+  reliability: number;
+  kindness: number;
+  trend: 'up' | 'down' | 'stable';
+  weeklyPoints: number;
+}
+
 // ===================== APP STATE =====================
 
 export interface AppSettings {

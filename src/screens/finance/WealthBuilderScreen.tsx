@@ -1,0 +1,258 @@
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import { StatusBar } from 'expo-status-bar';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { colors } from '../../theme/colors';
+import { Card } from '../../components/common/Card';
+import { ProgressBar } from '../../components/common/ProgressBar';
+import { useWealthStore } from '../../store/useWealthStore';
+
+const { width } = Dimensions.get('window');
+
+const CATEGORY_COLORS: Record<string, string> = {
+  retirement: '#8E44AD',
+  real_estate: '#27AE60',
+  stocks: '#2980B9',
+  savings: '#16A085',
+  crypto: '#F5A623',
+  bonds: '#7F8C8D',
+  business: '#E74C3C',
+  other: '#95A5A6',
+};
+
+const CATEGORY_LABELS: Record<string, string> = {
+  retirement: 'Retirement',
+  real_estate: 'Real Estate',
+  stocks: 'Stocks',
+  savings: 'Savings',
+  crypto: 'Crypto',
+  bonds: 'Bonds',
+  business: 'Business',
+  other: 'Other',
+};
+
+export function WealthBuilderScreen({ navigation }: any) {
+  const insets = useSafeAreaInsets();
+  const [activeTab, setActiveTab] = useState<'portfolio' | 'forecast' | 'insights'>('portfolio');
+  const { entries, projections, getTotalNetWorth, seedDemoData } = useWealthStore();
+
+  if (entries.length === 0) seedDemoData();
+
+  const totalNetWorth = getTotalNetWorth();
+  const totalGain = entries.reduce((s, e) => s + (e.currentValue - e.costBasis), 0);
+  const gainPct = entries.length > 0 ? ((totalGain / entries.reduce((s, e) => s + e.costBasis, 0)) * 100) : 0;
+
+  const grouped = entries.reduce((acc, e) => {
+    if (!acc[e.category]) acc[e.category] = 0;
+    acc[e.category] += e.currentValue;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const WEALTH_INSIGHTS = [
+    { icon: 'trending-up', color: '#27AE60', text: 'At your current savings rate, you\'ll reach $1M net worth in 12 years', label: 'Projection' },
+    { icon: 'warning', color: '#F5A623', text: 'Your emergency fund covers 4.8 months of expenses — target is 6 months', label: 'Action Needed' },
+    { icon: 'pie-chart', color: '#8E44AD', text: 'Portfolio is 38% real estate — consider diversifying into bonds for stability', label: 'Rebalance' },
+    { icon: 'school', color: '#2980B9', text: "Aiden's college fund is on track for 64% of 4-year tuition at current growth rate", label: 'Education' },
+  ];
+
+  return (
+    <View style={styles.container}>
+      <StatusBar style="light" />
+      <LinearGradient colors={['#1B5E20', '#2E7D32']} style={[styles.header, { paddingTop: insets.top + 12 }]}>
+        <View style={styles.headerTop}>
+          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+            <Ionicons name="arrow-back" size={24} color="#fff" />
+          </Pressable>
+          <Text style={styles.headerTitle}>Wealth Builder</Text>
+          <Pressable style={styles.addBtn}>
+            <Ionicons name="add" size={24} color="#fff" />
+          </Pressable>
+        </View>
+
+        <View style={styles.nwBlock}>
+          <Text style={styles.nwLabel}>Total Net Worth</Text>
+          <Text style={styles.nwValue}>${totalNetWorth.toLocaleString('en-US', { maximumFractionDigits: 0 })}</Text>
+          <View style={styles.gainRow}>
+            <Ionicons name="trending-up" size={16} color="#A5D6A7" />
+            <Text style={styles.gainText}>
+              +${totalGain.toLocaleString('en-US', { maximumFractionDigits: 0 })} ({gainPct.toFixed(1)}%) all-time gain
+            </Text>
+          </View>
+        </View>
+      </LinearGradient>
+
+      <View style={styles.tabs}>
+        {(['portfolio', 'forecast', 'insights'] as const).map((tab) => (
+          <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
+            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
+              {tab === 'portfolio' ? 'Portfolio' : tab === 'forecast' ? 'Forecast' : 'AI Insights'}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
+        {activeTab === 'portfolio' && (
+          <>
+            <Text style={styles.sectionTitle}>Allocation</Text>
+            <Card style={styles.allocationCard} variant="elevated">
+              <View style={styles.allocationBar}>
+                {Object.entries(grouped).map(([cat, val]) => (
+                  <View
+                    key={cat}
+                    style={[styles.allocationSegment, { flex: val / totalNetWorth * 100, backgroundColor: CATEGORY_COLORS[cat] ?? '#95A5A6' }]}
+                  />
+                ))}
+              </View>
+              {Object.entries(grouped).map(([cat, val]) => (
+                <View key={cat} style={styles.allocRow}>
+                  <View style={[styles.allocDot, { backgroundColor: CATEGORY_COLORS[cat] ?? '#95A5A6' }]} />
+                  <Text style={styles.allocLabel}>{CATEGORY_LABELS[cat] ?? cat}</Text>
+                  <Text style={styles.allocPct}>{((val / totalNetWorth) * 100).toFixed(1)}%</Text>
+                  <Text style={styles.allocVal}>${(val / 1000).toFixed(0)}k</Text>
+                </View>
+              ))}
+            </Card>
+
+            <Text style={styles.sectionTitle}>Holdings</Text>
+            {entries.map((e) => {
+              const gain = e.currentValue - e.costBasis;
+              const gainPctEntry = ((gain / e.costBasis) * 100);
+              return (
+                <Card key={e.id} style={styles.holdingCard} variant="elevated">
+                  <View style={styles.holdingHeader}>
+                    <View style={[styles.holdingIcon, { backgroundColor: (CATEGORY_COLORS[e.category] ?? '#95A5A6') + '15' }]}>
+                      <Ionicons name="cash" size={18} color={CATEGORY_COLORS[e.category] ?? '#95A5A6'} />
+                    </View>
+                    <View style={{ flex: 1, marginLeft: 10 }}>
+                      <Text style={styles.holdingName}>{e.name}</Text>
+                      <Text style={styles.holdingInst}>{e.institution} • {CATEGORY_LABELS[e.category]}</Text>
+                    </View>
+                    <View style={{ alignItems: 'flex-end' }}>
+                      <Text style={styles.holdingValue}>${e.currentValue.toLocaleString()}</Text>
+                      <Text style={[styles.holdingGain, { color: gain >= 0 ? colors.success : colors.danger }]}>
+                        {gain >= 0 ? '+' : ''}{gainPctEntry.toFixed(1)}%
+                      </Text>
+                    </View>
+                  </View>
+                  {e.annualReturn && (
+                    <View style={styles.returnRow}>
+                      <Ionicons name="trending-up" size={12} color={colors.success} />
+                      <Text style={styles.returnText}>{e.annualReturn}% annual return</Text>
+                    </View>
+                  )}
+                </Card>
+              );
+            })}
+          </>
+        )}
+
+        {activeTab === 'forecast' && (
+          <>
+            <Card style={styles.forecastCard} variant="elevated">
+              <Text style={styles.forecastTitle}>Net Worth Projection</Text>
+              <Text style={styles.forecastSub}>Based on 7.2% avg annual return + $24k/yr contributions</Text>
+              <View style={styles.forecastTimeline}>
+                {projections.filter((_, i) => [0, 4, 9, 14, 19].includes(i)).map((proj) => (
+                  <View key={proj.year} style={styles.forecastPoint}>
+                    <Text style={styles.forecastVal}>${proj.netWorth >= 1000000 ? `${(proj.netWorth / 1000000).toFixed(1)}M` : `${Math.round(proj.netWorth / 1000)}k`}</Text>
+                    <View style={styles.forecastDot} />
+                    <Text style={styles.forecastYear}>{proj.year}</Text>
+                  </View>
+                ))}
+              </View>
+              <View style={styles.forecastConnector} />
+            </Card>
+
+            <View style={styles.milestones}>
+              {[
+                { amount: 600000, label: 'Half-Million Milestone', icon: '🎯', years: 4 },
+                { amount: 1000000, label: 'Millionaire Status', icon: '💎', years: 9 },
+                { amount: 2000000, label: 'Financial Independence', icon: '🏆', years: 15 },
+              ].map((m) => (
+                <Card key={m.label} style={styles.milestoneCard} variant="elevated">
+                  <Text style={styles.milestoneIcon}>{m.icon}</Text>
+                  <View>
+                    <Text style={styles.milestoneLabel}>{m.label}</Text>
+                    <Text style={styles.milestoneTarget}>${(m.amount / 1000000).toFixed(1)}M in ~{m.years} years</Text>
+                  </View>
+                </Card>
+              ))}
+            </View>
+          </>
+        )}
+
+        {activeTab === 'insights' && WEALTH_INSIGHTS.map((ins, i) => (
+          <Card key={i} style={styles.insightCard} variant="elevated">
+            <View style={styles.insightHeader}>
+              <View style={[styles.insightIcon, { backgroundColor: ins.color + '15' }]}>
+                <Ionicons name={ins.icon as any} size={20} color={ins.color} />
+              </View>
+              <Text style={[styles.insightLabel, { color: ins.color }]}>{ins.label}</Text>
+            </View>
+            <Text style={styles.insightText}>{ins.text}</Text>
+          </Card>
+        ))}
+      </ScrollView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
+  header: { paddingHorizontal: 20, paddingBottom: 24 },
+  headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
+  back: { marginRight: 12 },
+  headerTitle: { flex: 1, fontSize: 22, fontWeight: '800', color: '#fff' },
+  addBtn: { width: 38, height: 38, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
+  nwBlock: { alignItems: 'center' },
+  nwLabel: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: '600', marginBottom: 6 },
+  nwValue: { fontSize: 44, fontWeight: '900', color: '#fff', letterSpacing: -1 },
+  gainRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 },
+  gainText: { fontSize: 13, color: '#A5D6A7', fontWeight: '600' },
+  tabs: { flexDirection: 'row', backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border },
+  tab: { flex: 1, paddingVertical: 14, alignItems: 'center' },
+  tabActive: { borderBottomWidth: 2.5, borderBottomColor: '#2E7D32' },
+  tabText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  tabTextActive: { color: '#2E7D32' },
+  content: { padding: 16 },
+  sectionTitle: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10, marginTop: 4 },
+  allocationCard: { marginBottom: 16, borderRadius: 14 },
+  allocationBar: { flexDirection: 'row', height: 12, borderRadius: 6, overflow: 'hidden', marginBottom: 14, gap: 2 },
+  allocationSegment: { borderRadius: 3 },
+  allocRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
+  allocDot: { width: 10, height: 10, borderRadius: 5 },
+  allocLabel: { flex: 1, fontSize: 13, color: colors.text, fontWeight: '600' },
+  allocPct: { fontSize: 13, color: colors.textSecondary, width: 45 },
+  allocVal: { fontSize: 13, fontWeight: '700', color: colors.text, width: 50, textAlign: 'right' },
+  holdingCard: { marginBottom: 8, borderRadius: 14 },
+  holdingHeader: { flexDirection: 'row', alignItems: 'center' },
+  holdingIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  holdingName: { fontSize: 13, fontWeight: '700', color: colors.text },
+  holdingInst: { fontSize: 11, color: colors.textSecondary, marginTop: 2 },
+  holdingValue: { fontSize: 15, fontWeight: '800', color: colors.text },
+  holdingGain: { fontSize: 12, fontWeight: '700', textAlign: 'right', marginTop: 2 },
+  returnRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8 },
+  returnText: { fontSize: 11, color: colors.success },
+  forecastCard: { borderRadius: 14, marginBottom: 16 },
+  forecastTitle: { fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 4 },
+  forecastSub: { fontSize: 12, color: colors.textSecondary, marginBottom: 20 },
+  forecastTimeline: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', paddingBottom: 8 },
+  forecastPoint: { alignItems: 'center', gap: 6 },
+  forecastVal: { fontSize: 12, fontWeight: '800', color: colors.primary },
+  forecastDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primary },
+  forecastYear: { fontSize: 11, color: colors.textMuted },
+  forecastConnector: { height: 2, backgroundColor: colors.primary + '30', borderRadius: 1, marginTop: -20 },
+  milestones: { gap: 10 },
+  milestoneCard: { flexDirection: 'row', alignItems: 'center', gap: 14, borderRadius: 14 },
+  milestoneIcon: { fontSize: 28 },
+  milestoneLabel: { fontSize: 14, fontWeight: '700', color: colors.text },
+  milestoneTarget: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
+  insightCard: { marginBottom: 10, borderRadius: 14 },
+  insightHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
+  insightIcon: { width: 38, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  insightLabel: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  insightText: { fontSize: 13, color: colors.text, lineHeight: 19 },
+});

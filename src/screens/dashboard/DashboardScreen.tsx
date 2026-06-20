@@ -322,6 +322,37 @@ export function DashboardScreen({ navigation }: any) {
                 </Card>
               );
             })}
+
+          {/* Advanced Features Hub */}
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Advanced Features</Text>
+            <Pressable onPress={() => navigation.navigate('CommandWall')}>
+              <Text style={styles.seeAll}>Command Wall</Text>
+            </Pressable>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
+            {[
+              { label: 'AI Memory', icon: 'brain', color: '#8E44AD', bg: '#F5EEF8', nav: 'AI Assistant', screen: 'AIMemory' },
+              { label: 'Legacy Vault', icon: 'library', color: '#7B2D8B', bg: '#F3E5F5', nav: 'Family', screen: 'LegacyVault' },
+              { label: 'Wealth Builder', icon: 'trending-up', color: '#2E7D32', bg: '#E8F5E9', nav: 'Finance', screen: 'WealthBuilder' },
+              { label: 'Health Hub', icon: 'fitness', color: '#27AE60', bg: '#D5F5E3', nav: 'HealthHub', screen: null },
+              { label: 'Smart Home', icon: 'home', color: '#1565C0', bg: '#E3F2FD', nav: 'Operations', screen: 'SmartHome' },
+              { label: 'Automation', icon: 'flash', color: '#1A1A2E', bg: '#E8EAF6', nav: 'Operations', screen: 'Automation' },
+              { label: 'Marketplace', icon: 'storefront', color: '#E65100', bg: '#FFF3E0', nav: 'Operations', screen: 'Marketplace' },
+              { label: 'Relationship', icon: 'heart', color: '#E91E63', bg: '#FCE4EC', nav: 'Family', screen: 'RelationshipHealth' },
+            ].map((f) => (
+              <Pressable
+                key={f.label}
+                onPress={() => f.screen ? navigation.navigate(f.nav, { screen: f.screen }) : navigation.navigate(f.nav)}
+                style={[styles.featureChip, { backgroundColor: f.bg }]}
+              >
+                <View style={[styles.featureIcon, { backgroundColor: f.color + '20' }]}>
+                  <Ionicons name={f.icon as any} size={20} color={f.color} />
+                </View>
+                <Text style={[styles.featureLabel, { color: f.color }]}>{f.label}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
         </Animated.View>
       </ScrollView>
     </View>
@@ -396,6 +427,9 @@ const styles = StyleSheet.create({
   eventMeta: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   eventTime: { fontSize: 12, color: colors.textSecondary },
   eventAttendees: { flexDirection: 'row', alignItems: 'center' },
+  featureChip: { alignItems: 'center', borderRadius: 16, padding: 14, marginRight: 10, width: 88 },
+  featureIcon: { width: 46, height: 46, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+  featureLabel: { fontSize: 11, fontWeight: '700', textAlign: 'center' },
   emptyCard: { alignItems: 'center', backgroundColor: colors.card },
   emptyText: { fontSize: 14, color: colors.textSecondary, marginTop: 10, textAlign: 'center' },
   taskCard: { marginBottom: 10, borderRadius: 14 },

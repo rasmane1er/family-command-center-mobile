@@ -11,6 +11,11 @@ import { useFamilyStore } from '../../store/useFamilyStore';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { useOperationsStore } from '../../store/useOperationsStore';
 import { useAIStore } from '../../store/useAIStore';
+import { useMemoryStore } from '../../store/useMemoryStore';
+import { useLegacyStore } from '../../store/useLegacyStore';
+import { useHealthStore } from '../../store/useHealthStore';
+import { useAutomationStore } from '../../store/useAutomationStore';
+import { useWealthStore } from '../../store/useWealthStore';
 
 const SUBSCRIPTION_TIERS = [
   { key: 'free', label: 'Free', price: '$0', color: colors.textSecondary, features: ['5 family members', 'Basic tasks & calendar', 'Limited AI queries'] },
@@ -30,6 +35,11 @@ export function SettingsScreen({ navigation }: any) {
   const { seedDemoData: seedFinance } = useFinanceStore();
   const { seedDemoData: seedOps } = useOperationsStore();
   const { seedDemoInsights } = useAIStore();
+  const { seedDemoData: seedMemory } = useMemoryStore();
+  const { seedDemoData: seedLegacy } = useLegacyStore();
+  const { seedDemoData: seedHealth } = useHealthStore();
+  const { seedDemoData: seedAutomation } = useAutomationStore();
+  const { seedDemoData: seedWealth } = useWealthStore();
 
   const handleResetOnboarding = () => {
     Alert.alert(
@@ -51,7 +61,12 @@ export function SettingsScreen({ navigation }: any) {
     seedFinance();
     seedOps();
     seedDemoInsights();
-    Alert.alert('Demo Data Loaded', 'The Johnson Family demo data has been loaded!');
+    seedMemory();
+    seedLegacy();
+    seedHealth();
+    seedAutomation();
+    seedWealth();
+    Alert.alert('Demo Data Loaded', 'The Johnson Family demo data has been loaded — including all advanced features!');
   };
 
   return (

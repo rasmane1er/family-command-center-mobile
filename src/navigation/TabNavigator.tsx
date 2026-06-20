@@ -11,7 +11,7 @@ import { DashboardScreen } from '../screens/dashboard/DashboardScreen';
 import { FamilyNavigator } from './FamilyNavigator';
 import { FinanceNavigator } from './FinanceNavigator';
 import { OperationsNavigator } from './OperationsNavigator';
-import { AIAssistantScreen } from '../screens/ai/AIAssistantScreen';
+import { AINavigator } from './AINavigator';
 
 const Tab = createBottomTabNavigator();
 
@@ -90,7 +90,7 @@ export function TabNavigator() {
       <Tab.Screen name="Family" component={FamilyNavigator} />
       <Tab.Screen name="Finance" component={FinanceNavigator} />
       <Tab.Screen name="Operations" component={OperationsNavigator} />
-      <Tab.Screen name="AI Assistant" component={AIAssistantScreen} />
+      <Tab.Screen name="AI Assistant" component={AINavigator} />
     </Tab.Navigator>
   );
 }

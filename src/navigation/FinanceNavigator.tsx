@@ -5,6 +5,7 @@ import { BudgetingScreen } from '../screens/finance/BudgetingScreen';
 import { BillsScreen } from '../screens/finance/BillsScreen';
 import { SubscriptionsScreen } from '../screens/finance/SubscriptionsScreen';
 import { AssetsScreen } from '../screens/finance/AssetsScreen';
+import { WealthBuilderScreen } from '../screens/finance/WealthBuilderScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -16,6 +17,7 @@ export function FinanceNavigator() {
       <Stack.Screen name="Bills" component={BillsScreen} />
       <Stack.Screen name="Subscriptions" component={SubscriptionsScreen} />
       <Stack.Screen name="Assets" component={AssetsScreen} />
+      <Stack.Screen name="WealthBuilder" component={WealthBuilderScreen} />
     </Stack.Navigator>
   );
 }
