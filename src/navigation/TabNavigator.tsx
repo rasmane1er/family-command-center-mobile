@@ -6,6 +6,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { colors } from '../theme/colors';
 import { shadows } from '../theme/spacing';
+import { useNotificationsStore } from '../store/useNotificationsStore';
+import { useFamilyStore } from '../store/useFamilyStore';
+import { useFinanceStore } from '../store/useFinanceStore';
 
 import { DashboardScreen } from '../screens/dashboard/DashboardScreen';
 import { FamilyNavigator } from './FamilyNavigator';
@@ -17,6 +20,9 @@ const Tab = createBottomTabNavigator();
 
 export function TabNavigator() {
   const insets = useSafeAreaInsets();
+  const unreadNotifications = useNotificationsStore((s) => s.notifications.filter((n) => !n.isRead).length);
+  const pendingTasks = useFamilyStore((s) => s.tasks.filter((t) => t.status !== 'completed').length);
+  const overdueBills = useFinanceStore((s) => s.bills.filter((b) => b.status === 'overdue').length);
 
   return (
     <Tab.Navigator
@@ -86,9 +92,9 @@ export function TabNavigator() {
         },
       })}
     >
-      <Tab.Screen name="Home" component={DashboardScreen} />
-      <Tab.Screen name="Family" component={FamilyNavigator} />
-      <Tab.Screen name="Finance" component={FinanceNavigator} />
+      <Tab.Screen name="Home" component={DashboardScreen} options={{ tabBarBadge: unreadNotifications > 0 ? unreadNotifications : undefined }} />
+      <Tab.Screen name="Family" component={FamilyNavigator} options={{ tabBarBadge: pendingTasks > 9 ? '9+' : pendingTasks > 0 ? pendingTasks : undefined }} />
+      <Tab.Screen name="Finance" component={FinanceNavigator} options={{ tabBarBadge: overdueBills > 0 ? overdueBills : undefined }} />
       <Tab.Screen name="Operations" component={OperationsNavigator} />
       <Tab.Screen name="AI Assistant" component={AINavigator} />
     </Tab.Navigator>

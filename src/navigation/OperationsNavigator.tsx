@@ -11,6 +11,7 @@ import { AutomationScreen } from '../screens/operations/AutomationScreen';
 import { MarketplaceScreen } from '../screens/operations/MarketplaceScreen';
 import { TimeEconomyScreen } from '../screens/operations/TimeEconomyScreen';
 import { SmartHomeScreen } from '../screens/operations/SmartHomeScreen';
+import { EmergencyModeScreen } from '../screens/operations/EmergencyModeScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -23,6 +24,7 @@ export function OperationsNavigator() {
       <Stack.Screen name="MealPlanning" component={MealPlanningScreen} />
       <Stack.Screen name="Documents" component={DocumentsScreen} />
       <Stack.Screen name="Emergency" component={EmergencyScreen} />
+      <Stack.Screen name="EmergencyMode" component={EmergencyModeScreen} />
       <Stack.Screen name="Rewards" component={RewardsScreen} />
       <Stack.Screen name="Automation" component={AutomationScreen} />
       <Stack.Screen name="Marketplace" component={MarketplaceScreen} />

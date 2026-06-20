@@ -24,7 +24,14 @@ const QUICK_SUGGESTIONS = [
   { label: 'Family goals', prompt: "How are we progressing on our family goals?", icon: 'flag-outline' },
 ];
 
-export function AIAssistantScreen() {
+const AI_FEATURES = [
+  { label: 'Memory', icon: 'albums', color: '#6A1B9A', screen: 'AIMemory' },
+  { label: 'Coach', icon: 'school', color: '#1A6B3C', screen: 'ParentingCoach' },
+  { label: 'Negotiate', icon: 'briefcase', color: '#0F2952', screen: 'Negotiator' },
+  { label: 'Digital Twin', icon: 'git-network', color: '#2D2D8F', screen: 'DigitalTwin' },
+];
+
+export function AIAssistantScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const [input, setInput] = useState('');
   const scrollRef = useRef<ScrollView>(null);
@@ -82,6 +89,16 @@ export function AIAssistantScreen() {
             <Ionicons name="nutrition-outline" size={12} color="rgba(255,255,255,0.7)" />
             <Text style={styles.contextChipText}>{pantryItems.length} pantry items</Text>
           </View>
+        </View>
+
+        {/* AI Feature shortcuts */}
+        <View style={styles.featuresRow}>
+          {AI_FEATURES.map((f) => (
+            <Pressable key={f.screen} onPress={() => navigation.navigate(f.screen)} style={[styles.featureBtn, { backgroundColor: f.color + '30', borderColor: f.color + '60' }]}>
+              <Ionicons name={f.icon as any} size={14} color={f.color === '#0F2952' ? '#7FAAFF' : f.color === '#2D2D8F' ? '#8888FF' : '#fff'} />
+              <Text style={styles.featureBtnText}>{f.label}</Text>
+            </Pressable>
+          ))}
         </View>
       </LinearGradient>
 
@@ -220,6 +237,9 @@ const styles = StyleSheet.create({
   contextRow: { flexDirection: 'row', gap: 8 },
   contextChip: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 20, paddingVertical: 4, paddingHorizontal: 10 },
   contextChipText: { fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: '600' },
+  featuresRow: { flexDirection: 'row', gap: 8, marginTop: 10 },
+  featureBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, borderRadius: 10, paddingVertical: 7, borderWidth: 1 },
+  featureBtnText: { fontSize: 11, fontWeight: '700', color: '#fff' },
   insightsBar: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FEF3E2', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
   insightsText: { flex: 1, fontSize: 12, color: colors.text, fontWeight: '500' },
   insightsCount: { fontSize: 11, color: '#fff', backgroundColor: colors.secondary, borderRadius: 10, paddingHorizontal: 7, paddingVertical: 2, fontWeight: '700' },

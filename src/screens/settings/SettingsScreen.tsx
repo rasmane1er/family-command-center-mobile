@@ -16,6 +16,9 @@ import { useLegacyStore } from '../../store/useLegacyStore';
 import { useHealthStore } from '../../store/useHealthStore';
 import { useAutomationStore } from '../../store/useAutomationStore';
 import { useWealthStore } from '../../store/useWealthStore';
+import { useNotificationsStore } from '../../store/useNotificationsStore';
+import { useMoodStore } from '../../store/useMoodStore';
+import { useHabitsStore } from '../../store/useHabitsStore';
 
 const SUBSCRIPTION_TIERS = [
   { key: 'free', label: 'Free', price: '$0', color: colors.textSecondary, features: ['5 family members', 'Basic tasks & calendar', 'Limited AI queries'] },
@@ -40,6 +43,9 @@ export function SettingsScreen({ navigation }: any) {
   const { seedDemoData: seedHealth } = useHealthStore();
   const { seedDemoData: seedAutomation } = useAutomationStore();
   const { seedDemoData: seedWealth } = useWealthStore();
+  const { seedDemoData: seedNotifications } = useNotificationsStore();
+  const { seedDemoData: seedMood } = useMoodStore();
+  const { seedDemoData: seedHabits } = useHabitsStore();
 
   const handleResetOnboarding = () => {
     Alert.alert(
@@ -66,6 +72,9 @@ export function SettingsScreen({ navigation }: any) {
     seedHealth();
     seedAutomation();
     seedWealth();
+    seedNotifications();
+    seedMood();
+    seedHabits();
     Alert.alert('Demo Data Loaded', 'The Johnson Family demo data has been loaded — including all advanced features!');
   };
 

@@ -15,6 +15,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { useAIStore } from '../../store/useAIStore';
+import { useNotificationsStore } from '../../store/useNotificationsStore';
 
 const { width } = Dimensions.get('window');
 
@@ -31,6 +32,8 @@ export function DashboardScreen({ navigation }: any) {
   const healthScore = useAppStore((s) => s.healthScore);
   const { monthlyIncome, monthlyExpenses, monthlySavings, bills } = useFinanceStore();
   const insights = useAIStore((s) => s.insights);
+  const { notifications, seedDemoData: seedNotifications } = useNotificationsStore();
+  if (notifications.length === 0) seedNotifications();
 
   const pendingTasks = tasks.filter((t) => t.status === 'pending').length;
   const overdueTasks = tasks.filter((t) => t.status === 'overdue').length;
@@ -41,6 +44,7 @@ export function DashboardScreen({ navigation }: any) {
   });
   const overdueBills = bills.filter((b) => b.status === 'overdue').length;
   const unreadInsights = insights.filter((i) => !i.isRead).length;
+  const unreadNotifications = notifications.filter((n) => !n.isRead).length;
 
   useEffect(() => {
     Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }).start();
@@ -81,12 +85,15 @@ export function DashboardScreen({ navigation }: any) {
                 <Text style={styles.date}>{format(new Date(), 'EEEE, MMMM d, yyyy')}</Text>
               </View>
               <View style={styles.headerActions}>
-                {unreadInsights > 0 && (
-                  <Pressable style={styles.notifBtn}>
-                    <Ionicons name="notifications" size={22} color="#fff" />
-                    <View style={styles.notifDot}><Text style={styles.notifCount}>{unreadInsights}</Text></View>
-                  </Pressable>
-                )}
+                <Pressable style={styles.searchBtn} onPress={() => navigation.navigate('Search')}>
+                  <Ionicons name="search" size={20} color="rgba(255,255,255,0.8)" />
+                </Pressable>
+                <Pressable style={styles.notifBtn} onPress={() => navigation.navigate('Notifications')}>
+                  <Ionicons name="notifications" size={22} color="#fff" />
+                  {unreadNotifications > 0 && (
+                    <View style={styles.notifDot}><Text style={styles.notifCount}>{unreadNotifications}</Text></View>
+                  )}
+                </Pressable>
                 <Pressable style={styles.settingsBtn} onPress={() => navigation.navigate('Settings')}>
                   <Ionicons name="settings-outline" size={22} color="rgba(255,255,255,0.7)" />
                 </Pressable>
@@ -323,6 +330,20 @@ export function DashboardScreen({ navigation }: any) {
               );
             })}
 
+          {/* Weekly Report Banner */}
+          <Pressable onPress={() => navigation.navigate('WeeklyReport')} style={styles.reportBanner}>
+            <LinearGradient colors={['#0F2952', '#1E4A8A']} style={styles.reportBannerGrad}>
+              <View style={styles.reportBannerLeft}>
+                <Ionicons name="bar-chart" size={20} color={colors.secondary} />
+                <View>
+                  <Text style={styles.reportBannerTitle}>Weekly Report Ready</Text>
+                  <Text style={styles.reportBannerSub}>Family Health Score +4 pts this week</Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.6)" />
+            </LinearGradient>
+          </Pressable>
+
           {/* Advanced Features Hub */}
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Advanced Features</Text>
@@ -332,14 +353,20 @@ export function DashboardScreen({ navigation }: any) {
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
             {[
-              { label: 'AI Memory', icon: 'brain', color: '#8E44AD', bg: '#F5EEF8', nav: 'AI Assistant', screen: 'AIMemory' },
+              { label: 'AI Memory', icon: 'albums', color: '#8E44AD', bg: '#F5EEF8', nav: 'AI Assistant', screen: 'AIMemory' },
+              { label: 'Digital Twin', icon: 'git-network', color: '#0D0D2B', bg: '#E8EAF6', nav: 'AI Assistant', screen: 'DigitalTwin' },
+              { label: 'Achievements', icon: 'trophy', color: '#F5A623', bg: '#FEF3E2', nav: 'Family', screen: 'Achievements' },
+              { label: 'Habits', icon: 'flame', color: '#E67E22', bg: '#FEF0E2', nav: 'Family', screen: 'Habits' },
+              { label: 'Mood', icon: 'happy', color: '#E91E63', bg: '#FCE4EC', nav: 'Family', screen: 'MoodTracker' },
               { label: 'Legacy Vault', icon: 'library', color: '#7B2D8B', bg: '#F3E5F5', nav: 'Family', screen: 'LegacyVault' },
               { label: 'Wealth Builder', icon: 'trending-up', color: '#2E7D32', bg: '#E8F5E9', nav: 'Finance', screen: 'WealthBuilder' },
               { label: 'Health Hub', icon: 'fitness', color: '#27AE60', bg: '#D5F5E3', nav: 'HealthHub', screen: null },
+              { label: 'Emergency', icon: 'alert-circle', color: '#E74C3C', bg: '#FDEDEC', nav: 'Operations', screen: 'EmergencyMode' },
               { label: 'Smart Home', icon: 'home', color: '#1565C0', bg: '#E3F2FD', nav: 'Operations', screen: 'SmartHome' },
-              { label: 'Automation', icon: 'flash', color: '#1A1A2E', bg: '#E8EAF6', nav: 'Operations', screen: 'Automation' },
+              { label: 'Automation', icon: 'flash', color: '#6A1B9A', bg: '#F3E5F5', nav: 'Operations', screen: 'Automation' },
               { label: 'Marketplace', icon: 'storefront', color: '#E65100', bg: '#FFF3E0', nav: 'Operations', screen: 'Marketplace' },
-              { label: 'Relationship', icon: 'heart', color: '#E91E63', bg: '#FCE4EC', nav: 'Family', screen: 'RelationshipHealth' },
+              { label: 'Meetings', icon: 'people', color: '#1565C0', bg: '#E3F2FD', nav: 'Family', screen: 'FamilyMeeting' },
+              { label: 'AI Coach', icon: 'school', color: '#1A6B3C', bg: '#D5F5E3', nav: 'AI Assistant', screen: 'ParentingCoach' },
             ].map((f) => (
               <Pressable
                 key={f.label}
@@ -438,4 +465,10 @@ const styles = StyleSheet.create({
   taskTitle: { fontSize: 15, fontWeight: '600', color: colors.text, marginBottom: 6 },
   taskMeta: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   taskDue: { fontSize: 12, color: colors.textSecondary },
+  searchBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 12 },
+  reportBanner: { marginVertical: 16, borderRadius: 16, overflow: 'hidden' },
+  reportBannerGrad: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14 },
+  reportBannerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  reportBannerTitle: { fontSize: 14, fontWeight: '700', color: '#fff' },
+  reportBannerSub: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
 });

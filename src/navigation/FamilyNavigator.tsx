@@ -8,6 +8,10 @@ import { LegacyVaultScreen } from '../screens/family/LegacyVaultScreen';
 import { ConflictResolverScreen } from '../screens/family/ConflictResolverScreen';
 import { RelationshipHealthScreen } from '../screens/family/RelationshipHealthScreen';
 import { ReputationScreen } from '../screens/family/ReputationScreen';
+import { AchievementsScreen } from '../screens/family/AchievementsScreen';
+import { HabitsScreen } from '../screens/family/HabitsScreen';
+import { MoodTrackerScreen } from '../screens/family/MoodTrackerScreen';
+import { FamilyMeetingScreen } from '../screens/family/FamilyMeetingScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -22,6 +26,10 @@ export function FamilyNavigator() {
       <Stack.Screen name="ConflictResolver" component={ConflictResolverScreen} />
       <Stack.Screen name="RelationshipHealth" component={RelationshipHealthScreen} />
       <Stack.Screen name="Reputation" component={ReputationScreen} />
+      <Stack.Screen name="Achievements" component={AchievementsScreen} />
+      <Stack.Screen name="Habits" component={HabitsScreen} />
+      <Stack.Screen name="MoodTracker" component={MoodTrackerScreen} />
+      <Stack.Screen name="FamilyMeeting" component={FamilyMeetingScreen} />
     </Stack.Navigator>
   );
 }
