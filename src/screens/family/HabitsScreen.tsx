@@ -1,14 +1,21 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
+import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
+import { shadows } from '../../theme/spacing';
 import { Card } from '../../components/common/Card';
+import { Avatar } from '../../components/common/Avatar';
+import { Button } from '../../components/common/Button';
 import { useHabitsStore } from '../../store/useHabitsStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+
+const HABIT_ICONS = ['fitness-outline', 'book-outline', 'water-outline', 'bed-outline', 'restaurant-outline', 'walk-outline', 'heart-outline', 'star-outline', 'musical-notes-outline', 'bicycle-outline'];
+const HABIT_COLORS = ['#E74C3C', '#E67E22', '#F1C40F', '#27AE60', '#2980B9', '#9B59B6', '#E91E63', '#00BCD4'];
 
 const MOOD_EMOJIS: Record<number, string> = { 1: '😔', 2: '😕', 3: '😐', 4: '🙂', 5: '😄' };
 
@@ -27,7 +34,15 @@ function getLastSevenDays(): string[] {
 export function HabitsScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<'family' | 'personal'>('family');
-  const { habits, completeHabit, uncompleteHabit, deleteHabit, isCompletedToday, seedDemoData } = useHabitsStore();
+  const [showModal, setShowModal] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newDesc, setNewDesc] = useState('');
+  const [newIcon, setNewIcon] = useState('star-outline');
+  const [newColor, setNewColor] = useState('#2980B9');
+  const [newFrequency, setNewFrequency] = useState<'daily' | 'weekly'>('daily');
+  const [newMemberId, setNewMemberId] = useState<string | null>(null);
+
+  const { habits, completeHabit, uncompleteHabit, deleteHabit, addHabit, isCompletedToday, seedDemoData } = useHabitsStore();
   const members = useFamilyStore((s) => s.members);
   const today = new Date().toISOString().split('T')[0];
   const lastSeven = getLastSevenDays();
@@ -46,16 +61,39 @@ export function HabitsScreen({ navigation }: any) {
     const completed = isCompletedToday(id);
     if (completed) {
       uncompleteHabit(id, today);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     } else {
       completeHabit(id, today);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
   };
 
   const handleDelete = (id: string, title: string) => {
     Alert.alert('Delete Habit', `Remove "${title}" from your habits?`, [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => deleteHabit(id) },
+      { text: 'Delete', style: 'destructive', onPress: () => { deleteHabit(id); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); } },
     ]);
+  };
+
+  const handleAddHabit = () => {
+    if (!newTitle.trim()) return;
+    addHabit({
+      title: newTitle.trim(),
+      description: newDesc.trim() || 'Build this healthy habit',
+      icon: newIcon,
+      color: newColor,
+      frequency: newFrequency,
+      memberId: newMemberId || undefined,
+      points: newFrequency === 'daily' ? 10 : 25,
+    });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setNewTitle('');
+    setNewDesc('');
+    setNewIcon('star-outline');
+    setNewColor('#2980B9');
+    setNewFrequency('daily');
+    setNewMemberId(null);
+    setShowModal(false);
   };
 
   return (
@@ -67,7 +105,7 @@ export function HabitsScreen({ navigation }: any) {
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </Pressable>
           <Text style={styles.headerTitle}>Family Habits</Text>
-          <Pressable style={styles.addBtn}>
+          <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
             <Ionicons name="add" size={22} color="#fff" />
           </Pressable>
         </View>
@@ -192,6 +230,72 @@ export function HabitsScreen({ navigation }: any) {
           <Text style={styles.tipText}>• Habit streaks release dopamine — celebrate every milestone!</Text>
         </Card>
       </ScrollView>
+
+      <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowModal(false)}>
+        <ScrollView style={styles.modal} contentContainerStyle={{ paddingBottom: 40 }}>
+          <View style={styles.modalHandle} />
+          <Text style={styles.modalTitle}>Add Habit</Text>
+
+          <TextInput
+            style={styles.modalInput}
+            placeholder="Habit name..."
+            value={newTitle}
+            onChangeText={setNewTitle}
+            placeholderTextColor={colors.textMuted}
+            autoFocus
+          />
+          <TextInput
+            style={styles.modalInput}
+            placeholder="Description (optional)"
+            value={newDesc}
+            onChangeText={setNewDesc}
+            placeholderTextColor={colors.textMuted}
+          />
+
+          <Text style={styles.modalLabel}>Frequency</Text>
+          <View style={styles.freqRow}>
+            {(['daily', 'weekly'] as const).map((f) => (
+              <Pressable key={f} onPress={() => setNewFrequency(f)} style={[styles.freqChip, newFrequency === f && styles.freqChipActive]}>
+                <Text style={[styles.freqChipText, newFrequency === f && styles.freqChipTextActive]}>
+                  {f === 'daily' ? '📅 Daily' : '📆 Weekly'}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <Text style={styles.modalLabel}>Icon</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+            {HABIT_ICONS.map((icon) => (
+              <Pressable key={icon} onPress={() => setNewIcon(icon)} style={[styles.iconPick, newIcon === icon && { backgroundColor: newColor + '30', borderColor: newColor }]}>
+                <Ionicons name={icon as any} size={24} color={newIcon === icon ? newColor : colors.textMuted} />
+              </Pressable>
+            ))}
+          </ScrollView>
+
+          <Text style={styles.modalLabel}>Color</Text>
+          <View style={styles.colorRow}>
+            {HABIT_COLORS.map((c) => (
+              <Pressable key={c} onPress={() => setNewColor(c)} style={[styles.colorSwatch, { backgroundColor: c }, newColor === c && styles.colorSwatchSelected]} />
+            ))}
+          </View>
+
+          <Text style={styles.modalLabel}>Assign To (Personal)</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 24 }}>
+            <Pressable onPress={() => setNewMemberId(null)} style={[styles.assignChip, !newMemberId && styles.assignChipActive]}>
+              <Text style={styles.assignChipLabel}>Family</Text>
+            </Pressable>
+            {members.map((m) => (
+              <Pressable key={m.id} onPress={() => setNewMemberId(m.id)} style={[styles.assignChip, newMemberId === m.id && styles.assignChipActive]}>
+                <Avatar name={m.name} color={m.avatarColor} size={28} />
+                <Text style={styles.assignChipLabel}>{m.name.split(' ')[0]}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+
+          <Button title="Add Habit" onPress={handleAddHabit} fullWidth size="lg" disabled={!newTitle.trim()} />
+          <Button title="Cancel" onPress={() => setShowModal(false)} variant="ghost" fullWidth style={{ marginTop: 8 }} />
+        </ScrollView>
+      </Modal>
     </View>
   );
 }
@@ -248,4 +352,21 @@ const styles = StyleSheet.create({
   tipsCard: { borderRadius: 16, marginTop: 12 },
   tipsTitle: { fontSize: 14, fontWeight: '700', color: colors.text, marginBottom: 10 },
   tipText: { fontSize: 13, color: colors.textSecondary, lineHeight: 20, marginBottom: 4 },
+  modal: { flex: 1, padding: 24, backgroundColor: colors.background },
+  modalHandle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 24 },
+  modalTitle: { fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 20 },
+  modalInput: { backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 16, color: colors.text, borderWidth: 1.5, borderColor: colors.border, marginBottom: 14, ...shadows.sm },
+  modalLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  freqRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
+  freqChip: { flex: 1, paddingVertical: 12, borderRadius: 12, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.card, alignItems: 'center' },
+  freqChipActive: { backgroundColor: '#E67E2220', borderColor: '#E67E22' },
+  freqChipText: { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
+  freqChipTextActive: { color: '#E67E22' },
+  iconPick: { width: 52, height: 52, borderRadius: 14, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center', marginRight: 10 },
+  colorRow: { flexDirection: 'row', gap: 10, marginBottom: 20, flexWrap: 'wrap' },
+  colorSwatch: { width: 34, height: 34, borderRadius: 17 },
+  colorSwatchSelected: { borderWidth: 3, borderColor: colors.text },
+  assignChip: { alignItems: 'center', marginRight: 12, padding: 10, borderRadius: 12, borderWidth: 1.5, borderColor: 'transparent', gap: 4 },
+  assignChipActive: { borderColor: colors.primary, backgroundColor: '#E8EEF9' },
+  assignChipLabel: { fontSize: 11, color: colors.textSecondary, fontWeight: '600' },
 });

@@ -38,6 +38,7 @@ function getWeekDates(): string[] {
 export function MoodTrackerScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const [selectedMember, setSelectedMember] = useState<string | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
   const members = useFamilyStore((s) => s.members);
   const { entries, addMoodEntry, getTodayMood, getMemberHistory, seedDemoData } = useMoodStore();
 
@@ -63,6 +64,7 @@ export function MoodTrackerScreen({ navigation }: any) {
   const handleSetMood = (level: MoodLevel) => {
     if (!activeMember) return;
     addMoodEntry({ memberId: activeMember.id, level, date: today });
+    setIsUpdating(false);
   };
 
   const getDateEntry = (memberId: string, date: string) => entries.find((e) => e.memberId === memberId && e.date === date);
@@ -124,14 +126,14 @@ export function MoodTrackerScreen({ navigation }: any) {
         <Text style={styles.sectionTitle}>
           {activeMember?.name.split(' ')[0]}'s Check-in Today
         </Text>
-        {todayMood ? (
+        {todayMood && !isUpdating ? (
           <Card variant="elevated" style={{ ...styles.checkedCard, backgroundColor: MOOD_CONFIG[todayMood.level].bg }}>
             <Text style={styles.checkedEmoji}>{MOOD_CONFIG[todayMood.level].emoji}</Text>
             <Text style={[styles.checkedLabel, { color: MOOD_CONFIG[todayMood.level].color }]}>
               {MOOD_CONFIG[todayMood.level].label}
             </Text>
             <Text style={styles.checkedTip}>{MOOD_TIPS[todayMood.level]}</Text>
-            <Pressable onPress={() => { /* allow re-check */ }} style={styles.updateBtn}>
+            <Pressable onPress={() => setIsUpdating(true)} style={styles.updateBtn}>
               <Text style={[styles.updateBtnText, { color: MOOD_CONFIG[todayMood.level].color }]}>Update mood</Text>
             </Pressable>
           </Card>
@@ -148,6 +150,11 @@ export function MoodTrackerScreen({ navigation }: any) {
                 </Pressable>
               ))}
             </View>
+            {isUpdating && (
+              <Pressable onPress={() => setIsUpdating(false)} style={{ marginTop: 12, alignSelf: 'center' }}>
+                <Text style={{ fontSize: 13, color: colors.textMuted }}>Cancel</Text>
+              </Pressable>
+            )}
           </Card>
         )}
 
