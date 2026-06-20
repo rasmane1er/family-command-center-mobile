@@ -1,21 +1,56 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, Modal, TextInput, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { format } from 'date-fns';
+import { format, addMonths } from 'date-fns';
+import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
+import { shadows } from '../../theme/spacing';
 import { Card } from '../../components/common/Card';
 import { Avatar } from '../../components/common/Avatar';
 import { Badge } from '../../components/common/Badge';
+import { Button } from '../../components/common/Button';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import type { Subscription } from '../../types';
+
+const SUB_CATEGORIES = ['Entertainment', 'Music', 'Software', 'News', 'Fitness', 'Education', 'Gaming', 'Other'];
+const SUB_ICONS: Record<string, string> = {
+  Entertainment: 'tv-outline',
+  Music: 'musical-notes-outline',
+  Software: 'code-slash-outline',
+  News: 'newspaper-outline',
+  Fitness: 'fitness-outline',
+  Education: 'school-outline',
+  Gaming: 'game-controller-outline',
+  Other: 'apps-outline',
+};
+const SUB_COLORS: Record<string, string> = {
+  Entertainment: '#E74C3C',
+  Music: '#9B59B6',
+  Software: '#2980B9',
+  News: '#E67E22',
+  Fitness: '#27AE60',
+  Education: '#16A085',
+  Gaming: '#8E44AD',
+  Other: '#7F8C8D',
+};
+const BILLING_CYCLES = ['monthly', 'quarterly', 'annual'] as const;
+const generateId = () => Math.random().toString(36).substring(2, 11);
 
 export function SubscriptionsScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
-  const { subscriptions, deleteSubscription, updateSubscription } = useFinanceStore();
+  const { subscriptions, addSubscription, deleteSubscription, updateSubscription } = useFinanceStore();
   const members = useFamilyStore((s) => s.members);
+
+  const [showModal, setShowModal] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newAmount, setNewAmount] = useState('');
+  const [newCycle, setNewCycle] = useState<'monthly' | 'quarterly' | 'annual'>('monthly');
+  const [newCategory, setNewCategory] = useState('Entertainment');
+  const [newSharedMembers, setNewSharedMembers] = useState<string[]>([]);
 
   const active = subscriptions.filter((s) => s.isActive);
   const totalMonthly = active.reduce((sum, s) => sum + (s.billingCycle === 'annual' ? s.amount / 12 : s.billingCycle === 'quarterly' ? s.amount / 3 : s.amount), 0);
@@ -28,6 +63,40 @@ export function SubscriptionsScreen({ navigation }: any) {
     return acc;
   }, {} as Record<string, typeof active>);
 
+  const toggleMember = (id: string) => {
+    setNewSharedMembers((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+  };
+
+  const handleAdd = () => {
+    const amount = parseFloat(newAmount);
+    if (!newName.trim() || isNaN(amount) || amount <= 0) return;
+    const nextBillingDate = addMonths(new Date(), newCycle === 'monthly' ? 1 : newCycle === 'quarterly' ? 3 : 12);
+    const sub: Subscription = {
+      id: generateId(),
+      familyId: 'demo-family',
+      name: newName.trim(),
+      amount,
+      billingCycle: newCycle,
+      nextBillingDate: nextBillingDate.toISOString(),
+      category: newCategory,
+      isActive: true,
+      sharedMembers: newSharedMembers,
+      icon: SUB_ICONS[newCategory] || 'apps-outline',
+      color: SUB_COLORS[newCategory] || colors.primary,
+    };
+    addSubscription(sub);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setNewName(''); setNewAmount(''); setNewCycle('monthly'); setNewCategory('Entertainment'); setNewSharedMembers([]);
+    setShowModal(false);
+  };
+
+  const handleDelete = (id: string, name: string) => {
+    Alert.alert('Delete Subscription', `Permanently remove "${name}"?`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => { deleteSubscription(id); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); } },
+    ]);
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
@@ -37,7 +106,9 @@ export function SubscriptionsScreen({ navigation }: any) {
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </Pressable>
           <Text style={styles.headerTitle}>Subscriptions</Text>
-          <Pressable style={styles.addBtn}><Ionicons name="add" size={26} color="#fff" /></Pressable>
+          <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
+            <Ionicons name="add" size={26} color="#fff" />
+          </Pressable>
         </View>
 
         <View style={styles.summaryCard}>
@@ -59,7 +130,6 @@ export function SubscriptionsScreen({ navigation }: any) {
       </LinearGradient>
 
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
-        {/* AI Insight */}
         <View style={styles.aiInsight}>
           <Ionicons name="bulb" size={18} color={colors.secondary} />
           <Text style={styles.aiInsightText}>
@@ -105,20 +175,78 @@ export function SubscriptionsScreen({ navigation }: any) {
                   </View>
                   <View style={styles.subActions}>
                     <Pressable
-                      onPress={() => updateSubscription(sub.id, { isActive: false })}
+                      onPress={() => { updateSubscription(sub.id, { isActive: false }); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
                       style={styles.cancelBtn}
                     >
-                      <Ionicons name="close-circle-outline" size={16} color={colors.danger} />
-                      <Text style={styles.cancelText}>Cancel</Text>
+                      <Ionicons name="close-circle-outline" size={16} color={colors.warning} />
+                      <Text style={styles.cancelText}>Pause</Text>
                     </Pressable>
                     <Badge label={sub.billingCycle} variant="primary" size="sm" />
+                    <Pressable onPress={() => handleDelete(sub.id, sub.name)} style={styles.deleteBtn}>
+                      <Ionicons name="trash-outline" size={16} color={colors.danger} />
+                    </Pressable>
                   </View>
                 </Card>
               );
             })}
           </View>
         ))}
+
+        {active.length === 0 && (
+          <View style={styles.emptyState}>
+            <Ionicons name="card-outline" size={64} color={colors.textMuted} />
+            <Text style={styles.emptyTitle}>No active subscriptions</Text>
+            <Text style={styles.emptyDesc}>Tap + to track your family subscriptions</Text>
+          </View>
+        )}
       </ScrollView>
+
+      <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowModal(false)}>
+        <ScrollView style={styles.modal} contentContainerStyle={{ paddingBottom: 40 }}>
+          <View style={styles.modalHandle} />
+          <Text style={styles.modalTitle}>Add Subscription</Text>
+
+          <Text style={styles.modalLabel}>Name *</Text>
+          <TextInput style={styles.modalInput} placeholder="e.g. Netflix, Spotify..." value={newName} onChangeText={setNewName} placeholderTextColor={colors.textMuted} autoFocus />
+
+          <Text style={styles.modalLabel}>Amount *</Text>
+          <TextInput style={styles.modalInput} placeholder="0.00" value={newAmount} onChangeText={setNewAmount} keyboardType="decimal-pad" placeholderTextColor={colors.textMuted} />
+
+          <Text style={styles.modalLabel}>Billing Cycle</Text>
+          <View style={styles.cycleRow}>
+            {BILLING_CYCLES.map((c) => (
+              <Pressable key={c} onPress={() => setNewCycle(c)} style={[styles.cycleChip, newCycle === c && styles.cycleChipActive]}>
+                <Text style={[styles.cycleChipText, newCycle === c && styles.cycleChipTextActive]}>
+                  {c.charAt(0).toUpperCase() + c.slice(1)}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <Text style={styles.modalLabel}>Category</Text>
+          <View style={styles.catGrid}>
+            {SUB_CATEGORIES.map((cat) => (
+              <Pressable key={cat} onPress={() => setNewCategory(cat)} style={[styles.catGridItem, newCategory === cat && { backgroundColor: (SUB_COLORS[cat] || colors.primary) + '20', borderColor: SUB_COLORS[cat] || colors.primary }]}>
+                <Ionicons name={(SUB_ICONS[cat] || 'apps-outline') as any} size={20} color={newCategory === cat ? (SUB_COLORS[cat] || colors.primary) : colors.textSecondary} />
+                <Text style={[styles.catGridText, newCategory === cat && { color: SUB_COLORS[cat] || colors.primary }]}>{cat}</Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <Text style={styles.modalLabel}>Shared With</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 24 }}>
+            {members.map((m) => (
+              <Pressable key={m.id} onPress={() => toggleMember(m.id)} style={[styles.memberChip, newSharedMembers.includes(m.id) && styles.memberChipActive]}>
+                <Avatar name={m.name} color={m.avatarColor} size={30} />
+                <Text style={styles.memberChipName}>{m.name.split(' ')[0]}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+
+          <Button title="Add Subscription" onPress={handleAdd} fullWidth size="lg" disabled={!newName.trim() || !newAmount.trim()} />
+          <Button title="Cancel" onPress={() => setShowModal(false)} variant="ghost" fullWidth style={{ marginTop: 8 }} />
+        </ScrollView>
+      </Modal>
     </View>
   );
 }
@@ -153,5 +281,25 @@ const styles = StyleSheet.create({
   subMembersText: { fontSize: 11, color: colors.textSecondary },
   subActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 10 },
   cancelBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  cancelText: { fontSize: 13, color: colors.danger, fontWeight: '600' },
+  cancelText: { fontSize: 13, color: colors.warning, fontWeight: '600' },
+  deleteBtn: { padding: 4 },
+  emptyState: { alignItems: 'center', paddingVertical: 80 },
+  emptyTitle: { fontSize: 20, fontWeight: '700', color: colors.text, marginTop: 16 },
+  emptyDesc: { fontSize: 14, color: colors.textSecondary, marginTop: 8, textAlign: 'center' },
+  modal: { flex: 1, padding: 24, backgroundColor: colors.background },
+  modalHandle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 24 },
+  modalTitle: { fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 20 },
+  modalLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  modalInput: { backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 16, color: colors.text, borderWidth: 1.5, borderColor: colors.border, marginBottom: 16, ...shadows.sm },
+  cycleRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
+  cycleChip: { flex: 1, paddingVertical: 10, borderRadius: 12, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.card, alignItems: 'center' },
+  cycleChipActive: { backgroundColor: '#9B59B620', borderColor: '#9B59B6' },
+  cycleChipText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  cycleChipTextActive: { color: '#9B59B6' },
+  catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
+  catGridItem: { width: '46%', flexDirection: 'row', alignItems: 'center', gap: 8, padding: 10, borderRadius: 12, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.card },
+  catGridText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  memberChip: { alignItems: 'center', marginRight: 12, padding: 10, borderRadius: 12, borderWidth: 1.5, borderColor: 'transparent', gap: 4 },
+  memberChipActive: { borderColor: '#9B59B6', backgroundColor: '#F3E5F5' },
+  memberChipName: { fontSize: 11, color: colors.textSecondary, fontWeight: '600' },
 });

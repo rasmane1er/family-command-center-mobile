@@ -1,14 +1,20 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Modal, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { format, differenceInDays } from 'date-fns';
+import { differenceInDays } from 'date-fns';
+import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
+import { shadows } from '../../theme/spacing';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
+import { Button } from '../../components/common/Button';
 import { useOperationsStore } from '../../store/useOperationsStore';
+import type { PantryItem } from '../../types';
+
+const generateId = () => Math.random().toString(36).substring(2, 11);
 
 const CATEGORIES = ['All', 'Meat', 'Dairy', 'Grains', 'Frozen', 'Canned', 'Beverages', 'Condiments', 'Produce'];
 
@@ -27,7 +33,40 @@ export function PantryScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All');
-  const { pantryItems, updatePantryItem } = useOperationsStore();
+  const [showModal, setShowModal] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newCategory, setNewCategory] = useState('Produce');
+  const [newQuantity, setNewQuantity] = useState('1');
+  const [newUnit, setNewUnit] = useState('pcs');
+  const [newLocation, setNewLocation] = useState('Pantry');
+
+  const { pantryItems, updatePantryItem, addPantryItem, deletePantryItem } = useOperationsStore();
+
+  const handleAdd = () => {
+    if (!newName.trim()) return;
+    const item: PantryItem = {
+      id: generateId(),
+      familyId: 'demo-family',
+      name: newName.trim(),
+      category: newCategory,
+      quantity: parseInt(newQuantity, 10) || 1,
+      unit: newUnit.trim() || 'pcs',
+      location: newLocation.trim() || 'Pantry',
+      updatedAt: new Date().toISOString(),
+    };
+    addPantryItem(item);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setNewName(''); setNewCategory('Produce'); setNewQuantity('1');
+    setNewUnit('pcs'); setNewLocation('Pantry');
+    setShowModal(false);
+  };
+
+  const handleDelete = (id: string, name: string) => {
+    Alert.alert('Remove Item', `Remove "${name}" from pantry?`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Remove', style: 'destructive', onPress: () => { deletePantryItem(id); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); } },
+    ]);
+  };
 
   const filtered = pantryItems.filter((item) => {
     const matchSearch = item.name.toLowerCase().includes(search.toLowerCase());
@@ -61,7 +100,7 @@ export function PantryScreen({ navigation }: any) {
           <Text style={styles.headerTitle}>Pantry</Text>
           <View style={styles.headerActions}>
             <Pressable style={styles.actionBtn}><Ionicons name="cart-outline" size={22} color="#fff" /></Pressable>
-            <Pressable style={styles.actionBtn}><Ionicons name="add" size={24} color="#fff" /></Pressable>
+            <Pressable onPress={() => setShowModal(true)} style={styles.actionBtn}><Ionicons name="add" size={24} color="#fff" /></Pressable>
           </View>
         </View>
 
@@ -126,6 +165,9 @@ export function PantryScreen({ navigation }: any) {
                       <Ionicons name="add" size={16} color={colors.primary} />
                     </Pressable>
                     {isLowStock && <Badge label="Low" variant="warning" size="sm" style={{ marginLeft: 8 }} />}
+                    <Pressable onPress={() => handleDelete(item.id, item.name)} style={styles.deleteBtn}>
+                      <Ionicons name="trash-outline" size={14} color={colors.danger} />
+                    </Pressable>
                   </View>
                 </View>
               </View>
@@ -140,6 +182,42 @@ export function PantryScreen({ navigation }: any) {
           </View>
         )}
       </ScrollView>
+
+      <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowModal(false)}>
+        <ScrollView style={styles.modal} contentContainerStyle={{ paddingBottom: 40 }}>
+          <View style={styles.modalHandle} />
+          <Text style={styles.modalTitle}>Add Pantry Item</Text>
+
+          <Text style={styles.modalLabel}>Item Name *</Text>
+          <TextInput style={styles.modalInput} placeholder="e.g. Olive Oil" value={newName} onChangeText={setNewName} placeholderTextColor={colors.textMuted} autoFocus />
+
+          <View style={styles.rowInputs}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.modalLabel}>Quantity</Text>
+              <TextInput style={styles.modalInput} placeholder="1" value={newQuantity} onChangeText={setNewQuantity} keyboardType="numeric" placeholderTextColor={colors.textMuted} />
+            </View>
+            <View style={{ flex: 1, marginLeft: 10 }}>
+              <Text style={styles.modalLabel}>Unit</Text>
+              <TextInput style={styles.modalInput} placeholder="pcs / lbs / oz" value={newUnit} onChangeText={setNewUnit} placeholderTextColor={colors.textMuted} />
+            </View>
+          </View>
+
+          <Text style={styles.modalLabel}>Category</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+            {CATEGORIES.filter((c) => c !== 'All').map((cat) => (
+              <Pressable key={cat} onPress={() => setNewCategory(cat)} style={[styles.catChip, newCategory === cat && styles.catChipActive]}>
+                <Text style={[styles.catText, newCategory === cat && styles.catTextActive]}>{cat}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+
+          <Text style={styles.modalLabel}>Storage Location</Text>
+          <TextInput style={[styles.modalInput, { marginBottom: 24 }]} placeholder="e.g. Pantry, Fridge, Freezer" value={newLocation} onChangeText={setNewLocation} placeholderTextColor={colors.textMuted} />
+
+          <Button title="Add Item" onPress={handleAdd} fullWidth size="lg" disabled={!newName.trim()} />
+          <Button title="Cancel" onPress={() => setShowModal(false)} variant="ghost" fullWidth style={{ marginTop: 8 }} />
+        </ScrollView>
+      </Modal>
     </View>
   );
 }
@@ -176,4 +254,11 @@ const styles = StyleSheet.create({
   itemQuantity: { fontSize: 15, fontWeight: '700', color: colors.text, minWidth: 60, textAlign: 'center' },
   emptyState: { alignItems: 'center', paddingVertical: 60 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginTop: 16 },
+  deleteBtn: { marginLeft: 4, padding: 4 },
+  modal: { flex: 1, padding: 24, backgroundColor: colors.background },
+  modalHandle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 24 },
+  modalTitle: { fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 20 },
+  modalLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  modalInput: { backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 16, color: colors.text, borderWidth: 1.5, borderColor: colors.border, marginBottom: 16, ...shadows.sm },
+  rowInputs: { flexDirection: 'row' },
 });

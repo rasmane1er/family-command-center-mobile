@@ -1,15 +1,20 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Modal, TextInput, Switch, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format, differenceInDays } from 'date-fns';
+import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
+import { shadows } from '../../theme/spacing';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
+import { Button } from '../../components/common/Button';
+import { Avatar } from '../../components/common/Avatar';
 import { useOperationsStore } from '../../store/useOperationsStore';
-import type { DocumentCategory } from '../../types';
+import { useFamilyStore } from '../../store/useFamilyStore';
+import type { DocumentCategory, Document } from '../../types';
 
 const CATEGORIES: { key: DocumentCategory | 'all'; label: string; icon: string; color: string }[] = [
   { key: 'all', label: 'All', icon: 'folder', color: colors.primary },
@@ -22,10 +27,22 @@ const CATEGORIES: { key: DocumentCategory | 'all'; label: string; icon: string; 
   { key: 'vehicle', label: 'Vehicle', icon: 'car', color: '#E74C3C' },
 ];
 
+const DOC_CATEGORIES: DocumentCategory[] = ['identity', 'medical', 'financial', 'insurance', 'legal', 'education', 'vehicle', 'home', 'other'];
+const generateId = () => Math.random().toString(36).substring(2, 11);
+
 export function DocumentsScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const [activeCategory, setActiveCategory] = useState<string>('all');
-  const { documents } = useOperationsStore();
+  const { documents, addDocument, deleteDocument } = useOperationsStore();
+  const members = useFamilyStore((s) => s.members);
+
+  const [showModal, setShowModal] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newCategory, setNewCategory] = useState<DocumentCategory>('identity');
+  const [newIssuer, setNewIssuer] = useState('');
+  const [newMemberId, setNewMemberId] = useState<string | null>(null);
+  const [newSensitive, setNewSensitive] = useState(false);
+  const [newShared, setNewShared] = useState(false);
 
   const filtered = documents.filter((d) => activeCategory === 'all' || d.category === activeCategory);
 
@@ -40,6 +57,34 @@ export function DocumentsScreen({ navigation }: any) {
 
   const getCategoryInfo = (cat: string) => CATEGORIES.find((c) => c.key === cat) || CATEGORIES[0];
 
+  const handleAdd = () => {
+    if (!newTitle.trim()) return;
+    const doc: Document = {
+      id: generateId(),
+      familyId: 'demo-family',
+      title: newTitle.trim(),
+      category: newCategory,
+      issuer: newIssuer.trim() || undefined,
+      memberId: newMemberId || undefined,
+      isSensitive: newSensitive,
+      isShared: newShared,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    addDocument(doc);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setNewTitle(''); setNewCategory('identity'); setNewIssuer('');
+    setNewMemberId(null); setNewSensitive(false); setNewShared(false);
+    setShowModal(false);
+  };
+
+  const handleDelete = (id: string, title: string) => {
+    Alert.alert('Delete Document', `Remove "${title}" from the vault?`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => { deleteDocument(id); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); } },
+    ]);
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
@@ -49,7 +94,9 @@ export function DocumentsScreen({ navigation }: any) {
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </Pressable>
           <Text style={styles.headerTitle}>Document Vault</Text>
-          <Pressable style={styles.addBtn}><Ionicons name="add" size={26} color="#fff" /></Pressable>
+          <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
+            <Ionicons name="add" size={26} color="#fff" />
+          </Pressable>
         </View>
 
         <View style={styles.vaultInfo}>
@@ -71,7 +118,7 @@ export function DocumentsScreen({ navigation }: any) {
         {filtered.map((doc) => {
           const catInfo = getCategoryInfo(doc.category);
           return (
-            <Card key={doc.id} style={styles.docCard} onPress={() => {}} variant="elevated">
+            <Card key={doc.id} style={styles.docCard} variant="elevated">
               <View style={styles.docRow}>
                 <View style={[styles.docIcon, { backgroundColor: catInfo.color + '15' }]}>
                   <Ionicons name={catInfo.icon as any} size={22} color={catInfo.color} />
@@ -95,8 +142,8 @@ export function DocumentsScreen({ navigation }: any) {
                   <Pressable style={styles.docActionBtn}>
                     <Ionicons name="share-outline" size={18} color={colors.primary} />
                   </Pressable>
-                  <Pressable style={styles.docActionBtn}>
-                    <Ionicons name="ellipsis-horizontal" size={18} color={colors.textMuted} />
+                  <Pressable onPress={() => handleDelete(doc.id, doc.title)} style={styles.docActionBtn}>
+                    <Ionicons name="trash-outline" size={16} color={colors.danger} />
                   </Pressable>
                 </View>
               </View>
@@ -119,6 +166,66 @@ export function DocumentsScreen({ navigation }: any) {
           </Text>
         </View>
       </ScrollView>
+
+      <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowModal(false)}>
+        <ScrollView style={styles.modal} contentContainerStyle={{ paddingBottom: 40 }}>
+          <View style={styles.modalHandle} />
+          <Text style={styles.modalTitle}>Add Document</Text>
+
+          <Text style={styles.modalLabel}>Title *</Text>
+          <TextInput style={styles.modalInput} placeholder="e.g. John's Passport" value={newTitle} onChangeText={setNewTitle} placeholderTextColor={colors.textMuted} autoFocus />
+
+          <Text style={styles.modalLabel}>Issuer</Text>
+          <TextInput style={styles.modalInput} placeholder="e.g. US Department of State" value={newIssuer} onChangeText={setNewIssuer} placeholderTextColor={colors.textMuted} />
+
+          <Text style={styles.modalLabel}>Category</Text>
+          <View style={styles.catGrid}>
+            {DOC_CATEGORIES.map((cat) => {
+              const info = getCategoryInfo(cat);
+              return (
+                <Pressable key={cat} onPress={() => setNewCategory(cat)} style={[styles.catGridItem, newCategory === cat && { backgroundColor: (info?.color || colors.primary) + '20', borderColor: info?.color || colors.primary }]}>
+                  <Ionicons name={(info?.icon || 'folder') as any} size={16} color={newCategory === cat ? (info?.color || colors.primary) : colors.textSecondary} />
+                  <Text style={[styles.catGridText, newCategory === cat && { color: info?.color || colors.primary }]}>
+                    {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <Text style={styles.modalLabel}>Assign To Member</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+            <Pressable onPress={() => setNewMemberId(null)} style={[styles.memberChip, !newMemberId && styles.memberChipActive]}>
+              <Text style={styles.memberChipName}>Family</Text>
+            </Pressable>
+            {members.map((m) => (
+              <Pressable key={m.id} onPress={() => setNewMemberId(m.id)} style={[styles.memberChip, newMemberId === m.id && styles.memberChipActive]}>
+                <Avatar name={m.name} color={m.avatarColor} size={28} />
+                <Text style={styles.memberChipName}>{m.name.split(' ')[0]}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+
+          <View style={styles.toggleRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.toggleLabel}>Sensitive</Text>
+              <Text style={styles.toggleDesc}>Requires extra authentication to view</Text>
+            </View>
+            <Switch value={newSensitive} onValueChange={setNewSensitive} trackColor={{ true: colors.danger }} />
+          </View>
+
+          <View style={[styles.toggleRow, { marginBottom: 24 }]}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.toggleLabel}>Shared with Family</Text>
+              <Text style={styles.toggleDesc}>All family members can view this document</Text>
+            </View>
+            <Switch value={newShared} onValueChange={setNewShared} trackColor={{ true: colors.primary }} />
+          </View>
+
+          <Button title="Add Document" onPress={handleAdd} fullWidth size="lg" disabled={!newTitle.trim()} />
+          <Button title="Cancel" onPress={() => setShowModal(false)} variant="ghost" fullWidth style={{ marginTop: 8 }} />
+        </ScrollView>
+      </Modal>
     </View>
   );
 }
@@ -152,4 +259,18 @@ const styles = StyleSheet.create({
   emptyDesc: { fontSize: 14, color: colors.textSecondary, marginTop: 8, textAlign: 'center', paddingHorizontal: 32 },
   securityNote: { flexDirection: 'row', gap: 10, backgroundColor: colors.infoLight, borderRadius: 12, padding: 14, marginTop: 8 },
   securityText: { flex: 1, fontSize: 13, color: colors.info, lineHeight: 20 },
+  modal: { flex: 1, padding: 24, backgroundColor: colors.background },
+  modalHandle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 24 },
+  modalTitle: { fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 20 },
+  modalLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  modalInput: { backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 16, color: colors.text, borderWidth: 1.5, borderColor: colors.border, marginBottom: 16, ...shadows.sm },
+  catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
+  catGridItem: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.card },
+  catGridText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
+  memberChip: { alignItems: 'center', marginRight: 12, padding: 10, borderRadius: 12, borderWidth: 1.5, borderColor: 'transparent', gap: 4 },
+  memberChipActive: { borderColor: '#2980B9', backgroundColor: '#EBF5FB' },
+  memberChipName: { fontSize: 11, color: colors.textSecondary, fontWeight: '600' },
+  toggleRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 12, padding: 14, marginBottom: 12, borderWidth: 1.5, borderColor: colors.border },
+  toggleLabel: { fontSize: 15, fontWeight: '600', color: colors.text, marginBottom: 2 },
+  toggleDesc: { fontSize: 12, color: colors.textSecondary },
 });
