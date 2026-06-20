@@ -17,7 +17,9 @@ interface FinanceState {
   updateAccount: (id: string, updates: Partial<FinancialAccount>) => void;
   addTransaction: (t: Transaction) => void;
   deleteTransaction: (id: string) => void;
+  addBudget: (b: Budget) => void;
   updateBudget: (id: string, updates: Partial<Budget>) => void;
+  deleteBudget: (id: string) => void;
   addBill: (b: Bill) => void;
   updateBill: (id: string, updates: Partial<Bill>) => void;
   deleteBill: (id: string) => void;
@@ -49,8 +51,10 @@ export const useFinanceStore = create<FinanceState>((set) => ({
     set((s) => ({ accounts: s.accounts.map((a) => (a.id === id ? { ...a, ...updates } : a)) })),
   addTransaction: (t) => set((s) => ({ transactions: [t, ...s.transactions] })),
   deleteTransaction: (id) => set((s) => ({ transactions: s.transactions.filter((t) => t.id !== id) })),
+  addBudget: (b) => set((s) => ({ budgets: [...s.budgets, b] })),
   updateBudget: (id, updates) =>
     set((s) => ({ budgets: s.budgets.map((b) => (b.id === id ? { ...b, ...updates } : b)) })),
+  deleteBudget: (id) => set((s) => ({ budgets: s.budgets.filter((b) => b.id !== id) })),
   addBill: (b) => set((s) => ({ bills: [...s.bills, b] })),
   updateBill: (id, updates) =>
     set((s) => ({ bills: s.bills.map((b) => (b.id === id ? { ...b, ...updates } : b)) })),
