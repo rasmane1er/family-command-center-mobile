@@ -1,15 +1,21 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
+import { shadows } from '../../theme/spacing';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
+import { Avatar } from '../../components/common/Avatar';
+import { Button } from '../../components/common/Button';
 import { useLegacyStore } from '../../store/useLegacyStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import type { LegacyItemType } from '../../types';
+
+const ADD_TYPES: LegacyItemType[] = ['story', 'milestone', 'tradition', 'letter', 'recipe'];
 
 const TYPE_CONFIG: Record<LegacyItemType, { icon: string; color: string; label: string }> = {
   story: { icon: 'book', color: '#8E44AD', label: 'Story' },
@@ -34,8 +40,31 @@ const FILTER_TYPES: { key: 'all' | LegacyItemType; label: string }[] = [
 export function LegacyVaultScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<'all' | LegacyItemType>('all');
-  const { items, toggleFeatured, addReaction, seedDemoData } = useLegacyStore();
+  const [showModal, setShowModal] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newContent, setNewContent] = useState('');
+  const [newType, setNewType] = useState<LegacyItemType>('story');
+  const [newMemberId, setNewMemberId] = useState<string | null>(null);
+
+  const { items, toggleFeatured, addReaction, addItem, seedDemoData } = useLegacyStore();
   const members = useFamilyStore((s) => s.members);
+
+  const handleAddItem = () => {
+    if (!newTitle.trim()) return;
+    addItem({
+      familyId: 'demo-family',
+      memberId: newMemberId || undefined,
+      type: newType,
+      title: newTitle.trim(),
+      content: newContent.trim() || 'Added to the family legacy vault.',
+      tags: [],
+      isPrivate: false,
+      isFeatured: false,
+    });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setNewTitle(''); setNewContent(''); setNewType('story'); setNewMemberId(null);
+    setShowModal(false);
+  };
 
   if (items.length === 0) seedDemoData();
 
@@ -56,7 +85,7 @@ export function LegacyVaultScreen({ navigation }: any) {
             <Text style={styles.headerTitle}>Legacy Vault</Text>
             <Text style={styles.headerSub}>Family stories • Traditions • Milestones</Text>
           </View>
-          <Pressable style={styles.addBtn}>
+          <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
             <Ionicons name="add" size={24} color="#fff" />
           </Pressable>
         </View>
@@ -155,6 +184,57 @@ export function LegacyVaultScreen({ navigation }: any) {
           </View>
         )}
       </ScrollView>
+
+      <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowModal(false)}>
+        <ScrollView style={styles.modal} contentContainerStyle={{ paddingBottom: 40 }}>
+          <View style={styles.modalHandle} />
+          <Text style={styles.modalTitle}>Add to Legacy Vault</Text>
+
+          <Text style={styles.modalLabel}>Type</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+            {ADD_TYPES.map((t) => {
+              const cfg = TYPE_CONFIG[t];
+              return (
+                <Pressable key={t} onPress={() => setNewType(t)} style={[styles.typeChip, newType === t && { backgroundColor: cfg.color + '20', borderColor: cfg.color }]}>
+                  <Ionicons name={cfg.icon as any} size={16} color={newType === t ? cfg.color : colors.textSecondary} />
+                  <Text style={[styles.typeChipText, newType === t && { color: cfg.color }]}>{cfg.label}</Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+
+          <Text style={styles.modalLabel}>Title *</Text>
+          <TextInput style={styles.modalInput} placeholder="e.g. Grandma's Apple Pie Recipe" value={newTitle} onChangeText={setNewTitle} placeholderTextColor={colors.textMuted} autoFocus />
+
+          <Text style={styles.modalLabel}>Story / Content</Text>
+          <TextInput
+            style={[styles.modalInput, styles.modalTextarea]}
+            placeholder="Write the story, memory, or tradition here..."
+            value={newContent}
+            onChangeText={setNewContent}
+            multiline
+            numberOfLines={5}
+            placeholderTextColor={colors.textMuted}
+            textAlignVertical="top"
+          />
+
+          <Text style={styles.modalLabel}>About</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 24 }}>
+            <Pressable onPress={() => setNewMemberId(null)} style={[styles.memberChip, !newMemberId && styles.memberChipActive]}>
+              <Text style={styles.memberChipName}>Family</Text>
+            </Pressable>
+            {members.map((m) => (
+              <Pressable key={m.id} onPress={() => setNewMemberId(m.id)} style={[styles.memberChip, newMemberId === m.id && styles.memberChipActive]}>
+                <Avatar name={m.name} color={m.avatarColor} size={28} />
+                <Text style={styles.memberChipName}>{m.name.split(' ')[0]}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+
+          <Button title="Save to Vault" onPress={handleAddItem} fullWidth size="lg" disabled={!newTitle.trim()} />
+          <Button title="Cancel" onPress={() => setShowModal(false)} variant="ghost" fullWidth style={{ marginTop: 8 }} />
+        </ScrollView>
+      </Modal>
     </View>
   );
 }
@@ -194,4 +274,15 @@ const styles = StyleSheet.create({
   emptyState: { alignItems: 'center', paddingVertical: 60 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginTop: 16 },
   emptyDesc: { fontSize: 13, color: colors.textSecondary, marginTop: 8, textAlign: 'center', paddingHorizontal: 32 },
+  modal: { flex: 1, padding: 24, backgroundColor: colors.background },
+  modalHandle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 24 },
+  modalTitle: { fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 20 },
+  modalLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  modalInput: { backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 16, color: colors.text, borderWidth: 1.5, borderColor: colors.border, marginBottom: 16, ...shadows.sm },
+  modalTextarea: { height: 120, textAlignVertical: 'top' },
+  typeChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 20, marginRight: 8, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.card },
+  typeChipText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  memberChip: { alignItems: 'center', marginRight: 12, padding: 10, borderRadius: 12, borderWidth: 1.5, borderColor: 'transparent', gap: 4 },
+  memberChipActive: { borderColor: '#7B2D8B', backgroundColor: '#F5E6FA' },
+  memberChipName: { fontSize: 11, color: colors.textSecondary, fontWeight: '600' },
 });

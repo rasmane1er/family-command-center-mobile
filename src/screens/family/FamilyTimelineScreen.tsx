@@ -1,16 +1,23 @@
 import React, { useState, useMemo } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, Pressable, Alert,
+  View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput, Switch,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format, formatDistanceToNow, isSameMonth } from 'date-fns';
+import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
+import { shadows } from '../../theme/spacing';
 import { Card } from '../../components/common/Card';
+import { Avatar } from '../../components/common/Avatar';
+import { Button } from '../../components/common/Button';
 import { useTimelineStore, TimelineEntry, TimelineType } from '../../store/useTimelineStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+
+const ENTRY_TYPES: TimelineType[] = ['achievement', 'milestone', 'memory', 'event', 'goal', 'family'];
+const QUICK_EMOJIS = ['🏆', '🎉', '❤️', '🌟', '🎂', '🏠', '✈️', '🎓', '👶', '💑', '🌱', '🔥'];
 
 const TYPE_CONFIG: Record<TimelineType, { icon: string; color: string; label: string }> = {
   achievement: { icon: 'trophy',           color: '#F5A623', label: 'Achievement' },
@@ -46,8 +53,35 @@ function MonthHeader({ date }: { date: string }) {
 export function FamilyTimelineScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<TimelineType | 'all' | 'highlights'>('all');
-  const { entries, deleteEntry, seedDemoData } = useTimelineStore();
+  const [showModal, setShowModal] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newDesc, setNewDesc] = useState('');
+  const [newType, setNewType] = useState<TimelineType>('memory');
+  const [newEmoji, setNewEmoji] = useState('❤️');
+  const [newMemberId, setNewMemberId] = useState<string | null>(null);
+  const [newHighlight, setNewHighlight] = useState(false);
+
+  const { entries, deleteEntry, addEntry, seedDemoData } = useTimelineStore();
   const members = useFamilyStore((s) => s.members);
+
+  const handleAdd = () => {
+    if (!newTitle.trim()) return;
+    const cfg = TYPE_CONFIG[newType];
+    addEntry({
+      date: new Date().toISOString().split('T')[0],
+      type: newType,
+      title: newTitle.trim(),
+      description: newDesc.trim() || 'A meaningful moment in the family story.',
+      memberId: newMemberId || undefined,
+      emoji: newEmoji,
+      color: cfg.color,
+      isHighlight: newHighlight,
+    });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setNewTitle(''); setNewDesc(''); setNewType('memory'); setNewEmoji('❤️');
+    setNewMemberId(null); setNewHighlight(false);
+    setShowModal(false);
+  };
 
   if (entries.length === 0) seedDemoData();
 
@@ -80,7 +114,7 @@ export function FamilyTimelineScreen({ navigation }: any) {
             <Text style={styles.headerTitle}>Family Story</Text>
             <Text style={styles.headerSub}>{entries.length} moments · {highlights} highlights</Text>
           </View>
-          <Pressable style={styles.addBtn}>
+          <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
             <Ionicons name="add" size={22} color="#fff" />
           </Pressable>
         </View>
@@ -170,6 +204,74 @@ export function FamilyTimelineScreen({ navigation }: any) {
           );
         })}
       </ScrollView>
+
+      <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowModal(false)}>
+        <ScrollView style={styles.modal} contentContainerStyle={{ paddingBottom: 40 }}>
+          <View style={styles.modalHandle} />
+          <Text style={styles.modalTitle}>Add Moment</Text>
+
+          <Text style={styles.modalLabel}>Type</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+            {ENTRY_TYPES.map((t) => {
+              const cfg = TYPE_CONFIG[t];
+              return (
+                <Pressable key={t} onPress={() => setNewType(t)} style={[styles.typeChip, newType === t && { backgroundColor: cfg.color + '20', borderColor: cfg.color }]}>
+                  <Ionicons name={cfg.icon as any} size={14} color={newType === t ? cfg.color : colors.textSecondary} />
+                  <Text style={[styles.typeChipText, newType === t && { color: cfg.color }]}>{cfg.label}</Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+
+          <Text style={styles.modalLabel}>Emoji</Text>
+          <View style={styles.emojiGrid}>
+            {QUICK_EMOJIS.map((e) => (
+              <Pressable key={e} onPress={() => setNewEmoji(e)} style={[styles.emojiBtn, newEmoji === e && styles.emojiBtnActive]}>
+                <Text style={styles.emojiText}>{e}</Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <Text style={styles.modalLabel}>Title *</Text>
+          <TextInput style={styles.modalInput} placeholder="e.g. Aiden's First Home Run" value={newTitle} onChangeText={setNewTitle} placeholderTextColor={colors.textMuted} autoFocus />
+
+          <Text style={styles.modalLabel}>Description</Text>
+          <TextInput
+            style={[styles.modalInput, styles.modalTextarea]}
+            placeholder="Describe this moment..."
+            value={newDesc}
+            onChangeText={setNewDesc}
+            multiline
+            numberOfLines={4}
+            placeholderTextColor={colors.textMuted}
+            textAlignVertical="top"
+          />
+
+          <Text style={styles.modalLabel}>About</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+            <Pressable onPress={() => setNewMemberId(null)} style={[styles.memberChip, !newMemberId && styles.memberChipActive]}>
+              <Text style={styles.memberChipName}>Family</Text>
+            </Pressable>
+            {members.map((m) => (
+              <Pressable key={m.id} onPress={() => setNewMemberId(m.id)} style={[styles.memberChip, newMemberId === m.id && styles.memberChipActive]}>
+                <Avatar name={m.name} color={m.avatarColor} size={28} />
+                <Text style={styles.memberChipName}>{m.name.split(' ')[0]}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+
+          <View style={styles.highlightRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.highlightLabel}>Mark as Highlight</Text>
+              <Text style={styles.highlightDesc}>Featured moments are shown with a gold star</Text>
+            </View>
+            <Switch value={newHighlight} onValueChange={setNewHighlight} trackColor={{ true: '#F5A623' }} />
+          </View>
+
+          <Button title="Add to Timeline" onPress={handleAdd} fullWidth size="lg" disabled={!newTitle.trim()} style={{ marginTop: 8 }} />
+          <Button title="Cancel" onPress={() => setShowModal(false)} variant="ghost" fullWidth style={{ marginTop: 8 }} />
+        </ScrollView>
+      </Modal>
     </View>
   );
 }
@@ -214,4 +316,24 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', paddingTop: 60 },
   emptyTitle: { fontSize: 20, fontWeight: '700', color: colors.text, marginTop: 16, marginBottom: 8 },
   emptyDesc: { fontSize: 14, color: colors.textSecondary, textAlign: 'center', paddingHorizontal: 32, lineHeight: 22 },
+  modal: { flex: 1, padding: 24, backgroundColor: colors.background },
+  modalHandle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 24 },
+  modalTitle: { fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 20 },
+  modalLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  modalInput: { backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 16, color: colors.text, borderWidth: 1.5, borderColor: colors.border, marginBottom: 16, ...shadows.sm },
+  modalTextarea: { minHeight: 80, textAlignVertical: 'top' as const },
+  emojiGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
+  emojiBtn: { width: 48, height: 48, borderRadius: 12, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: colors.border },
+  emojiBtnActive: { borderColor: '#4A0072', backgroundColor: '#F3E5F5' },
+  emojiText: { fontSize: 22 },
+  typeChip: { paddingVertical: 7, paddingHorizontal: 14, borderRadius: 20, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.card, marginRight: 8 },
+  typeChipActive: { backgroundColor: '#4A0072', borderColor: '#4A0072' },
+  typeChipText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  typeChipTextActive: { color: '#fff' },
+  memberChip: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 20, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.card, marginRight: 8 },
+  memberChipActive: { borderColor: '#4A0072', backgroundColor: '#F3E5F5' },
+  memberChipName: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  highlightRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.card, borderRadius: 12, padding: 16, marginBottom: 24 },
+  highlightLabel: { fontSize: 15, fontWeight: '700', color: colors.text },
+  highlightDesc: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
 });
