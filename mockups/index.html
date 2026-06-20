@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Family Command Center — Mockups</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#111827;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:32px 20px}
+h1{color:#fff;text-align:center;font-size:26px;font-weight:900;margin-bottom:4px}
+.sub{color:rgba(255,255,255,0.4);text-align:center;font-size:13px;margin-bottom:40px}
+.sec{color:#F5A623;font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;margin:40px 0 18px;padding-left:2px}
+.grid{display:flex;flex-wrap:wrap;gap:28px}
+.pw{display:flex;flex-direction:column;align-items:center;gap:10px}
+.pl{color:rgba(255,255,255,0.55);font-size:11px;font-weight:700;text-align:center;max-width:240px}
+.ph{width:240px;height:490px;background:#111;border-radius:38px;padding:8px;box-shadow:0 24px 60px rgba(0,0,0,0.7),inset 0 0 0 1.5px #333;flex-shrink:0;position:relative}
+.notch{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:72px;height:18px;background:#111;border-radius:0 0 12px 12px;z-index:10}
+.sc{width:100%;height:100%;border-radius:30px;overflow:hidden;position:relative;background:#F0F2F5;font-size:11px}
+/* shared */
+.tb{position:absolute;bottom:0;left:0;right:0;height:56px;background:rgba(255,255,255,0.97);border-top:1px solid #eee;display:flex;align-items:center;justify-content:space-around;padding:0 4px 8px}
+.ti{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:8px;color:#aaa}
+.ti.on{color:#0F2952}
+.tic{font-size:17px}
+.aib{width:36px;height:36px;background:#0F2952;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;margin-top:-12px;box-shadow:0 4px 12px rgba(15,41,82,0.5)}
+.hg{padding:40px 14px 14px;color:#fff}
+.br{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.bb{width:26px;height:26px;background:rgba(255,255,255,0.2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+.ht{font-size:17px;font-weight:900;flex:1}
+.cd{background:#fff;border-radius:12px;padding:11px;box-shadow:0 2px 8px rgba(0,0,0,0.07);margin-bottom:8px}
+.bx{display:inline-flex;align-items:center;padding:2px 7px;border-radius:8px;font-size:9px;font-weight:700}
+.bp{background:#E8EEF9;color:#0F2952}
+.bs{background:#D5F5E3;color:#1E8449}
+.bw{background:#FEF9E7;color:#B7770D}
+.bd{background:#FDEDEC;color:#C0392B}
+.bi{background:#D6EAF8;color:#1A5276}
+.av{width:28px;height:28px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0}
+.pb{height:5px;background:#eee;border-radius:3px;overflow:hidden}
+.pf{height:100%;border-radius:3px}
+.rw{display:flex;align-items:center;gap:8px}
+.sa{padding:10px 12px;overflow:hidden}
+.sh{font-size:9px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;margin-top:10px}
+.btn{display:block;padding:11px;border:none;border-radius:11px;font-size:12px;font-weight:700;cursor:pointer;text-align:center;width:100%}
+.btn-p{background:linear-gradient(135deg,#0F2952,#1E4A8A);color:#fff}
+.btn-s{background:#FEF3E2;color:#F5A623}
+</style>
+</head>
+<body>
+<h1>⌂ Family Command Center™</h1>
+<p class="sub">All 27 Screen Mockups · React Native · TypeScript · Expo</p>
+
+<!-- ONBOARDING -->
+<div class="sec">🚀 Onboarding (8 Screens)</div>
+<div class="grid">
+
+<!-- SPLASH -->
+<div class="pw"><div class="pl">1. Splash</div>
+<div class="ph"><div class="notch"></div>
+<div class="sc" style="background:linear-gradient(160deg,#0D1B2A,#0F2952,#1E4A8A);display:flex;flex-direction:column;align-items:center;justify-content:center">
+  <div style="width:60px;height:60px;background:rgba(255,255,255,0.15);border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:28px;border:1.5px solid rgba(255,255,255,0.3);margin-bottom:14px">⌂</div>
+  <div style="font-size:18px;font-weight:900;color:#fff">Family Command</div>
+  <div style="font-size:18px;font-weight:900;color:#F5A623">Center™</div>
+  <div style="font-size:10px;color:rgba(255,255,255,0.5);margin-top:6px">Your AI Household Chief of Staff</div>
+  <div style="margin-top:32px;width:140px;height:130px">
+    <svg viewBox="0 0 140 130" style="width:100%;height:100%">
+      <ellipse cx="70" cy="122" rx="60" ry="8" fill="rgba(255,255,255,0.08)"/>
+      <rect x="30" y="40" width="80" height="80" rx="5" fill="#1a3a6e" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
+      <rect x="38" y="32" width="64" height="70" rx="4" fill="#2574a9"/>
+      <rect x="45" y="42" width="50" height="6" rx="3" fill="rgba(255,255,255,0.8)"/>
+      <rect x="45" y="52" width="35" height="5" rx="2" fill="rgba(255,255,255,0.4)"/>
+      <circle cx="52" cy="80" r="10" fill="#F5A623"/><text x="52" y="84" text-anchor="middle" font-size="9" fill="white" font-weight="bold">M</text>
+      <circle cx="74" cy="80" r="10" fill="#27AE60"/><text x="74" y="84" text-anchor="middle" font-size="9" fill="white" font-weight="bold">S</text>
+      <circle cx="94" cy="84" r="8" fill="#E74C3C"/><text x="94" y="88" text-anchor="middle" font-size="8" fill="white" font-weight="bold">A</text>
+    </svg>
+  </div>
+  <div style="position:absolute;bottom:22px;display:flex;gap:5px">
+    <div style="width:16px;height:3px;background:#F5A623;border-radius:2px"></div>
+    <div style="width:6px;height:3px;background:rgba(255,255,255,0.3);border-radius:2px"></div>
+    <div style="width:6px;height:3px;background:rgba(255,255,255,0.3);border-radius:2px"></div>
+  </div>
+</div></div></div>
+
+<!-- WELCOME -->
+<div class="pw"><div class="pl">2. Welcome</div>
+<div class="ph"><div class="notch"></div>
+<div class="sc" style="background:#F0F2F5">
+  <div style="background:linear-gradient(160deg,#0F2952,#1E4A8A);padding:38px 14px 18px;color:#fff">
+    <div style="font-size:17px;font-weight:900">Welcome to</div>
+    <div style="font-size:17px;font-weight:900;color:#F5A623">Family Command Center™</div>
+    <div style="font-size:10px;color:rgba(255,255,255,0.55);margin-top:4px">Everything your family needs, in one place</div>
+  </div>
+  <div style="padding:12px;overflow:hidden">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:12px">
+      ${[['🗓️','Smart Calendar','AI scheduling'],['💰','Finance Hub','Budget & bills'],['📋','Tasks','Family tasks'],['🚗','Vehicles','Maintenance'],['🏠','Pantry','Food tracking'],['🤖','AI Chief','24/7 assistant']].map(([e,t,s])=>`<div style="background:#fff;border-radius:10px;padding:8px;box-shadow:0 2px 6px rgba(0,0,0,0.06)"><div style="font-size:16px;margin-bottom:3px">${e}</div><div style="font-size:10px;font-weight:700;color:#0F2952">${t}</div><div style="font-size:9px;color:#aaa">${s}</div></div>`).join('')}
+    </div>
+    <button class="btn btn-p" style="margin-bottom:7px">Set Up My Family →</button>
+    <button class="btn btn-s">✨ Explore with Demo Mode</button>
+    <div style="display:flex;justify-content:center;gap:8px;margin-top:10px">
+      <span class="bx bp">FREE</span>
+      <span class="bx bw">PREMIUM $9.99</span>
+      <span style="background:#F5EEF8;color:#8E44AD" class="bx">PRO $19.99</span>
+    </div>
+  </div>
+</div></div></div>
+
+<!-- FAMILY SETUP -->
+<div class="pw"><div class="pl">3. Family Setup</div>
+<div class="ph"><div class="notch"></div>
+<div class="sc" style="background:#F0F2F5">
+  <div style="background:linear-gradient(160deg,#0F2952,#1E4A8A);padding:38px 14px 18px;color:#fff">
+    <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);margin-bottom:3px">STEP 1 OF 6</div>
+    <div style="height:4px;background:rgba(255,255,255,0.2);border-radius:2px;margin-bottom:10px"><div style="width:17%;height:100%;background:#F5A623;border-radius:2px"></div></div>
+    <div style="font-size:17px;font-weight:900">Let's set up</div>
+    <div style="font-size:17px;font-weight:900;color:#F5A623">your family</div>
+  </div>
+  <div style="padding:12px">
+    <div style="font-size:9px;font-weight:700;color:#888;margin-bottom:5px">FAMILY NAME *</div>
+    <div style="background:#fff;border:2px solid #0F2952;border-radius:10px;padding:10px 12px;font-size:13px;font-weight:600;color:#0F2952;margin-bottom:10px">The Johnson Family</div>
+    <div style="font-size:9px;font-weight:700;color:#888;margin-bottom:5px">FAMILY MOTTO</div>
+    <div style="background:#fff;border:2px solid #eee;border-radius:10px;padding:10px 12px;font-size:12px;color:#bbb;margin-bottom:10px">"Together we can do anything"</div>
+    <div style="font-size:9px;font-weight:700;color:#888;margin-bottom:7px">CURRENCY</div>
+    <div style="display:flex;gap:6px;margin-bottom:12px">
+      ${['USD','EUR','GBP','CAD'].map((c,i)=>`<div style="padding:6px 10px;border-radius:16px;font-size:10px;font-weight:700;${i===0?'background:#0F2952;color:#fff':'background:#eee;color:#666'}">${c}</div>`).join('')}
+    </div>
+    <div style="background:#fff;border-radius:12px;padding:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-size:12px;font-weight:700;color:#4A7C59">🎖️ Military Mode</div>
+          <div style="font-size:9px;color:#aaa">Enhanced tools for military families</div>
+        </div>
+        <div style="width:36px;height:20px;background:#eee;border-radius:10px;position:relative"><div style="width:18px;height:18px;background:#fff;border-radius:9px;position:absolute;top:1px;left:1px;box-shadow:0 1px 3px rgba(0,0,0,0.2)"></div></div>
+      </div>
+    </div>
+    <button class="btn btn-p" style="position:absolute;bottom:16px;left:14px;right:14px">Continue →</button>
+  </div>
+</div></div></div>
+
+<!-- MEMBER SETUP -->
+<div class="pw"><div class="pl">4. Member Setup</div>
+<div class="ph"><div class="notch"></div>
+<div class="sc" style="background:#F0F2F5">
+  <div style="background:linear-gradient(160deg,#0F2952,#1E4A8A);padding:38px 14px 18px;color:#fff">
+    <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);margin-bottom:3px">STEP 2 OF 6</div>
+    <div style="height:4px;background:rgba(255,255,255,0.2);border-radius:2px;margin-bottom:10px"><div style="width:33%;height:100%;background:#F5A623;border-radius:2px"></div></div>
+    <div style="font-size:17px;font-weight:900">Add family</div>
+    <div style="font-size:17px;font-weight:900;color:#F5A623">members</div>
+  </div>
+  <div style="padding:12px">
+    <div style="display:flex;gap:6px;margin-bottom:10px">
+      ${['Parent','Child','Guardian'].map((r,i)=>`<div style="padding:5px 9px;border-radius:16px;font-size:10px;font-weight:700;${i<2?'background:#0F2952;color:#fff':'background:#eee;color:#666'}">${r}</div>`).join('')}
+    </div>
+    <div style="background:#fff;border-radius:11px;padding:10px;box-shadow:0 2px 6px rgba(0,0,0,0.06);margin-bottom:10px">
+      <div style="font-size:12px;color:#bbb;margin-bottom:6px;border-bottom:1px solid #f0f0f0;padding-bottom:6px">Full Name *</div>
+      <div style="font-size:12px;color:#bbb">Date of Birth</div>
+    </div>
+    ${[['M','Marcus Johnson','Parent','#3498DB'],['S','Sarah Johnson','Parent','#27AE60'],['A','Aiden Johnson','Child','#F5A623']].map(([i,n,r,c])=>`<div style="background:#fff;border-radius:10px;padding:9px;display:flex;align-items:center;gap:8px;margin-bottom:6px;box-shadow:0 2px 5px rgba(0,0,0,0.04)"><div class="av" style="background:${c}">${i}</div><div style="flex:1"><div style="font-size:11px;font-weight:700;color:#1a1a2e">${n}</div><div style="font-size:9px;color:#aaa">${r}</div></div><div style="color:#E74C3C;font-size:14px">✕</div></div>`).join('')}
+    <button class="btn" style="background:#E8EEF9;color:#0F2952;margin-bottom:8px">+ Add Member</button>
+    <button class="btn btn-p" style="position:absolute;bottom:16px;left:14px;right:14px">Continue →</button>
+  </div>
+</div></div></div>
+
+<!-- HOME SETUP -->
+<div class="pw"><div class="pl">5. Home Setup</div>
+<div class="ph"><div class="notch"></div>
+<div class="sc" style="background:#F0F2F5">
+  <div style="background:linear-gradient(160deg,#0F2952,#1E4A8A);padding:38px 14px 18px;color:#fff">
+    <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);margin-bottom:3px">STEP 3 OF 6</div>
+    <div style="height:4px;background:rgba(255,255,255,0.2);border-radius:2px;margin-bottom:10px"><div style="width:50%;height:100%;background:#F5A623;border-radius:2px"></div></div>
+    <div style="font-size:17px;font-weight:900">Tell us about</div>
+    <div style="font-size:17px;font-weight:900;color:#F5A623">your home</div>
+  </div>
+  <div style="padding:12px">
+    <div style="font-size:9px;font-weight:700;color:#888;margin-bottom:7px">HOME TYPE</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
+      ${[['🏠','Single Family',true],['🏢','Apartment',false],['🏘️','Townhouse',false],['🛖','Condo',false]].map(([e,t,s])=>`<div style="padding:6px 10px;border-radius:16px;font-size:10px;font-weight:700;display:flex;gap:4px;align-items:center;${s?'background:#0F2952;color:#fff':'background:#eee;color:#666'}">${e} ${t}</div>`).join('')}
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <div style="flex:1;background:#fff;border:2px solid #0F2952;border-radius:10px;padding:8px;text-align:center"><div style="font-size:9px;color:#999;margin-bottom:2px">Ownership</div><div style="font-size:12px;font-weight:700;color:#0F2952">🏠 Own</div></div>
+      <div style="flex:1;background:#eee;border:2px solid transparent;border-radius:10px;padding:8px;text-align:center"><div style="font-size:9px;color:#999;margin-bottom:2px">Ownership</div><div style="font-size:12px;font-weight:700;color:#666">🔑 Rent</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+      <div style="background:#fff;border-radius:10px;padding:10px"><div style="font-size:9px;color:#999;margin-bottom:4px">SQ FOOTAGE</div><div style="font-size:15px;font-weight:800;color:#0F2952">2,400</div></div>
+      <div style="background:#fff;border-radius:10px;padding:10px"><div style="font-size:9px;color:#999;margin-bottom:4px">BEDROOMS</div><div style="font-size:15px;font-weight:800;color:#0F2952">4</div></div>
+    </div>
+    <button class="btn btn-p" style="position:absolute;bottom:16px;left:14px;right:14px">Continue →</button>
+  </div>
+</div></div></div>
+
+<!-- VEHICLE SETUP -->
+<div class="pw"><div class="pl">6. Vehicle Setup</div>
+<div class="ph"><div class="notch"></div>
+<div class="sc" style="background:#F0F2F5">
+  <div style="background:linear-gradient(160deg,#0F2952,#1E4A8A);padding:38px 14px 18px;color:#fff">
+    <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);margin-bottom:3px">STEP 4 OF 6</div>
+    <div style="height:4px;background:rgba(255,255,255,0.2);border-radius:2px;margin-bottom:10px"><div style="width:67%;height:100%;background:#F5A623;border-radius:2px"></div></div>
+    <div style="font-size:17px;font-weight:900">Add your</div>
+    <div style="font-size:17px;font-weight:900;color:#F5A623">vehicles</div>
+  </div>
+  <div style="padding:12px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:10px">
+      <div><div style="font-size:9px;font-weight:700;color:#888;margin-bottom:4px">MAKE</div><div style="background:#fff;border:2px solid #0F2952;border-radius:9px;padding:9px;font-size:12px;font-weight:600;color:#0F2952">Toyota</div></div>
+      <div><div style="font-size:9px;font-weight:700;color:#888;margin-bottom:4px">MODEL</div><div style="background:#fff;border:2px solid #eee;border-radius:9px;padding:9px;font-size:12px;color:#bbb">Model...</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:12px">
+      <div><div style="font-size:9px;font-weight:700;color:#888;margin-bottom:4px">YEAR</div><div style="background:#fff;border:2px solid #eee;border-radius:9px;padding:9px;font-size:12px;color:#bbb">Year...</div></div>
+      <div><div style="font-size:9px;font-weight:700;color:#888;margin-bottom:4px">LICENSE</div><div style="background:#fff;border:2px solid #eee;border-radius:9px;padding:9px;font-size:12px;color:#bbb">Plate...</div></div>
+    </div>
+    ${[['🚗','2021 Toyota Camry','ABC-1234'],['🚙','2022 Honda CR-V','XYZ-5678']].map(([e,n,p])=>`<div style="background:#fff;border-radius:10px;padding:9px;display:flex;align-items:center;gap:8px;margin-bottom:6px;box-shadow:0 2px 5px rgba(0,0,0,0.04)"><div style="width:32px;height:32px;background:#FDEDEC;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px">${e}</div><div style="flex:1"><div style="font-size:11px;font-weight:700;color:#1a1a2e">${n}</div><div style="font-size:9px;color:#aaa">${p}</div></div></div>`).join('')}
+    <button class="btn" style="background:#E8EEF9;color:#0F2952;margin-bottom:8px">+ Add Vehicle</button>
+    <button class="btn btn-p" style="position:absolute;bottom:16px;left:14px;right:14px">Continue →</button>
+  </div>
+</div></div></div>
+
+<!-- FINANCIAL SETUP -->
+<div class="pw"><div class="pl">7. Financial Setup</div>
+<div class="ph"><div class="notch"></div>
+<div class="sc" style="background:#F0F2F5">
+  <div style="background:linear-gradient(160deg,#0F2952,#1E4A8A);padding:38px 14px 18px;color:#fff">
+    <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);margin-bottom:3px">STEP 5 OF 6</div>
+    <div style="height:4px;background:rgba(255,255,255,0.2);border-radius:2px;margin-bottom:10px"><div style="width:83%;height:100%;background:#F5A623;border-radius:2px"></div></div>
+    <div style="font-size:17px;font-weight:900">Financial</div>
+    <div style="font-size:17px;font-weight:900;color:#F5A623">overview</div>
+  </div>
+  <div style="padding:12px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:12px">
+      <div><div style="font-size:9px;font-weight:700;color:#888;margin-bottom:4px">MONTHLY INCOME</div><div style="background:#fff;border:2px solid #0F2952;border-radius:9px;padding:9px;font-size:13px;font-weight:700;color:#0F2952">$9,500</div></div>
+      <div><div style="font-size:9px;font-weight:700;color:#888;margin-bottom:4px">MONTHLY EXPENSES</div><div style="background:#fff;border:2px solid #eee;border-radius:9px;padding:9px;font-size:13px;font-weight:700;color:#1a1a2e">$7,200</div></div>
+    </div>
+    <div style="background:#D5F5E3;border-radius:10px;padding:10px;display:flex;gap:8px;margin-bottom:12px">
+      <div style="font-size:16px">✅</div>
+      <div><div style="font-size:11px;font-weight:700;color:#1E8449">Emergency Fund Goal</div><div style="font-size:9px;color:#27AE60">We recommend 6 months of expenses</div></div>
+    </div>
+    <div style="font-size:9px;font-weight:700;color:#888;margin-bottom:7px">ACCOUNT TYPES</div>
+    <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px">
+      ${['Checking','Savings','401k','Roth IRA','529 Plan'].map((a,i)=>`<div style="padding:5px 8px;border-radius:12px;font-size:9px;font-weight:700;${i<3?'background:#0F2952;color:#fff':'background:#eee;color:#666'}">${a}</div>`).join('')}
+    </div>
+    <div style="background:#fff;border-radius:10px;padding:10px;box-shadow:0 2px 6px rgba(0,0,0,0.06);margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:11px;font-weight:700;color:#1a1a2e">Family Checking</span><span style="font-size:11px;font-weight:700;color:#0F2952">$8,420</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="font-size:11px;font-weight:700;color:#1a1a2e">Emergency Fund</span><span style="font-size:11px;font-weight:700;color:#27AE60">$15,000</span></div>
+    </div>
+    <button class="btn btn-p" style="position:absolute;bottom:16px;left:14px;right:14px">Continue →</button>
+  </div>
+</div></div></div>
+
+<!-- GOALS SETUP -->
+<div class="pw"><div class="pl">8. Goals Setup</div>
+<div class="ph"><div class="notch"></div>
+<div class="sc" style="background:#F0F2F5">
+  <div style="background:linear-gradient(160deg,#0F2952,#1E4A8A);padding:38px 14px 18px;color:#fff">
+    <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);margin-bottom:3px">STEP 6 OF 6</div>
+    <div style="height:4px;background:rgba(255,255,255,0.2);border-radius:2px;margin-bottom:10px"><div style="width:100%;height:100%;background:#F5A623;border-radius:2px"></div></div>
+    <div style="font-size:17px;font-weight:900">Your family</div>
+    <div style="font-size:17px;font-weight:900;color:#F5A623">goals</div>
+  </div>
+  <div style="padding:12px">
+    <div style="font-size:9px;color:#aaa;margin-bottom:10px">Select all that apply</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:14px">
+      ${[['🏖️','Hawaii Vacation','$8,500',true],['🎓','College Fund','$50k',true],['🏠','Renovation','$15k',false],['🚗','New Vehicle','$30k',false],['💰','Emergency Fund','6 months',true],['🌍','Europe Trip','$12k',false]].map(([e,t,s,sel])=>`<div style="background:${sel?'#E8EEF9':'#fff'};border:1.5px solid ${sel?'#0F2952':'transparent'};border-radius:12px;padding:10px;position:relative"><div style="font-size:18px;margin-bottom:3px">${e}</div><div style="font-size:10px;font-weight:700;color:#0F2952">${t}</div><div style="font-size:9px;color:#aaa">${s}</div>${sel?`<div style="position:absolute;top:7px;right:7px;width:15px;height:15px;background:#0F2952;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px">✓</div>`:''}</div>`).join('')}
+    </div>
+    <button class="btn" style="background:linear-gradient(135deg,#F5A623,#E67E22);color:#fff;position:absolute;bottom:16px;left:14px;right:14px">🚀 Launch My Command Center</button>
+  </div>
+</div></div></div>
+
+</div><!-- end onboarding -->
+
+<!-- DASHBOARD -->
+<div class="sec">🏠 Home — Dashboard</div>
+<div class="grid">
+
+<div class="pw"><div class="pl">9. Dashboard</div>
+<div class="ph"><div class="notch"></div>
+<div class="sc" style="background:#F0F2F5">
+  <div style="background:linear-gradient(160deg,#0D1B2A,#0F2952,#1E4A8A);padding:38px 14px 14px;color:#fff;overflow:hidden;position:relative">
+    <div style="position:absolute;top:-20px;right:-20px;width:90px;height:90px;border-radius:45px;background:rgba(255,255,255,0.05)"></div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+      <div><div style="font-size:10px;color:rgba(255,255,255,0.5)">Good morning,</div><div style="font-size:16px;font-weight:900">Johnson Family 👋</div><div style="font-size:9px;color:rgba(255,255,255,0.4)">Sat, June 20, 2026</div></div>
+      <div style="display:flex;gap:6px"><div style="width:28px;height:28px;background:rgba(255,255,255,0.15);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;position:relative">🔔<div style="position:absolute;top:-3px;right:-3px;width:13px;height:13px;background:#E74C3C;border-radius:7px;font-size:8px;display:flex;align-items:center;justify-content:center;font-weight:800">3</div></div><div style="width:28px;height:28px;background:rgba(255,255,255,0.15);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px">⚙️</div></div>
+    </div>
+    <div style="background:rgba(255,255,255,0.1);border-radius:14px;padding:12px">
+      <div style="font-size:8px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:1px;margin-bottom:7px">FAMILY HEALTH SCORE</div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="font-size:42px;font-weight:900;color:#F5A623;line-height:1">72</div>
+        <div style="flex:1">
+          ${[['Financial','68','#F5A623'],['Tasks','80','#27AE60'],['Goals','65','#2980B9'],['Health','75','#E74C3C']].map(([l,p,c])=>`<div style="display:flex;align-items:center;gap:5px;margin-bottom:3px"><div style="font-size:8px;color:rgba(255,255,255,0.5);width:40px">${l}</div><div style="flex:1;height:3px;background:rgba(255,255,255,0.2);border-radius:2px"><div style="width:${p}%;height:100%;background:${c};border-radius:2px"></div></div></div>`).join('')}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="padding:10px 10px 0;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px">
+    ${[['📋','5','Tasks'],['📅','3','Events'],['💳','2','Bills'],['💰','$420','Saved']].map(([e,v,l])=>`<div style="background:#fff;border-radius:10px;padding:8px 4px;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,0.06)"><div style="font-size:14px">${e}</div><div style="font-size:12px;font-weight:800;color:#0F2952">${v}</div><div style="font-size:8px;color:#aaa">${l}</div></div>`).join('')}
+  </div>
+  <div style="padding:0 10px">
+    <div class="sh">FAMILY MEMBERS</div>
+    <div style="display:flex;gap:7px;overflow:hidden">
+      ${[['M','Marcus','3.1k','#3498DB'],['S','Sarah','2.5k','#27AE60'],['A','Aiden','1.9k','#F5A623'],['L','Lily','920','#E74C3C']].map(([i,n,p,c])=>`<div style="background:#fff;border-radius:10px;padding:8px 6px;text-align:center;min-width:54px;box-shadow:0 2px 5px rgba(0,0,0,0.05)"><div class="av" style="background:${c};margin:0 auto 4px">${i}</div><div style="font-size:9px;font-weight:700;color:#1a1a2e">${n}</div><div style="font-size:8px;color:#F5A623;font-weight:700">${p}pts</div></div>`).join('')}
+    </div>
+    <div class="sh">AI INSIGHT</div>
+    <div style="background:#fff;border-radius:10px;padding:10px;box-shadow:0 2px 6px rgba(0,0,0,0.06);display:flex;gap:8px"><div style="font-size:16px">💡</div><div><div style="font-size:10px;font-weight:700;color:#0F2952">Budget Alert</div><div style="font-size:9px;color:#777">Dining budget 87% used with 10 days remaining.</div></div></div>
+  </div>
+  <div class="tb"><div class="ti on"><div class="tic">🏠</div>Home</div><div class="ti"><div class="tic">👨‍👩‍👧</div>Family</div><div class="aib">✨</div><div class="ti"><div class="tic">💰</div>Finance</div><div class="ti"><div class="tic">⚙️</div>Ops</div></div>
+</div></div></div>
+
+</div><!-- dashboard -->
+
+<!-- FAMILY -->
+<div class="sec">👨‍👩‍👧‍👦 Family Module</div>
+<div class="grid">
+
+<!-- FAMILY PROFILES -->
+<div class="pw"><div class="pl">10. Family Profiles</div>
+<div class="ph"><div class="notch"></div>
+<div class="sc" style="background:#F0F2F5">
+  <div style="background:linear-gradient(160deg,#16476E,#0F2952);padding:38px 14px 14px;color:#fff">
+    <div style="font-size:17px;font-weight:900">Family Profiles</div>
+    <div style="font-size:10px;color:rgba(255,255,255,0.5);margin-top:3px">The Johnson Family • 4 members</div>
+  </div>
+  <div style="padding:10px;overflow:hidden">
+    ${[['M','Marcus','Parent','3,100','Lvl 8','#3498DB',88],['S','Sarah','Parent','2,450','Lvl 7','#27AE60',76],['A','Aiden','Child','1,850','Lvl 5','#F5A623',62],['L','Lily','Child','920','Lvl 3','#E74C3C',45]].map(([i,n,r,p,lv,c,prog])=>`
+    <div style="background:#fff;border-radius:12px;padding:11px;margin-bottom:7px;box-shadow:0 2px 6px rgba(0,0,0,0.06)">
+      <div style="display:flex;align-items:center;gap:9px;margin-bottom:7px">
+        <div class="av" style="background:${c};width:34px;height:34px;border-radius:17px;font-size:13px">${i}</div>
+        <div style="flex:1"><div style="font-size:12px;font-weight:800;color:#1a1a2e">${n}</div><div style="font-size:9px;color:#aaa">${r}</div></div>
+        <span class="bx bp">${lv}</span>
+        <div style="font-size:10px;font-weight:700;color:#F5A623">⭐ ${p}</div>
+      </div>
+      <div class="pb"><div class="pf" style="width:${prog}%;background:${c}"></div></div>
+    </div>`).join('')}
+  </div>
+  <div class="tb"><div class="ti"><div class="tic">🏠</div>Home</div><div class="ti on"><div class="tic">👨‍👩‍👧</div>Family</div><div class="aib">✨</div><div class="ti"><div class="tic">💰</div>Finance</div><div class="ti"><div class="tic">⚙️</div>Ops</div></div>
+</div></div></div>
+
+<!-- TASKS -->
+<div class="pw"><div class="pl">11. Tasks</div>
+<div class="ph"><div class="notch"></div>
+<div class="sc" style="background:#F0F2F5">
+  <div style="background:linear-gradient(160deg,#16476E,#0F2952);padding:38px 14px 14px;color:#fff">
+    <div class="br"><div class="bb">←</div><div class="ht">Family Tasks</div><div style="width:28px;height:28px;background:rgba(255,255,255,0.2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px">+</div></div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
+      ${[['12','Total','#fff'],['7','Done','#27AE60'],['4','Pending','#F5A623'],['1','Overdue','#E74C3C']].map(([v,l,c])=>`<div style="background:rgba(255,255,255,0.1);border-radius:9px;padding:7px;text-align:center"><div style="font-size:15px;font-weight:900;color:${c}">${v}</div><div style="font-size:8px;color:rgba(255,255,255,0.5)">${l}</div></div>`).join('')}
+    </div>
+  </div>
+  <div style="display:flex;border-bottom:1px solid #eee;background:#fff">
+    ${['All','Pending','Done','Overdue'].map((t,i)=>`<div style="flex:1;padding:9px 0;text-align:center;font-size:10px;font-weight:700;color:${i===0?'#0F2952':'#aaa'};border-bottom:${i===0?'2px solid #0F2952':'2px solid transparent'}">${t}</div>`).join('')}
+  </div>
+  <div style="padding:10px;overflow:hidden">
+    ${[['🔴','Take out trash','Marcus','Today','overdue'],['🟡','Pick up groceries','Sarah','Today','pending'],['🟢','Help with homework','Sarah','Tomorrow','pending'],['⚪','Mow the lawn','Aiden','Wed','done']].map(([p,t,a,d,s])=>`
+    <div style="background:#fff;border-radius:11px;padding:10px;margin-bottom:6px;display:flex;align-items:center;gap:9px;box-shadow:0 2px 5px rgba(0,0,0,0.05)">
+      <div style="width:20px;height:20px;border-radius:10px;border:2px solid ${s==='done'?'#27AE60':s==='overdue'?'#E74C3C':'#ddd'};background:${s==='done'?'#27AE60':'transparent'};display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0">${s==='done'?'✓':''}</div>
+      <div style="flex:1"><div style="font-size:11px;font-weight:700;color:${s==='done'?'#aaa':'#1a1a2e'};text-decoration:${s==='done'?'line-through':'none'}">${t}</div><div style="font-size:9px;color:#aaa">${a} · ${d}</div></div>
+      <span class="bx ${s==='overdue'?'bd':s==='done'?'bs':'bw'}">${s}</span>
+    </div>`).join('')}
+  </div>
+  <div class="tb"><div class="ti"><div class="tic">🏠</div>Home</div><div class="ti on"><div class="tic">👨‍👩‍👧</div>Family</div><div class="aib">✨</div><div class="ti"><div class="tic">💰</div>Finance</div><div class="ti"><div class="tic">⚙️</div>Ops</div></div>
+</div></div></div>
+
+<!-- CALENDAR -->
+<div class="pw"><div class="pl">12. Calendar</div>
+<div class="ph"><div class="notch"></div>
+<div class="sc" style="background:#F0F2F5">
+  <div style="background:linear-gradient(160deg,#16476E,#0F2952);padding:38px 14px 14px;color:#fff">
+    <div class="br"><div class="bb">←</div><div class="ht">Calendar</div><div style="font-size:14px">+</div></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div style="font-size:14px;font-weight:800">June 2026</div>
+      <div style="display:flex;gap:8px"><div style="font-size:16px;cursor:pointer">‹</div><div style="font-size:16px;cursor:pointer">›</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center">
+      ${['M','T','W','T','F','S','S'].map(d=>`<div style="font-size:8px;color:rgba(255,255,255,0.4);margin-bottom:4px">${d}</div>`).join('')}
+      ${[...Array(4).fill(''),1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30].map((d,i)=>d===''?`<div></div>`:d===20?`<div style="background:#F5A623;border-radius:6px;padding:3px 0;color:#fff;font-size:9px;font-weight:800">${d}<div style="width:4px;height:4px;background:#fff;border-radius:2px;margin:2px auto 0"></div></div>`:i%7===0||i%7===6?`<div style="font-size:9px;color:rgba(255,255,255,0.4);padding:3px 0">${d}</div>`:`<div style="font-size:9px;color:#fff;padding:3px 0;position:relative">${d}${[15,22,25].includes(d)?`<div style="width:3px;height:3px;background:#00D4AA;border-radius:2px;margin:1px auto 0"></div>`:''}</div>`).join('')}
+    </div>
+  </div>
+  <div style="padding:10px">
+    <div class="sh">TODAY'S EVENTS</div>
+    ${[['#E74C3C','9:00 AM','Soccer Practice','Riverside Park'],['#2980B9','3:30 PM','Dentist — Lily','Dr. Smith'],['#27AE60','6:00 PM','Family Dinner','Home']].map(([c,t,n,l])=>`<div style="background:#fff;border-radius:11px;padding:10px;margin-bottom:6px;display:flex;gap:9px;box-shadow:0 2px 5px rgba(0,0,0,0.05)"><div style="width:3px;background:${c};border-radius:2px;flex-shrink:0"></div><div><div style="font-size:10px;color:#aaa">${t}</div><div style="font-size:11px;font-weight:700;color:#1a1a2e">${n}</div><div style="font-size:9px;color:#aaa">📍 ${l}</div></div></div>`).join('')}
+  </div>
+  <div class="tb"><div class="ti"><div class="tic">🏠</div>Home</div><div class="ti on"><div class="tic">👨‍👩‍👧</div>Family</div><div class="aib">✨</div><div class="ti"><div class="tic">💰</div>Finance</div><div class="ti"><div class="tic">⚙️</div>Ops</div></div>
+</div></div></div>
+
+<!-- SCHOOL CENTER -->
+<div class="pw"><div class="pl">13. School Center</div>
+<div class="ph"><div class="notch"></div>
+<div class="sc" style="background:#F0F2F5">
+  <div style="background:linear-gradient(160deg,#16476E,#0F2952);padding:38px 14px 14px;color:#fff">
+    <div class="br"><div class="bb">←</div><div class="ht">School Center</div></div>
+    <div style="display:flex;gap:7px;margin-bottom:10px">
+      <div style="padding:6px 12px;background:#fff;border-radius:18px;font-size:10px;font-weight:700;color:#0F2952">Aiden</div>
+      <div style="padding:6px 12px;background:rgba(255,255,255,0.2);border-radius:18px;font-size:10px;font-weight:700;color:#fff">Lily</div>
+    </div>
+    <div style="background:rgba(255,255,255,0.1);border-radius:12px;padding:12px;text-align:center">
+      <div style="font-size:36px;font-weight:900;color:#F5A623">3.8</div>
+      <div style="font-size:9px;color:rgba(255,255,255,0.5)">GPA · Grade 7</div>
+    </div>
+  </div>
+  <div style="padding:10px;overflow:hidden">
+    <div class="sh">GRADES BY SUBJECT</div>
+    ${[['Math','A-','93%','#27AE60'],['Science','B+','88%','#2980B9'],['English','A','96%','#27AE60'],['History','B','84%','#F5A623'],['PE','A+','100%','#27AE60']].map(([s,g,p,c])=>`<div style="background:#fff;border-radius:10px;padding:9px;margin-bottom:5px;box-shadow:0 2px 5px rgba(0,0,0,0.04)"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span style="font-size:11px;font-weight:700;color:#1a1a2e">${s}</span><span style="font-size:12px;font-weight:800;color:${c}">${g}</span></div><div class="pb"><div class="pf" style="width:${p};background:${c}"></div></div></div>`).join('')}
+  </div>
+  <div class="tb"><div class="ti"><div class="tic">🏠</div>Home</div><div class="ti on"><div class="tic">👨‍👩‍👧</div>Family</div><div class="aib">✨</div><div class="ti"><div class="tic">💰</div>Finance</div><div class="ti"><div class="tic">⚙️</div>Ops</div></div>
+</div></div></div>
+
+</div><!-- family -->
+
+<!-- FINANCE -->
+<div class="sec">💰 Finance Module</div>
+<div class="grid">
+
+<!-- FINANCE DASHBOARD -->
+<div class="pw"><div class="pl">14. Finance Dashboard</div>
+<div class="ph"><div class="notch"></div>
+<div class="sc" style="background:#F0F2F5">
+  <div style="background:linear-gradient(160deg,#0D3B2E,#145A32);padding:38px 14px 14px;color:#fff">
+    <div style="font-size:10px;color:rgba(255,255,255,0.5);margin-bottom:2px">NET WORTH</div>
+    <div style="font-size:30px;font-weight:900;color:#2ECC71">$273,870</div>
+    <div style="font-size:9px;color:rgba(255,255,255,0.5);margin-bottom:10px">↑ +$2,340 this month</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px">
+      ${[['$9,500','Income','#2ECC71'],['$7,200','Expenses','#E74C3C'],['22%','Savings','#F5A623']].map(([v,l,c])=>`<div style="background:rgba(255,255,255,0.1);border-radius:9px;padding:9px;text-align:center"><div style="font-size:13px;font-weight:800;color:${c}">${v}</div><div style="font-size:8px;color:rgba(255,255,255,0.5)">${l}</div></div>`).join('')}
+    </div>
+  </div>
+  <div style="padding:10px;overflow:hidden">
+    <div class="sh">ACCOUNTS</div>
+    <div style="display:flex;gap:7px;overflow:hidden;margin-bottom:8px">
+      ${[['Checking','$8,420','#27AE60'],['Emergency','$15,000','#2980B9'],['401k','$142,300','#8E44AD']].map(([n,v,c])=>`<div style="min-width:80px;background:linear-gradient(135deg,${c},${c}dd);border-radius:10px;padding:10px;color:#fff"><div style="font-size:8px;opacity:0.7">${n}</div><div style="font-size:12px;font-weight:800">${v}</div></div>`).join('')}
+    </div>
+    <div class="sh">BUDGETS</div>
+    ${[['🍽️','Dining','$480','$600','80%','#F5A623'],['🛒','Groceries','$320','$500','64%','#27AE60'],['⛽','Transport','$290','$400','73%','#2980B9']].map(([e,n,s,t,p,c])=>`<div style="background:#fff;border-radius:10px;padding:9px;margin-bottom:5px;box-shadow:0 2px 5px rgba(0,0,0,0.04)"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:10px;font-weight:700">${e} ${n}</span><span style="font-size:10px;color:#666">${s}/${t}</span></div><div class="pb"><div class="pf" style="width:${p};background:${c}"></div></div></div>`).join('')}
+  </div>
+  <div class="tb"><div class="ti"><div class="tic">🏠</div>Home</div><div class="ti"><div class="tic">👨‍👩‍👧</div>Family</div><div class="aib">✨</div><div class="ti on"><div class="tic">💰</div>Finance</div><div class="ti"><div class="tic">⚙️</div>Ops</div></div>
+</div></div></div>
+
+<!-- BUDGETING -->
+<div class="pw"><div class="pl">15. Budgeting</div>
+<div class="ph"><div class="notch"></div>
+<div class="sc" style="background:#F0F2F5">
+  <div style="background:linear-gradient(160deg,#0D3B2E,#145A32);padding:38px 14px 14px;color:#fff">
+    <div class="br"><div class="bb">←</div><div class="ht">Budgeting</div></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px">
+      ${[['$4,200','Budgeted','#fff'],['$3,180','Spent','#E74C3C'],['$1,020','Remaining','#2ECC71']].map(([v,l,c])=>`<div style="background:rgba(255,255,255,0.1);border-radius:9px;padding:9px;text-align:center"><div style="font-size:13px;font-weight:800;color:${c}">${v}</div><div style="font-size:8px;color:rgba(255,255,255,0.5)">${l}</div></div>`).join('')}
+    </div>
+  </div>
+  <div style="padding:10px;overflow:hidden">
+    ${[['🍽️','Dining Out','$480','$600','80%','#F5A623',false],['🛒','Groceries','$320','$500','64%','#27AE60',false],['⛽','Transport','$290','$400','73%','#2980B9',false],['🎭','Entertainment','$310','$300','103%','#E74C3C',true],['💊','Healthcare','$120','$200','60%','#27AE60',false]].map(([e,n,s,t,p,c,over])=>`
+    <div style="background:#fff;border-radius:11px;padding:10px;margin-bottom:6px;box-shadow:0 2px 5px rgba(0,0,0,0.05);${over?'border:1.5px solid #E74C3C;':''}">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+        <div style="font-size:11px;font-weight:700">${e} ${n}</div>
+        ${over?`<span class="bx bd">OVER</span>`:''}
+        <div style="font-size:10px;color:#666">${s}/${t}</div>
+      </div>
+      <div class="pb"><div class="pf" style="width:${over?'100%':p};background:${c}"></div></div>
+    </div>`).join('')}
+  </div>
+  <div class="tb"><div class="ti"><div class="tic">🏠</div>Home</div><div class="ti"><div class="tic">👨‍👩‍👧</div>Family</div><div class="aib">✨</div><div class="ti on"><div class="tic">💰</div>Finance</div><div class="ti"><div class="tic">⚙️</div>Ops</div></div>
+</div></div></div>
+
+<!-- BILLS -->
+<div class="pw"><div class="pl">16. Bills</div>
+<div class="ph"><div class="notch"></div>
+<div class="sc" style="background:#F0F2F5">
+  <div style="background:linear-gradient(160deg,#0D3B2E,#145A32);padding:38px 14px 14px;color:#fff">
+    <div class="br"><div class="bb">←</div><div class="ht">Bills</div><div style="font-size:14px">+</div></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px">
+      ${[['$2,840','Due this month','#fff'],['1','Overdue','#E74C3C'],['3','Auto-pay','#2ECC71']].map(([v,l,c])=>`<div style="background:rgba(255,255,255,0.1);border-radius:9px;padding:9px;text-align:center"><div style="font-size:13px;font-weight:800;color:${c}">${v}</div><div style="font-size:8px;color:rgba(255,255,255,0.5)">${l}</div></div>`).join('')}
+    </div>
+  </div>
+  <div style="background:#FDEDEC;padding:9px 10px;display:flex;gap:7px;align-items:center"><span style="font-size:14px">⚠️</span><div><div style="font-size:10px;font-weight:700;color:#C0392B">Water Bill Overdue!</div><div style="font-size:9px;color:#E74C3C">$85 — 3 days overdue</div></div><button style="margin-left:auto;padding:5px 9px;background:#E74C3C;color:#fff;border:none;border-radius:8px;font-size:9px;font-weight:700">Pay Now</button></div>
+  <div style="padding:10px;overflow:hidden">
+    ${[['🏠','Mortgage','$1,850','Jun 1','auto','paid'],['💡','Electricity','$145','Jun 18','','pending'],['💧','Water','$85','Jun 17','','overdue'],['📺','Internet','$65','Jun 25','auto','pending'],['📱','Phone','$120','Jun 28','auto','pending']].map(([e,n,a,d,aut,s])=>`
+    <div style="background:#fff;border-radius:10px;padding:9px;margin-bottom:5px;display:flex;align-items:center;gap:8px;box-shadow:0 2px 5px rgba(0,0,0,0.04)">
+      <div style="font-size:18px">${e}</div>
+      <div style="flex:1"><div style="font-size:11px;font-weight:700;color:#1a1a2e">${n}</div><div style="font-size:9px;color:#aaa">${d} ${aut?'· ⚡auto-pay':''}</div></div>
+      <div style="font-size:12px;font-weight:800;color:#1a1a2e">${a}</div>
+      <span class="bx ${s==='paid'?'bs':s==='overdue'?'bd':'bw'}">${s}</span>
+    </div>`).join('')}
+  </div>
+  <div class="tb"><div class="ti"><div class="tic">🏠</div>Home</div><div class="ti"><div class="tic">👨‍👩‍👧</div>Family</div><div class="aib">✨</div><div class="ti on"><div class="tic">💰</div>Finance</div><div class="ti"><div class="tic">⚙️</div>Ops</div></div>
+</div></div></div>
+
+<!-- SUBSCRIPTIONS -->
+<div class="pw"><div class="pl">17. Subscriptions</div>
+<div class="ph"><div class="notch"></div>
+<div class="sc" style="background:#F0F2F5">
+  <div style="background:linear-gradient(160deg,#4A235A,#7D3C98);padding:38px 14px 14px;color:#fff">
+    <div class="br"><div class="bb">←</div><div class="ht">Subscriptions</div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">
+      ${[['$127/mo','Monthly total'],['$1,524/yr','Annual cost']].map(([v,l])=>`<div style="background:rgba(255,255,255,0.15);border-radius:9px;padding:9px;text-align:center"><div style="font-size:14px;font-weight:800">${v}</div><div style="font-size:8px;color:rgba(255,255,255,0.5)">${l}</div></div>`).join('')}
+    </div>
+  </div>
+  <div style="padding:10px;overflow:hidden">
+    <div class="sh">ENTERTAINMENT</div>
+    ${[['🎬','Netflix','$15.99/mo'],['🎵','Spotify Family','$16.99/mo'],['🎮','Xbox Game Pass','$14.99/mo']].map(([e,n,p])=>`<div style="background:#fff;border-radius:10px;padding:9px;margin-bottom:5px;display:flex;align-items:center;gap:8px;box-shadow:0 2px 5px rgba(0,0,0,0.04)"><div style="font-size:18px;width:32px;height:32px;background:#F5EEF8;border-radius:9px;display:flex;align-items:center;justify-content:center">${e}</div><div style="flex:1"><div style="font-size:11px;font-weight:700">${n}</div><div style="display:flex;gap:4px;margin-top:2px"><div class="av" style="width:16px;height:16px;border-radius:8px;font-size:7px;background:#3498DB">M</div><div class="av" style="width:16px;height:16px;border-radius:8px;font-size:7px;background:#27AE60">S</div></div></div><div style="font-size:11px;font-weight:700;color:#8E44AD">${p}</div></div>`).join('')}
+    <div class="sh">PRODUCTIVITY</div>
+    ${[['☁️','iCloud+','$2.99/mo'],['📖','Audible','$14.95/mo']].map(([e,n,p])=>`<div style="background:#fff;border-radius:10px;padding:9px;margin-bottom:5px;display:flex;align-items:center;gap:8px;box-shadow:0 2px 5px rgba(0,0,0,0.04)"><div style="font-size:18px;width:32px;height:32px;background:#F5EEF8;border-radius:9px;display:flex;align-items:center;justify-content:center">${e}</div><div style="flex:1;font-size:11px;font-weight:700">${n}</div><div style="font-size:11px;font-weight:700;color:#8E44AD">${p}</div></div>`).join('')}
+  </div>
+  <div class="tb"><div class="ti"><div class="tic">🏠</div>Home</div><div class="ti"><div class="tic">👨‍👩‍👧</div>Family</div><div class="aib">✨</div><div class="ti on"><div class="tic">💰</div>Finance</div><div class="ti"><div class="tic">⚙️</div>Ops</div></div>
+</div></div></div>
+
+<!-- ASSETS -->
+<div class="pw"><div class="pl">18. Assets</div>
+<div class="ph"><div class="notch"></div>
+<div class="sc" style="background:#F0F2F5">
+  <div style="background:linear-gradient(160deg,#1A1A2E,#16213E);padding:38px 14px 14px;color:#fff">
+    <div class="br"><div class="bb">←</div><div class="ht">Assets</div><div style="font-size:14px">+</div></div>
+    <div style="font-size:10px;color:rgba(255,255,255,0.5);margin-bottom:4px">TOTAL ASSET VALUE</div>
+    <div style="font-size:30px;font-weight:900;color:#fff">$298,750</div>
+    <div style="font-size:9px;color:rgba(255,255,255,0.4)">Across 4 categories</div>
+  </div>
+  <div style="padding:10px;overflow:hidden">
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:7px"><div style="width:8px;height:8px;background:#27AE60;border-radius:4px"></div><div style="font-size:10px;font-weight:700;color:#1a1a2e;flex:1">Real Estate</div><div style="font-size:10px;font-weight:700;color:#1a1a2e">$245,000</div></div>
+    ${[['🏠','Family Home','$245,000','Purchase: $198,000','#27AE60']].map(([e,n,v,p,c])=>`<div style="background:#fff;border-radius:10px;padding:9px;margin-bottom:7px;display:flex;align-items:center;gap:8px;box-shadow:0 2px 5px rgba(0,0,0,0.04)"><div style="width:36px;height:36px;background:${c}20;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px">${e}</div><div style="flex:1"><div style="font-size:11px;font-weight:700">${n}</div><div style="font-size:9px;color:#aaa">${p} · <span style="color:#27AE60">+$47k ↑</span></div></div><div style="font-size:12px;font-weight:800">${v}</div></div>`).join('')}
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:7px"><div style="width:8px;height:8px;background:#E74C3C;border-radius:4px"></div><div style="font-size:10px;font-weight:700;color:#1a1a2e;flex:1">Vehicles</div><div style="font-size:10px;font-weight:700;color:#1a1a2e">$50,000</div></div>
+    ${[['🚗','2021 Toyota Camry','$25,000'],['🚙','2022 Honda CR-V','$25,000']].map(([e,n,v])=>`<div style="background:#fff;border-radius:10px;padding:9px;margin-bottom:5px;display:flex;align-items:center;gap:8px;box-shadow:0 2px 5px rgba(0,0,0,0.04)"><div style="font-size:18px">${e}</div><div style="flex:1;font-size:11px;font-weight:700">${n}</div><div style="font-size:12px;font-weight:800">${v}</div></div>`).join('')}
+  </div>
+  <div class="tb"><div class="ti"><div class="tic">🏠</div>Home</div><div class="ti"><div class="tic">👨‍👩‍👧</div>Family</div><div class="aib">✨</div><div class="ti on"><div class="tic">💰</div>Finance</div><div class="ti"><div class="tic">⚙️</div>Ops</div></div>
+</div></div></div>
+
+</div><!-- finance -->
+
+<!-- OPERATIONS -->
+<div class="sec">⚙️ Operations Module</div>
+<div class="grid">
+
+<!-- OPS DASHBOARD -->
+<div class="pw"><div class="pl">19. Ops Dashboard</div>
+<div class="ph"><div class="notch"></div>
+<div class="sc" style="background:#F0F2F5">
+  <div style="background:linear-gradient(160deg,#0F2952,#16476E);padding:38px 14px 14px;color:#fff">
+    <div style="font-size:18px;font-weight:900;margin-bottom:2px">Operations Center</div>
+    <div style="font-size:9px;color:rgba(255,255,255,0.5);margin-bottom:10px">Home, Vehicles, Documents & More</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
+      ${[['⚠️','2','Low Stock','#F5A623'],['🕐','3','Expiring','#E74C3C'],['🚗','1','Vehicle','#E74C3C'],['📄','2','Doc Alerts','#2980B9']].map(([e,v,l,c])=>`<div style="background:rgba(255,255,255,0.1);border-radius:9px;padding:7px;text-align:center"><div style="font-size:13px">${e}</div><div style="font-size:14px;font-weight:900;color:${c}">${v}</div><div style="font-size:7px;color:rgba(255,255,255,0.4)">${l}</div></div>`).join('')}
+    </div>
+  </div>
+  <div style="padding:10px;overflow:hidden">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px">
+      ${[['🚗','Vehicles','#E74C3C','#FDEDEC'],['🥦','Pantry','#27AE60','#D5F5E3'],['🍽️','Meals','#F5A623','#FEF3E2'],['📁','Documents','#2980B9','#D6EAF8'],['🛡️','Emergency','#E74C3C','#FDEDEC'],['🏆','Rewards','#F5A623','#FEF3E2']].map(([e,l,c,bg])=>`<div style="background:#fff;border-radius:12px;padding:11px;text-align:center;box-shadow:0 2px 7px rgba(0,0,0,0.07)"><div style="width:40px;height:40px;background:${bg};border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;margin:0 auto 6px">${e}</div><div style="font-size:10px;font-weight:700;color:#1a1a2e">${l}</div></div>`).join('')}
+    </div>
+    <div style="background:#fff;border-radius:11px;padding:10px;border-left:3px solid #F5A623;box-shadow:0 2px 5px rgba(0,0,0,0.04);display:flex;gap:8px"><span>⚠️</span><div><div style="font-size:10px;font-weight:700;color:#1a1a2e">Low Pantry Stock</div><div style="font-size:9px;color:#aaa">Milk, Eggs running low</div></div></div>
+  </div>
+  <div class="tb"><div class="ti"><div class="tic">🏠</div>Home</div><div class="ti"><div class="tic">👨‍👩‍👧</div>Family</div><div class="aib">✨</div><div class="ti"><div class="tic">💰</div>Finance</div><div class="ti on"><div class="tic">⚙️</div>Ops</div></div>
+</div></div></div>
+
+<!-- VEHICLES -->
+<div class="pw"><div class="pl">20. Vehicles</div>
+<div class="ph"><div class="notch"></div>
+<div class="sc" style="background:#F0F2F5">
+  <div style="background:linear-gradient(160deg,#922B21,#E74C3C);padding:38px 14px 14px;color:#fff">
+    <div class="br"><div class="bb">←</div><div class="ht">Vehicles</div><div style="font-size:14px">+</div></div>
+  </div>
+  <div style="padding:10px;overflow:hidden">
+    ${[['🚗','2021 Toyota Camry','Silver','Marcus',42300,'ABC-1234',32,90],['🚙','2022 Honda CR-V','White','Sarah',28100,'XYZ-5678',180,320]].map(([e,n,color,driver,mi,plate,ins,reg])=>`
+    <div style="background:#fff;border-radius:14px;padding:12px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,0.07)">
+      <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px">
+        <div style="width:48px;height:48px;background:#FDEDEC;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px">${e}</div>
+        <div style="flex:1"><div style="font-size:13px;font-weight:800;color:#1a1a2e">${n}</div><div style="font-size:9px;color:#aaa">${color}</div><div style="font-size:9px;color:#E74C3C;font-weight:700">Primary: ${driver}</div></div>
+        ${ins<=30?'<div style="width:22px;height:22px;background:#E74C3C;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:10px">⚠️</div>':''}
+      </div>
+      <div style="background:#F0F2F5;border-radius:9px;padding:9px;display:flex;gap:12px;margin-bottom:9px;font-size:9px;color:#666">
+        <div style="text-align:center"><div style="font-weight:800;color:#1a1a2e;font-size:11px">${mi.toLocaleString()}</div>miles</div>
+        <div style="text-align:center"><div style="font-weight:800;color:#1a1a2e;font-size:11px">${plate}</div>plate</div>
+        <div style="text-align:center"><div style="font-weight:800;color:#1a1a2e;font-size:11px">Gas</div>fuel</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;padding:6px 8px;background:${ins<=30?'#FEF9E7':'#F0F2F5'};border-radius:8px;margin-bottom:4px"><span style="font-size:11px">${ins<=30?'⚠️':'🛡️'}</span><span style="font-size:9px;font-weight:600;color:${ins<=30?'#B7770D':'#666'}">Insurance: ${ins} days left</span></div>
+      <div style="display:flex;gap:6px;border-top:1px solid #f0f0f0;margin-top:8px;padding-top:8px">
+        ${['🔧 Service','📄 Docs','✏️ Edit'].map(l=>`<div style="flex:1;background:#E8EEF9;border-radius:8px;padding:6px;text-align:center;font-size:9px;font-weight:700;color:#0F2952">${l}</div>`).join('')}
+      </div>
+    </div>`).join('')}
+  </div>
+  <div class="tb"><div class="ti"><div class="tic">🏠</div>Home</div><div class="ti"><div class="tic">👨‍👩‍👧</div>Family</div><div class="aib">✨</div><div class="ti"><div class="tic">💰</div>Finance</div><div class="ti on"><div class="tic">⚙️</div>Ops</div></div>
+</div></div></div>
+
+<!-- PANTRY -->
+<div class="pw"><div class="pl">21. Pantry</div>
+<div class="ph"><div class="notch"></div>
+<div class="sc" style="background:#F0F2F5">
+  <div style="background:linear-gradient(160deg,#1E8449,#27AE60);padding:38px 14px 14px;color:#fff">
+    <div class="br"><div class="bb">←</div><div class="ht">Pantry</div><div style="display:flex;gap:5px"><div style="width:28px;height:28px;background:rgba(255,255,255,0.2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px">🛒</div><div style="width:28px;height:28px;background:rgba(255,255,255,0.2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px">+</div></div></div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+      <div style="background:rgba(243,156,18,0.25);border-radius:16px;padding:4px 9px;display:flex;gap:4px;align-items:center"><span style="font-size:12px">⚠️</span><span style="font-size:9px;font-weight:700;color:#F5A623">2 low stock</span></div>
+      <div style="background:rgba(231,76,60,0.25);border-radius:16px;padding:4px 9px;display:flex;gap:4px;align-items:center"><span style="font-size:12px">🕐</span><span style="font-size:9px;font-weight:700;color:#E74C3C">3 expiring</span></div>
+      <span style="margin-left:auto;font-size:9px;color:rgba(255,255,255,0.6)">24 items</span>
+    </div>
+    <div style="background:rgba(255,255,255,0.15);border-radius:10px;padding:9px;display:flex;gap:7px;align-items:center"><span style="font-size:14px">🔍</span><span style="font-size:11px;color:rgba(255,255,255,0.6)">Search pantry...</span></div>
+  </div>
+  <div style="display:flex;gap:7px;background:#fff;padding:8px 10px;border-bottom:1px solid #eee;overflow:hidden">
+    ${['All','Meat','Dairy','Grains','Produce'].map((c,i)=>`<div style="padding:4px 9px;border-radius:14px;font-size:9px;font-weight:700;${i===0?'background:#27AE60;color:#fff':'background:#eee;color:#666'}">${c}</div>`).join('')}
+  </div>
+  <div style="padding:10px;overflow:hidden">
+    ${[['🥛','Milk','Dairy',2,'L','2d left','danger'],['🥚','Eggs','Produce',6,'pcs','5d left','warning'],['🍗','Chicken Breast','Meat',3,'lbs','14d left','success'],['🧀','Cheddar Cheese','Dairy',1,'block','30d left','success'],['🥖','Bread','Grains',1,'loaf','','neutral']].map(([e,n,cat,qty,unit,exp,variant])=>`
+    <div style="background:#fff;border-radius:11px;padding:10px;margin-bottom:6px;display:flex;align-items:center;gap:8px;box-shadow:0 2px 5px rgba(0,0,0,0.04)">
+      <div style="width:38px;height:38px;background:${variant==='danger'?'#FEF9E7':'#E8F8F7'};border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px">${e}</div>
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px"><span style="font-size:11px;font-weight:700;color:#1a1a2e">${n}</span><span class="bx ${variant==='danger'?'bd':variant==='warning'?'bw':variant==='success'?'bs':'bp'}">${exp||'No expiry'}</span></div>
+        <div style="font-size:9px;color:#aaa;margin-bottom:5px">${cat}</div>
+        <div style="display:flex;align-items:center;gap:7px"><div style="width:22px;height:22px;background:#E8EEF9;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#0F2952">−</div><div style="font-size:11px;font-weight:700;min-width:40px;text-align:center">${qty} ${unit}</div><div style="width:22px;height:22px;background:#E8EEF9;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#0F2952">+</div></div>
+      </div>
+    </div>`).join('')}
+  </div>
+  <div class="tb"><div class="ti"><div class="tic">🏠</div>Home</div><div class="ti"><div class="tic">👨‍👩‍👧</div>Family</div><div class="aib">✨</div><div class="ti"><div class="tic">💰</div>Finance</div><div class="ti on"><div class="tic">⚙️</div>Ops</div></div>
+</div></div></div>
+
+<!-- MEAL PLANNING -->
+<div class="pw"><div class="pl">22. Meal Planning</div>
+<div class="ph"><div class="notch"></div>
+<div class="sc" style="background:#F0F2F5">
+  <div style="background:linear-gradient(160deg,#B7770D,#F5A623);padding:38px 14px 14px;color:#fff">
+    <div class="br"><div class="bb">←</div><div class="ht">Meal Planning</div><div style="font-size:14px">✨</div></div>
+    <div style="font-size:9px;color:rgba(255,255,255,0.7);margin-bottom:9px">Week of June 16, 2026</div>
+    <div style="display:flex;gap:6px;overflow:hidden">
+      ${[['Mon','16',false,true],['Tue','17',false,true],['Wed','18',false,true],['Thu','19',false,true],['Fri','20',true,false],['Sat','21',false,false],['Sun','22',false,false]].map(([d,dt,today,hasMeal])=>`
+      <div style="min-width:38px;background:${today?'#fff':'rgba(255,255,255,0.15)'};border-radius:11px;padding:8px 4px;text-align:center">
+        <div style="font-size:8px;font-weight:700;color:${today?'#F5A623':'rgba(255,255,255,0.7)'}">${d}</div>
+        <div style="font-size:14px;font-weight:900;color:${today?'#0F2952':'#fff'};margin:2px 0">${dt}</div>
+        ${hasMeal?`<div style="width:4px;height:4px;background:${today?'#27AE60':'rgba(255,255,255,0.5)'};border-radius:2px;margin:0 auto"></div>`:'<div style="width:4px;height:4px"></div>'}
+      </div>`).join('')}
+    </div>
+  </div>
+  <div style="padding:10px;overflow:hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:9px"><span style="font-size:14px;font-weight:800;color:#1a1a2e">Friday</span><div style="background:#FEF3E2;border-radius:16px;padding:5px 10px;display:flex;gap:4px;align-items:center"><span style="font-size:11px">🔥</span><span style="font-size:10px;font-weight:700;color:#F5A623">1,640 calories</span></div></div>
+    ${[['☀️','Breakfast','Avocado Toast & Eggs','420 cal','10 min',['Quick','Protein']],['🌤️','Lunch','Grilled Chicken Salad','380 cal','15 min',['Healthy']],['🌙','Dinner','Pizza Night 🍕','780 cal','5 min',['Family Fav']]].map(([ico,type,meal,cal,prep,tags])=>`
+    <div style="margin-bottom:9px">
+      <div style="display:flex;align-items:center;gap:5px;margin-bottom:5px"><span style="font-size:12px">${ico}</span><span style="font-size:10px;font-weight:700;color:#1a1a2e">${type}</span></div>
+      <div style="background:#fff;border-radius:11px;padding:9px;box-shadow:0 2px 5px rgba(0,0,0,0.05)">
+        <div style="font-size:11px;font-weight:700;color:#1a1a2e;margin-bottom:4px">${meal}</div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:5px"><span style="font-size:9px;color:#aaa">🔥${cal}</span><span style="font-size:9px;color:#aaa">⏱${prep}</span></div>
+        <div style="display:flex;gap:4px">${tags.map(t=>`<div style="background:#FEF3E2;border-radius:8px;padding:2px 6px;font-size:8px;font-weight:700;color:#B85C00">${t}</div>`).join('')}</div>
+      </div>
+    </div>`).join('')}
+  </div>
+  <div class="tb"><div class="ti"><div class="tic">🏠</div>Home</div><div class="ti"><div class="tic">👨‍👩‍👧</div>Family</div><div class="aib">✨</div><div class="ti"><div class="tic">💰</div>Finance</div><div class="ti on"><div class="tic">⚙️</div>Ops</div></div>
+</div></div></div>
+
+<!-- DOCUMENTS -->
+<div class="pw"><div class="pl">23. Documents</div>
+<div class="ph"><div class="notch"></div>
+<div class="sc" style="background:#F0F2F5">
+  <div style="background:linear-gradient(160deg,#1A5276,#2980B9);padding:38px 14px 14px;color:#fff">
+    <div class="br"><div class="bb">←</div><div class="ht">Document Vault</div><div style="width:28px;height:28px;background:rgba(255,255,255,0.2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px">+</div></div>
+    <div style="display:flex;align-items:center;gap:6px;margin-top:4px"><span style="font-size:12px">🔒</span><span style="font-size:9px;color:rgba(255,255,255,0.65)">6 documents · End-to-end encrypted</span></div>
+  </div>
+  <div style="display:flex;gap:7px;background:#fff;padding:7px 10px;border-bottom:1px solid #eee;overflow:hidden">
+    ${[['All',true],['Identity',false],['Medical',false],['Insurance',false]].map(([l,a])=>`<div style="padding:4px 9px;border-radius:14px;font-size:9px;font-weight:700;${a?'border:1.5px solid #2980B9;color:#2980B9;background:#D6EAF8':'color:#aaa'}">${l}</div>`).join('')}
+  </div>
+  <div style="padding:10px;overflow:hidden">
+    ${[['👤','US Passport — Marcus','identity','Expires Jun 2028','','🔒'],['🛡️','Health Insurance Card','insurance','','Shared',''],['📄','Birth Certificate — Aiden','legal','','','🔒'],['🚗','Vehicle Registration','vehicle','30d left','',''],['🏥','Vaccination Records','medical','','Shared',''],['💰','Life Insurance Policy','insurance','90d left','','🔒']].map(([e,n,cat,exp,shared,lock])=>`
+    <div style="background:#fff;border-radius:11px;padding:10px;margin-bottom:6px;box-shadow:0 2px 5px rgba(0,0,0,0.05);display:flex;gap:8px">
+      <div style="width:36px;height:36px;background:#D6EAF815;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:16px;background:#EBF5FB">${e}</div>
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:4px;margin-bottom:3px"><span style="font-size:10px;font-weight:700;color:#1a1a2e;flex:1">${n}</span>${lock?`<span style="font-size:10px;color:#aaa">${lock}</span>`:''}</div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap"><span class="bx bi">${cat}</span>${shared?`<span class="bx" style="background:#D6EAF8;color:#1A5276">${shared}</span>`:''}${exp?`<span class="bx ${exp.includes('30')?'bd':'bw'}">${exp}</span>`:''}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px"><div style="font-size:14px">↗</div><div style="font-size:14px">···</div></div>
+    </div>`).join('')}
+  </div>
+  <div class="tb"><div class="ti"><div class="tic">🏠</div>Home</div><div class="ti"><div class="tic">👨‍👩‍👧</div>Family</div><div class="aib">✨</div><div class="ti"><div class="tic">💰</div>Finance</div><div class="ti on"><div class="tic">⚙️</div>Ops</div></div>
+</div></div></div>
+
+<!-- EMERGENCY -->
+<div class="pw"><div class="pl">24. Emergency Center</div>
+<div class="ph"><div class="notch"></div>
+<div class="sc" style="background:#F0F2F5">
+  <div style="background:linear-gradient(160deg,#922B21,#C0392B);padding:38px 14px 14px;color:#fff">
+    <div class="br"><div class="bb">←</div><div class="ht">Emergency Center</div></div>
+    <div style="background:rgba(255,255,255,0.15);border-radius:12px;padding:11px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:22px">🛡️</span>
+      <div style="flex:1"><div style="font-size:14px;font-weight:800">4/6 Safety Checks</div><div style="font-size:9px;color:rgba(255,255,255,0.6)">Complete your safety checklist</div></div>
+      <div style="width:42px;height:42px;border-radius:21px;background:rgba(255,255,255,0.2);border:2.5px solid #fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800">67%</div>
+    </div>
+  </div>
+  <div style="padding:10px;overflow:hidden">
+    <div class="sh">EMERGENCY NUMBERS</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:10px">
+      ${[['🚨','911','Emergency','#FDEDEC','#E74C3C'],['☠️','1-800-222','Poison Control','#F5EEF8','#8E44AD'],['💙','988','Crisis Line','#FDEDEC','#E74C3C'],['🚔','311','Non-Emergency','#D6EAF8','#2980B9']].map(([e,n,l,bg,c])=>`<div style="background:${bg};border-radius:11px;padding:10px;text-align:center;cursor:pointer"><div style="font-size:20px;margin-bottom:3px">${e}</div><div style="font-size:12px;font-weight:800;color:${c}">${n}</div><div style="font-size:9px;color:#666">${l}</div></div>`).join('')}
+    </div>
+    <div class="sh">FAMILY MEDICAL INFO</div>
+    ${[['M','Marcus','A+','None','#3498DB'],['S','Sarah','O-','Penicillin','#27AE60']].map(([i,n,bt,al,c])=>`<div style="background:#fff;border-radius:10px;padding:9px;margin-bottom:5px;display:flex;gap:8px;box-shadow:0 2px 5px rgba(0,0,0,0.04)"><div class="av" style="background:${c};flex-shrink:0">${i}</div><div><div style="font-size:11px;font-weight:700">${n}</div><div style="font-size:9px;color:#E74C3C;font-weight:600">🩸 Blood: ${bt}</div>${al!=='None'?`<div style="font-size:9px;color:#F5A623">⚠️ Allergies: ${al}</div>`:''}</div></div>`).join('')}
+    <div class="sh">FIRST AID</div>
+    ${['CPR (Adult)','Choking','Severe Bleeding'].map(t=>`<div style="background:#fff;border-radius:10px;padding:10px;margin-bottom:5px;display:flex;align-items:center;gap:8px;box-shadow:0 2px 5px rgba(0,0,0,0.04)"><div style="width:30px;height:30px;background:#FDEDEC;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:14px">❤️</div><span style="flex:1;font-size:11px;font-weight:700;color:#1a1a2e">${t}</span><span style="font-size:12px;color:#aaa">›</span></div>`).join('')}
+  </div>
+  <div class="tb"><div class="ti"><div class="tic">🏠</div>Home</div><div class="ti"><div class="tic">👨‍👩‍👧</div>Family</div><div class="aib">✨</div><div class="ti"><div class="tic">💰</div>Finance</div><div class="ti on"><div class="tic">⚙️</div>Ops</div></div>
+</div></div></div>
+
+<!-- REWARDS -->
+<div class="pw"><div class="pl">25. Rewards Center</div>
+<div class="ph"><div class="notch"></div>
+<div class="sc" style="background:#F0F2F5">
+  <div style="background:linear-gradient(160deg,#B7770D,#F5A623);padding:38px 14px 14px;color:#fff">
+    <div class="br"><div class="bb">←</div><div class="ht">Rewards Center</div><div style="font-size:14px">⚙️</div></div>
+    <div style="display:flex;gap:7px;margin-bottom:10px">
+      <div style="padding:6px 12px;background:#fff;border-radius:18px;display:flex;gap:6px;align-items:center"><div class="av" style="width:22px;height:22px;border-radius:11px;background:#F5A623;font-size:9px">A</div><span style="font-size:10px;font-weight:700;color:#0F2952">Aiden</span></div>
+      <div style="padding:6px 12px;background:rgba(255,255,255,0.2);border-radius:18px;display:flex;gap:6px;align-items:center"><div class="av" style="width:22px;height:22px;border-radius:11px;background:#E74C3C;font-size:9px">L</div><span style="font-size:10px;font-weight:700;color:#fff">Lily</span></div>
+    </div>
+    <div style="background:rgba(255,255,255,0.15);border-radius:12px;padding:11px;display:flex;align-items:center;justify-content:space-between;margin-bottom:9px">
+      <div style="display:flex;align-items:center;gap:10px"><div style="width:38px;height:38px;background:rgba(255,255,255,0.2);border-radius:19px;display:flex;align-items:center;justify-content:center;font-size:18px">🏆</div><div><div style="font-size:22px;font-weight:900">1,850</div><div style="font-size:9px;color:rgba(255,255,255,0.65)">Points available</div></div></div>
+      <div style="background:rgba(255,255,255,0.2);border-radius:11px;padding:8px 14px;text-align:center"><div style="font-size:8px;color:rgba(255,255,255,0.65)">Level</div><div style="font-size:18px;font-weight:900">5</div></div>
+    </div>
+    <div style="font-size:9px;color:rgba(255,255,255,0.7);margin-bottom:4px">Level 6 in 150 pts</div>
+    <div class="pb"><div class="pf" style="width:70%;background:#fff"></div></div>
+  </div>
+  <div style="display:flex;border-bottom:1px solid #eee;background:#fff">
+    ${['Store','Achievements','History'].map((t,i)=>`<div style="flex:1;padding:9px 0;text-align:center;font-size:10px;font-weight:700;color:${i===0?'#F5A623':'#aaa'};border-bottom:${i===0?'2px solid #F5A623':'2px solid transparent'}">${t}</div>`).join('')}
+  </div>
+  <div style="padding:10px;overflow:hidden">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">
+      ${[['📱','Extra Screen Time','30 min',100,true,'#F5EEF8','#8E44AD'],['🍽️','Choose Dinner','Pick tonight',150,true,'#FEF3E2','#F5A623'],['🌙','Stay Up Late','1 hour',200,true,'#EAECEE','#2C3E50'],['🎬','Movie Night Pick','You choose',250,false,'#FDEDEC','#E74C3C'],['🍦','Ice Cream Trip','Family outing',300,false,'#FCE4EC','#E91E63'],['😊','No Chores Day','Skip chores!',400,false,'#D5F5E3','#27AE60']].map(([e,n,d,c,afford,bg,col])=>`
+      <div style="background:${bg};border-radius:12px;padding:10px;text-align:center;opacity:${afford?1:0.55};position:relative">
+        ${!afford?`<div style="position:absolute;top:7px;right:7px;font-size:10px">🔒</div>`:''}
+        <div style="font-size:22px;margin-bottom:3px">${e}</div>
+        <div style="font-size:10px;font-weight:700;color:#1a1a2e">${n}</div>
+        <div style="font-size:8px;color:#aaa;margin:2px 0">${d}</div>
+        <div style="font-size:10px;font-weight:700;color:${col}">⭐ ${c} pts</div>
+      </div>`).join('')}
+    </div>
+  </div>
+  <div class="tb"><div class="ti"><div class="tic">🏠</div>Home</div><div class="ti"><div class="tic">👨‍👩‍👧</div>Family</div><div class="aib">✨</div><div class="ti"><div class="tic">💰</div>Finance</div><div class="ti on"><div class="tic">⚙️</div>Ops</div></div>
+</div></div></div>
+
+</div><!-- ops -->
+
+<!-- AI + SETTINGS -->
+<div class="sec">🤖 AI Assistant & Settings</div>
+<div class="grid">
+
+<!-- AI ASSISTANT -->
+<div class="pw"><div class="pl">26. AI Chief of Staff</div>
+<div class="ph"><div class="notch"></div>
+<div class="sc" style="background:#F0F2F5;display:flex;flex-direction:column">
+  <div style="background:linear-gradient(160deg,#0F2952,#1a3a70);padding:38px 14px 14px;color:#fff">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:9px">
+      <div style="width:38px;height:38px;border-radius:19px;background:rgba(255,255,255,0.15);border:1.5px solid #F5A623;display:flex;align-items:center;justify-content:center;font-size:18px">✨</div>
+      <div style="flex:1"><div style="font-size:14px;font-weight:900">AI Chief of Staff</div><div style="display:flex;align-items:center;gap:5px;margin-top:2px"><div style="width:6px;height:6px;background:#2ECC71;border-radius:3px"></div><div style="font-size:9px;color:rgba(255,255,255,0.55)">Online · Powered by Claude</div></div></div>
+      <div style="width:28px;height:28px;background:rgba(255,255,255,0.1);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px">🔄</div>
+    </div>
+    <div style="display:flex;gap:6px">
+      ${['4 members','$273k net worth','24 pantry items'].map(t=>`<div style="background:rgba(255,255,255,0.1);border-radius:14px;padding:3px 8px;font-size:8px;font-weight:600;color:rgba(255,255,255,0.65)">${t}</div>`).join('')}
+    </div>
+  </div>
+  <div style="flex:1;padding:10px;overflow:hidden">
+    <div style="text-align:center;padding:14px 0">
+      <div style="width:56px;height:56px;background:#E8EEF9;border-radius:28px;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 10px">✨</div>
+      <div style="font-size:13px;font-weight:800;color:#1a1a2e;margin-bottom:5px">Hi, Johnson family!</div>
+      <div style="font-size:10px;color:#888;line-height:1.5;padding:0 10px">I'm your AI Household Chief of Staff. Ask me anything about your finances, tasks, pantry, or family goals.</div>
+    </div>
+    <!-- Chat bubbles -->
+    <div style="display:flex;justify-content:flex-end;margin-bottom:8px"><div style="background:#0F2952;border-radius:14px 14px 4px 14px;padding:9px 12px;max-width:80%"><div style="font-size:10px;color:#fff">How are we doing with our budget this month?</div><div style="font-size:8px;color:rgba(255,255,255,0.5);margin-top:3px;text-align:right">2:30 PM</div></div></div>
+    <div style="display:flex;gap:7px;margin-bottom:8px;align-items:flex-end"><div style="width:24px;height:24px;background:#E8EEF9;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0">✨</div><div style="background:#fff;border-radius:14px 14px 14px 4px;padding:9px 12px;max-width:80%;border:1px solid #eee"><div style="font-size:10px;color:#1a1a2e;line-height:1.5">You've spent $3,180 of your $4,200 budget (76%). Dining is at 80% — be mindful this weekend! 💪</div><div style="font-size:8px;color:#aaa;margin-top:3px">2:30 PM</div></div></div>
+    <!-- Quick suggestions -->
+    <div class="sh">QUICK QUESTIONS</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+      ${[['💰','Budget check'],['🍽️','Meal ideas'],['📋','Task summary'],['📈','Savings tips']].map(([e,l])=>`<div style="background:#fff;border-radius:10px;padding:9px;display:flex;gap:6px;align-items:center;box-shadow:0 2px 5px rgba(0,0,0,0.05)"><span style="font-size:14px">${e}</span><span style="font-size:10px;font-weight:700;color:#1a1a2e">${l}</span></div>`).join('')}
+    </div>
+  </div>
+  <div style="padding:8px 10px 14px;border-top:1px solid #eee;background:#fff;display:flex;gap:8px;align-items:center">
+    <div style="flex:1;background:#F0F2F5;border-radius:18px;padding:9px 13px;font-size:10px;color:#aaa">Ask about your family...</div>
+    <div style="width:34px;height:34px;background:#0F2952;border-radius:17px;display:flex;align-items:center;justify-content:center;font-size:14px;color:#fff">➤</div>
+  </div>
+  <div class="tb"><div class="ti"><div class="tic">🏠</div>Home</div><div class="ti"><div class="tic">👨‍👩‍👧</div>Family</div><div class="aib" style="background:#F5A623">✨</div><div class="ti"><div class="tic">💰</div>Finance</div><div class="ti"><div class="tic">⚙️</div>Ops</div></div>
+</div></div></div>
+
+<!-- SETTINGS -->
+<div class="pw"><div class="pl">27. Settings</div>
+<div class="ph"><div class="notch"></div>
+<div class="sc" style="background:#F0F2F5">
+  <div style="background:linear-gradient(160deg,#0F2952,#16476E);padding:38px 14px 18px;color:#fff">
+    <div class="br"><div class="bb">←</div><div class="ht">Settings</div></div>
+    <div style="display:flex;align-items:center;gap:11px">
+      <div style="width:44px;height:44px;background:rgba(255,255,255,0.2);border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:20px">🏠</div>
+      <div><div style="font-size:15px;font-weight:800">Johnson Family</div><div style="font-size:9px;color:rgba(255,255,255,0.5);margin-top:2px">Free Plan · Upgrade for more</div></div>
+    </div>
+  </div>
+  <div style="padding:10px;overflow:hidden">
+    <div class="sh">SUBSCRIPTION</div>
+    <div style="background:#fff;border-radius:11px;padding:10px;margin-bottom:7px;box-shadow:0 2px 5px rgba(0,0,0,0.05)">
+      ${[['Free','$0','Current',false],['Premium','$9.99/mo','Upgrade',true],['Family Pro','$19.99/mo','Upgrade',true]].map(([n,p,btn,highlight])=>`
+      <div style="display:flex;align-items:center;padding:6px 0;border-bottom:1px solid #f5f5f5">
+        <div style="flex:1"><div style="font-size:11px;font-weight:700;color:${highlight?'#F5A623':'#1a1a2e'}">${n}</div><div style="font-size:9px;color:#aaa">${p}</div></div>
+        <div style="padding:4px 9px;background:${btn==='Current'?'#F0F2F5':highlight?'#F5A623':'#0F2952'};color:${btn==='Current'?'#aaa':'#fff'};border-radius:8px;font-size:9px;font-weight:700">${btn}</div>
+      </div>`).join('')}
+    </div>
+    <div class="sh">NOTIFICATIONS</div>
+    <div style="background:#fff;border-radius:11px;padding:2px 10px;margin-bottom:7px;box-shadow:0 2px 5px rgba(0,0,0,0.05)">
+      ${[['📄','Bill Reminders',true],['✅','Task Reminders',true],['🥦','Low Stock Alerts',true],['💰','Budget Alerts',false]].map(([e,l,on])=>`
+      <div style="display:flex;align-items:center;padding:9px 0;border-bottom:1px solid #f5f5f5">
+        <div style="font-size:14px;width:26px">${e}</div><div style="flex:1;font-size:11px;font-weight:600;margin-left:6px">${l}</div>
+        <div style="width:32px;height:18px;background:${on?'rgba(15,41,82,0.4)':'#eee'};border-radius:9px;position:relative"><div style="width:16px;height:16px;background:${on?'#0F2952':'#fff'};border-radius:8px;position:absolute;top:1px;${on?'right:1px':'left:1px'};box-shadow:0 1px 3px rgba(0,0,0,0.2)"></div></div>
+      </div>`).join('')}
+    </div>
+    <div class="sh">APPEARANCE</div>
+    <div style="background:#fff;border-radius:11px;padding:2px 10px;box-shadow:0 2px 5px rgba(0,0,0,0.05)">
+      ${[['🌙','Dark Mode',false],['🎖️','Military Mode',false]].map(([e,l,on])=>`
+      <div style="display:flex;align-items:center;padding:9px 0;border-bottom:1px solid #f5f5f5">
+        <div style="font-size:14px;width:26px">${e}</div><div style="flex:1;font-size:11px;font-weight:600;margin-left:6px">${l}</div>
+        <div style="width:32px;height:18px;background:#eee;border-radius:9px;position:relative"><div style="width:16px;height:16px;background:#fff;border-radius:8px;position:absolute;top:1px;left:1px;box-shadow:0 1px 3px rgba(0,0,0,0.2)"></div></div>
+      </div>`).join('')}
+    </div>
+    <div style="text-align:center;margin-top:12px;font-size:9px;color:#aaa">Family Command Center v1.0.0</div>
+  </div>
+  <div class="tb"><div class="ti"><div class="tic">🏠</div>Home</div><div class="ti"><div class="tic">👨‍👩‍👧</div>Family</div><div class="aib">✨</div><div class="ti"><div class="tic">💰</div>Finance</div><div class="ti"><div class="tic">⚙️</div>Ops</div></div>
+</div></div></div>
+
+</div><!-- ai+settings -->
+
+<div style="text-align:center;margin-top:60px;color:rgba(255,255,255,0.25);font-size:12px;padding-bottom:40px">
+  27 screens · React Native + TypeScript + Expo · Family Command Center™
+</div>
+</body>
+</html>
