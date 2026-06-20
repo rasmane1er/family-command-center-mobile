@@ -1,16 +1,23 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions, Modal, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
 import { Avatar } from '../../components/common/Avatar';
 import { Badge } from '../../components/common/Badge';
 import { Card } from '../../components/common/Card';
 import { ProgressBar } from '../../components/common/ProgressBar';
+import { Button } from '../../components/common/Button';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import type { MemberRole, FamilyMember } from '../../types';
+
+const MEMBER_ROLES: MemberRole[] = ['parent', 'child', 'guardian', 'grandparent', 'caregiver'];
+const AVATAR_COLORS = ['#E74C3C', '#E67E22', '#F1C40F', '#27AE60', '#2980B9', '#9B59B6', '#E91E63', '#00BCD4', '#FF6B6B', '#45B7D1'];
+const generateId = () => Math.random().toString(36).substring(2, 11);
 
 const { width } = Dimensions.get('window');
 
@@ -40,9 +47,35 @@ function getLevelProgress(points: number, level: number): number {
 export function FamilyProfilesScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState('profiles');
+  const [showModal, setShowModal] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newRole, setNewRole] = useState<MemberRole>('child');
+  const [newColor, setNewColor] = useState('#2980B9');
+
   const members = useFamilyStore((s) => s.members);
   const family = useFamilyStore((s) => s.family);
   const tasks = useFamilyStore((s) => s.tasks);
+  const addMember = useFamilyStore((s) => s.addMember);
+
+  const handleAddMember = () => {
+    if (!newName.trim()) return;
+    const member: FamilyMember = {
+      id: generateId(),
+      familyId: 'demo-family',
+      name: newName.trim(),
+      role: newRole,
+      avatarColor: newColor,
+      status: 'active',
+      points: 0,
+      level: 1,
+      isAdmin: false,
+      createdAt: new Date().toISOString(),
+    };
+    addMember(member);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setNewName(''); setNewRole('child'); setNewColor('#2980B9');
+    setShowModal(false);
+  };
 
   const getCompletedTasks = (memberId: string) =>
     tasks.filter((t) => t.status === 'completed' && t.completedBy === memberId).length;
@@ -62,7 +95,7 @@ export function FamilyProfilesScreen({ navigation }: any) {
             <Text style={styles.headerTitle}>{family?.name ?? 'My Family'}</Text>
             {family?.motto && <Text style={styles.headerMotto}>"{family.motto}"</Text>}
           </View>
-          <Pressable style={styles.addBtn}>
+          <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
             <Ionicons name="person-add-outline" size={22} color="#fff" />
           </Pressable>
         </View>
@@ -167,6 +200,44 @@ export function FamilyProfilesScreen({ navigation }: any) {
           </View>
         )}
       </ScrollView>
+
+      <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowModal(false)}>
+        <ScrollView style={styles.modal} contentContainerStyle={{ paddingBottom: 40 }}>
+          <View style={styles.modalHandle} />
+          <Text style={styles.modalTitle}>Add Family Member</Text>
+
+          {newName.trim() && (
+            <View style={styles.previewRow}>
+              <Avatar name={newName} color={newColor} size={56} />
+              <Text style={styles.previewName}>{newName}</Text>
+            </View>
+          )}
+
+          <Text style={styles.modalLabel}>Full Name *</Text>
+          <TextInput style={styles.modalInput} placeholder="e.g. Alex Johnson" value={newName} onChangeText={setNewName} placeholderTextColor={colors.textMuted} autoFocus />
+
+          <Text style={styles.modalLabel}>Role</Text>
+          <View style={styles.roleGrid}>
+            {MEMBER_ROLES.map((role) => (
+              <Pressable key={role} onPress={() => setNewRole(role)} style={[styles.roleChip, newRole === role && styles.roleChipActive]}>
+                <Text style={[styles.roleChipText, newRole === role && styles.roleChipTextActive]}>
+                  {role.charAt(0).toUpperCase() + role.slice(1)}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <Text style={styles.modalLabel}>Avatar Color</Text>
+          <View style={styles.colorRow}>
+            {AVATAR_COLORS.map((c) => (
+              <Pressable key={c} onPress={() => setNewColor(c)} style={[styles.colorSwatch, { backgroundColor: c }, newColor === c && styles.colorSwatchSelected]} />
+            ))}
+          </View>
+
+          <Button title="Add Member" onPress={handleAddMember} fullWidth size="lg" disabled={!newName.trim()} style={{ marginTop: 8 }} />
+          <Button title="Cancel" onPress={() => setShowModal(false)} variant="ghost" fullWidth style={{ marginTop: 8 }} />
+        </ScrollView>
+      </Modal>
     </View>
   );
 }
@@ -212,4 +283,19 @@ const styles = StyleSheet.create({
   emptyState: { alignItems: 'center', paddingVertical: 60 },
   emptyTitle: { fontSize: 20, fontWeight: '700', color: colors.text, marginTop: 16 },
   emptyDesc: { fontSize: 14, color: colors.textSecondary, marginTop: 8 },
+  modal: { flex: 1, padding: 24, backgroundColor: colors.background },
+  modalHandle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 24 },
+  modalTitle: { fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 20 },
+  previewRow: { alignItems: 'center', marginBottom: 20, gap: 10 },
+  previewName: { fontSize: 18, fontWeight: '700', color: colors.text },
+  modalLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  modalInput: { backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 16, color: colors.text, borderWidth: 1.5, borderColor: colors.border, marginBottom: 16, ...shadows.sm },
+  roleGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
+  roleChip: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.card },
+  roleChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  roleChipText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  roleChipTextActive: { color: '#fff' },
+  colorRow: { flexDirection: 'row', gap: 10, marginBottom: 24, flexWrap: 'wrap' },
+  colorSwatch: { width: 36, height: 36, borderRadius: 18 },
+  colorSwatchSelected: { borderWidth: 3, borderColor: colors.text },
 });

@@ -1,16 +1,27 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Modal, TextInput, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format, startOfWeek, addDays } from 'date-fns';
+import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
+import { shadows } from '../../theme/spacing';
 import { Card } from '../../components/common/Card';
+import { Button } from '../../components/common/Button';
 
-const MEAL_TYPES = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
+interface PlannedMeal {
+  name: string;
+  calories: number;
+  prep: number;
+  tags: string[];
+}
 
-const SAMPLE_MEALS: Record<string, Record<string, { name: string; calories: number; prep: number; tags: string[] }>> = {
+const MEAL_TYPES = ['Breakfast', 'Lunch', 'Dinner', 'Snack'] as const;
+const MEAL_TAGS = ['Quick', 'Healthy', 'Kids Fav', 'Family Fav', 'Protein', 'Low-carb', 'Easy', 'Vegetarian'];
+
+const INITIAL_MEALS: Record<string, Record<string, PlannedMeal>> = {
   Monday: {
     Breakfast: { name: 'Avocado Toast & Eggs', calories: 420, prep: 10, tags: ['Quick', 'Protein'] },
     Lunch: { name: 'Grilled Chicken Salad', calories: 380, prep: 15, tags: ['Healthy', 'Low-carb'] },
@@ -19,18 +30,20 @@ const SAMPLE_MEALS: Record<string, Record<string, { name: string; calories: numb
   Tuesday: {
     Breakfast: { name: 'Greek Yogurt Parfait', calories: 320, prep: 5, tags: ['Quick'] },
     Lunch: { name: 'Turkey Sandwich', calories: 420, prep: 10, tags: ['Easy'] },
-    Dinner: { name: 'Stir-Fry Chicken & Rice', calories: 580, prep: 25, tags: ['Asian'] },
+    Dinner: { name: 'Stir-Fry Chicken & Rice', calories: 580, prep: 25, tags: ['Healthy'] },
   },
   Wednesday: {
     Breakfast: { name: 'Pancakes', calories: 480, prep: 20, tags: ['Kids Fav'] },
-    Dinner: { name: 'Grilled Salmon', calories: 540, prep: 20, tags: ['Omega-3', 'Healthy'] },
+    Dinner: { name: 'Grilled Salmon', calories: 540, prep: 20, tags: ['Healthy', 'Protein'] },
   },
   Thursday: {
-    Dinner: { name: 'Taco Night', calories: 620, prep: 25, tags: ['Family Fav', 'Tex-Mex'] },
+    Dinner: { name: 'Taco Night', calories: 620, prep: 25, tags: ['Family Fav'] },
   },
   Friday: {
-    Dinner: { name: 'Pizza Night', calories: 780, prep: 5, tags: ['Family Fav', 'Fun'] },
+    Dinner: { name: 'Pizza Night', calories: 780, prep: 5, tags: ['Family Fav'] },
   },
+  Saturday: {},
+  Sunday: {},
 };
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -38,6 +51,12 @@ const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
 export function MealPlanningScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const [selectedDay, setSelectedDay] = useState('Monday');
+  const [weekMeals, setWeekMeals] = useState(INITIAL_MEALS);
+  const [addingMeal, setAddingMeal] = useState<{ day: string; type: string } | null>(null);
+  const [newMealName, setNewMealName] = useState('');
+  const [newMealCals, setNewMealCals] = useState('');
+  const [newMealPrep, setNewMealPrep] = useState('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
   const weekDays = DAYS.map((d, i) => ({
@@ -47,8 +66,93 @@ export function MealPlanningScreen({ navigation }: any) {
     isToday: format(addDays(weekStart, i), 'EEEE') === format(new Date(), 'EEEE'),
   }));
 
-  const dayMeals = SAMPLE_MEALS[selectedDay] || {};
+  const dayMeals = weekMeals[selectedDay] || {};
   const totalCals = Object.values(dayMeals).reduce((sum, m) => sum + m.calories, 0);
+
+  const openAddMeal = (day: string, type: string) => {
+    setAddingMeal({ day, type });
+    setNewMealName('');
+    setNewMealCals('');
+    setNewMealPrep('');
+    setSelectedTags([]);
+  };
+
+  const handleSaveMeal = () => {
+    if (!addingMeal || !newMealName.trim()) return;
+    const meal: PlannedMeal = {
+      name: newMealName.trim(),
+      calories: parseInt(newMealCals, 10) || 0,
+      prep: parseInt(newMealPrep, 10) || 0,
+      tags: selectedTags,
+    };
+    setWeekMeals((prev) => ({
+      ...prev,
+      [addingMeal.day]: {
+        ...(prev[addingMeal.day] || {}),
+        [addingMeal.type]: meal,
+      },
+    }));
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setAddingMeal(null);
+  };
+
+  const handleRemoveMeal = (day: string, type: string) => {
+    Alert.alert('Remove Meal', `Remove this ${type}?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: () => {
+          setWeekMeals((prev) => {
+            const updated = { ...prev[day] };
+            delete updated[type];
+            return { ...prev, [day]: updated };
+          });
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        },
+      },
+    ]);
+  };
+
+  const handleGeneratePlan = () => {
+    const suggestions: Record<string, Record<string, PlannedMeal>> = {
+      Monday: {
+        Breakfast: { name: 'Oatmeal with Berries', calories: 350, prep: 8, tags: ['Healthy', 'Quick'] },
+        Lunch: { name: 'Caesar Salad', calories: 400, prep: 10, tags: ['Easy'] },
+        Dinner: { name: 'Chicken Stir Fry', calories: 580, prep: 25, tags: ['Protein'] },
+      },
+      Tuesday: {
+        Breakfast: { name: 'Smoothie Bowl', calories: 380, prep: 10, tags: ['Quick', 'Healthy'] },
+        Dinner: { name: 'Beef Tacos', calories: 650, prep: 20, tags: ['Family Fav'] },
+      },
+      Wednesday: {
+        Breakfast: { name: 'Eggs & Bacon', calories: 500, prep: 15, tags: ['Protein'] },
+        Dinner: { name: 'Baked Salmon & Veggies', calories: 520, prep: 30, tags: ['Healthy'] },
+      },
+      Thursday: {
+        Breakfast: { name: 'Banana Pancakes', calories: 450, prep: 20, tags: ['Kids Fav'] },
+        Dinner: { name: 'Pasta Primavera', calories: 580, prep: 25, tags: ['Vegetarian'] },
+      },
+      Friday: {
+        Breakfast: { name: 'French Toast', calories: 480, prep: 15, tags: ['Kids Fav'] },
+        Dinner: { name: 'Homemade Pizza', calories: 720, prep: 35, tags: ['Family Fav'] },
+      },
+      Saturday: {
+        Breakfast: { name: 'Pancake Brunch', calories: 520, prep: 25, tags: ['Family Fav', 'Kids Fav'] },
+        Dinner: { name: 'BBQ Night', calories: 700, prep: 40, tags: ['Family Fav'] },
+      },
+      Sunday: {
+        Breakfast: { name: 'Sunday Eggs Benedict', calories: 580, prep: 20, tags: ['Family Fav'] },
+        Dinner: { name: 'Roast Chicken', calories: 640, prep: 90, tags: ['Family Fav'] },
+      },
+    };
+    setWeekMeals(suggestions);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const toggleTag = (tag: string) => {
+    setSelectedTags((prev) => prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]);
+  };
 
   return (
     <View style={styles.container}>
@@ -59,36 +163,38 @@ export function MealPlanningScreen({ navigation }: any) {
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </Pressable>
           <Text style={styles.headerTitle}>Meal Planning</Text>
-          <Pressable style={styles.addBtn}><Ionicons name="sparkles-outline" size={22} color="#fff" /></Pressable>
+          <Pressable onPress={handleGeneratePlan} style={styles.addBtn}>
+            <Ionicons name="sparkles-outline" size={22} color="#fff" />
+          </Pressable>
         </View>
 
         <Text style={styles.weekLabel}>Week of {format(weekStart, 'MMMM d, yyyy')}</Text>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.dayScroll}>
-          {weekDays.map((day) => (
-            <Pressable
-              key={day.name}
-              onPress={() => setSelectedDay(day.name)}
-              style={[styles.dayChip, selectedDay === day.name && styles.dayChipActive]}
-            >
-              <Text style={[styles.dayShort, selectedDay === day.name && styles.dayShortActive]}>{day.short}</Text>
-              <Text style={[styles.dayDate, selectedDay === day.name && styles.dayDateActive]}>{format(day.date, 'd')}</Text>
-              {day.isToday && <View style={styles.todayDot} />}
-              {SAMPLE_MEALS[day.name] && Object.keys(SAMPLE_MEALS[day.name]).length > 0 && (
-                <View style={[styles.mealDot, selectedDay === day.name && styles.mealDotActive]} />
-              )}
-            </Pressable>
-          ))}
+          {weekDays.map((day) => {
+            const hasMeals = Object.keys(weekMeals[day.name] || {}).length > 0;
+            return (
+              <Pressable
+                key={day.name}
+                onPress={() => setSelectedDay(day.name)}
+                style={[styles.dayChip, selectedDay === day.name && styles.dayChipActive]}
+              >
+                <Text style={[styles.dayShort, selectedDay === day.name && styles.dayShortActive]}>{day.short}</Text>
+                <Text style={[styles.dayDate, selectedDay === day.name && styles.dayDateActive]}>{format(day.date, 'd')}</Text>
+                {day.isToday && <View style={styles.todayDot} />}
+                {hasMeals && <View style={[styles.mealDot, selectedDay === day.name && styles.mealDotActive]} />}
+              </Pressable>
+            );
+          })}
         </ScrollView>
       </LinearGradient>
 
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
-        {/* Day summary */}
         <View style={styles.daySummary}>
           <Text style={styles.daySummaryDay}>{selectedDay}</Text>
           <View style={styles.dayCalories}>
             <Ionicons name="flame" size={16} color={colors.secondary} />
-            <Text style={styles.dayCaloriesText}>{totalCals} calories</Text>
+            <Text style={styles.dayCaloriesText}>{totalCals} cal</Text>
           </View>
         </View>
 
@@ -112,24 +218,33 @@ export function MealPlanningScreen({ navigation }: any) {
                       <View style={styles.mealMeta}>
                         <Ionicons name="flame-outline" size={13} color={colors.textMuted} />
                         <Text style={styles.mealMetaText}>{meal.calories} cal</Text>
-                        <Ionicons name="time-outline" size={13} color={colors.textMuted} style={{ marginLeft: 8 }} />
-                        <Text style={styles.mealMetaText}>{meal.prep} min</Text>
+                        {meal.prep > 0 && <>
+                          <Ionicons name="time-outline" size={13} color={colors.textMuted} style={{ marginLeft: 8 }} />
+                          <Text style={styles.mealMetaText}>{meal.prep} min</Text>
+                        </>}
                       </View>
-                      <View style={styles.mealTags}>
-                        {meal.tags.map((tag) => (
-                          <View key={tag} style={styles.mealTag}>
-                            <Text style={styles.mealTagText}>{tag}</Text>
-                          </View>
-                        ))}
-                      </View>
+                      {meal.tags.length > 0 && (
+                        <View style={styles.mealTags}>
+                          {meal.tags.map((tag) => (
+                            <View key={tag} style={styles.mealTag}>
+                              <Text style={styles.mealTagText}>{tag}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      )}
                     </View>
-                    <Pressable style={styles.mealSwap}>
-                      <Ionicons name="refresh-outline" size={18} color={colors.primary} />
-                    </Pressable>
+                    <View style={styles.mealActions}>
+                      <Pressable onPress={() => openAddMeal(selectedDay, mealType)} style={styles.mealSwap}>
+                        <Ionicons name="pencil-outline" size={16} color={colors.primary} />
+                      </Pressable>
+                      <Pressable onPress={() => handleRemoveMeal(selectedDay, mealType)} style={styles.mealRemove}>
+                        <Ionicons name="close" size={16} color={colors.danger} />
+                      </Pressable>
+                    </View>
                   </View>
                 </Card>
               ) : (
-                <Pressable style={styles.addMealBtn}>
+                <Pressable onPress={() => openAddMeal(selectedDay, mealType)} style={styles.addMealBtn}>
                   <Ionicons name="add-circle-outline" size={20} color={colors.secondary} />
                   <Text style={styles.addMealText}>Plan {mealType}</Text>
                 </Pressable>
@@ -143,15 +258,56 @@ export function MealPlanningScreen({ navigation }: any) {
             <Ionicons name="sparkles" size={22} color={colors.secondary} />
             <View style={{ flex: 1, marginLeft: 12 }}>
               <Text style={styles.aiTitle}>AI Meal Suggestion</Text>
-              <Text style={styles.aiText}>Based on your pantry (chicken breast expiring soon), I suggest Chicken Pasta for tonight's dinner. Tap to generate full plan!</Text>
+              <Text style={styles.aiText}>Based on your pantry, I can generate a balanced weekly meal plan. Tap the ✨ button to auto-fill the whole week!</Text>
             </View>
           </View>
-          <Pressable style={styles.aiGenerateBtn}>
+          <Pressable onPress={handleGeneratePlan} style={styles.aiGenerateBtn}>
             <Ionicons name="flash" size={16} color="#fff" />
             <Text style={styles.aiGenerateText}>Generate Weekly Plan</Text>
           </Pressable>
         </Card>
       </ScrollView>
+
+      <Modal visible={!!addingMeal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setAddingMeal(null)}>
+        <ScrollView style={styles.modal} contentContainerStyle={{ paddingBottom: 40 }}>
+          <View style={styles.modalHandle} />
+          <Text style={styles.modalTitle}>Plan {addingMeal?.type}</Text>
+          <Text style={styles.modalSubtitle}>{addingMeal?.day}</Text>
+
+          <Text style={styles.modalLabel}>Meal Name *</Text>
+          <TextInput
+            style={styles.modalInput}
+            placeholder="e.g. Grilled Chicken Salad"
+            value={newMealName}
+            onChangeText={setNewMealName}
+            placeholderTextColor={colors.textMuted}
+            autoFocus
+          />
+
+          <View style={styles.rowInputs}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.modalLabel}>Calories</Text>
+              <TextInput style={styles.modalInput} placeholder="e.g. 450" value={newMealCals} onChangeText={setNewMealCals} keyboardType="numeric" placeholderTextColor={colors.textMuted} />
+            </View>
+            <View style={{ flex: 1, marginLeft: 10 }}>
+              <Text style={styles.modalLabel}>Prep (min)</Text>
+              <TextInput style={styles.modalInput} placeholder="e.g. 20" value={newMealPrep} onChangeText={setNewMealPrep} keyboardType="numeric" placeholderTextColor={colors.textMuted} />
+            </View>
+          </View>
+
+          <Text style={styles.modalLabel}>Tags</Text>
+          <View style={styles.tagsGrid}>
+            {MEAL_TAGS.map((tag) => (
+              <Pressable key={tag} onPress={() => toggleTag(tag)} style={[styles.tagChip, selectedTags.includes(tag) && styles.tagChipActive]}>
+                <Text style={[styles.tagChipText, selectedTags.includes(tag) && styles.tagChipTextActive]}>{tag}</Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <Button title="Save Meal" onPress={handleSaveMeal} fullWidth size="lg" disabled={!newMealName.trim()} style={{ marginTop: 8 }} />
+          <Button title="Cancel" onPress={() => setAddingMeal(null)} variant="ghost" fullWidth style={{ marginTop: 8 }} />
+        </ScrollView>
+      </Modal>
     </View>
   );
 }
@@ -191,7 +347,9 @@ const styles = StyleSheet.create({
   mealTags: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
   mealTag: { backgroundColor: '#FEF3E2', borderRadius: 10, paddingVertical: 3, paddingHorizontal: 8 },
   mealTagText: { fontSize: 11, color: '#B85C00', fontWeight: '600' },
-  mealSwap: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#E8EEF9', alignItems: 'center', justifyContent: 'center' },
+  mealActions: { gap: 6 },
+  mealSwap: { width: 34, height: 34, borderRadius: 10, backgroundColor: '#E8EEF9', alignItems: 'center', justifyContent: 'center' },
+  mealRemove: { width: 34, height: 34, borderRadius: 10, backgroundColor: colors.dangerLight, alignItems: 'center', justifyContent: 'center' },
   addMealBtn: { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 12, borderWidth: 1.5, borderColor: colors.border, borderStyle: 'dashed', padding: 14 },
   addMealText: { fontSize: 14, color: colors.secondary, fontWeight: '600' },
   aiCard: { backgroundColor: '#FEF3E2', borderRadius: 16, marginTop: 8 },
@@ -200,4 +358,16 @@ const styles = StyleSheet.create({
   aiText: { fontSize: 13, color: colors.textSecondary, lineHeight: 20 },
   aiGenerateBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.secondary, borderRadius: 12, paddingVertical: 12 },
   aiGenerateText: { fontSize: 14, fontWeight: '700', color: '#fff' },
+  modal: { flex: 1, padding: 24, backgroundColor: colors.background },
+  modalHandle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 24 },
+  modalTitle: { fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 2 },
+  modalSubtitle: { fontSize: 14, color: colors.textSecondary, marginBottom: 20 },
+  modalLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  modalInput: { backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 16, color: colors.text, borderWidth: 1.5, borderColor: colors.border, marginBottom: 16, ...shadows.sm },
+  rowInputs: { flexDirection: 'row' },
+  tagsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 },
+  tagChip: { paddingVertical: 7, paddingHorizontal: 14, borderRadius: 20, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.card },
+  tagChipActive: { backgroundColor: '#FEF3E2', borderColor: colors.secondary },
+  tagChipText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  tagChipTextActive: { color: colors.secondary },
 });
