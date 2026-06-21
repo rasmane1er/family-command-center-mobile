@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Animated } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Animated, Linking } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -240,7 +240,7 @@ export function EmergencyModeScreen({ navigation }: any) {
           <>
             <Text style={styles.sectionLabel}>Emergency Numbers</Text>
             {EMERGENCY_CONTACTS.map((contact, i) => (
-              <Pressable key={i} onPress={() => Alert.alert('Call', `Call ${contact.name} at ${contact.number}?`, [{ text: 'Cancel' }, { text: 'Call', onPress: () => {} }])}>
+              <Pressable key={i} onPress={() => Alert.alert('Call', `Call ${contact.name} at ${contact.number}?`, [{ text: 'Cancel', style: 'cancel' }, { text: 'Call', style: 'destructive', onPress: () => Linking.openURL(`tel:${contact.number.replace(/-/g, '')}`) }])}>
                 <Card variant="elevated" style={styles.contactCard}>
                   <View style={styles.contactRow}>
                     <View style={[styles.contactIcon, { backgroundColor: contact.color + '20' }]}>
