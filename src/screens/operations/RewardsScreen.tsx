@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
@@ -37,6 +38,7 @@ export function RewardsScreen({ navigation }: any) {
   const members = useFamilyStore((s) => s.members);
   const rewards = useFamilyStore((s) => s.rewards);
   const achievements = useFamilyStore((s) => s.achievements);
+  const updateMember = useFamilyStore((s) => s.updateMember);
 
   const children = members.filter((m) => m.role === 'child');
   const activeChild = children.find((c) => c.id === selectedChild) || children[0];
@@ -55,7 +57,14 @@ export function RewardsScreen({ navigation }: any) {
       `This will cost ${reward.cost} points. Current balance: ${activeChild.points} points.`,
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Redeem!', onPress: () => Alert.alert('🎉 Redeemed!', `${activeChild.name} redeemed "${reward.name}"!`) },
+        {
+          text: 'Redeem!',
+          onPress: () => {
+            updateMember(activeChild.id, { points: (activeChild.points || 0) - reward.cost });
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            Alert.alert('🎉 Redeemed!', `${activeChild.name} redeemed "${reward.name}"! ${reward.cost} points deducted.`);
+          },
+        },
       ]
     );
   };

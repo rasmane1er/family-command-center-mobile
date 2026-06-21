@@ -1,18 +1,26 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions, Modal, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
+import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { ProgressBar } from '../../components/common/ProgressBar';
+import { Button } from '../../components/common/Button';
 import { useFinanceStore } from '../../store/useFinanceStore';
+import type { AccountType } from '../../types';
 
 const { width } = Dimensions.get('window');
+const generateId = () => Math.random().toString(36).substring(2, 11);
+
+const ACCOUNT_TYPES: AccountType[] = ['checking', 'savings', 'investment', 'credit', 'cash'];
+const GOAL_COLORS = ['#2980B9', '#27AE60', '#F5A623', '#E74C3C', '#8E44AD', '#16A085'];
+const GOAL_ICONS = ['home', 'car', 'school', 'airplane', 'gift', 'medkit', 'business', 'trophy'];
 
 const NAV_TABS = [
   { key: 'overview', label: 'Overview', icon: 'pie-chart-outline' },
@@ -25,12 +33,58 @@ const NAV_TABS = [
 export function FinanceDashboardScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState('overview');
-  const { accounts, transactions, budgets, bills, subscriptions, financialGoals, totalNetWorth, monthlyIncome, monthlyExpenses, monthlySavings } = useFinanceStore();
+  const [showAccountModal, setShowAccountModal] = useState(false);
+  const [showGoalModal, setShowGoalModal] = useState(false);
+  const [newAccName, setNewAccName] = useState('');
+  const [newAccType, setNewAccType] = useState<AccountType>('checking');
+  const [newAccBalance, setNewAccBalance] = useState('');
+  const [newAccInstitution, setNewAccInstitution] = useState('');
+  const [newGoalName, setNewGoalName] = useState('');
+  const [newGoalTarget, setNewGoalTarget] = useState('');
+  const [newGoalColor, setNewGoalColor] = useState('#2980B9');
+  const [newGoalIcon, setNewGoalIcon] = useState('trophy');
+  const { accounts, transactions, budgets, bills, subscriptions, financialGoals, totalNetWorth, monthlyIncome, monthlyExpenses, monthlySavings, addAccount, addFinancialGoal } = useFinanceStore();
 
   const savingsRate = monthlyIncome > 0 ? Math.round((monthlySavings / monthlyIncome) * 100) : 0;
   const overdueBills = bills.filter((b) => b.status === 'overdue');
   const dueSoonBills = bills.filter((b) => b.status === 'due_soon');
   const totalSubscriptions = subscriptions.filter((s) => s.isActive).reduce((sum, s) => sum + (s.billingCycle === 'annual' ? s.amount / 12 : s.amount), 0);
+
+  const handleAddAccount = () => {
+    if (!newAccName.trim()) return;
+    addAccount({
+      id: generateId(),
+      familyId: 'demo-family',
+      name: newAccName.trim(),
+      type: newAccType,
+      balance: parseFloat(newAccBalance) || 0,
+      institution: newAccInstitution.trim() || undefined,
+      lastUpdated: new Date().toISOString(),
+      isShared: true,
+    });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setNewAccName(''); setNewAccType('checking'); setNewAccBalance(''); setNewAccInstitution('');
+    setShowAccountModal(false);
+  };
+
+  const handleAddGoal = () => {
+    if (!newGoalName.trim() || !newGoalTarget.trim()) return;
+    addFinancialGoal({
+      id: generateId(),
+      familyId: 'demo-family',
+      name: newGoalName.trim(),
+      targetAmount: parseFloat(newGoalTarget) || 0,
+      savedAmount: 0,
+      category: 'Savings',
+      color: newGoalColor,
+      icon: newGoalIcon,
+      isCompleted: false,
+      createdAt: new Date().toISOString(),
+    });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setNewGoalName(''); setNewGoalTarget(''); setNewGoalColor('#2980B9'); setNewGoalIcon('trophy');
+    setShowGoalModal(false);
+  };
 
   const handleTabPress = (key: string) => {
     if (key === 'budget') navigation.navigate('Budgeting');
@@ -106,7 +160,7 @@ export function FinanceDashboardScreen({ navigation }: any) {
               <Text style={styles.accountType}>{acc.type.charAt(0).toUpperCase() + acc.type.slice(1)}</Text>
             </LinearGradient>
           ))}
-          <Pressable style={styles.addAccountCard}>
+          <Pressable onPress={() => setShowAccountModal(true)} style={styles.addAccountCard}>
             <Ionicons name="add-circle-outline" size={28} color={colors.textMuted} />
             <Text style={styles.addAccountText}>Add Account</Text>
           </Pressable>
@@ -152,7 +206,7 @@ export function FinanceDashboardScreen({ navigation }: any) {
         {/* Financial Goals */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Financial Goals</Text>
-          <Pressable><Text style={styles.seeAll}>Add Goal</Text></Pressable>
+          <Pressable onPress={() => setShowGoalModal(true)}><Text style={styles.seeAll}>Add Goal</Text></Pressable>
         </View>
         {financialGoals.map((goal) => (
           <Card key={goal.id} style={styles.goalCard} variant="elevated">
@@ -182,7 +236,7 @@ export function FinanceDashboardScreen({ navigation }: any) {
           <Pressable><Text style={styles.seeAll}>See All</Text></Pressable>
         </View>
         {transactions.slice(0, 6).map((tx) => (
-          <Card key={tx.id} style={styles.txCard} onPress={() => {}} variant="elevated">
+          <Card key={tx.id} style={styles.txCard} variant="elevated">
             <View style={styles.txRow}>
               <View style={[styles.txIcon, { backgroundColor: tx.type === 'income' ? colors.successLight : tx.type === 'expense' ? colors.dangerLight : '#E8EEF9' }]}>
                 <Ionicons
@@ -205,6 +259,68 @@ export function FinanceDashboardScreen({ navigation }: any) {
           </Card>
         ))}
       </ScrollView>
+
+      {/* Add Account Modal */}
+      <Modal visible={showAccountModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowAccountModal(false)}>
+        <ScrollView style={styles.modal} contentContainerStyle={{ paddingBottom: 40 }}>
+          <View style={styles.modalHandle} />
+          <Text style={styles.modalTitle}>Add Account</Text>
+
+          <Text style={styles.modalLabel}>Account Name *</Text>
+          <TextInput style={styles.modalInput} placeholder="e.g. Chase Checking" value={newAccName} onChangeText={setNewAccName} placeholderTextColor={colors.textMuted} autoFocus />
+
+          <Text style={styles.modalLabel}>Account Type</Text>
+          <View style={styles.typeGrid}>
+            {ACCOUNT_TYPES.map((t) => (
+              <Pressable key={t} onPress={() => setNewAccType(t)} style={[styles.typeChip, newAccType === t && styles.typeChipActive]}>
+                <Text style={[styles.typeChipText, newAccType === t && styles.typeChipTextActive]}>{t.charAt(0).toUpperCase() + t.slice(1)}</Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <Text style={styles.modalLabel}>Current Balance ($)</Text>
+          <TextInput style={styles.modalInput} placeholder="0.00" value={newAccBalance} onChangeText={setNewAccBalance} keyboardType="decimal-pad" placeholderTextColor={colors.textMuted} />
+
+          <Text style={styles.modalLabel}>Institution (optional)</Text>
+          <TextInput style={[styles.modalInput, { marginBottom: 24 }]} placeholder="e.g. Chase, Fidelity" value={newAccInstitution} onChangeText={setNewAccInstitution} placeholderTextColor={colors.textMuted} />
+
+          <Button title="Add Account" onPress={handleAddAccount} fullWidth size="lg" disabled={!newAccName.trim()} />
+          <Button title="Cancel" onPress={() => setShowAccountModal(false)} variant="ghost" fullWidth style={{ marginTop: 8 }} />
+        </ScrollView>
+      </Modal>
+
+      {/* Add Goal Modal */}
+      <Modal visible={showGoalModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowGoalModal(false)}>
+        <ScrollView style={styles.modal} contentContainerStyle={{ paddingBottom: 40 }}>
+          <View style={styles.modalHandle} />
+          <Text style={styles.modalTitle}>Add Financial Goal</Text>
+
+          <Text style={styles.modalLabel}>Goal Name *</Text>
+          <TextInput style={styles.modalInput} placeholder="e.g. Emergency Fund" value={newGoalName} onChangeText={setNewGoalName} placeholderTextColor={colors.textMuted} autoFocus />
+
+          <Text style={styles.modalLabel}>Target Amount ($) *</Text>
+          <TextInput style={styles.modalInput} placeholder="10000" value={newGoalTarget} onChangeText={setNewGoalTarget} keyboardType="decimal-pad" placeholderTextColor={colors.textMuted} />
+
+          <Text style={styles.modalLabel}>Icon</Text>
+          <View style={styles.iconGrid}>
+            {GOAL_ICONS.map((icon) => (
+              <Pressable key={icon} onPress={() => setNewGoalIcon(icon)} style={[styles.iconBtn, newGoalIcon === icon && { backgroundColor: newGoalColor, borderColor: 'transparent' }]}>
+                <Ionicons name={icon as any} size={22} color={newGoalIcon === icon ? '#fff' : colors.textSecondary} />
+              </Pressable>
+            ))}
+          </View>
+
+          <Text style={styles.modalLabel}>Color</Text>
+          <View style={[styles.colorRow, { marginBottom: 24 }]}>
+            {GOAL_COLORS.map((c) => (
+              <Pressable key={c} onPress={() => setNewGoalColor(c)} style={[styles.colorSwatch, { backgroundColor: c }, newGoalColor === c && styles.colorSwatchSelected]} />
+            ))}
+          </View>
+
+          <Button title="Add Goal" onPress={handleAddGoal} fullWidth size="lg" disabled={!newGoalName.trim() || !newGoalTarget.trim()} />
+          <Button title="Cancel" onPress={() => setShowGoalModal(false)} variant="ghost" fullWidth style={{ marginTop: 8 }} />
+        </ScrollView>
+      </Modal>
     </View>
   );
 }
@@ -268,4 +384,19 @@ const styles = StyleSheet.create({
   txMeta: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   txDate: { fontSize: 12, color: colors.textSecondary },
   txAmount: { fontSize: 16, fontWeight: '700' },
+  modal: { flex: 1, padding: 24, backgroundColor: colors.background },
+  modalHandle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 24 },
+  modalTitle: { fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 20 },
+  modalLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  modalInput: { backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 16, color: colors.text, borderWidth: 1.5, borderColor: colors.border, marginBottom: 16, ...shadows.sm },
+  typeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
+  typeChip: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 20, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.card },
+  typeChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  typeChipText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  typeChipTextActive: { color: '#fff' },
+  iconGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 16 },
+  iconBtn: { width: 48, height: 48, borderRadius: 12, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
+  colorRow: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
+  colorSwatch: { width: 36, height: 36, borderRadius: 18 },
+  colorSwatchSelected: { borderWidth: 3, borderColor: colors.text },
 });

@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
+import { shadows } from '../../theme/spacing';
 import { Card } from '../../components/common/Card';
 import { ProgressBar } from '../../components/common/ProgressBar';
+import { Button } from '../../components/common/Button';
 import { useHealthStore } from '../../store/useHealthStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 
@@ -47,12 +50,33 @@ export function HealthHubScreen({ navigation }: any) {
 
   const FAMILY_HEALTH_SCORE = 78;
 
-  const UPCOMING_APPOINTMENTS = [
-    { member: 'Lily', type: 'Pediatric Checkup', date: 'July 12, 2026', doctor: 'Dr. Martinez', icon: 'medical', color: '#E91E63' },
-    { member: 'Marcus', type: 'Annual Physical', date: 'July 28, 2026', doctor: 'Dr. Chen', icon: 'body', color: '#2980B9' },
-    { member: 'Sarah', type: 'Dental Cleaning', date: 'August 3, 2026', doctor: 'Dr. Johnson', icon: 'happy', color: '#16A085' },
-    { member: 'Aiden', type: 'Optometry', date: 'August 15, 2026', doctor: 'Dr. Park', icon: 'eye', color: '#8E44AD' },
-  ];
+  const [showAptModal, setShowAptModal] = useState(false);
+  const [newAptMember, setNewAptMember] = useState('');
+  const [newAptType, setNewAptType] = useState('');
+  const [newAptDate, setNewAptDate] = useState('');
+  const [newAptDoctor, setNewAptDoctor] = useState('');
+  const [appointments, setAppointments] = useState([
+    { id: '1', member: 'Lily', type: 'Pediatric Checkup', date: 'July 12, 2026', doctor: 'Dr. Martinez', icon: 'medical', color: '#E91E63' },
+    { id: '2', member: 'Marcus', type: 'Annual Physical', date: 'July 28, 2026', doctor: 'Dr. Chen', icon: 'body', color: '#2980B9' },
+    { id: '3', member: 'Sarah', type: 'Dental Cleaning', date: 'August 3, 2026', doctor: 'Dr. Johnson', icon: 'happy', color: '#16A085' },
+    { id: '4', member: 'Aiden', type: 'Optometry', date: 'August 15, 2026', doctor: 'Dr. Park', icon: 'eye', color: '#8E44AD' },
+  ]);
+
+  const handleAddAppointment = () => {
+    if (!newAptType.trim() || !newAptMember.trim()) return;
+    setAppointments([...appointments, {
+      id: Math.random().toString(36).substring(2, 11),
+      member: newAptMember.trim(),
+      type: newAptType.trim(),
+      date: newAptDate.trim() || 'TBD',
+      doctor: newAptDoctor.trim() || 'TBD',
+      icon: 'medical',
+      color: '#2980B9',
+    }]);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setNewAptMember(''); setNewAptType(''); setNewAptDate(''); setNewAptDoctor('');
+    setShowAptModal(false);
+  };
 
   return (
     <View style={styles.container}>
@@ -63,7 +87,9 @@ export function HealthHubScreen({ navigation }: any) {
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </Pressable>
           <Text style={styles.headerTitle}>Family Health Hub</Text>
-          <View style={{ width: 40 }} />
+          <Pressable onPress={() => setShowAptModal(true)} style={styles.addBtn}>
+            <Ionicons name="add" size={22} color="#fff" />
+          </Pressable>
         </View>
 
         <View style={styles.scoreRow}>
@@ -201,8 +227,8 @@ export function HealthHubScreen({ navigation }: any) {
           </>
         )}
 
-        {activeTab === 'appointments' && UPCOMING_APPOINTMENTS.map((apt, i) => (
-          <Card key={i} style={styles.aptCard} variant="elevated">
+        {activeTab === 'appointments' && appointments.map((apt) => (
+          <Card key={apt.id} style={styles.aptCard} variant="elevated">
             <View style={styles.aptRow}>
               <View style={[styles.aptIcon, { backgroundColor: apt.color + '15' }]}>
                 <Ionicons name={apt.icon as any} size={22} color={apt.color} />
@@ -212,13 +238,41 @@ export function HealthHubScreen({ navigation }: any) {
                 <Text style={styles.aptMember}>{apt.member} • {apt.doctor}</Text>
                 <Text style={styles.aptDate}>{apt.date}</Text>
               </View>
-              <Pressable style={[styles.aptBtn, { backgroundColor: apt.color }]}>
+              <Pressable
+                onPress={() => Alert.alert(apt.type, `${apt.member}\n${apt.doctor}\n${apt.date}`, [
+                  { text: 'Dismiss', style: 'cancel' },
+                  { text: 'Add to Calendar', onPress: () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light) },
+                ])}
+                style={[styles.aptBtn, { backgroundColor: apt.color }]}
+              >
                 <Text style={styles.aptBtnText}>Details</Text>
               </Pressable>
             </View>
           </Card>
         ))}
       </ScrollView>
+
+      <Modal visible={showAptModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowAptModal(false)}>
+        <ScrollView style={styles.modal} contentContainerStyle={{ paddingBottom: 40 }}>
+          <View style={styles.modalHandle} />
+          <Text style={styles.modalTitle}>Add Appointment</Text>
+
+          <Text style={styles.modalLabel}>Family Member *</Text>
+          <TextInput style={styles.modalInput} placeholder="e.g. Sarah" value={newAptMember} onChangeText={setNewAptMember} placeholderTextColor={colors.textMuted} autoFocus />
+
+          <Text style={styles.modalLabel}>Appointment Type *</Text>
+          <TextInput style={styles.modalInput} placeholder="e.g. Dental Cleaning" value={newAptType} onChangeText={setNewAptType} placeholderTextColor={colors.textMuted} />
+
+          <Text style={styles.modalLabel}>Doctor / Provider</Text>
+          <TextInput style={styles.modalInput} placeholder="e.g. Dr. Martinez" value={newAptDoctor} onChangeText={setNewAptDoctor} placeholderTextColor={colors.textMuted} />
+
+          <Text style={styles.modalLabel}>Date</Text>
+          <TextInput style={[styles.modalInput, { marginBottom: 24 }]} placeholder="e.g. July 12, 2026" value={newAptDate} onChangeText={setNewAptDate} placeholderTextColor={colors.textMuted} />
+
+          <Button title="Add Appointment" onPress={handleAddAppointment} fullWidth size="lg" disabled={!newAptType.trim() || !newAptMember.trim()} />
+          <Button title="Cancel" onPress={() => setShowAptModal(false)} variant="ghost" fullWidth style={{ marginTop: 8 }} />
+        </ScrollView>
+      </Modal>
     </View>
   );
 }
@@ -229,6 +283,7 @@ const styles = StyleSheet.create({
   headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
   back: { marginRight: 12 },
   headerTitle: { flex: 1, fontSize: 22, fontWeight: '800', color: '#fff' },
+  addBtn: { width: 38, height: 38, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   scoreRow: { flexDirection: 'row', gap: 16 },
   scoreBlock: { alignItems: 'center', justifyContent: 'center', width: 90 },
   scoreValue: { fontSize: 48, fontWeight: '900', color: '#fff', lineHeight: 52 },
@@ -276,4 +331,9 @@ const styles = StyleSheet.create({
   aptDate: { fontSize: 12, color: colors.primary, fontWeight: '600', marginTop: 2 },
   aptBtn: { borderRadius: 10, paddingVertical: 7, paddingHorizontal: 12 },
   aptBtnText: { fontSize: 12, fontWeight: '700', color: '#fff' },
+  modal: { flex: 1, padding: 24, backgroundColor: colors.background },
+  modalHandle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 24 },
+  modalTitle: { fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 20 },
+  modalLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  modalInput: { backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 16, color: colors.text, borderWidth: 1.5, borderColor: colors.border, marginBottom: 16, ...shadows.sm },
 });

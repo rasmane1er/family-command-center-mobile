@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -134,7 +134,13 @@ export function RelationshipHealthScreen({ navigation }: any) {
                 <Text style={styles.pointsText}>{act.points}</Text>
               </View>
             </View>
-            <Pressable style={[styles.scheduleBtn, { backgroundColor: act.color }]}>
+            <Pressable
+              onPress={() => Alert.alert('Schedule Activity', `Add "${act.activity}" to your calendar?`, [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Open Calendar', onPress: () => navigation.navigate('Calendar') },
+              ])}
+              style={[styles.scheduleBtn, { backgroundColor: act.color }]}
+            >
               <Text style={styles.scheduleBtnText}>Schedule Activity</Text>
             </Pressable>
           </Card>

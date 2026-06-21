@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
+import { shadows } from '../../theme/spacing';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
+import { Button } from '../../components/common/Button';
 import { useAutomationStore } from '../../store/useAutomationStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 
@@ -28,10 +31,31 @@ const RESOLUTION_FRAMEWORKS = [
 export function ConflictResolverScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<'active' | 'tools' | 'framework'>('active');
-  const { conflicts, resolveConflict, updateConflictStatus, seedDemoData } = useAutomationStore();
+  const [showModal, setShowModal] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newDesc, setNewDesc] = useState('');
+  const [newSeverity, setNewSeverity] = useState<'low' | 'medium' | 'high'>('medium');
+  const [newParties, setNewParties] = useState<string[]>([]);
+  const { conflicts, resolveConflict, updateConflictStatus, addConflict, seedDemoData } = useAutomationStore();
   const members = useFamilyStore((s) => s.members);
 
   if (conflicts.length === 0) seedDemoData();
+
+  const handleAddConflict = () => {
+    if (!newTitle.trim()) return;
+    addConflict({
+      familyId: 'demo-family',
+      title: newTitle.trim(),
+      description: newDesc.trim(),
+      partiesInvolved: newParties,
+      status: 'open',
+      severity: newSeverity,
+      aiSuggestion: 'Try using the I-Statement Builder tool to express feelings without blame.',
+    });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setNewTitle(''); setNewDesc(''); setNewSeverity('medium'); setNewParties([]);
+    setShowModal(false);
+  };
 
   const getMemberName = (id: string) => members.find((m) => m.id === id)?.name ?? 'Member';
 
@@ -65,7 +89,7 @@ export function ConflictResolverScreen({ navigation }: any) {
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </Pressable>
           <Text style={styles.headerTitle}>Conflict Resolver</Text>
-          <Pressable style={styles.addBtn}>
+          <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
             <Ionicons name="add" size={24} color="#fff" />
           </Pressable>
         </View>
@@ -179,6 +203,40 @@ export function ConflictResolverScreen({ navigation }: any) {
           </>
         )}
       </ScrollView>
+
+      <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowModal(false)}>
+        <ScrollView style={styles.modal} contentContainerStyle={{ paddingBottom: 40 }}>
+          <View style={styles.modalHandle} />
+          <Text style={styles.modalTitle}>Report a Conflict</Text>
+
+          <Text style={styles.modalLabel}>Title *</Text>
+          <TextInput style={styles.modalInput} placeholder="e.g. Disagreement about screen time" value={newTitle} onChangeText={setNewTitle} placeholderTextColor={colors.textMuted} autoFocus />
+
+          <Text style={styles.modalLabel}>Description</Text>
+          <TextInput style={[styles.modalInput, styles.modalTextarea]} placeholder="Describe what happened..." value={newDesc} onChangeText={setNewDesc} placeholderTextColor={colors.textMuted} multiline numberOfLines={4} />
+
+          <Text style={styles.modalLabel}>Severity</Text>
+          <View style={styles.severityRow}>
+            {(['low', 'medium', 'high'] as const).map((s) => (
+              <Pressable key={s} onPress={() => setNewSeverity(s)} style={[styles.severityChip, newSeverity === s && { backgroundColor: s === 'high' ? colors.danger : s === 'medium' ? colors.warning : colors.success, borderColor: 'transparent' }]}>
+                <Text style={[styles.severityText, newSeverity === s && { color: '#fff' }]}>{s.charAt(0).toUpperCase() + s.slice(1)}</Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <Text style={styles.modalLabel}>Parties Involved</Text>
+          <View style={styles.partiesGrid}>
+            {members.map((m) => (
+              <Pressable key={m.id} onPress={() => setNewParties(newParties.includes(m.id) ? newParties.filter((id) => id !== m.id) : [...newParties, m.id])} style={[styles.partyBtn, newParties.includes(m.id) && styles.partyBtnActive]}>
+                <Text style={[styles.partyBtnText, newParties.includes(m.id) && styles.partyBtnTextActive]}>{m.name}</Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <Button title="Report Conflict" onPress={handleAddConflict} fullWidth size="lg" disabled={!newTitle.trim()} style={{ marginTop: 8 }} />
+          <Button title="Cancel" onPress={() => setShowModal(false)} variant="ghost" fullWidth style={{ marginTop: 8 }} />
+        </ScrollView>
+      </Modal>
     </View>
   );
 }
@@ -230,4 +288,18 @@ const styles = StyleSheet.create({
   stepCard: { flex: 1, borderRadius: 12 },
   stepName: { fontSize: 14, fontWeight: '800', marginBottom: 4 },
   stepDesc: { fontSize: 12, color: colors.textSecondary, lineHeight: 17 },
+  modal: { flex: 1, padding: 24, backgroundColor: colors.background },
+  modalHandle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 24 },
+  modalTitle: { fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 20 },
+  modalLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  modalInput: { backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 16, color: colors.text, borderWidth: 1.5, borderColor: colors.border, marginBottom: 16, ...shadows.sm },
+  modalTextarea: { minHeight: 90, textAlignVertical: 'top' as const },
+  severityRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
+  severityChip: { flex: 1, paddingVertical: 10, borderRadius: 12, borderWidth: 1.5, borderColor: colors.border, alignItems: 'center', backgroundColor: colors.card },
+  severityText: { fontSize: 14, fontWeight: '700', color: colors.textSecondary },
+  partiesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 24 },
+  partyBtn: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.card },
+  partyBtnActive: { backgroundColor: '#E74C3C', borderColor: '#E74C3C' },
+  partyBtnText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  partyBtnTextActive: { color: '#fff' },
 });
