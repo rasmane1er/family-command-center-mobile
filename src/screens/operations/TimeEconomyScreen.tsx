@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions, Modal, TextInput, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
+import { shadows } from '../../theme/spacing';
 import { Card } from '../../components/common/Card';
 import { ProgressBar } from '../../components/common/ProgressBar';
+import { Button } from '../../components/common/Button';
 import { useAutomationStore } from '../../store/useAutomationStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import type { TimeBlockCategory } from '../../types';
 
 const { width } = Dimensions.get('window');
 
@@ -43,12 +47,37 @@ export function TimeEconomyScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<'overview' | 'schedule' | 'insights'>('overview');
   const [selectedMember, setSelectedMember] = useState<string | null>(null);
-  const { timeBlocks, seedDemoData } = useAutomationStore();
+  const [showModal, setShowModal] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newCategory, setNewCategory] = useState<TimeBlockCategory>('family');
+  const [newStart, setNewStart] = useState('09:00');
+  const [newEnd, setNewEnd] = useState('10:00');
+  const [newMemberIdModal, setNewMemberIdModal] = useState('');
+  const { timeBlocks, addTimeBlock, seedDemoData } = useAutomationStore();
   const members = useFamilyStore((s) => s.members);
 
   if (timeBlocks.length === 0) seedDemoData();
 
   const activeMemberId = selectedMember ?? members[0]?.id ?? '';
+
+  const handleAddBlock = () => {
+    if (!newTitle.trim()) { Alert.alert('Required', 'Please enter a title.'); return; }
+    const memberId = newMemberIdModal || members[0]?.id || '';
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    addTimeBlock({
+      familyId: 'demo-family',
+      memberId,
+      category: newCategory,
+      title: newTitle.trim(),
+      startTime: newStart,
+      endTime: newEnd,
+      date: new Date().toISOString().split('T')[0],
+      isRecurring: false,
+      color: CATEGORY_CONFIG[newCategory]?.color ?? colors.primary,
+    });
+    setShowModal(false);
+    setNewTitle(''); setNewCategory('family'); setNewStart('09:00'); setNewEnd('10:00');
+  };
   const memberBlocks = timeBlocks.filter((b) => b.memberId === activeMemberId);
 
   const categoryTotals = memberBlocks.reduce((acc, b) => {
@@ -69,7 +98,7 @@ export function TimeEconomyScreen({ navigation }: any) {
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </Pressable>
           <Text style={styles.headerTitle}>Time Economy</Text>
-          <Pressable style={styles.addBtn}>
+          <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setNewMemberIdModal(activeMemberId); setShowModal(true); }} style={styles.addBtn}>
             <Ionicons name="add" size={24} color="#fff" />
           </Pressable>
         </View>
@@ -204,6 +233,54 @@ export function TimeEconomyScreen({ navigation }: any) {
           </Card>
         ))}
       </ScrollView>
+
+      <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet">
+        <ScrollView style={styles.modal} contentContainerStyle={{ paddingBottom: 40 }}>
+          <View style={styles.modalHandle} />
+          <Text style={styles.modalTitle}>Add Time Block</Text>
+
+          <Text style={styles.modalLabel}>Member</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+            {members.map((m) => (
+              <Pressable key={m.id} onPress={() => setNewMemberIdModal(m.id)} style={[styles.memberChip, newMemberIdModal === m.id && { borderColor: m.avatarColor, backgroundColor: m.avatarColor + '15' }]}>
+                <View style={[styles.memberDot, { backgroundColor: m.avatarColor }]} />
+                <Text style={[styles.memberChipText, newMemberIdModal === m.id && { color: m.avatarColor }]}>{m.name.split(' ')[0]}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+
+          <Text style={styles.modalLabel}>Category</Text>
+          <View style={styles.catGrid}>
+            {(Object.keys(CATEGORY_CONFIG) as TimeBlockCategory[]).map((cat) => {
+              const cfg = CATEGORY_CONFIG[cat];
+              return (
+                <Pressable key={cat} onPress={() => setNewCategory(cat)} style={[styles.catChip, newCategory === cat && { backgroundColor: cfg.color, borderColor: cfg.color }]}>
+                  <Ionicons name={cfg.icon as any} size={13} color={newCategory === cat ? '#fff' : cfg.color} />
+                  <Text style={[styles.catChipText, newCategory === cat && { color: '#fff' }]}>{cat}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <Text style={styles.modalLabel}>Title</Text>
+          <TextInput style={styles.modalInput} value={newTitle} onChangeText={setNewTitle} placeholder="What activity is this?" placeholderTextColor={colors.textMuted} />
+
+          <View style={styles.timeRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.modalLabel}>Start Time</Text>
+              <TextInput style={styles.modalInput} value={newStart} onChangeText={setNewStart} placeholder="09:00" placeholderTextColor={colors.textMuted} />
+            </View>
+            <View style={{ width: 16 }} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.modalLabel}>End Time</Text>
+              <TextInput style={styles.modalInput} value={newEnd} onChangeText={setNewEnd} placeholder="10:00" placeholderTextColor={colors.textMuted} />
+            </View>
+          </View>
+
+          <Button title="Add Block" onPress={handleAddBlock} />
+          <Button title="Cancel" onPress={() => setShowModal(false)} variant="ghost" style={{ marginTop: 8 }} />
+        </ScrollView>
+      </Modal>
     </View>
   );
 }
@@ -258,4 +335,16 @@ const styles = StyleSheet.create({
   emptyState: { alignItems: 'center', paddingVertical: 60 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginTop: 16 },
   emptyDesc: { fontSize: 13, color: colors.textSecondary, marginTop: 8, textAlign: 'center', paddingHorizontal: 32 },
+  modal: { flex: 1, padding: 24, backgroundColor: colors.background },
+  modalHandle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 24 },
+  modalTitle: { fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 20 },
+  modalLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  modalInput: { backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 16, color: colors.text, borderWidth: 1.5, borderColor: colors.border, marginBottom: 16, ...shadows.sm },
+  catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
+  catChip: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 20, paddingVertical: 6, paddingHorizontal: 10, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.card },
+  catChipText: { fontSize: 11, fontWeight: '700', color: colors.textSecondary },
+  memberChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 7, paddingHorizontal: 14, borderRadius: 20, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.card, marginRight: 8 },
+  memberChipText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  memberDot: { width: 8, height: 8, borderRadius: 4 },
+  timeRow: { flexDirection: 'row' },
 });

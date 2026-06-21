@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -279,7 +279,13 @@ export function DigitalTwinScreen({ navigation }: any) {
                   </View>
                   <Text style={styles.whatIfEffect}>{s.effect}</Text>
                 </View>
-                <Pressable style={[styles.whatIfBtn, { backgroundColor: s.color }]}>
+                <Pressable
+                  onPress={() => Alert.alert('Apply This Change', `"${s.scenario}"\n\nProjected effect: ${s.effect}\n\nWould you like to add this as a family goal?`, [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Add to Goals', onPress: () => navigation.navigate('Finance') },
+                  ])}
+                  style={[styles.whatIfBtn, { backgroundColor: s.color }]}
+                >
                   <Text style={styles.whatIfBtnText}>Apply This Change</Text>
                 </Pressable>
               </Card>
@@ -288,7 +294,13 @@ export function DigitalTwinScreen({ navigation }: any) {
             <Card variant="elevated" style={styles.customCard}>
               <Text style={styles.customTitle}>Create Custom Scenario</Text>
               <Text style={styles.customDesc}>Tell the AI what you're planning and it will project the impact on your family's score, finances, and wellbeing.</Text>
-              <Pressable style={styles.customBtn}>
+              <Pressable
+                onPress={() => Alert.alert('Ask AI to Analyze', 'Describe a change you\'re planning — budget adjustment, routine shift, habit change — and the AI will project its impact on your family score, finances, and wellbeing.', [
+                  { text: 'Later', style: 'cancel' },
+                  { text: 'Open AI Assistant', onPress: () => navigation.navigate('AI Assistant') },
+                ])}
+                style={styles.customBtn}
+              >
                 <Ionicons name="sparkles" size={18} color={colors.primary} />
                 <Text style={styles.customBtnText}>Ask AI to Analyze</Text>
               </Pressable>

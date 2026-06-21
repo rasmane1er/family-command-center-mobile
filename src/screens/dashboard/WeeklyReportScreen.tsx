@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -311,7 +311,13 @@ export function WeeklyReportScreen({ navigation }: any) {
           ))}
         </Card>
 
-        <Pressable style={styles.shareBtn}>
+        <Pressable
+          onPress={() => Alert.alert('Share Weekly Report', `Family Health Score: ${healthScore.overall}/100\nTasks Completed: ${completedTasks}\nSavings Rate: ${Math.round(savingsRate * 100)}%\n\nShare this week's family report with members?`, [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Share', onPress: () => Alert.alert('Shared!', 'Weekly report has been shared with your family.') },
+          ])}
+          style={styles.shareBtn}
+        >
           <Ionicons name="share-outline" size={18} color="#fff" />
           <Text style={styles.shareBtnText}>Share Weekly Report</Text>
         </Pressable>

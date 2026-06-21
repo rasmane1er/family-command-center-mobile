@@ -1,13 +1,19 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions, Modal, TextInput, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
+import { shadows } from '../../theme/spacing';
 import { Card } from '../../components/common/Card';
 import { ProgressBar } from '../../components/common/ProgressBar';
+import { Button } from '../../components/common/Button';
 import { useWealthStore } from '../../store/useWealthStore';
+import type { WealthCategory } from '../../types';
+
+const WEALTH_CATEGORIES: WealthCategory[] = ['stocks', 'bonds', 'real_estate', 'crypto', 'savings', 'retirement', 'business', 'other'];
 
 const { width } = Dimensions.get('window');
 
@@ -36,9 +42,33 @@ const CATEGORY_LABELS: Record<string, string> = {
 export function WealthBuilderScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<'portfolio' | 'forecast' | 'insights'>('portfolio');
-  const { entries, projections, getTotalNetWorth, seedDemoData } = useWealthStore();
+  const [showModal, setShowModal] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newCategory, setNewCategory] = useState<WealthCategory>('savings');
+  const [newCurrentValue, setNewCurrentValue] = useState('');
+  const [newCostBasis, setNewCostBasis] = useState('');
+  const [newInstitution, setNewInstitution] = useState('');
+  const { entries, projections, getTotalNetWorth, addEntry, seedDemoData } = useWealthStore();
 
   if (entries.length === 0) seedDemoData();
+
+  const handleAddEntry = () => {
+    if (!newName.trim() || !newCurrentValue) { Alert.alert('Required', 'Please enter a name and current value.'); return; }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const cv = parseFloat(newCurrentValue) || 0;
+    const cb = parseFloat(newCostBasis) || cv;
+    addEntry({
+      familyId: 'demo-family',
+      name: newName.trim(),
+      category: newCategory,
+      currentValue: cv,
+      costBasis: cb,
+      percentAllocation: 0,
+      institution: newInstitution.trim() || undefined,
+    });
+    setShowModal(false);
+    setNewName(''); setNewCategory('savings'); setNewCurrentValue(''); setNewCostBasis(''); setNewInstitution('');
+  };
 
   const totalNetWorth = getTotalNetWorth();
   const totalGain = entries.reduce((s, e) => s + (e.currentValue - e.costBasis), 0);
@@ -66,7 +96,7 @@ export function WealthBuilderScreen({ navigation }: any) {
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </Pressable>
           <Text style={styles.headerTitle}>Wealth Builder</Text>
-          <Pressable style={styles.addBtn}>
+          <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowModal(true); }} style={styles.addBtn}>
             <Ionicons name="add" size={24} color="#fff" />
           </Pressable>
         </View>
@@ -196,6 +226,37 @@ export function WealthBuilderScreen({ navigation }: any) {
           </Card>
         ))}
       </ScrollView>
+
+      <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet">
+        <ScrollView style={styles.modal} contentContainerStyle={{ paddingBottom: 40 }}>
+          <View style={styles.modalHandle} />
+          <Text style={styles.modalTitle}>Add Holding</Text>
+
+          <Text style={styles.modalLabel}>Category</Text>
+          <View style={styles.catGrid}>
+            {WEALTH_CATEGORIES.map((cat) => (
+              <Pressable key={cat} onPress={() => setNewCategory(cat)} style={[styles.catChip, newCategory === cat && { backgroundColor: CATEGORY_COLORS[cat] ?? '#95A5A6', borderColor: CATEGORY_COLORS[cat] ?? '#95A5A6' }]}>
+                <Text style={[styles.catChipText, newCategory === cat && { color: '#fff' }]}>{CATEGORY_LABELS[cat] ?? cat}</Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <Text style={styles.modalLabel}>Name</Text>
+          <TextInput style={styles.modalInput} value={newName} onChangeText={setNewName} placeholder="e.g. Vanguard S&P 500, Primary Home..." placeholderTextColor={colors.textMuted} />
+
+          <Text style={styles.modalLabel}>Current Value ($)</Text>
+          <TextInput style={styles.modalInput} value={newCurrentValue} onChangeText={setNewCurrentValue} placeholder="0" placeholderTextColor={colors.textMuted} keyboardType="numeric" />
+
+          <Text style={styles.modalLabel}>Cost Basis ($)</Text>
+          <TextInput style={styles.modalInput} value={newCostBasis} onChangeText={setNewCostBasis} placeholder="What you originally paid" placeholderTextColor={colors.textMuted} keyboardType="numeric" />
+
+          <Text style={styles.modalLabel}>Institution (Optional)</Text>
+          <TextInput style={styles.modalInput} value={newInstitution} onChangeText={setNewInstitution} placeholder="Fidelity, Chase, Coinbase..." placeholderTextColor={colors.textMuted} />
+
+          <Button title="Add Holding" onPress={handleAddEntry} />
+          <Button title="Cancel" onPress={() => setShowModal(false)} variant="ghost" style={{ marginTop: 8 }} />
+        </ScrollView>
+      </Modal>
     </View>
   );
 }
@@ -255,4 +316,12 @@ const styles = StyleSheet.create({
   insightIcon: { width: 38, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   insightLabel: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
   insightText: { fontSize: 13, color: colors.text, lineHeight: 19 },
+  modal: { flex: 1, padding: 24, backgroundColor: colors.background },
+  modalHandle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 24 },
+  modalTitle: { fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 20 },
+  modalLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  modalInput: { backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 16, color: colors.text, borderWidth: 1.5, borderColor: colors.border, marginBottom: 16, ...shadows.sm },
+  catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
+  catChip: { borderRadius: 20, paddingVertical: 7, paddingHorizontal: 12, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.card },
+  catChipText: { fontSize: 12, fontWeight: '700', color: colors.textSecondary },
 });

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -92,7 +92,7 @@ export function ParentingCoachScreen({ navigation }: any) {
 
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
         {activeTab === 'modules' && COACHING_MODULES.map((module) => (
-          <Pressable key={module.id}>
+          <Pressable key={module.id} onPress={() => Alert.alert(module.title, `${module.desc}\n\n${module.completed}/${module.sessions} sessions completed · ⭐ ${module.rating}`, [{ text: 'Close', style: 'cancel' }, { text: 'Ask AI Coach', onPress: () => navigation.navigate('AI Assistant') }])}>
             <Card style={{ ...styles.moduleCard, backgroundColor: module.bg }} variant="default">
               <View style={styles.moduleHeader}>
                 <View style={[styles.moduleIcon, { backgroundColor: module.color + '25' }]}>

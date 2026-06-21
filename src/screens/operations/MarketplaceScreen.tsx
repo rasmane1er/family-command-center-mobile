@@ -1,14 +1,28 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
+import { shadows } from '../../theme/spacing';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
+import { Button } from '../../components/common/Button';
 import { useAutomationStore } from '../../store/useAutomationStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import type { ListingCategory } from '../../types';
+
+const generateId = () => Math.random().toString(36).substring(2, 11);
+const LISTING_CATEGORIES: ListingCategory[] = ['chores', 'skills', 'items', 'favors', 'lessons'];
+const LISTING_ICONS: Record<ListingCategory, string> = {
+  chores: 'home',
+  skills: 'school',
+  items: 'bag',
+  favors: 'heart',
+  lessons: 'book',
+};
 
 const CATEGORY_CONFIG: Record<string, { color: string; icon: string }> = {
   chores: { color: '#27AE60', icon: 'home' },
@@ -22,7 +36,12 @@ export function MarketplaceScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<'all' | string>('all');
   const [activeTab, setActiveTab] = useState<'available' | 'claimed' | 'history'>('available');
-  const { listings, claimListing, completeListing, seedDemoData } = useAutomationStore();
+  const [showModal, setShowModal] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newDesc, setNewDesc] = useState('');
+  const [newCategory, setNewCategory] = useState<ListingCategory>('chores');
+  const [newPoints, setNewPoints] = useState('50');
+  const { listings, claimListing, completeListing, addListing, seedDemoData } = useAutomationStore();
   const members = useFamilyStore((s) => s.members);
 
   if (listings.length === 0) seedDemoData();
@@ -48,6 +67,25 @@ export function MarketplaceScreen({ navigation }: any) {
 
   const totalPoints = listings.filter((l) => l.isAvailable).reduce((s, l) => s + l.pointsValue, 0);
 
+  const handlePost = () => {
+    if (!newTitle.trim()) { Alert.alert('Required', 'Please enter a title.'); return; }
+    const pts = parseInt(newPoints) || 50;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    addListing({
+      familyId: 'demo-family',
+      createdBy: 'member-1',
+      title: newTitle.trim(),
+      description: newDesc.trim() || 'Help needed with this task',
+      category: newCategory,
+      pointsValue: pts,
+      isAvailable: true,
+      icon: LISTING_ICONS[newCategory],
+      tags: [newCategory],
+    });
+    setShowModal(false);
+    setNewTitle(''); setNewDesc(''); setNewCategory('chores'); setNewPoints('50');
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
@@ -57,7 +95,7 @@ export function MarketplaceScreen({ navigation }: any) {
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </Pressable>
           <Text style={styles.headerTitle}>Family Marketplace</Text>
-          <Pressable style={styles.addBtn}>
+          <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowModal(true); }} style={styles.addBtn}>
             <Ionicons name="add" size={24} color="#fff" />
           </Pressable>
         </View>
@@ -172,6 +210,38 @@ export function MarketplaceScreen({ navigation }: any) {
           </View>
         )}
       </ScrollView>
+
+      <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet">
+        <ScrollView style={styles.modal} contentContainerStyle={{ paddingBottom: 40 }}>
+          <View style={styles.modalHandle} />
+          <Text style={styles.modalTitle}>Post to Marketplace</Text>
+
+          <Text style={styles.modalLabel}>Category</Text>
+          <View style={styles.catGrid}>
+            {LISTING_CATEGORIES.map((cat) => {
+              const cfg = CATEGORY_CONFIG[cat];
+              return (
+                <Pressable key={cat} onPress={() => setNewCategory(cat)} style={[styles.catChip, newCategory === cat && { backgroundColor: cfg.color, borderColor: cfg.color }]}>
+                  <Ionicons name={cfg.icon as any} size={14} color={newCategory === cat ? '#fff' : cfg.color} />
+                  <Text style={[styles.catChipText, newCategory === cat && { color: '#fff' }]}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <Text style={styles.modalLabel}>Title</Text>
+          <TextInput style={styles.modalInput} value={newTitle} onChangeText={setNewTitle} placeholder="What needs to be done?" placeholderTextColor={colors.textMuted} />
+
+          <Text style={styles.modalLabel}>Description</Text>
+          <TextInput style={[styles.modalInput, styles.modalTextarea]} value={newDesc} onChangeText={setNewDesc} placeholder="Add details about this task..." placeholderTextColor={colors.textMuted} multiline numberOfLines={3} />
+
+          <Text style={styles.modalLabel}>Points Value</Text>
+          <TextInput style={styles.modalInput} value={newPoints} onChangeText={setNewPoints} placeholder="50" placeholderTextColor={colors.textMuted} keyboardType="numeric" />
+
+          <Button title="Post Task" onPress={handlePost} />
+          <Button title="Cancel" onPress={() => setShowModal(false)} variant="ghost" style={{ marginTop: 8 }} />
+        </ScrollView>
+      </Modal>
     </View>
   );
 }
@@ -220,4 +290,13 @@ const styles = StyleSheet.create({
   emptyState: { alignItems: 'center', paddingVertical: 60 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginTop: 16 },
   emptyDesc: { fontSize: 13, color: colors.textSecondary, marginTop: 8, textAlign: 'center', paddingHorizontal: 32 },
+  modal: { flex: 1, padding: 24, backgroundColor: colors.background },
+  modalHandle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 24 },
+  modalTitle: { fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 20 },
+  modalLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  modalInput: { backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 16, color: colors.text, borderWidth: 1.5, borderColor: colors.border, marginBottom: 16, ...shadows.sm },
+  modalTextarea: { minHeight: 70, textAlignVertical: 'top' as const },
+  catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
+  catChip: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 20, paddingVertical: 7, paddingHorizontal: 12, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.card },
+  catChipText: { fontSize: 12, fontWeight: '700', color: colors.textSecondary },
 });

@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Modal, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
+import { shadows } from '../../theme/spacing';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
+import { Button } from '../../components/common/Button';
 import { useMemoryStore } from '../../store/useMemoryStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import type { MemoryType } from '../../types';
@@ -32,12 +35,45 @@ export function AIMemoryScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<'all' | MemoryType>('all');
   const [search, setSearch] = useState('');
-  const { memories, pinMemory, seedDemoData } = useMemoryStore();
+  const [showModal, setShowModal] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newContent, setNewContent] = useState('');
+  const [newType, setNewType] = useState<MemoryType>('milestone');
+  const [newMemberId, setNewMemberId] = useState('');
+  const [newSentiment, setNewSentiment] = useState<'positive' | 'negative' | 'neutral'>('positive');
+  const [newTags, setNewTags] = useState('');
+
+  const { memories, pinMemory, addMemory, seedDemoData } = useMemoryStore();
   const members = useFamilyStore((s) => s.members);
 
   if (memories.length === 0) seedDemoData();
 
   const getMemberName = (id?: string) => members.find((m) => m.id === id)?.name;
+
+  const handleAddMemory = () => {
+    if (!newTitle.trim() || !newContent.trim()) {
+      Alert.alert('Required', 'Please enter a title and content.');
+      return;
+    }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    addMemory({
+      familyId: 'demo-family',
+      memberId: newMemberId || undefined,
+      type: newType,
+      title: newTitle.trim(),
+      content: newContent.trim(),
+      tags: newTags.split(',').map((t) => t.trim()).filter(Boolean),
+      isPinned: false,
+      sentiment: newSentiment,
+    });
+    setShowModal(false);
+    setNewTitle('');
+    setNewContent('');
+    setNewType('milestone');
+    setNewMemberId('');
+    setNewTags('');
+    setNewSentiment('positive');
+  };
 
   const filtered = memories
     .filter((m) => filter === 'all' || m.type === filter)
@@ -64,7 +100,7 @@ export function AIMemoryScreen({ navigation }: any) {
             <Text style={styles.headerTitle}>AI Memory Engine</Text>
             <Text style={styles.headerSub}>{memories.length} memories stored</Text>
           </View>
-          <Pressable style={styles.addBtn}>
+          <Pressable style={styles.addBtn} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowModal(true); }}>
             <Ionicons name="add" size={24} color="#fff" />
           </Pressable>
         </View>
@@ -182,6 +218,62 @@ export function AIMemoryScreen({ navigation }: any) {
           </View>
         )}
       </ScrollView>
+
+      <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet">
+        <ScrollView style={styles.modal} contentContainerStyle={{ paddingBottom: 40 }}>
+          <View style={styles.modalHandle} />
+          <Text style={styles.modalTitle}>Add Memory</Text>
+
+          <Text style={styles.modalLabel}>Type</Text>
+          <View style={styles.typeGrid}>
+            {(Object.keys(TYPE_CONFIG) as MemoryType[]).map((t) => {
+              const cfg = TYPE_CONFIG[t];
+              return (
+                <Pressable key={t} onPress={() => setNewType(t)} style={[styles.typeChip, newType === t && { backgroundColor: cfg.color, borderColor: cfg.color }]}>
+                  <Ionicons name={cfg.icon as any} size={14} color={newType === t ? '#fff' : cfg.color} />
+                  <Text style={[styles.typeChipText, newType === t && { color: '#fff' }]}>{cfg.label}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <Text style={styles.modalLabel}>Title</Text>
+          <TextInput style={styles.modalInput} value={newTitle} onChangeText={setNewTitle} placeholder="Give this memory a title..." placeholderTextColor={colors.textMuted} />
+
+          <Text style={styles.modalLabel}>Content</Text>
+          <TextInput style={[styles.modalInput, styles.modalTextarea]} value={newContent} onChangeText={setNewContent} placeholder="What happened? What should be remembered?" placeholderTextColor={colors.textMuted} multiline numberOfLines={4} />
+
+          <Text style={styles.modalLabel}>Member (Optional)</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+            <Pressable onPress={() => setNewMemberId('')} style={[styles.memberChip, !newMemberId && styles.memberChipActive]}>
+              <Text style={[styles.memberChipText, !newMemberId && styles.memberChipTextActive]}>Family</Text>
+            </Pressable>
+            {members.map((m) => (
+              <Pressable key={m.id} onPress={() => setNewMemberId(m.id)} style={[styles.memberChip, newMemberId === m.id && styles.memberChipActive]}>
+                <View style={[styles.memberDot, { backgroundColor: m.avatarColor }]} />
+                <Text style={[styles.memberChipText, newMemberId === m.id && styles.memberChipTextActive]}>{m.name.split(' ')[0]}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+
+          <Text style={styles.modalLabel}>Sentiment</Text>
+          <View style={styles.sentimentRow}>
+            {(['positive', 'neutral', 'negative'] as const).map((s) => (
+              <Pressable key={s} onPress={() => setNewSentiment(s)} style={[styles.sentimentChip, newSentiment === s && styles.sentimentChipActive]}>
+                <Text style={[styles.sentimentText, newSentiment === s && styles.sentimentTextActive]}>
+                  {s === 'positive' ? '😊 Positive' : s === 'neutral' ? '😐 Neutral' : '😔 Negative'}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <Text style={styles.modalLabel}>Tags (comma-separated)</Text>
+          <TextInput style={styles.modalInput} value={newTags} onChangeText={setNewTags} placeholder="family, milestone, finance..." placeholderTextColor={colors.textMuted} />
+
+          <Button title="Save Memory" onPress={handleAddMemory} />
+          <Button title="Cancel" onPress={() => setShowModal(false)} variant="ghost" style={{ marginTop: 8 }} />
+        </ScrollView>
+      </Modal>
     </View>
   );
 }
@@ -217,4 +309,23 @@ const styles = StyleSheet.create({
   emptyState: { alignItems: 'center', paddingVertical: 60 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginTop: 16 },
   emptyDesc: { fontSize: 13, color: colors.textSecondary, marginTop: 8, textAlign: 'center', paddingHorizontal: 32 },
+  modal: { flex: 1, padding: 24, backgroundColor: colors.background },
+  modalHandle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 24 },
+  modalTitle: { fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 20 },
+  modalLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  modalInput: { backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 16, color: colors.text, borderWidth: 1.5, borderColor: colors.border, marginBottom: 16, ...shadows.sm },
+  modalTextarea: { minHeight: 80, textAlignVertical: 'top' as const },
+  typeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
+  typeChip: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 20, paddingVertical: 6, paddingHorizontal: 12, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.card },
+  typeChipText: { fontSize: 12, fontWeight: '700', color: colors.textSecondary },
+  memberChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 7, paddingHorizontal: 14, borderRadius: 20, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.card, marginRight: 8 },
+  memberChipActive: { borderColor: '#6A1B9A', backgroundColor: '#F3E5F5' },
+  memberChipText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  memberChipTextActive: { color: '#6A1B9A' },
+  memberDot: { width: 8, height: 8, borderRadius: 4 },
+  sentimentRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
+  sentimentChip: { flex: 1, borderRadius: 12, paddingVertical: 9, alignItems: 'center', borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.card },
+  sentimentChipActive: { borderColor: '#6A1B9A', backgroundColor: '#F3E5F5' },
+  sentimentText: { fontSize: 12, fontWeight: '700', color: colors.textSecondary },
+  sentimentTextActive: { color: '#6A1B9A' },
 });

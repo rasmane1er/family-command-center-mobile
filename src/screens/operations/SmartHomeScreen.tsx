@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Switch } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Switch, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -71,7 +71,10 @@ export function SmartHomeScreen({ navigation }: any) {
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </Pressable>
           <Text style={styles.headerTitle}>Smart Home</Text>
-          <Pressable style={styles.addBtn}>
+          <Pressable
+            onPress={() => Alert.alert('Add Device', 'To pair a new smart home device, open your device manufacturer\'s app and follow the pairing instructions. Your devices will appear here automatically.', [{ text: 'Got It' }])}
+            style={styles.addBtn}
+          >
             <Ionicons name="add" size={24} color="#fff" />
           </Pressable>
         </View>
@@ -172,7 +175,14 @@ export function SmartHomeScreen({ navigation }: any) {
         {activeTab === 'scenes' && (
           <View style={styles.scenesGrid}>
             {SCENES.map((scene) => (
-              <Pressable key={scene.name} style={[styles.sceneCard, { backgroundColor: scene.color + '15', borderColor: scene.color + '30' }]}>
+              <Pressable
+                key={scene.name}
+                onPress={() => Alert.alert(`Activate "${scene.name}"?`, scene.desc, [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Activate', onPress: () => Alert.alert('Scene Activated', `${scene.name} scene is now active.`) },
+                ])}
+                style={[styles.sceneCard, { backgroundColor: scene.color + '15', borderColor: scene.color + '30' }]}
+              >
                 <View style={[styles.sceneIcon, { backgroundColor: scene.color + '20' }]}>
                   <Ionicons name={scene.icon as any} size={28} color={scene.color} />
                 </View>

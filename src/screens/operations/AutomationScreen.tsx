@@ -61,7 +61,10 @@ export function AutomationScreen({ navigation }: any) {
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </Pressable>
           <Text style={styles.headerTitle}>Automation Engine</Text>
-          <Pressable style={styles.addBtn}>
+          <Pressable
+            onPress={() => Alert.alert('Add Automation', 'Switch to the Templates tab to quickly add pre-built automations to your family rules.', [{ text: 'Got It' }])}
+            style={styles.addBtn}
+          >
             <Ionicons name="add" size={24} color="#fff" />
           </Pressable>
         </View>
