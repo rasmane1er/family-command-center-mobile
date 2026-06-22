@@ -17,7 +17,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#0F2952"
+        "foregroundImage": "./src/assets/icon.png",
+        "backgroundColor": "#ffffff"
       },
       "package": "com.familycommandcenter.app"
     },
