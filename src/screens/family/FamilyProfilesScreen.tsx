@@ -199,6 +199,27 @@ export function FamilyProfilesScreen({ navigation }: any) {
             <Text style={styles.emptyDesc}>Add family members to get started</Text>
           </View>
         )}
+
+        {/* Family Feature Cards */}
+        <Text style={styles.featureSectionTitle}>Family Features</Text>
+        <View style={styles.featureGrid}>
+          {[
+            { key: 'GiftPlanner', icon: 'gift', label: 'Gift Planner', color: '#C2185B', bg: '#FCE4EC', desc: 'Track gifts & occasions' },
+            { key: 'FamilyGoals', icon: 'flag', label: 'Family Goals', color: '#283593', bg: '#E8EAF6', desc: 'Shared milestones' },
+            { key: 'BucketList', icon: 'sparkles', label: 'Bucket List', color: '#6A1B9A', bg: '#F3E5F5', desc: 'Dreams & adventures' },
+            { key: 'ChoreRotation', icon: 'refresh-circle', label: 'Chores', color: '#0E6655', bg: '#D1F2EB', desc: 'Rotate household tasks' },
+            { key: 'Allowance', icon: 'cash', label: 'Allowance', color: '#F57C00', bg: '#FFF8E1', desc: 'Kids money management' },
+            { key: 'FamilyMeeting', icon: 'people-circle', label: 'Meetings', color: '#1565C0', bg: '#E3F2FD', desc: 'Family discussions' },
+          ].map((feat) => (
+            <Pressable key={feat.key} onPress={() => navigation.navigate(feat.key)} style={[styles.featureCard, shadows.sm]}>
+              <View style={[styles.featureIcon, { backgroundColor: feat.bg }]}>
+                <Ionicons name={feat.icon as any} size={26} color={feat.color} />
+              </View>
+              <Text style={styles.featureLabel}>{feat.label}</Text>
+              <Text style={styles.featureDesc}>{feat.desc}</Text>
+            </Pressable>
+          ))}
+        </View>
       </ScrollView>
 
       <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowModal(false)}>
@@ -298,4 +319,10 @@ const styles = StyleSheet.create({
   colorRow: { flexDirection: 'row', gap: 10, marginBottom: 24, flexWrap: 'wrap' },
   colorSwatch: { width: 36, height: 36, borderRadius: 18 },
   colorSwatchSelected: { borderWidth: 3, borderColor: colors.text },
+  featureSectionTitle: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 24, marginBottom: 12 },
+  featureGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 16 },
+  featureCard: { width: (width - 42) / 3, backgroundColor: colors.card, borderRadius: 14, padding: 12, alignItems: 'center' },
+  featureIcon: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+  featureLabel: { fontSize: 12, fontWeight: '700', color: colors.text, textAlign: 'center', marginBottom: 2 },
+  featureDesc: { fontSize: 10, color: colors.textMuted, textAlign: 'center' },
 });

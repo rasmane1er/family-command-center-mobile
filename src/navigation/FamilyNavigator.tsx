@@ -18,6 +18,9 @@ import { FamilyPollsScreen } from '../screens/family/FamilyPollsScreen';
 import { ChoreRotationScreen } from '../screens/family/ChoreRotationScreen';
 import { AllowanceScreen } from '../screens/family/AllowanceScreen';
 import { FamilyJournalScreen } from '../screens/family/FamilyJournalScreen';
+import { GiftPlannerScreen } from '../screens/family/GiftPlannerScreen';
+import { FamilyGoalsScreen } from '../screens/family/FamilyGoalsScreen';
+import { BucketListScreen } from '../screens/family/BucketListScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -42,6 +45,9 @@ export function FamilyNavigator() {
       <Stack.Screen name="ChoreRotation" component={ChoreRotationScreen} />
       <Stack.Screen name="Allowance" component={AllowanceScreen} />
       <Stack.Screen name="FamilyJournal" component={FamilyJournalScreen} />
+      <Stack.Screen name="GiftPlanner" component={GiftPlannerScreen} />
+      <Stack.Screen name="FamilyGoals" component={FamilyGoalsScreen} />
+      <Stack.Screen name="BucketList" component={BucketListScreen} />
     </Stack.Navigator>
   );
 }

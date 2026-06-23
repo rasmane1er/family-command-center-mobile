@@ -258,6 +258,27 @@ export function FinanceDashboardScreen({ navigation }: any) {
             </View>
           </Card>
         ))}
+
+        {/* Finance Tools */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Finance Tools</Text>
+        </View>
+        <View style={styles.toolsGrid}>
+          {[
+            { key: 'WealthBuilder', icon: 'trending-up', label: 'Wealth Builder', color: '#16A085', bg: '#D1F2EB', desc: 'Portfolio & investments' },
+            { key: 'InsuranceManager', icon: 'shield-checkmark', label: 'Insurance', color: '#0D47A1', bg: '#E3F2FD', desc: 'All policies tracked' },
+            { key: 'Subscriptions', icon: 'reload', label: 'Subscriptions', color: '#6A1B9A', bg: '#F3E5F5', desc: 'Monthly recurring' },
+            { key: 'Assets', icon: 'briefcase', label: 'Assets', color: '#E65100', bg: '#FFF3E0', desc: 'Net worth tracker' },
+          ].map((tool) => (
+            <Pressable key={tool.key} onPress={() => navigation.navigate(tool.key)} style={[styles.toolCard, shadows.sm]}>
+              <View style={[styles.toolIcon, { backgroundColor: tool.bg }]}>
+                <Ionicons name={tool.icon as any} size={24} color={tool.color} />
+              </View>
+              <Text style={styles.toolLabel}>{tool.label}</Text>
+              <Text style={styles.toolDesc}>{tool.desc}</Text>
+            </Pressable>
+          ))}
+        </View>
       </ScrollView>
 
       {/* Add Account Modal */}
@@ -399,4 +420,9 @@ const styles = StyleSheet.create({
   colorRow: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
   colorSwatch: { width: 36, height: 36, borderRadius: 18 },
   colorSwatchSelected: { borderWidth: 3, borderColor: colors.text },
+  toolsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 16 },
+  toolCard: { width: (width - 42) / 2, backgroundColor: colors.card, borderRadius: 14, padding: 14 },
+  toolIcon: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
+  toolLabel: { fontSize: 13, fontWeight: '700', color: colors.text, marginBottom: 2 },
+  toolDesc: { fontSize: 11, color: colors.textMuted },
 });

@@ -26,6 +26,8 @@ const OPS_MODULES = [
   { key: 'Marketplace', icon: 'storefront', label: 'Marketplace', color: '#E65100', bg: '#FFF3E0', desc: 'Chore market' },
   { key: 'TimeEconomy', icon: 'time', label: 'Time Economy', color: '#00838F', bg: '#E0F7FA', desc: 'Time tracking' },
   { key: 'Rewards', icon: 'trophy', label: 'Rewards', color: '#F5A623', bg: '#FEF3E2', desc: 'Kids rewards' },
+  { key: 'PetTracker', icon: 'paw', label: 'Pet Tracker', color: '#2E7D32', bg: '#E8F5E9', desc: 'Pets & care' },
+  { key: 'HomeMaintenance', icon: 'construct', label: 'Maintenance', color: '#37474F', bg: '#ECEFF1', desc: 'Home repairs' },
 ];
 
 export function OperationsDashboardScreen({ navigation }: any) {

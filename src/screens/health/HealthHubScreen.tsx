@@ -140,6 +140,20 @@ export function HealthHubScreen({ navigation }: any) {
               </Card>
             ))}
 
+            <Text style={styles.sectionTitle}>Health Tools</Text>
+            <View style={styles.healthToolsRow}>
+              {[
+                { key: 'MedicationManager', icon: 'medical', label: 'Medications', color: '#AD1457', bg: '#FCE4EC' },
+                { key: 'SleepTracker', icon: 'moon', label: 'Sleep', color: '#4527A0', bg: '#EDE7F6' },
+                { key: 'WorkoutTracker', icon: 'flame', label: 'Workouts', color: '#BF360C', bg: '#FBE9E7' },
+              ].map((tool) => (
+                <Pressable key={tool.key} onPress={() => navigation.navigate(tool.key)} style={[styles.healthToolCard, { backgroundColor: tool.bg }]}>
+                  <Ionicons name={tool.icon as any} size={24} color={tool.color} />
+                  <Text style={[styles.healthToolLabel, { color: tool.color }]}>{tool.label}</Text>
+                </Pressable>
+              ))}
+            </View>
+
             <Text style={styles.sectionTitle}>Family Medical Info</Text>
             {members.map((member) => (
               member.medicalInfo && (
@@ -331,6 +345,9 @@ const styles = StyleSheet.create({
   aptDate: { fontSize: 12, color: colors.primary, fontWeight: '600', marginTop: 2 },
   aptBtn: { borderRadius: 10, paddingVertical: 7, paddingHorizontal: 12 },
   aptBtnText: { fontSize: 12, fontWeight: '700', color: '#fff' },
+  healthToolsRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
+  healthToolCard: { flex: 1, borderRadius: 14, padding: 14, alignItems: 'center', gap: 6 },
+  healthToolLabel: { fontSize: 12, fontWeight: '700', textAlign: 'center' },
   modal: { flex: 1, padding: 24, backgroundColor: colors.background },
   modalHandle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 24 },
   modalTitle: { fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 20 },

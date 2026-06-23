@@ -15,6 +15,8 @@ import { EmergencyModeScreen } from '../screens/operations/EmergencyModeScreen';
 import { ShoppingListScreen } from '../screens/operations/ShoppingListScreen';
 import { RecipesScreen } from '../screens/operations/RecipesScreen';
 import { TravelPlanningScreen } from '../screens/operations/TravelPlanningScreen';
+import { PetTrackerScreen } from '../screens/operations/PetTrackerScreen';
+import { HomeMaintenanceScreen } from '../screens/operations/HomeMaintenanceScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -36,6 +38,8 @@ export function OperationsNavigator() {
       <Stack.Screen name="ShoppingList" component={ShoppingListScreen} />
       <Stack.Screen name="Recipes" component={RecipesScreen} />
       <Stack.Screen name="TravelPlanning" component={TravelPlanningScreen} />
+      <Stack.Screen name="PetTracker" component={PetTrackerScreen} />
+      <Stack.Screen name="HomeMaintenance" component={HomeMaintenanceScreen} />
     </Stack.Navigator>
   );
 }
