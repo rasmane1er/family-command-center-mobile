@@ -1,0 +1,559 @@
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Pressable,
+  Modal,
+  TextInput,
+  Switch,
+  Alert,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import { StatusBar } from 'expo-status-bar';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
+import { colors } from '../../theme/colors';
+import { shadows } from '../../theme/spacing';
+import { Card } from '../../components/common/Card';
+import { Badge } from '../../components/common/Badge';
+import { useUtilityStore } from '../../store/useUtilityStore';
+
+const generateId = () => Math.random().toString(36).substring(2, 11);
+
+type UtilityType = 'electric' | 'water' | 'gas' | 'internet' | 'phone' | 'trash' | 'sewer' | 'other';
+
+const UTILITY_LABELS: Record<UtilityType, string> = {
+  electric: 'Electric',
+  water: 'Water',
+  gas: 'Gas',
+  internet: 'Internet',
+  phone: 'Phone',
+  trash: 'Trash',
+  sewer: 'Sewer',
+  other: 'Other',
+};
+
+const UTILITY_ICONS: Record<UtilityType, string> = {
+  electric: 'flash',
+  water: 'water',
+  gas: 'flame',
+  internet: 'wifi',
+  phone: 'phone-portrait',
+  trash: 'trash',
+  sewer: 'water-outline',
+  other: 'receipt',
+};
+
+const UTILITY_COLORS: Record<UtilityType, string> = {
+  electric: '#F5A623',
+  water: '#2980B9',
+  gas: '#E67E22',
+  internet: '#8E44AD',
+  phone: '#27AE60',
+  trash: '#95A5A6',
+  sewer: '#16A085',
+  other: '#7F8C8D',
+};
+
+const UTILITY_TYPES: UtilityType[] = ['electric', 'water', 'gas', 'internet', 'phone', 'trash', 'sewer', 'other'];
+
+const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+export function UtilityTrackerScreen({ navigation }: any) {
+  const insets = useSafeAreaInsets();
+  const { bills, addBill, markPaid, deleteBill, getMonthlyTotal, getAverageForType, getCurrentMonthTotal, seedDemoData } = useUtilityStore();
+
+  const [activeTab, setActiveTab] = useState<'This Month' | 'Trends' | 'By Type'>('This Month');
+  const [showAddModal, setShowAddModal] = useState(false);
+
+  const [newType, setNewType] = useState<UtilityType>('electric');
+  const [newProvider, setNewProvider] = useState('');
+  const [newMonth, setNewMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
+  const [newAmount, setNewAmount] = useState('');
+  const [newUsage, setNewUsage] = useState('');
+  const [newUsageUnit, setNewUsageUnit] = useState('');
+  const [newIsPaid, setNewIsPaid] = useState(false);
+
+  const currentMonth = (() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  })();
+
+  const lastMonth = (() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  })();
+
+  const thisMonthBills = bills.filter((b) => b.month === currentMonth);
+  const thisMonthTotal = getCurrentMonthTotal();
+  const lastMonthTotal = getMonthlyTotal(lastMonth);
+  const unpaidCount = thisMonthBills.filter((b) => !b.isPaid).length;
+  const pctChange = lastMonthTotal > 0 ? ((thisMonthTotal - lastMonthTotal) / lastMonthTotal) * 100 : 0;
+
+  // Build 6 months of data for trends
+  const trendMonths: string[] = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date();
+    d.setMonth(d.getMonth() - i);
+    trendMonths.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+  }
+  const trendTotals = trendMonths.map((m) => getMonthlyTotal(m));
+  const maxTrend = Math.max(...trendTotals, 1);
+
+  // Group by type
+  const byType: Record<UtilityType, typeof bills> = {} as any;
+  UTILITY_TYPES.forEach((t) => {
+    byType[t] = bills.filter((b) => b.type === t);
+  });
+
+  const handleMarkPaid = (id: string, provider: string) => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    markPaid(id);
+  };
+
+  const handleDelete = (id: string, provider: string) => {
+    Alert.alert(`Delete "${provider}" bill?`, 'This cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          deleteBill(id);
+        },
+      },
+    ]);
+  };
+
+  const handleAddBill = () => {
+    const amount = parseFloat(newAmount);
+    if (!newProvider.trim() || isNaN(amount) || amount <= 0) {
+      Alert.alert('Invalid Input', 'Please fill in provider and amount.');
+      return;
+    }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    addBill({
+      familyId: 'demo-family',
+      type: newType,
+      provider: newProvider.trim(),
+      month: newMonth,
+      amount,
+      usage: newUsage ? parseFloat(newUsage) : undefined,
+      usageUnit: newUsageUnit.trim() || undefined,
+      isPaid: newIsPaid,
+    });
+    setNewProvider('');
+    setNewAmount('');
+    setNewUsage('');
+    setNewUsageUnit('');
+    setNewIsPaid(false);
+    setShowAddModal(false);
+  };
+
+  const renderThisMonthTab = () => (
+    <ScrollView contentContainerStyle={styles.tabContent}>
+      <Card style={styles.summaryCard} variant="elevated">
+        <View style={styles.summaryRow}>
+          <View style={styles.summaryStat}>
+            <Text style={styles.summaryValue}>${thisMonthTotal.toFixed(2)}</Text>
+            <Text style={styles.summaryLabel}>This Month</Text>
+          </View>
+          <View style={styles.summaryDivider} />
+          <View style={styles.summaryStat}>
+            <View style={styles.deltaRow}>
+              <Ionicons
+                name={pctChange >= 0 ? 'arrow-up' : 'arrow-down'}
+                size={14}
+                color={pctChange >= 0 ? colors.danger : colors.success}
+              />
+              <Text style={{ ...styles.summaryValue, color: pctChange >= 0 ? colors.danger : colors.success }}>
+                {Math.abs(pctChange).toFixed(1)}%
+              </Text>
+            </View>
+            <Text style={styles.summaryLabel}>vs Last Month</Text>
+          </View>
+          <View style={styles.summaryDivider} />
+          <View style={styles.summaryStat}>
+            <Text style={[styles.summaryValue, unpaidCount > 0 && styles.unpaidRed]}>{unpaidCount}</Text>
+            <Text style={styles.summaryLabel}>Unpaid</Text>
+          </View>
+        </View>
+      </Card>
+
+      {thisMonthBills.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Ionicons name="flash-outline" size={56} color={colors.textMuted} />
+          <Text style={styles.emptyTitle}>No bills for this month</Text>
+          <Text style={styles.emptyDesc}>Tap + to add a bill or load demo data.</Text>
+          <Pressable onPress={seedDemoData} style={styles.demoBtn}>
+            <Text style={styles.demoBtnText}>Load Demo Data</Text>
+          </Pressable>
+        </View>
+      ) : (
+        thisMonthBills.map((bill) => (
+          <Card key={bill.id} style={styles.billCard} variant="elevated">
+            <View style={styles.billRow}>
+              <View style={[styles.billIcon, { backgroundColor: UTILITY_COLORS[bill.type] + '22' }]}>
+                <Ionicons name={UTILITY_ICONS[bill.type] as any} size={22} color={UTILITY_COLORS[bill.type]} />
+              </View>
+              <View style={styles.billInfo}>
+                <Text style={styles.billProvider}>{bill.provider}</Text>
+                <Text style={styles.billType}>{UTILITY_LABELS[bill.type]}</Text>
+                {bill.usage != null && (
+                  <Text style={styles.billUsage}>{bill.usage} {bill.usageUnit}</Text>
+                )}
+              </View>
+              <View style={styles.billRight}>
+                <Text style={styles.billAmount}>${bill.amount.toFixed(2)}</Text>
+                {bill.isPaid ? (
+                  <Badge label="PAID" variant="success" />
+                ) : (
+                  <Badge label="UNPAID" variant="danger" />
+                )}
+                {!bill.isPaid && (
+                  <Pressable
+                    style={styles.markPaidBtn}
+                    onPress={() => handleMarkPaid(bill.id, bill.provider)}
+                  >
+                    <Text style={styles.markPaidText}>Mark Paid</Text>
+                  </Pressable>
+                )}
+              </View>
+            </View>
+          </Card>
+        ))
+      )}
+    </ScrollView>
+  );
+
+  const renderTrendsTab = () => (
+    <ScrollView contentContainerStyle={styles.tabContent}>
+      <Text style={styles.sectionLabel}>6-Month Spending Trend</Text>
+      <Card style={styles.chartCard} variant="elevated">
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View style={styles.barChartContainer}>
+            {trendMonths.map((month, idx) => {
+              const total = trendTotals[idx];
+              const barHeight = maxTrend > 0 ? (total / maxTrend) * 120 : 4;
+              const monthLabel = MONTH_LABELS[parseInt(month.split('-')[1]) - 1];
+              return (
+                <View key={month} style={styles.barColumn}>
+                  <Text style={styles.barValue}>${Math.round(total)}</Text>
+                  <View style={styles.barWrapper}>
+                    <View style={[styles.bar, { height: barHeight, backgroundColor: month === currentMonth ? '#006064' : '#4DD0E1' }]} />
+                  </View>
+                  <Text style={[styles.barLabel, month === currentMonth && styles.barLabelCurrent]}>{monthLabel}</Text>
+                </View>
+              );
+            })}
+          </View>
+        </ScrollView>
+      </Card>
+
+      <Text style={styles.sectionLabel}>Average by Type</Text>
+      {UTILITY_TYPES.map((type) => {
+        const avg = getAverageForType(type);
+        if (avg === 0) return null;
+        return (
+          <Card key={type} style={styles.avgCard} variant="elevated">
+            <View style={styles.avgRow}>
+              <View style={[styles.avgIcon, { backgroundColor: UTILITY_COLORS[type] + '22' }]}>
+                <Ionicons name={UTILITY_ICONS[type] as any} size={18} color={UTILITY_COLORS[type]} />
+              </View>
+              <Text style={styles.avgType}>{UTILITY_LABELS[type]}</Text>
+              <Text style={styles.avgAmount}>${avg.toFixed(2)}/mo avg</Text>
+            </View>
+          </Card>
+        );
+      })}
+    </ScrollView>
+  );
+
+  const renderByTypeTab = () => (
+    <ScrollView contentContainerStyle={styles.tabContent}>
+      {UTILITY_TYPES.map((type) => {
+        const typeBills = byType[type];
+        if (typeBills.length === 0) return null;
+        const total = typeBills.reduce((sum, b) => sum + b.amount, 0);
+        const avg = total / typeBills.length;
+        return (
+          <View key={type} style={styles.typeSection}>
+            <View style={styles.typeSectionHeader}>
+              <View style={[styles.typeIconCircle, { backgroundColor: UTILITY_COLORS[type] + '22' }]}>
+                <Ionicons name={UTILITY_ICONS[type] as any} size={18} color={UTILITY_COLORS[type]} />
+              </View>
+              <View style={styles.typeHeaderInfo}>
+                <Text style={styles.typeHeaderName}>{UTILITY_LABELS[type]}</Text>
+                <Text style={styles.typeHeaderSub}>{typeBills.length} bills • avg ${avg.toFixed(2)}/mo</Text>
+              </View>
+            </View>
+            {typeBills.slice().sort((a, b) => b.month.localeCompare(a.month)).slice(0, 3).map((bill) => (
+              <Card key={bill.id} style={styles.typeCard} variant="elevated">
+                <View style={styles.typeCardRow}>
+                  <Text style={styles.typeCardMonth}>{bill.month}</Text>
+                  <Text style={styles.typeCardProvider}>{bill.provider}</Text>
+                  <Text style={styles.typeCardAmount}>${bill.amount.toFixed(2)}</Text>
+                  {bill.isPaid ? (
+                    <Badge label="PAID" variant="success" size="sm" />
+                  ) : (
+                    <Badge label="UNPAID" variant="danger" size="sm" />
+                  )}
+                </View>
+              </Card>
+            ))}
+          </View>
+        );
+      })}
+    </ScrollView>
+  );
+
+  return (
+    <View style={styles.container}>
+      <StatusBar style="light" />
+      <LinearGradient
+        colors={['#006064', '#00838F', '#0097A7']}
+        style={{ paddingTop: insets.top + 12, paddingBottom: 24, paddingHorizontal: 20 }}
+      >
+        <View style={styles.headerTop}>
+          <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+            <Ionicons name="arrow-back" size={24} color="#fff" />
+          </Pressable>
+          <Text style={styles.headerTitle}>Utility Tracker</Text>
+          <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
+            <Ionicons name="add" size={26} color="#fff" />
+          </Pressable>
+        </View>
+
+        <View style={styles.headerStats}>
+          <View style={styles.statBlock}>
+            <Text style={styles.statValue}>${thisMonthTotal.toFixed(0)}</Text>
+            <Text style={styles.statLabel}>This Month</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statBlock}>
+            <Text style={styles.statValue}>{unpaidCount}</Text>
+            <Text style={styles.statLabel}>Unpaid Bills</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statBlock}>
+            <View style={styles.deltaRow}>
+              <Ionicons
+                name={pctChange >= 0 ? 'arrow-up' : 'arrow-down'}
+                size={14}
+                color={pctChange >= 0 ? '#FF8A80' : '#A5D6A7'}
+              />
+              <Text style={styles.statValue}>{Math.abs(pctChange).toFixed(1)}%</Text>
+            </View>
+            <Text style={styles.statLabel}>vs Last Month</Text>
+          </View>
+        </View>
+      </LinearGradient>
+
+      {/* Tabs */}
+      <View style={styles.tabBar}>
+        {(['This Month', 'Trends', 'By Type'] as const).map((tab) => (
+          <Pressable
+            key={tab}
+            onPress={() => setActiveTab(tab)}
+            style={{ ...styles.tabItem, ...(activeTab === tab && styles.tabItemActive) }}
+          >
+            <Text style={{ ...styles.tabText, ...(activeTab === tab && styles.tabTextActive) }}>
+              {tab}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
+      {activeTab === 'This Month' && renderThisMonthTab()}
+      {activeTab === 'Trends' && renderTrendsTab()}
+      {activeTab === 'By Type' && renderByTypeTab()}
+
+      {/* Add Bill Modal */}
+      <Modal visible={showAddModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <ScrollView style={styles.modalSheet} contentContainerStyle={{ paddingBottom: 40 }}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Add Utility Bill</Text>
+              <Pressable onPress={() => setShowAddModal(false)}>
+                <Ionicons name="close" size={24} color={colors.text} />
+              </Pressable>
+            </View>
+
+            <Text style={styles.modalLabel}>Utility Type *</Text>
+            <View style={styles.typeIconGrid}>
+              {UTILITY_TYPES.map((t) => (
+                <Pressable
+                  key={t}
+                  onPress={() => setNewType(t)}
+                  style={{ ...styles.typeIconBtn, ...(newType === t && { borderColor: UTILITY_COLORS[t], backgroundColor: UTILITY_COLORS[t] + '22' }) }}
+                >
+                  <Ionicons
+                    name={UTILITY_ICONS[t] as any}
+                    size={20}
+                    color={newType === t ? UTILITY_COLORS[t] : colors.textSecondary}
+                  />
+                  <Text style={{ ...styles.typeIconLabel, ...(newType === t && { color: UTILITY_COLORS[t] }) }}>
+                    {UTILITY_LABELS[t]}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+
+            <Text style={styles.modalLabel}>Provider *</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={newProvider}
+              onChangeText={setNewProvider}
+              placeholder="e.g. Xfinity, AEP"
+              placeholderTextColor={colors.textMuted}
+            />
+
+            <Text style={styles.modalLabel}>Month (YYYY-MM) *</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={newMonth}
+              onChangeText={setNewMonth}
+              placeholder="2026-06"
+              placeholderTextColor={colors.textMuted}
+            />
+
+            <Text style={styles.modalLabel}>Amount ($) *</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={newAmount}
+              onChangeText={setNewAmount}
+              placeholder="0.00"
+              placeholderTextColor={colors.textMuted}
+              keyboardType="decimal-pad"
+            />
+
+            <Text style={styles.modalLabel}>Usage (Optional)</Text>
+            <View style={styles.usageRow}>
+              <TextInput
+                style={[styles.modalInput, { flex: 1, marginRight: 8 }]}
+                value={newUsage}
+                onChangeText={setNewUsage}
+                placeholder="0"
+                placeholderTextColor={colors.textMuted}
+                keyboardType="decimal-pad"
+              />
+              <TextInput
+                style={[styles.modalInput, { flex: 1 }]}
+                value={newUsageUnit}
+                onChangeText={setNewUsageUnit}
+                placeholder="kWh, gallons..."
+                placeholderTextColor={colors.textMuted}
+              />
+            </View>
+
+            <View style={styles.paidToggleRow}>
+              <Text style={styles.modalLabel}>Mark as Paid</Text>
+              <Switch
+                value={newIsPaid}
+                onValueChange={setNewIsPaid}
+                trackColor={{ true: colors.success }}
+              />
+            </View>
+
+            <Pressable
+              onPress={handleAddBill}
+              style={[styles.submitBtn, (!newProvider.trim() || !newAmount) && styles.submitBtnDisabled]}
+            >
+              <Ionicons name="add-circle" size={18} color="#fff" />
+              <Text style={styles.submitBtnText}>Add Bill</Text>
+            </Pressable>
+          </ScrollView>
+        </View>
+      </Modal>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
+  headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
+  backBtn: { marginRight: 12 },
+  headerTitle: { flex: 1, fontSize: 22, fontWeight: '800', color: '#fff' },
+  addBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
+  headerStats: { flexDirection: 'row', alignItems: 'center' },
+  statBlock: { flex: 1, alignItems: 'center' },
+  statValue: { fontSize: 20, fontWeight: '800', color: '#fff' },
+  statLabel: { fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
+  statDivider: { width: 1, height: 36, backgroundColor: 'rgba(255,255,255,0.2)' },
+  deltaRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  tabBar: { flexDirection: 'row', backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border },
+  tabItem: { flex: 1, paddingVertical: 14, alignItems: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
+  tabItemActive: { borderBottomColor: '#006064' },
+  tabText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  tabTextActive: { color: '#006064' },
+  tabContent: { padding: 16, paddingBottom: 100 },
+  summaryCard: { borderRadius: 16, marginBottom: 16 },
+  summaryRow: { flexDirection: 'row', alignItems: 'center' },
+  summaryStat: { flex: 1, alignItems: 'center' },
+  summaryValue: { fontSize: 18, fontWeight: '800', color: colors.text },
+  summaryLabel: { fontSize: 11, color: colors.textSecondary, marginTop: 2 },
+  summaryDivider: { width: 1, height: 36, backgroundColor: colors.border },
+  unpaidRed: { color: colors.danger },
+  billCard: { marginBottom: 10, borderRadius: 16 },
+  billRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  billIcon: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  billInfo: { flex: 1 },
+  billProvider: { fontSize: 15, fontWeight: '700', color: colors.text },
+  billType: { fontSize: 12, color: colors.textSecondary },
+  billUsage: { fontSize: 11, color: colors.textMuted },
+  billRight: { alignItems: 'flex-end', gap: 4 },
+  billAmount: { fontSize: 18, fontWeight: '800', color: colors.text },
+  markPaidBtn: { paddingVertical: 4, paddingHorizontal: 10, backgroundColor: colors.success, borderRadius: 8 },
+  markPaidText: { color: '#fff', fontSize: 11, fontWeight: '700' },
+  emptyState: { alignItems: 'center', paddingVertical: 60 },
+  emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginTop: 14 },
+  emptyDesc: { fontSize: 13, color: colors.textSecondary, marginTop: 6 },
+  demoBtn: { marginTop: 16, paddingVertical: 10, paddingHorizontal: 24, backgroundColor: '#006064', borderRadius: 12 },
+  demoBtnText: { color: '#fff', fontWeight: '700' },
+  sectionLabel: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 },
+  chartCard: { borderRadius: 16, marginBottom: 20 },
+  barChartContainer: { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 8, paddingBottom: 8 },
+  barColumn: { width: 56, alignItems: 'center', marginHorizontal: 4 },
+  barValue: { fontSize: 10, color: colors.textSecondary, marginBottom: 4 },
+  barWrapper: { height: 120, justifyContent: 'flex-end', alignItems: 'center' },
+  bar: { width: 32, borderRadius: 6, minHeight: 4 },
+  barLabel: { fontSize: 11, color: colors.textSecondary, marginTop: 6 },
+  barLabelCurrent: { color: '#006064', fontWeight: '700' },
+  avgCard: { marginBottom: 8, borderRadius: 14 },
+  avgRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  avgIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  avgType: { flex: 1, fontSize: 14, fontWeight: '700', color: colors.text },
+  avgAmount: { fontSize: 13, color: colors.textSecondary, fontWeight: '600' },
+  typeSection: { marginBottom: 16 },
+  typeSectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
+  typeIconCircle: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  typeHeaderInfo: { flex: 1 },
+  typeHeaderName: { fontSize: 15, fontWeight: '700', color: colors.text },
+  typeHeaderSub: { fontSize: 12, color: colors.textSecondary },
+  typeCard: { marginBottom: 6, borderRadius: 12, padding: 12 },
+  typeCardRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  typeCardMonth: { fontSize: 12, color: colors.textMuted, width: 60 },
+  typeCardProvider: { flex: 1, fontSize: 13, color: colors.text, fontWeight: '600' },
+  typeCardAmount: { fontSize: 14, fontWeight: '700', color: colors.text },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalSheet: { backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '90%' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  modalTitle: { fontSize: 20, fontWeight: '800', color: colors.text },
+  modalLabel: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
+  modalInput: { borderWidth: 1.5, borderColor: colors.border, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, fontSize: 15, color: colors.text, marginBottom: 16 },
+  typeIconGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
+  typeIconBtn: { width: 80, alignItems: 'center', padding: 10, borderWidth: 1.5, borderColor: colors.border, borderRadius: 12 },
+  typeIconLabel: { fontSize: 10, fontWeight: '600', color: colors.textSecondary, marginTop: 4 },
+  usageRow: { flexDirection: 'row', marginBottom: 0 },
+  paidToggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  submitBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#006064', borderRadius: 14, paddingVertical: 14 },
+  submitBtnDisabled: { opacity: 0.5 },
+  submitBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+});

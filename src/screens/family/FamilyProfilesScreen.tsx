@@ -210,6 +210,10 @@ export function FamilyProfilesScreen({ navigation }: any) {
             { key: 'ChoreRotation', icon: 'refresh-circle', label: 'Chores', color: '#0E6655', bg: '#D1F2EB', desc: 'Rotate household tasks' },
             { key: 'Allowance', icon: 'cash', label: 'Allowance', color: '#F57C00', bg: '#FFF8E1', desc: 'Kids money management' },
             { key: 'FamilyMeeting', icon: 'people-circle', label: 'Meetings', color: '#1565C0', bg: '#E3F2FD', desc: 'Family discussions' },
+            { key: 'HomeworkTracker', icon: 'book', label: 'Homework', color: '#283593', bg: '#E8EAF6', desc: 'Assignments & grades' },
+            { key: 'ActivitiesTracker', icon: 'football', label: 'Activities', color: '#00695C', bg: '#E0F2F1', desc: 'Sports & lessons' },
+            { key: 'BirthdayTracker', icon: 'gift', label: 'Birthdays', color: '#AD1457', bg: '#FCE4EC', desc: 'Countdown & wishes' },
+            { key: 'FamilyBoard', icon: 'megaphone', label: 'Family Board', color: '#1B2838', bg: '#ECEFF1', desc: 'Announcements' },
           ].map((feat) => (
             <Pressable key={feat.key} onPress={() => navigation.navigate(feat.key)} style={[styles.featureCard, shadows.sm]}>
               <View style={[styles.featureIcon, { backgroundColor: feat.bg }]}>

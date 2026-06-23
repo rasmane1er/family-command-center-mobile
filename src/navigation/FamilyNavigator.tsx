@@ -21,6 +21,10 @@ import { FamilyJournalScreen } from '../screens/family/FamilyJournalScreen';
 import { GiftPlannerScreen } from '../screens/family/GiftPlannerScreen';
 import { FamilyGoalsScreen } from '../screens/family/FamilyGoalsScreen';
 import { BucketListScreen } from '../screens/family/BucketListScreen';
+import { HomeworkTrackerScreen } from '../screens/family/HomeworkTrackerScreen';
+import { ActivitiesTrackerScreen } from '../screens/family/ActivitiesTrackerScreen';
+import { BirthdayTrackerScreen } from '../screens/family/BirthdayTrackerScreen';
+import { FamilyBoardScreen } from '../screens/family/FamilyBoardScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -48,6 +52,10 @@ export function FamilyNavigator() {
       <Stack.Screen name="GiftPlanner" component={GiftPlannerScreen} />
       <Stack.Screen name="FamilyGoals" component={FamilyGoalsScreen} />
       <Stack.Screen name="BucketList" component={BucketListScreen} />
+      <Stack.Screen name="HomeworkTracker" component={HomeworkTrackerScreen} />
+      <Stack.Screen name="ActivitiesTracker" component={ActivitiesTrackerScreen} />
+      <Stack.Screen name="BirthdayTracker" component={BirthdayTrackerScreen} />
+      <Stack.Screen name="FamilyBoard" component={FamilyBoardScreen} />
     </Stack.Navigator>
   );
 }

@@ -17,6 +17,9 @@ import { RecipesScreen } from '../screens/operations/RecipesScreen';
 import { TravelPlanningScreen } from '../screens/operations/TravelPlanningScreen';
 import { PetTrackerScreen } from '../screens/operations/PetTrackerScreen';
 import { HomeMaintenanceScreen } from '../screens/operations/HomeMaintenanceScreen';
+import { ChildcareManagerScreen } from '../screens/operations/ChildcareManagerScreen';
+import { HomeInventoryScreen } from '../screens/operations/HomeInventoryScreen';
+import { CarpoolManagerScreen } from '../screens/operations/CarpoolManagerScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -40,6 +43,9 @@ export function OperationsNavigator() {
       <Stack.Screen name="TravelPlanning" component={TravelPlanningScreen} />
       <Stack.Screen name="PetTracker" component={PetTrackerScreen} />
       <Stack.Screen name="HomeMaintenance" component={HomeMaintenanceScreen} />
+      <Stack.Screen name="ChildcareManager" component={ChildcareManagerScreen} />
+      <Stack.Screen name="HomeInventory" component={HomeInventoryScreen} />
+      <Stack.Screen name="CarpoolManager" component={CarpoolManagerScreen} />
     </Stack.Navigator>
   );
 }

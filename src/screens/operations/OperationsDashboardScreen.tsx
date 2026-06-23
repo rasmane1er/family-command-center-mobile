@@ -28,6 +28,9 @@ const OPS_MODULES = [
   { key: 'Rewards', icon: 'trophy', label: 'Rewards', color: '#F5A623', bg: '#FEF3E2', desc: 'Kids rewards' },
   { key: 'PetTracker', icon: 'paw', label: 'Pet Tracker', color: '#2E7D32', bg: '#E8F5E9', desc: 'Pets & care' },
   { key: 'HomeMaintenance', icon: 'construct', label: 'Maintenance', color: '#37474F', bg: '#ECEFF1', desc: 'Home repairs' },
+  { key: 'ChildcareManager', icon: 'heart', label: 'Childcare', color: '#E65100', bg: '#FFF3E0', desc: 'Sitters & nannies' },
+  { key: 'HomeInventory', icon: 'albums', label: 'Inventory', color: '#212121', bg: '#ECEFF1', desc: 'Home belongings' },
+  { key: 'CarpoolManager', icon: 'car-sport', label: 'Carpool', color: '#1565C0', bg: '#E3F2FD', desc: 'School runs' },
 ];
 
 export function OperationsDashboardScreen({ navigation }: any) {
