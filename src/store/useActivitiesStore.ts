@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import { mmkvStorage } from '../storage/mmkvStorage';
 
 export type ActivityType = 'sport' | 'music' | 'art' | 'academic' | 'social' | 'religious' | 'other';
 export type DayOfWeek = 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri' | 'Sat' | 'Sun';
@@ -33,7 +35,9 @@ interface ActivitiesState {
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
-export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
+export const useActivitiesStore = create<ActivitiesState>()(
+  persist(
+    (set, get) => ({
   activities: [],
 
   addActivity: (a) =>
@@ -143,4 +147,13 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
 
     set({ activities });
   },
-}));
+    }),
+    {
+      name: 'family-command-center-activities',
+      storage: createJSONStorage(() => mmkvStorage),
+      partialize: (state) => ({
+        activities: state.activities,
+      }),
+    }
+  )
+);
