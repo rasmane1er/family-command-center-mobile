@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import { mmkvStorage } from '../storage/mmkvStorage';
 
 export type NotificationType = 'task' | 'bill' | 'goal' | 'health' | 'family' | 'ai' | 'emergency' | 'achievement';
 
@@ -25,7 +27,9 @@ interface NotificationsState {
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
-export const useNotificationsStore = create<NotificationsState>((set) => ({
+export const useNotificationsStore = create<NotificationsState>()(
+  persist(
+    (set) => ({
   notifications: [],
 
   addNotification: (n) =>
@@ -65,4 +69,13 @@ export const useNotificationsStore = create<NotificationsState>((set) => ({
       ],
     });
   },
-}));
+    }),
+    {
+      name: 'family-command-center-notifications',
+      storage: createJSONStorage(() => mmkvStorage),
+      partialize: (state) => ({
+        notifications: state.notifications,
+      }),
+    }
+  )
+);

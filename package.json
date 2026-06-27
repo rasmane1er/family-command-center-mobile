@@ -52,6 +52,7 @@
       "reactNativeDirectoryCheck": {
         "listUnknownPackages": "false"
       }
-    }
+    },
+    "scheme": "family-command-center"
   }
 }

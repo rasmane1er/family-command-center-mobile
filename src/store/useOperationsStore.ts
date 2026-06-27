@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import { mmkvStorage } from '../storage/mmkvStorage';
 import type { PantryItem, ShoppingList, MealPlan, Asset, Vehicle, Document } from '../types';
 
 interface OperationsState {
@@ -29,7 +31,9 @@ interface OperationsState {
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
-export const useOperationsStore = create<OperationsState>((set) => ({
+export const useOperationsStore = create<OperationsState>()(
+  persist(
+    (set) => ({
   pantryItems: [],
   shoppingLists: [],
   mealPlans: [],
@@ -137,4 +141,18 @@ export const useOperationsStore = create<OperationsState>((set) => ({
 
     set({ pantryItems, vehicles, documents, assets });
   },
-}));
+    }),
+    {
+      name: 'family-command-center-operations',
+      storage: createJSONStorage(() => mmkvStorage),
+      partialize: (state) => ({
+        pantryItems: state.pantryItems,
+        shoppingLists: state.shoppingLists,
+        mealPlans: state.mealPlans,
+        assets: state.assets,
+        vehicles: state.vehicles,
+        documents: state.documents,
+      }),
+    }
+  )
+);

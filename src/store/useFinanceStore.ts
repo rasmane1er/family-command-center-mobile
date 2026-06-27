@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import { mmkvStorage } from '../storage/mmkvStorage';
 import type { Transaction, Budget, Bill, Subscription, FinancialAccount, FinancialGoal } from '../types';
 
 interface FinanceState {
@@ -34,7 +36,9 @@ interface FinanceState {
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
-export const useFinanceStore = create<FinanceState>((set) => ({
+export const useFinanceStore = create<FinanceState>()(
+  persist(
+    (set) => ({
   accounts: [],
   transactions: [],
   budgets: [],
@@ -145,4 +149,22 @@ export const useFinanceStore = create<FinanceState>((set) => ({
       monthlySavings: monthlyIncome - monthlyExpenses,
     });
   },
-}));
+    }),
+    {
+      name: 'family-command-center-finance',
+      storage: createJSONStorage(() => mmkvStorage),
+      partialize: (state) => ({
+        accounts: state.accounts,
+        transactions: state.transactions,
+        budgets: state.budgets,
+        bills: state.bills,
+        subscriptions: state.subscriptions,
+        financialGoals: state.financialGoals,
+        totalNetWorth: state.totalNetWorth,
+        monthlyIncome: state.monthlyIncome,
+        monthlyExpenses: state.monthlyExpenses,
+        monthlySavings: state.monthlySavings,
+      }),
+    }
+  )
+);

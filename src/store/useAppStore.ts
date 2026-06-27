@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import { mmkvStorage } from '../storage/mmkvStorage';
 import type { AppSettings, FamilyHealthScore } from '../types';
 
 interface AppState {
@@ -36,7 +38,9 @@ const defaultSettings: AppSettings = {
   weekStartsOn: 0,
 };
 
-export const useAppStore = create<AppState>((set) => ({
+export const useAppStore = create<AppState>()(
+  persist(
+    (set) => ({
   isOnboarded: false,
   isLoading: false,
   settings: defaultSettings,
@@ -52,4 +56,16 @@ export const useAppStore = create<AppState>((set) => ({
     set((state) => ({
       settings: { ...state.settings, militaryMode: !state.settings.militaryMode },
     })),
-}));
+    }),
+    {
+      name: 'family-command-center-app',
+      storage: createJSONStorage(() => mmkvStorage),
+      partialize: (state) => ({
+        isOnboarded: state.isOnboarded,
+        settings: state.settings,
+        healthScore: state.healthScore,
+        activeTab: state.activeTab,
+      }),
+    }
+  )
+);
