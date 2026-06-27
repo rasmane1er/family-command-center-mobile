@@ -39,7 +39,8 @@
         {
           "iCloudContainerEnvironment": "Production"
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "extra": {
       "eas": {

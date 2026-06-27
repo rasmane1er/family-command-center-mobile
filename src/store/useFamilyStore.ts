@@ -1,4 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { mmkvStorage } from '../storage/mmkvStorage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import type { Family, FamilyMember, Task, CalendarEvent, Goal, Reward, Achievement } from '../types';
@@ -386,8 +386,18 @@ export const useFamilyStore = create<FamilyState>()(
   },
     }),
     {
-      name: 'family-command-center-family',
-      storage: createJSONStorage(() => AsyncStorage),
-    }
+  name: 'family-command-center-family',
+  storage: createJSONStorage(() => mmkvStorage),
+  partialize: (state) => ({
+    family: state.family,
+    members: state.members,
+    tasks: state.tasks,
+    events: state.events,
+    goals: state.goals,
+    rewards: state.rewards,
+    achievements: state.achievements,
+    activeMemberId: state.activeMemberId,
+  }),
+}
   )
 );
