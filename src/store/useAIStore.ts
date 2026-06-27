@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import { mmkvStorage } from '../storage/mmkvStorage';
 import type { ChatMessage, AIInsight } from '../types';
 
 interface AIState {
@@ -19,7 +21,9 @@ interface AIState {
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
-export const useAIStore = create<AIState>((set, get) => ({
+export const useAIStore = create<AIState>()(
+  persist(
+    (set, get) => ({
   messages: [],
   insights: [],
   isTyping: false,
@@ -124,9 +128,19 @@ Always provide specific, personalized advice based on the family context provide
       { id: generateId(), familyId: 'demo-family', type: 'health', title: '🏆 Family Health Score Up!', summary: "This week's task completion rate improved by 12%. The family is firing on all cylinders!", priority: 'low', actionLabel: 'View Score', actionRoute: 'Home', isRead: true, createdAt: now },
       { id: generateId(), familyId: 'demo-family', type: 'task', title: '📋 3 Tasks Overdue', summary: "Aiden has 2 chores pending and the car oil change is 2 weeks overdue.", priority: 'high', actionLabel: 'View Tasks', actionRoute: 'Family', isRead: false, createdAt: now },
     ];
-    set({ insights });
-  },
-}));
+        set({ insights });
+    },
+  }),
+  {
+    name: 'family-command-center-ai',
+    storage: createJSONStorage(() => mmkvStorage),
+    partialize: (state) => ({
+      messages: state.messages,
+      insights: state.insights,
+    }),
+  }
+ )
+);
 
 function getDemoResponse(input: string): string {
   const lower = input.toLowerCase();
