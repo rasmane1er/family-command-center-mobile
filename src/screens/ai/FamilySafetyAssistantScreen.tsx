@@ -1,0 +1,485 @@
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  FlatList,
+  Pressable,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { StatusBar } from 'expo-status-bar';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { useGuardianStore } from '../../store/useGuardianStore';
+import { colors } from '../../theme/colors';
+import { shadows } from '../../theme/spacing';
+import type { ChatMessage } from '../../types';
+
+const PURPLE = '#8E44AD';
+const PURPLE_LIGHT = '#F3E8FA';
+const PURPLE_MID = '#C39BD3';
+
+type ContextMode = 'general' | 'location' | 'screentime' | 'alerts';
+
+const CONTEXT_TABS: { key: ContextMode; label: string }[] = [
+  { key: 'general', label: 'General' },
+  { key: 'location', label: 'Location' },
+  { key: 'screentime', label: 'Screen Time' },
+  { key: 'alerts', label: 'Alerts' },
+];
+
+const STARTER_MESSAGES: Record<ContextMode, string> = {
+  general:
+    "Hi! I'm your Family Safety Assistant. I can help with parenting advice, guardian insights, and safety recommendations. What would you like to know?",
+  location:
+    "I can help you understand your child's location patterns and geofence alerts. What would you like to know about their whereabouts?",
+  screentime:
+    "Let's talk about screen time. I can analyze usage patterns and suggest healthy limits for your family.",
+  alerts:
+    "I'll help you review and respond to safety alerts. Ask me about any SOS events or approval requests.",
+};
+
+const QUICK_PROMPTS = [
+  'Where is my child right now?',
+  'How much screen time today?',
+  'Any safety alerts?',
+  'Suggest bedtime rules',
+  'What apps is my child using most?',
+  'Tips for healthy screen habits',
+];
+
+const generateId = () => Math.random().toString(36).substring(2, 11);
+
+function buildStarterMessage(mode: ContextMode): ChatMessage {
+  return {
+    id: generateId(),
+    role: 'assistant',
+    content: STARTER_MESSAGES[mode],
+    timestamp: new Date().toISOString(),
+  };
+}
+
+export function FamilySafetyAssistantScreen({ navigation }: any) {
+  const insets = useSafeAreaInsets();
+  const flatListRef = useRef<FlatList>(null);
+
+  const devices = useGuardianStore((s) => s.devices);
+  const sosAlerts = useGuardianStore((s) => s.sosAlerts);
+  const approvalRequests = useGuardianStore((s) => s.approvalRequests);
+  const screenTimeRules = useGuardianStore((s) => s.screenTimeRules);
+
+  const [contextMode, setContextMode] = useState<ContextMode>('general');
+  const [messages, setMessages] = useState<ChatMessage[]>([buildStarterMessage('general')]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const scrollToEnd = useCallback(() => {
+    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+  }, []);
+
+  useEffect(() => {
+    scrollToEnd();
+  }, [messages, scrollToEnd]);
+
+  const switchTab = (mode: ContextMode) => {
+    setContextMode(mode);
+    setMessages([buildStarterMessage(mode)]);
+  };
+
+  const buildContextString = () => {
+    const unresolvedSOS = sosAlerts.filter((a) => !a.isResolved);
+    const pendingApprovals = approvalRequests.filter((r) => r.status === 'pending');
+    return [
+      `Monitored devices: ${devices.length}`,
+      `Unresolved SOS alerts: ${unresolvedSOS.length}`,
+      `Pending approval requests: ${pendingApprovals.length}`,
+      `Active screen time rules: ${screenTimeRules.length}`,
+      `Current mode: ${contextMode}`,
+    ].join('. ');
+  };
+
+  const sendMessage = async (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed || isLoading) return;
+    setInput('');
+
+    const userMsg: ChatMessage = {
+      id: generateId(),
+      role: 'user',
+      content: trimmed,
+      timestamp: new Date().toISOString(),
+    };
+
+    const loadingMsg: ChatMessage = {
+      id: generateId(),
+      role: 'assistant',
+      content: '...',
+      timestamp: new Date().toISOString(),
+      isLoading: true,
+    };
+
+    setMessages((prev) => [...prev, userMsg, loadingMsg]);
+    setIsLoading(true);
+
+    const contextString = buildContextString();
+    const history = messages
+      .filter((m) => !m.isLoading)
+      .slice(-5)
+      .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
+
+    try {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000'}/ai/guardian-chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: trimmed, context: contextString, history, mode: contextMode }),
+      });
+
+      let reply = '';
+      let suggestions: string[] = [];
+
+      if (response.ok) {
+        const data = await response.json();
+        reply = data.reply ?? '';
+        suggestions = data.suggestions ?? [];
+      } else {
+        reply = getFallbackResponse(trimmed, contextMode);
+        suggestions = getFallbackSuggestions(contextMode);
+      }
+
+      const assistantMsg: ChatMessage = {
+        id: generateId(),
+        role: 'assistant',
+        content: reply,
+        timestamp: new Date().toISOString(),
+        suggestions,
+      };
+
+      setMessages((prev) => [...prev.filter((m) => !m.isLoading), assistantMsg]);
+    } catch {
+      const assistantMsg: ChatMessage = {
+        id: generateId(),
+        role: 'assistant',
+        content: getFallbackResponse(trimmed, contextMode),
+        timestamp: new Date().toISOString(),
+        suggestions: getFallbackSuggestions(contextMode),
+      };
+      setMessages((prev) => [...prev.filter((m) => !m.isLoading), assistantMsg]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const renderMessage = ({ item }: { item: ChatMessage }) => {
+    const isUser = item.role === 'user';
+    return (
+      <View style={[styles.msgRow, isUser ? styles.msgRowUser : styles.msgRowAssistant]}>
+        {!isUser && (
+          <View style={styles.avatar}>
+            <Text style={styles.avatarEmoji}>🛡️</Text>
+          </View>
+        )}
+        <View style={styles.msgBubbleWrap}>
+          <View style={[styles.bubble, isUser ? styles.bubbleUser : styles.bubbleAssistant]}>
+            {item.isLoading ? (
+              <ActivityIndicator size="small" color={PURPLE} />
+            ) : (
+              <Text style={[styles.bubbleText, isUser ? styles.bubbleTextUser : styles.bubbleTextAssistant]}>
+                {item.content}
+              </Text>
+            )}
+          </View>
+          {!isUser && item.suggestions && item.suggestions.length > 0 && (
+            <View style={styles.suggestionsRow}>
+              {item.suggestions.map((s, i) => (
+                <Pressable key={i} style={styles.suggestionChip} onPress={() => setInput(s)}>
+                  <Text style={styles.suggestionText}>{s}</Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
+        </View>
+      </View>
+    );
+  };
+
+  return (
+    <View style={styles.container}>
+      <StatusBar style="light" />
+
+      {/* Header */}
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+        <View style={styles.headerRow}>
+          <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+            <Ionicons name="chevron-back" size={24} color="#fff" />
+          </Pressable>
+          <View style={styles.headerIcon}>
+            <Ionicons name="shield-checkmark" size={22} color={PURPLE_MID} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.headerTitle}>Family Safety AI</Text>
+            <Text style={styles.headerSubtitle}>Powered by guardian insights</Text>
+          </View>
+          <Pressable
+            onPress={() => {
+              setMessages([buildStarterMessage(contextMode)]);
+              setInput('');
+            }}
+            style={styles.clearBtn}
+          >
+            <Ionicons name="refresh-outline" size={20} color="rgba(255,255,255,0.6)" />
+          </Pressable>
+        </View>
+
+        {/* Context Tabs */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tabsRow}
+        >
+          {CONTEXT_TABS.map((tab) => (
+            <Pressable
+              key={tab.key}
+              style={[styles.tab, contextMode === tab.key && styles.tabActive]}
+              onPress={() => switchTab(tab.key)}
+            >
+              <Text style={[styles.tabText, contextMode === tab.key && styles.tabTextActive]}>
+                {tab.label}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      </View>
+
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+      >
+        {/* Quick prompts */}
+        {messages.length <= 1 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.quickPromptsRow}
+          >
+            {QUICK_PROMPTS.map((p) => (
+              <Pressable key={p} style={styles.quickChip} onPress={() => sendMessage(p)}>
+                <Text style={styles.quickChipText}>{p}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        )}
+
+        {/* Messages */}
+        <FlatList
+          ref={flatListRef}
+          data={messages}
+          keyExtractor={(m) => m.id}
+          renderItem={renderMessage}
+          contentContainerStyle={styles.messagesList}
+          onContentSizeChange={scrollToEnd}
+          showsVerticalScrollIndicator={false}
+        />
+
+        {/* Input row */}
+        <View style={[styles.inputRow, { paddingBottom: insets.bottom + 8 }]}>
+          <TextInput
+            style={styles.input}
+            value={input}
+            onChangeText={setInput}
+            placeholder="Ask about family safety..."
+            placeholderTextColor={colors.textMuted}
+            multiline
+            maxLength={500}
+            returnKeyType="send"
+            onSubmitEditing={() => sendMessage(input)}
+            editable={!isLoading}
+          />
+          <Pressable
+            style={[styles.sendBtn, (!input.trim() || isLoading) && styles.sendBtnDisabled]}
+            onPress={() => sendMessage(input)}
+            disabled={!input.trim() || isLoading}
+          >
+            <Ionicons name="send" size={18} color="#fff" />
+          </Pressable>
+        </View>
+      </KeyboardAvoidingView>
+    </View>
+  );
+}
+
+function getFallbackResponse(input: string, mode: ContextMode): string {
+  const lower = input.toLowerCase();
+  if (lower.includes('location') || lower.includes('where')) {
+    return "Based on your guardian dashboard, I can see your monitored devices. For real-time location data, please check the Guardian Dashboard for the latest check-in information.";
+  }
+  if (lower.includes('screen time') || lower.includes('screen')) {
+    return "Your active screen time rules are configured in the Guardian settings. I recommend reviewing daily limits and ensuring bedtime rules are set for school nights.";
+  }
+  if (lower.includes('alert') || lower.includes('sos')) {
+    return "I'll help you review safety alerts. Please check the Guardian Dashboard for any active SOS events or pending approvals that need your attention.";
+  }
+  if (lower.includes('bedtime') || lower.includes('rules')) {
+    return "For healthy screen habits, I recommend: no screens 1 hour before bed, daily limits of 2 hours on school days, and designated tech-free zones like the dinner table.";
+  }
+  const modeDefaults: Record<ContextMode, string> = {
+    general: "I'm your Family Safety Assistant. I can help with parenting advice, screen time rules, location monitoring, and guardian insights. What would you like to explore?",
+    location: "I can help interpret location patterns and geofence alerts from your guardian data. What would you like to know?",
+    screentime: "I can help you set up healthy screen time limits and review usage patterns for your family.",
+    alerts: "I'm ready to help you review and respond to any safety alerts or pending approvals.",
+  };
+  return modeDefaults[mode];
+}
+
+function getFallbackSuggestions(mode: ContextMode): string[] {
+  const map: Record<ContextMode, string[]> = {
+    general: ['How much screen time today?', 'Any safety alerts?', 'Suggest bedtime rules'],
+    location: ['Show geofence zones', 'When was last check-in?', 'Set up a new zone'],
+    screentime: ['Set a daily limit', 'What apps are used most?', 'Tips for healthy habits'],
+    alerts: ['Review pending approvals', 'Show SOS history', 'How to respond to alerts?'],
+  };
+  return map[mode];
+}
+
+const styles = StyleSheet.create({
+  flex: { flex: 1 },
+  container: { flex: 1, backgroundColor: '#F7F8FA' },
+
+  header: {
+    backgroundColor: '#5B2C8D',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    ...shadows.md,
+  },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
+  backBtn: { padding: 4 },
+  headerIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: { color: '#fff', fontSize: 17, fontWeight: '700' },
+  headerSubtitle: { color: 'rgba(255,255,255,0.65)', fontSize: 12, marginTop: 1 },
+  clearBtn: { padding: 6 },
+
+  tabsRow: { flexDirection: 'row', gap: 8, paddingRight: 8 },
+  tab: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+  },
+  tabActive: { backgroundColor: '#fff' },
+  tabText: { color: 'rgba(255,255,255,0.8)', fontSize: 13, fontWeight: '500' },
+  tabTextActive: { color: PURPLE, fontWeight: '700' },
+
+  quickPromptsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  quickChip: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: PURPLE_MID,
+    ...shadows.sm,
+  },
+  quickChipText: { color: PURPLE, fontSize: 13, fontWeight: '500' },
+
+  messagesList: { padding: 16, gap: 12, flexGrow: 1 },
+
+  msgRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginBottom: 4 },
+  msgRowUser: { justifyContent: 'flex-end' },
+  msgRowAssistant: { justifyContent: 'flex-start' },
+
+  avatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: PURPLE_LIGHT,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarEmoji: { fontSize: 16 },
+
+  msgBubbleWrap: { maxWidth: '78%' },
+  bubble: {
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    minHeight: 38,
+    justifyContent: 'center',
+  },
+  bubbleUser: {
+    backgroundColor: PURPLE,
+    borderBottomRightRadius: 4,
+  },
+  bubbleAssistant: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#E8E0F0',
+    borderBottomLeftRadius: 4,
+    ...shadows.sm,
+  },
+  bubbleText: { fontSize: 14, lineHeight: 20 },
+  bubbleTextUser: { color: '#fff' },
+  bubbleTextAssistant: { color: colors.text ?? '#1A1A2E' },
+
+  suggestionsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 },
+  suggestionChip: {
+    backgroundColor: PURPLE_LIGHT,
+    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderWidth: 1,
+    borderColor: PURPLE_MID,
+  },
+  suggestionText: { color: PURPLE, fontSize: 12, fontWeight: '500' },
+
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#EDE7F6',
+    ...shadows.sm,
+  },
+  input: {
+    flex: 1,
+    backgroundColor: '#F3E8FA',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 10,
+    fontSize: 14,
+    color: colors.text ?? '#1A1A2E',
+    maxHeight: 100,
+    borderWidth: 1,
+    borderColor: '#DDD0EE',
+  },
+  sendBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: PURPLE,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.sm,
+  },
+  sendBtnDisabled: { backgroundColor: PURPLE_MID },
+});

@@ -29,6 +29,7 @@ const AI_FEATURES = [
   { label: 'Coach', icon: 'school', color: '#1A6B3C', screen: 'ParentingCoach' },
   { label: 'Negotiate', icon: 'briefcase', color: '#0F2952', screen: 'Negotiator' },
   { label: 'Digital Twin', icon: 'git-network', color: '#2D2D8F', screen: 'DigitalTwin' },
+  { label: 'Family Safety', icon: 'shield-checkmark', color: '#8E44AD', screen: 'FamilySafetyAssistant' },
 ];
 
 export function AIAssistantScreen({ navigation }: any) {

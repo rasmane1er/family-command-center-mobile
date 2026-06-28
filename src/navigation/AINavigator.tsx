@@ -8,6 +8,7 @@ import { AIMemoryScreen } from '../screens/ai/AIMemoryScreen';
 import { ParentingCoachScreen } from '../screens/ai/ParentingCoachScreen';
 import { NegotiatorScreen } from '../screens/ai/NegotiatorScreen';
 import { DigitalTwinScreen } from '../screens/ai/DigitalTwinScreen';
+import { FamilySafetyAssistantScreen } from '../screens/ai/FamilySafetyAssistantScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -61,6 +62,19 @@ export function AINavigator() {
             message="The Family Digital Twin is only available to parents, guardians, or admins."
           >
             <DigitalTwinScreen />
+          </RoleGuard>
+        )}
+      </Stack.Screen>
+
+      <Stack.Screen name="FamilySafetyAssistant">
+        {(props) => (
+          <RoleGuard
+            allowParent
+            allowGrandparent
+            title="Family Safety Assistant Restricted"
+            message="The Family Safety Assistant is only available to parents, guardians, admins, and grandparents."
+          >
+            <FamilySafetyAssistantScreen {...props} />
           </RoleGuard>
         )}
       </Stack.Screen>
