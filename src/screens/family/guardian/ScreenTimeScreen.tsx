@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   Alert,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -14,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { GuardianNative } from '../../../native/GuardianNative';
 import { useGuardianStore } from '../../../store/useGuardianStore';
 import { useFamilyStore } from '../../../store/useFamilyStore';
 import { colors } from '../../../theme/colors';
@@ -53,6 +55,8 @@ export function ScreenTimeScreen({ navigation }: any) {
   const [dtDays, setDtDays] = useState<DayOfWeek[]>(ALL_DAYS);
   const [appInput, setAppInput] = useState('');
   const [blockedMode, setBlockedMode] = useState(true);
+  const [iosPickerResult, setIosPickerResult] = useState<{ applicationCount: number; categoryCount: number } | null>(null);
+  const [iosPickerLoading, setIosPickerLoading] = useState(false);
 
   const childMembers = members.filter((m) => m.role === 'child');
   const activeMemberId = selectedMemberId ?? childMembers[0]?.id ?? null;
@@ -158,6 +162,33 @@ export function ScreenTimeScreen({ navigation }: any) {
     } else {
       updateScreenTimeRule(memberRule.id, { allowedApps: memberRule.allowedApps.filter((a) => a !== pkg) });
     }
+  };
+
+  const handleIOSPickApps = async () => {
+    setIosPickerLoading(true);
+    try {
+      const result = await GuardianNative.presentAppPicker();
+      if (!result.cancelled) {
+        setIosPickerResult({ applicationCount: result.applicationCount, categoryCount: result.categoryCount });
+      }
+    } catch (e: any) {
+      Alert.alert('Error', e?.message ?? 'Failed to open app picker');
+    } finally {
+      setIosPickerLoading(false);
+    }
+  };
+
+  const handleIOSClearRestrictions = async () => {
+    Alert.alert('Clear Restrictions', 'Remove all iOS app restrictions?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Clear', style: 'destructive',
+        onPress: async () => {
+          await GuardianNative.clearRestrictions();
+          setIosPickerResult(null);
+        },
+      },
+    ]);
   };
 
   const limitIdx = LIMIT_STEPS.indexOf(memberRule?.dailyLimitMinutes ?? 0);
@@ -308,6 +339,42 @@ export function ScreenTimeScreen({ navigation }: any) {
               </View>
             ))}
           </View>
+
+          {/* iOS App Restrictions (FamilyActivityPicker) */}
+          {Platform.OS === 'ios' && (
+            <View style={[styles.card, shadows.card]}>
+              <View style={styles.cardHeader}>
+                <Ionicons name="phone-portrait" size={18} color="#007AFF" />
+                <Text style={styles.cardTitle}>iOS App Restrictions</Text>
+              </View>
+              <Text style={styles.emptyHint}>
+                Use Apple's Screen Time picker to visually select apps to block. Requires Family Controls authorization.
+              </Text>
+              {iosPickerResult && !iosPickerResult.applicationCount && !iosPickerResult.categoryCount ? null : iosPickerResult ? (
+                <View style={styles.iosResultRow}>
+                  <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+                  <Text style={styles.iosResultText}>
+                    {iosPickerResult.applicationCount} app{iosPickerResult.applicationCount !== 1 ? 's' : ''} selected
+                    {iosPickerResult.categoryCount > 0 ? `, ${iosPickerResult.categoryCount} categor${iosPickerResult.categoryCount !== 1 ? 'ies' : 'y'}` : ''}
+                  </Text>
+                </View>
+              ) : null}
+              <Pressable
+                style={[styles.saveBtn, { marginTop: 14 }, iosPickerLoading && { opacity: 0.6 }]}
+                onPress={handleIOSPickApps}
+                disabled={iosPickerLoading}
+              >
+                <Text style={styles.saveBtnText}>
+                  {iosPickerLoading ? 'Opening Picker…' : 'Choose Apps to Block'}
+                </Text>
+              </Pressable>
+              {iosPickerResult && (
+                <Pressable style={[styles.cancelBtn, { marginTop: 10 }]} onPress={handleIOSClearRestrictions}>
+                  <Text style={styles.cancelBtnText}>Clear Restrictions</Text>
+                </Pressable>
+              )}
+            </View>
+          )}
 
           {/* Allowed apps (allowlist) */}
           <View style={[styles.card, shadows.card]}>
@@ -571,4 +638,8 @@ const styles = StyleSheet.create({
   },
 
   cancelBtnText: { fontSize: 15, fontWeight: '600', color: colors.textSecondary },
+
+  iosResultRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 },
+
+  iosResultText: { fontSize: 13, fontWeight: '600', color: colors.success },
 });
