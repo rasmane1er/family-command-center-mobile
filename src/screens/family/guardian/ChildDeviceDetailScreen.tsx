@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Alert,
   Pressable,
@@ -16,6 +16,7 @@ import { useFamilyStore } from '../../../store/useFamilyStore';
 import { colors } from '../../../theme/colors';
 import { shadows } from '../../../theme/spacing';
 import type { ChildDeviceStatus } from '../../../types';
+import { GuardianNative, type NativeAppUsage } from '../../../native/GuardianNative';
 
 const statusColors: Record<ChildDeviceStatus, string> = {
   online: colors.success,
@@ -57,6 +58,17 @@ export function ChildDeviceDetailScreen({ navigation, route }: any) {
   const device = devices.find((d) => d.id === deviceId);
   const member = members.find((m) => m.id === device?.memberId);
 
+  const [nativeUsage, setNativeUsage] = useState<NativeAppUsage[]>([]);
+
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0];
+    GuardianNative.getUsageStats(today).then((stats) => {
+      if (stats && stats.length > 0) {
+        setNativeUsage(stats.sort((a, b) => b.usageMinutes - a.usageMinutes).slice(0, 5));
+      }
+    }).catch(() => {});
+  }, []);
+
   if (!device) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
@@ -92,7 +104,18 @@ export function ChildDeviceDetailScreen({ navigation, route }: any) {
       `Send "${labels[type]}" to ${device.deviceName}?`,
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Send', onPress: () => sendCommand(device.id, type, family?.id ?? 'demo-family') },
+        {
+          text: 'Send',
+          onPress: () => {
+            sendCommand(device.id, type, family?.id ?? 'demo-family');
+            if (type === 'lock') GuardianNative.lockScreen();
+            if (type === 'school_on') GuardianNative.setSchoolMode(true);
+            if (type === 'school_off') GuardianNative.setSchoolMode(false);
+            if (type === 'bedtime_on') GuardianNative.setBedtimeMode(true);
+            if (type === 'bedtime_off') GuardianNative.setBedtimeMode(false);
+            if (type === 'location_request') GuardianNative.startLocationTracking(30000);
+          },
+        },
       ]
     );
   };
@@ -239,26 +262,41 @@ export function ChildDeviceDetailScreen({ navigation, route }: any) {
           </View>
         </View>
 
-        {/* App usage */}
-        {todayUsage.length > 0 && (
+        {/* App usage — prefer native stats, fall back to store data */}
+        {(nativeUsage.length > 0 || todayUsage.length > 0) && (
           <View style={[styles.card, shadows.card]}>
             <View style={styles.cardHeader}>
               <Ionicons name="apps" size={18} color={colors.info} />
               <Text style={styles.cardTitle}>Top Apps Today</Text>
             </View>
-            {todayUsage.map((entry) => {
-              const maxMins = todayUsage[0].usageMinutes;
-              const barWidth = maxMins > 0 ? (entry.usageMinutes / maxMins) * 100 : 0;
-              return (
-                <View key={entry.id} style={styles.appRow}>
-                  <Text style={styles.appName} numberOfLines={1}>{entry.appName}</Text>
-                  <View style={styles.appBarContainer}>
-                    <View style={[styles.appBar, { width: `${barWidth}%` }]} />
-                  </View>
-                  <Text style={styles.appMins}>{entry.usageMinutes}m</Text>
-                </View>
-              );
-            })}
+            {nativeUsage.length > 0
+              ? nativeUsage.map((entry) => {
+                  const maxMins = nativeUsage[0].usageMinutes;
+                  const barWidth = maxMins > 0 ? (entry.usageMinutes / maxMins) * 100 : 0;
+                  return (
+                    <View key={entry.packageName} style={styles.appRow}>
+                      <Text style={styles.appName} numberOfLines={1}>{entry.appName}</Text>
+                      <View style={styles.appBarContainer}>
+                        <View style={[styles.appBar, { width: `${barWidth}%` }]} />
+                      </View>
+                      <Text style={styles.appMins}>{entry.usageMinutes}m</Text>
+                    </View>
+                  );
+                })
+              : todayUsage.map((entry) => {
+                  const maxMins = todayUsage[0].usageMinutes;
+                  const barWidth = maxMins > 0 ? (entry.usageMinutes / maxMins) * 100 : 0;
+                  return (
+                    <View key={entry.id} style={styles.appRow}>
+                      <Text style={styles.appName} numberOfLines={1}>{entry.appName}</Text>
+                      <View style={styles.appBarContainer}>
+                        <View style={[styles.appBar, { width: `${barWidth}%` }]} />
+                      </View>
+                      <Text style={styles.appMins}>{entry.usageMinutes}m</Text>
+                    </View>
+                  );
+                })
+            }
           </View>
         )}
 

@@ -16,6 +16,7 @@ import { useFamilyStore } from '../../../store/useFamilyStore';
 import { colors } from '../../../theme/colors';
 import { shadows } from '../../../theme/spacing';
 import type { ChildDevice, ChildDeviceStatus } from '../../../types';
+import { GuardianNative } from '../../../native/GuardianNative';
 
 const statusColors: Record<ChildDeviceStatus, string> = {
   online: colors.success,
@@ -85,7 +86,12 @@ export function GuardianDashboardScreen({ navigation }: any) {
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Send',
-          onPress: () => sendCommand(device.id, type, family?.id ?? 'demo-family'),
+          onPress: () => {
+            sendCommand(device.id, type, family?.id ?? 'demo-family');
+            if (type === 'lock') GuardianNative.lockScreen();
+            if (type === 'school_on') GuardianNative.setSchoolMode(true);
+            if (type === 'bedtime_on') GuardianNative.setBedtimeMode(true);
+          },
         },
       ]
     );
