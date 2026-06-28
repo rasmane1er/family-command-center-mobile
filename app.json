@@ -11,6 +11,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#0F2952"
     },
+    
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.familycommandcenter.app"
@@ -34,6 +35,12 @@
           "photosPermission": "Allow Family Command Center to access your photos."
         }
       ],
+      [
+    "expo-contacts",
+    {
+      "contactsPermission": "Allow Family Command Center to access your contacts so you can invite family members."
+    }
+  ],
       [
         "expo-document-picker",
         {

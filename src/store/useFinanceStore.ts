@@ -1,3 +1,4 @@
+import { enqueueSync } from '../sync/enqueueSync';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { mmkvStorage } from '../storage/mmkvStorage';
@@ -53,18 +54,51 @@ export const useFinanceStore = create<FinanceState>()(
   addAccount: (a) => set((s) => ({ accounts: [...s.accounts, a] })),
   updateAccount: (id, updates) =>
     set((s) => ({ accounts: s.accounts.map((a) => (a.id === id ? { ...a, ...updates } : a)) })),
-  addTransaction: (t) => set((s) => ({ transactions: [t, ...s.transactions] })),
-  deleteTransaction: (id) => set((s) => ({ transactions: s.transactions.filter((t) => t.id !== id) })),
+  addTransaction: (t) => {
+  set((s) => ({ transactions: [t, ...s.transactions] }));
+
+  enqueueSync({
+    entity: 'finance',
+    action: 'create',
+    payload: { type: 'transaction', data: t },
+  });
+},
+  deleteTransaction: (id) => {
+  set((s) => ({ transactions: s.transactions.filter((t) => t.id !== id) }));
+
+  enqueueSync({
+    entity: 'finance',
+    action: 'delete',
+    payload: { type: 'transaction', id },
+  });
+},
   addBudget: (b) => set((s) => ({ budgets: [...s.budgets, b] })),
   updateBudget: (id, updates) =>
     set((s) => ({ budgets: s.budgets.map((b) => (b.id === id ? { ...b, ...updates } : b)) })),
   deleteBudget: (id) => set((s) => ({ budgets: s.budgets.filter((b) => b.id !== id) })),
-  addBill: (b) => set((s) => ({ bills: [...s.bills, b] })),
+  addBill: (b) => {
+  set((s) => ({ bills: [...s.bills, b] }));
+
+  enqueueSync({
+    entity: 'finance',
+    action: 'create',
+    payload: { type: 'bill', data: b },
+  });
+},
   updateBill: (id, updates) =>
     set((s) => ({ bills: s.bills.map((b) => (b.id === id ? { ...b, ...updates } : b)) })),
   deleteBill: (id) => set((s) => ({ bills: s.bills.filter((b) => b.id !== id) })),
-  markBillPaid: (id) =>
-    set((s) => ({ bills: s.bills.map((b) => (b.id === id ? { ...b, status: 'paid' } : b)) })),
+  markBillPaid: (id) => {
+  set((s) => ({
+    bills: s.bills.map((b) => (b.id === id ? { ...b, status: 'paid' } : b)),
+  }));
+
+  enqueueSync({
+    entity: 'finance',
+    action: 'update',
+    payload: { type: 'bill', id, updates: { status: 'paid' } },
+  });
+},
   addSubscription: (s_) => set((s) => ({ subscriptions: [...s.subscriptions, s_] })),
   updateSubscription: (id, updates) =>
     set((s) => ({ subscriptions: s.subscriptions.map((sub) => (sub.id === id ? { ...sub, ...updates } : sub)) })),

@@ -1,5 +1,8 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
+import { RoleGuard } from '../components/auth/RoleGuard';
+
 import { OperationsDashboardScreen } from '../screens/operations/OperationsDashboardScreen';
 import { VehiclesScreen } from '../screens/operations/VehiclesScreen';
 import { PantryScreen } from '../screens/operations/PantryScreen';
@@ -25,27 +28,33 @@ const Stack = createNativeStackNavigator();
 
 export function OperationsNavigator() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="OperationsDashboard" component={OperationsDashboardScreen} />
-      <Stack.Screen name="Vehicles" component={VehiclesScreen} />
-      <Stack.Screen name="Pantry" component={PantryScreen} />
-      <Stack.Screen name="MealPlanning" component={MealPlanningScreen} />
-      <Stack.Screen name="Documents" component={DocumentsScreen} />
-      <Stack.Screen name="Emergency" component={EmergencyScreen} />
-      <Stack.Screen name="EmergencyMode" component={EmergencyModeScreen} />
-      <Stack.Screen name="Rewards" component={RewardsScreen} />
-      <Stack.Screen name="Automation" component={AutomationScreen} />
-      <Stack.Screen name="Marketplace" component={MarketplaceScreen} />
-      <Stack.Screen name="TimeEconomy" component={TimeEconomyScreen} />
-      <Stack.Screen name="SmartHome" component={SmartHomeScreen} />
-      <Stack.Screen name="ShoppingList" component={ShoppingListScreen} />
-      <Stack.Screen name="Recipes" component={RecipesScreen} />
-      <Stack.Screen name="TravelPlanning" component={TravelPlanningScreen} />
-      <Stack.Screen name="PetTracker" component={PetTrackerScreen} />
-      <Stack.Screen name="HomeMaintenance" component={HomeMaintenanceScreen} />
-      <Stack.Screen name="ChildcareManager" component={ChildcareManagerScreen} />
-      <Stack.Screen name="HomeInventory" component={HomeInventoryScreen} />
-      <Stack.Screen name="CarpoolManager" component={CarpoolManagerScreen} />
-    </Stack.Navigator>
+    <RoleGuard
+      allowParent
+      title="Operations Restricted"
+      message="Operations tools are only available to parents, guardians, or admins."
+    >
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="OperationsDashboard" component={OperationsDashboardScreen} />
+        <Stack.Screen name="Vehicles" component={VehiclesScreen} />
+        <Stack.Screen name="Pantry" component={PantryScreen} />
+        <Stack.Screen name="MealPlanning" component={MealPlanningScreen} />
+        <Stack.Screen name="Documents" component={DocumentsScreen} />
+        <Stack.Screen name="Emergency" component={EmergencyScreen} />
+        <Stack.Screen name="EmergencyMode" component={EmergencyModeScreen} />
+        <Stack.Screen name="Rewards" component={RewardsScreen} />
+        <Stack.Screen name="Automation" component={AutomationScreen} />
+        <Stack.Screen name="Marketplace" component={MarketplaceScreen} />
+        <Stack.Screen name="TimeEconomy" component={TimeEconomyScreen} />
+        <Stack.Screen name="SmartHome" component={SmartHomeScreen} />
+        <Stack.Screen name="ShoppingList" component={ShoppingListScreen} />
+        <Stack.Screen name="Recipes" component={RecipesScreen} />
+        <Stack.Screen name="TravelPlanning" component={TravelPlanningScreen} />
+        <Stack.Screen name="PetTracker" component={PetTrackerScreen} />
+        <Stack.Screen name="HomeMaintenance" component={HomeMaintenanceScreen} />
+        <Stack.Screen name="ChildcareManager" component={ChildcareManagerScreen} />
+        <Stack.Screen name="HomeInventory" component={HomeInventoryScreen} />
+        <Stack.Screen name="CarpoolManager" component={CarpoolManagerScreen} />
+      </Stack.Navigator>
+    </RoleGuard>
   );
 }

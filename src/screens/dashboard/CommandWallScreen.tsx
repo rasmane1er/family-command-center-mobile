@@ -30,6 +30,15 @@ export function CommandWallScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const family = useFamilyStore((s) => s.family);
   const members = useFamilyStore((s) => s.members);
+  const activeMemberId = useFamilyStore((s) => s.activeMemberId);
+const activeMember = members.find((m) => m.id === activeMemberId);
+
+const isParent =
+  activeMember?.role === 'parent' ||
+  activeMember?.role === 'guardian';
+
+const isChild = activeMember?.role === 'child';
+const isGrandparent = activeMember?.role === 'grandparent';
   const tasks = useFamilyStore((s) => s.tasks);
   const events = useFamilyStore((s) => s.events);
   const bills = useFinanceStore((s) => s.bills);
@@ -40,10 +49,22 @@ export function CommandWallScreen({ navigation }: any) {
   if (reputationScores.length === 0) seedWealth();
 
   const today = new Date();
-  const pendingTasks = tasks.filter((t) => t.status === 'pending').length;
+  const visibleTasks =
+  isChild && activeMember
+    ? tasks.filter((task) => task.assignedTo?.includes(activeMember.id))
+    : tasks;
+
+const pendingTasks = visibleTasks.filter((t) => t.status === 'pending').length;
   const overdueTasks = tasks.filter((t) => t.status === 'overdue').length;
   const upcomingBills = bills.filter((b) => b.status === 'upcoming' || b.status === 'due_soon').length;
-  const todayEvents = events.filter((e) => new Date(e.startDate).toDateString() === today.toDateString());
+  const visibleEvents =
+  isChild && activeMember
+    ? events.filter((event) => event.attendees?.includes(activeMember.id))
+    : events;
+
+const todayEvents = visibleEvents.filter(
+  (e) => new Date(e.startDate).toDateString() === today.toDateString()
+);
   const topInsight = insights.filter((i) => !i.isRead)[0];
   const openConflicts = conflicts.filter((c) => c.status !== 'resolved').length;
   const activeAutomations = rules.filter((r) => r.isActive).length;
@@ -193,13 +214,38 @@ export function CommandWallScreen({ navigation }: any) {
         {/* Quick Actions */}
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         <View style={styles.actionsGrid}>
-          {[
+          {
+  (
+    isChild
+      ? [
+          { label: 'My Homework', icon: 'school', color: '#2980B9', route: 'HomeworkTracker' },
+          { label: 'My Rewards', icon: 'trophy', color: '#F5A623', route: 'Rewards' },
+          { label: 'My Tasks', icon: 'checkbox', color: '#27AE60', route: 'Tasks' },
+          { label: 'Family Board', icon: 'people', color: '#8E44AD', route: 'FamilyBoard' },
+        ]
+      : isGrandparent
+        ? [
+            { label: 'Birthdays', icon: 'gift', color: '#E91E63', route: 'BirthdayTracker' },
+            { label: 'Timeline', icon: 'time', color: '#2980B9', route: 'FamilyTimeline' },
+            { label: 'Family Board', icon: 'people', color: '#8E44AD', route: 'FamilyBoard' },
+            { label: 'Events', icon: 'calendar', color: '#27AE60', route: 'Calendar' },
+          ]
+        : [
             { label: 'AI Assistant', icon: 'sparkles', color: '#8E44AD', route: 'AI Assistant' },
             { label: 'Add Task', icon: 'add-circle', color: '#2980B9', route: 'Family' },
             { label: 'View Budget', icon: 'wallet', color: '#27AE60', route: 'Finance' },
             { label: 'Emergency', icon: 'alert-circle', color: '#E74C3C', route: 'Operations' },
-          ].map((action, i) => (
-            <Pressable key={i} onPress={() => navigation.navigate(action.route)} style={[styles.actionBtn, { backgroundColor: action.color + '15' }]}>
+          ]
+         ).map((action, i) => (
+            <Pressable key={i} onPress={() =>
+  navigation.navigate(
+    action.route === 'Rewards' ? 'OperationsRewards' : action.route,
+    {
+      memberId: activeMember?.id,
+      role: activeMember?.role,
+    }
+  )
+} style={[styles.actionBtn, { backgroundColor: action.color + '15' }]}>
               <Ionicons name={action.icon as any} size={24} color={action.color} />
               <Text style={[styles.actionLabel, { color: action.color }]}>{action.label}</Text>
             </Pressable>

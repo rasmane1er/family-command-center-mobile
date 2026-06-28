@@ -1,0 +1,35 @@
+import type { NotificationType } from '../store/useNotificationsStore';
+
+export function getAllowedNotificationTypes(role?: string): NotificationType[] {
+  if (role === 'parent' || role === 'guardian') {
+    return [
+      'task',
+      'bill',
+      'goal',
+      'health',
+      'family',
+      'ai',
+      'emergency',
+      'achievement',
+    ];
+  }
+
+  if (role === 'child') {
+    return ['task', 'achievement', 'family', 'ai', 'emergency'];
+  }
+
+  if (role === 'grandparent') {
+    return ['family', 'health', 'ai', 'emergency'];
+  }
+
+  return [
+    'task',
+    'bill',
+    'goal',
+    'health',
+    'family',
+    'ai',
+    'emergency',
+    'achievement',
+  ];
+}

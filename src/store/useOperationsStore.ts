@@ -1,3 +1,4 @@
+import { enqueueSync } from '../sync/enqueueSync';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { mmkvStorage } from '../storage/mmkvStorage';
@@ -41,10 +42,26 @@ export const useOperationsStore = create<OperationsState>()(
   vehicles: [],
   documents: [],
 
-  addPantryItem: (item) => set((s) => ({ pantryItems: [...s.pantryItems, item] })),
+  addPantryItem: (item) => {
+  set((s) => ({ pantryItems: [...s.pantryItems, item] }));
+
+  enqueueSync({
+    entity: 'operations',
+    action: 'create',
+    payload: { type: 'pantryItem', data: item },
+  });
+},
   updatePantryItem: (id, updates) =>
     set((s) => ({ pantryItems: s.pantryItems.map((i) => (i.id === id ? { ...i, ...updates } : i)) })),
-  deletePantryItem: (id) => set((s) => ({ pantryItems: s.pantryItems.filter((i) => i.id !== id) })),
+  deletePantryItem: (id) => {
+  set((s) => ({ pantryItems: s.pantryItems.filter((i) => i.id !== id) }));
+
+  enqueueSync({
+    entity: 'operations',
+    action: 'delete',
+    payload: { type: 'pantryItem', id },
+  });
+},
   addShoppingList: (list) => set((s) => ({ shoppingLists: [...s.shoppingLists, list] })),
   updateShoppingList: (id, updates) =>
     set((s) => ({ shoppingLists: s.shoppingLists.map((l) => (l.id === id ? { ...l, ...updates } : l)) })),
@@ -61,11 +78,27 @@ export const useOperationsStore = create<OperationsState>()(
   updateAsset: (id, updates) =>
     set((s) => ({ assets: s.assets.map((a) => (a.id === id ? { ...a, ...updates } : a)) })),
   deleteAsset: (id) => set((s) => ({ assets: s.assets.filter((a) => a.id !== id) })),
-  addVehicle: (v) => set((s) => ({ vehicles: [...s.vehicles, v] })),
+  addVehicle: (v) => {
+  set((s) => ({ vehicles: [...s.vehicles, v] }));
+
+  enqueueSync({
+    entity: 'operations',
+    action: 'create',
+    payload: { type: 'vehicle', data: v },
+  });
+},
   updateVehicle: (id, updates) =>
     set((s) => ({ vehicles: s.vehicles.map((v) => (v.id === id ? { ...v, ...updates } : v)) })),
   deleteVehicle: (id) => set((s) => ({ vehicles: s.vehicles.filter((v) => v.id !== id) })),
-  addDocument: (d) => set((s) => ({ documents: [...s.documents, d] })),
+  addDocument: (d) => {
+  set((s) => ({ documents: [...s.documents, d] }));
+
+  enqueueSync({
+    entity: 'operations',
+    action: 'create',
+    payload: { type: 'document', data: d },
+  });
+},
   updateDocument: (id, updates) =>
     set((s) => ({ documents: s.documents.map((d) => (d.id === id ? { ...d, ...updates } : d)) })),
   deleteDocument: (id) => set((s) => ({ documents: s.documents.filter((d) => d.id !== id) })),

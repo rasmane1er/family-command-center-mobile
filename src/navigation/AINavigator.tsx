@@ -1,5 +1,8 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
+import { RoleGuard } from '../components/auth/RoleGuard';
+
 import { AIAssistantScreen } from '../screens/ai/AIAssistantScreen';
 import { AIMemoryScreen } from '../screens/ai/AIMemoryScreen';
 import { ParentingCoachScreen } from '../screens/ai/ParentingCoachScreen';
@@ -12,10 +15,55 @@ export function AINavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="AIAssistant" component={AIAssistantScreen} />
-      <Stack.Screen name="AIMemory" component={AIMemoryScreen} />
-      <Stack.Screen name="ParentingCoach" component={ParentingCoachScreen} />
-      <Stack.Screen name="Negotiator" component={NegotiatorScreen} />
-      <Stack.Screen name="DigitalTwin" component={DigitalTwinScreen} />
+
+      <Stack.Screen name="AIMemory">
+        {() => (
+          <RoleGuard
+            allowParent
+            allowGrandparent
+            title="AI Memory Restricted"
+            message="AI Memory is available to parents, guardians, admins, and grandparents."
+          >
+            <AIMemoryScreen />
+          </RoleGuard>
+        )}
+      </Stack.Screen>
+
+      <Stack.Screen name="ParentingCoach">
+        {() => (
+          <RoleGuard
+            allowParent
+            title="Parenting Coach Restricted"
+            message="Parenting Coach is only available to parents, guardians, or admins."
+          >
+            <ParentingCoachScreen />
+          </RoleGuard>
+        )}
+      </Stack.Screen>
+
+      <Stack.Screen name="Negotiator">
+        {() => (
+          <RoleGuard
+            allowParent
+            title="Negotiator Restricted"
+            message="Family negotiation tools are only available to parents, guardians, or admins."
+          >
+            <NegotiatorScreen />
+          </RoleGuard>
+        )}
+      </Stack.Screen>
+
+      <Stack.Screen name="DigitalTwin">
+        {() => (
+          <RoleGuard
+            allowParent
+            title="Digital Twin Restricted"
+            message="The Family Digital Twin is only available to parents, guardians, or admins."
+          >
+            <DigitalTwinScreen />
+          </RoleGuard>
+        )}
+      </Stack.Screen>
     </Stack.Navigator>
   );
 }

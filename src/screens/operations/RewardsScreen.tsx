@@ -31,17 +31,26 @@ const ACHIEVEMENT_BADGES = [
   { id: 'a6', name: 'Saver', description: 'Save 500 points', icon: 'wallet', color: '#8E44AD', earned: false },
 ];
 
-export function RewardsScreen({ navigation }: any) {
+export function RewardsScreen({ navigation, route }: any) {
   const insets = useSafeAreaInsets();
   const [selectedChild, setSelectedChild] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'store' | 'achievements' | 'history'>('store');
   const members = useFamilyStore((s) => s.members);
+  const memberId = route?.params?.memberId;
+  const role = route?.params?.role;
   const rewards = useFamilyStore((s) => s.rewards);
   const achievements = useFamilyStore((s) => s.achievements);
   const updateMember = useFamilyStore((s) => s.updateMember);
 
   const children = members.filter((m) => m.role === 'child');
-  const activeChild = children.find((c) => c.id === selectedChild) || children[0];
+
+const visibleChildren =
+  role === 'child' && memberId
+    ? children.filter((child) => child.id === memberId)
+    : children;
+
+const activeChild =
+  visibleChildren.find((c) => c.id === selectedChild) || visibleChildren[0];
 
   const nextLevelPoints = activeChild ? (activeChild.level || 1) * 500 : 500;
   const levelProgress = activeChild ? (activeChild.points % 500) / 500 : 0;
@@ -84,9 +93,9 @@ export function RewardsScreen({ navigation }: any) {
         </View>
 
         {/* Child selector */}
-        {children.length > 0 && (
+        {role !== 'child' && visibleChildren.length > 0 && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.childScroll}>
-            {children.map((child) => (
+            {visibleChildren.map((child) => (
               <Pressable
                 key={child.id}
                 onPress={() => setSelectedChild(child.id)}
@@ -211,7 +220,7 @@ export function RewardsScreen({ navigation }: any) {
           </>
         )}
 
-        {children.length === 0 && (
+        {visibleChildren.length === 0 && (
           <View style={styles.emptyState}>
             <Ionicons name="people-outline" size={60} color={colors.textMuted} />
             <Text style={styles.emptyTitle}>No children added</Text>

@@ -1,3 +1,4 @@
+import { enqueueSync } from '../sync/enqueueSync';
 import { mmkvStorage } from '../storage/mmkvStorage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
@@ -55,13 +56,29 @@ export const useFamilyStore = create<FamilyState>()(
   activeMemberId: null,
 
   setFamily: (f) => set({ family: f }),
-  addMember: (m) => set((s) => ({ members: [...s.members, m] })),
+ addMember: (m) => {
+  set((s) => ({ members: [...s.members, m] }));
+
+  enqueueSync({
+    entity: 'family',
+    action: 'create',
+    payload: { type: 'member', data: m },
+  });
+},
   updateMember: (id, updates) =>
     set((s) => ({ members: s.members.map((m) => (m.id === id ? { ...m, ...updates } : m)) })),
   removeMember: (id) => set((s) => ({ members: s.members.filter((m) => m.id !== id) })),
   setActiveMember: (id) => set({ activeMemberId: id }),
 
-  addTask: (t) => set((s) => ({ tasks: [...s.tasks, t] })),
+  addTask: (t) => {
+  set((s) => ({ tasks: [...s.tasks, t] }));
+
+  enqueueSync({
+    entity: 'family',
+    action: 'create',
+    payload: { type: 'task', data: t },
+  });
+},
   updateTask: (id, updates) =>
     set((s) => ({ tasks: s.tasks.map((t) => (t.id === id ? { ...t, ...updates } : t)) })),
   completeTask: (id, memberId) => {
@@ -77,14 +94,38 @@ export const useFamilyStore = create<FamilyState>()(
       }));
     }
   },
-  deleteTask: (id) => set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) })),
+  deleteTask: (id) => {
+  set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) }));
 
-  addEvent: (e) => set((s) => ({ events: [...s.events, e] })),
+  enqueueSync({
+    entity: 'family',
+    action: 'delete',
+    payload: { type: 'task', id },
+  });
+},
+
+  addEvent: (e) => {
+  set((s) => ({ events: [...s.events, e] }));
+
+  enqueueSync({
+    entity: 'family',
+    action: 'create',
+    payload: { type: 'event', data: e },
+  });
+},
   updateEvent: (id, updates) =>
     set((s) => ({ events: s.events.map((e) => (e.id === id ? { ...e, ...updates } : e)) })),
   deleteEvent: (id) => set((s) => ({ events: s.events.filter((e) => e.id !== id) })),
 
-  addGoal: (g) => set((s) => ({ goals: [...s.goals, g] })),
+  addGoal: (g) => {
+  set((s) => ({ goals: [...s.goals, g] }));
+
+  enqueueSync({
+    entity: 'family',
+    action: 'create',
+    payload: { type: 'goal', data: g },
+  });
+},
   updateGoal: (id, updates) =>
     set((s) => ({ goals: s.goals.map((g) => (g.id === id ? { ...g, ...updates } : g)) })),
   deleteGoal: (id) => set((s) => ({ goals: s.goals.filter((g) => g.id !== id) })),
@@ -382,7 +423,15 @@ export const useFamilyStore = create<FamilyState>()(
       { id: generateId(), familyId, memberId: 'member-4', title: 'Screen Time Bonus', description: '30 extra minutes of screen time', pointsCost: 75, category: 'Privilege', isRedeemed: false, icon: 'tablet-portrait-outline', color: '#4ECDC4', },
     ];
 
-    set({ family, members, tasks, events, goals, rewards });
+    set({
+  family,
+  members,
+  tasks,
+  events,
+  goals,
+  rewards,
+  activeMemberId: 'member-1',
+});
   },
     }),
     {

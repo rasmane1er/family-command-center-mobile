@@ -87,10 +87,17 @@ const PRIORITY_VARIANTS: Record<AssignmentPriority, 'success' | 'warning' | 'dan
   high: 'danger',
 };
 
-export function HomeworkTrackerScreen({ navigation }: any) {
+export function HomeworkTrackerScreen({ navigation, route }: any) {
   const insets = useSafeAreaInsets();
   const members = useFamilyStore((s) => s.members);
+  const memberId = route?.params?.memberId;
+  const role = route?.params?.role;
   const children = members.filter((m) => m.role === 'child');
+
+const visibleChildren =
+  role === 'child' && memberId
+    ? children.filter((child) => child.id === memberId)
+    : children;
 
   const {
     assignments,
@@ -104,8 +111,8 @@ export function HomeworkTrackerScreen({ navigation }: any) {
   } = useHomeworkStore();
 
   const [selectedMemberId, setSelectedMemberId] = useState<string>(
-    children[0]?.id ?? 'member-3'
-  );
+  memberId ?? visibleChildren[0]?.id ?? 'member-3'
+);
   const [activeTab, setActiveTab] = useState<'due_soon' | 'all' | 'grades'>('due_soon');
   const [showAddModal, setShowAddModal] = useState(false);
 
@@ -146,7 +153,7 @@ export function HomeworkTrackerScreen({ navigation }: any) {
     [memberAssignments]
   );
 
-  const totalAssignments = assignments.length;
+  const totalAssignments = memberAssignments.length;
   const overdueCount = getOverdueCount(selectedMemberId);
   const avgGrade = getGPAForMember(selectedMemberId);
 
@@ -298,7 +305,8 @@ export function HomeworkTrackerScreen({ navigation }: any) {
         style={styles.memberScroll}
         contentContainerStyle={styles.memberScrollContent}
       >
-        {children.map((m) => (
+        {role !== 'child' &&
+         visibleChildren.map((m) => (
           <Pressable
             key={m.id}
             onPress={() => { setSelectedMemberId(m.id); Haptics.selectionAsync(); }}
@@ -415,7 +423,7 @@ export function HomeworkTrackerScreen({ navigation }: any) {
 
           <Text style={styles.modalLabel}>Member</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
-            {children.map((m) => (
+           {visibleChildren.map((m) => (
               <Pressable
                 key={m.id}
                 onPress={() => setModalMemberId(m.id)}

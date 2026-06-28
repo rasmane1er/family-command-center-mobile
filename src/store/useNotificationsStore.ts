@@ -1,3 +1,4 @@
+import { enqueueSync } from '../sync/enqueueSync';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { mmkvStorage } from '../storage/mmkvStorage';
@@ -32,23 +33,54 @@ export const useNotificationsStore = create<NotificationsState>()(
     (set) => ({
   notifications: [],
 
-  addNotification: (n) =>
-    set((s) => ({
-      notifications: [{ ...n, id: generateId(), createdAt: new Date().toISOString() }, ...s.notifications],
-    })),
+  addNotification: (n) => {
+  const notification = {
+    ...n,
+    id: generateId(),
+    createdAt: new Date().toISOString(),
+  };
 
-  markRead: (id) =>
-    set((s) => ({
-      notifications: s.notifications.map((n) => (n.id === id ? { ...n, isRead: true } : n)),
-    })),
+  set((s) => ({
+    notifications: [notification, ...s.notifications],
+  }));
+
+  enqueueSync({
+    entity: 'notifications',
+    action: 'create',
+    payload: { type: 'notification', data: notification },
+  });
+},
+
+  markRead: (id) => {
+  set((s) => ({
+    notifications: s.notifications.map((n) =>
+      n.id === id ? { ...n, isRead: true } : n
+    ),
+  }));
+
+  enqueueSync({
+    entity: 'notifications',
+    action: 'update',
+    payload: { type: 'notification', id, updates: { isRead: true } },
+  });
+},
 
   markAllRead: () =>
     set((s) => ({
       notifications: s.notifications.map((n) => ({ ...n, isRead: true })),
     })),
 
-  deleteNotification: (id) =>
-    set((s) => ({ notifications: s.notifications.filter((n) => n.id !== id) })),
+  deleteNotification: (id) => {
+  set((s) => ({
+    notifications: s.notifications.filter((n) => n.id !== id),
+  }));
+
+  enqueueSync({
+    entity: 'notifications',
+    action: 'delete',
+    payload: { type: 'notification', id },
+  });
+},
 
   clearAll: () => set({ notifications: [] }),
 

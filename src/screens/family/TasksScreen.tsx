@@ -24,7 +24,7 @@ const priorityColors = {
   low: colors.success,
 };
 
-export function TasksScreen({ navigation }: any) {
+export function TasksScreen({ navigation, route }: any) {
   const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState('All');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -33,18 +33,27 @@ export function TasksScreen({ navigation }: any) {
   const [selectedMember, setSelectedMember] = useState<string | null>(null);
 
   const tasks = useFamilyStore((s) => s.tasks);
+  const memberId = route?.params?.memberId;
+  const role = route?.params?.role;
   const members = useFamilyStore((s) => s.members);
   const addTask = useFamilyStore((s) => s.addTask);
   const completeTask = useFamilyStore((s) => s.completeTask);
   const deleteTask = useFamilyStore((s) => s.deleteTask);
 
-  const filteredTasks = tasks.filter((t) => {
+ const visibleTasks =
+  role === 'child' && memberId
+    ? tasks.filter((task) => task.assignedTo?.includes(memberId))
+    : tasks;
+
+const filteredTasks = visibleTasks
+  .filter((t) => {
     if (filter === 'All') return true;
     if (filter === 'Pending') return t.status === 'pending';
     if (filter === 'Completed') return t.status === 'completed';
     if (filter === 'Overdue') return t.status === 'overdue';
     return true;
-  }).sort((a, b) => {
+  })
+  .sort((a, b) => {
     const priority = { urgent: 0, high: 1, medium: 2, low: 3 };
     return priority[a.priority] - priority[b.priority];
   });
@@ -72,10 +81,10 @@ export function TasksScreen({ navigation }: any) {
   };
 
   const stats = {
-    total: tasks.length,
-    completed: tasks.filter((t) => t.status === 'completed').length,
-    pending: tasks.filter((t) => t.status === 'pending').length,
-    overdue: tasks.filter((t) => t.status === 'overdue').length,
+    total: visibleTasks.length,
+    completed: visibleTasks.filter((t) => t.status === 'completed').length,
+    pending: visibleTasks.filter((t) => t.status === 'pending').length,
+    overdue: visibleTasks.filter((t) => t.status === 'overdue').length,
   };
 
   return (

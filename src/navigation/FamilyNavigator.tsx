@@ -1,5 +1,11 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { RoleGuard } from '../components/auth/RoleGuard';
+import { ProfileSwitcherScreen } from '../screens/family/ProfileSwitcherScreen';
+import { JoinFamilyScreen } from '../screens/family/JoinFamilyScreen';
+import { JoinRequestsScreen } from '../screens/family/JoinRequestsScreen';
+import { FamilyInviteQRScreen } from '../screens/family/FamilyInviteQRScreen';
+import { MemberDetailsScreen } from '../screens/family/MemberDetailsScreen';
 import { FamilyProfilesScreen } from '../screens/family/FamilyProfilesScreen';
 import { CalendarScreen } from '../screens/family/CalendarScreen';
 import { TasksScreen } from '../screens/family/TasksScreen';
@@ -26,36 +32,206 @@ import { ActivitiesTrackerScreen } from '../screens/family/ActivitiesTrackerScre
 import { BirthdayTrackerScreen } from '../screens/family/BirthdayTrackerScreen';
 import { FamilyBoardScreen } from '../screens/family/FamilyBoardScreen';
 
+
+
 const Stack = createNativeStackNavigator();
 
 export function FamilyNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
+      {/* Shared family core */}
       <Stack.Screen name="FamilyProfiles" component={FamilyProfilesScreen} />
+      <Stack.Screen name="ProfileSwitcher" component={ProfileSwitcherScreen} />
+      <Stack.Screen name="MemberDetails" component={MemberDetailsScreen} />
       <Stack.Screen name="Calendar" component={CalendarScreen} />
-      <Stack.Screen name="Tasks" component={TasksScreen} />
-      <Stack.Screen name="SchoolCenter" component={SchoolCenterScreen} />
-      <Stack.Screen name="LegacyVault" component={LegacyVaultScreen} />
-      <Stack.Screen name="ConflictResolver" component={ConflictResolverScreen} />
-      <Stack.Screen name="RelationshipHealth" component={RelationshipHealthScreen} />
-      <Stack.Screen name="Reputation" component={ReputationScreen} />
-      <Stack.Screen name="Achievements" component={AchievementsScreen} />
-      <Stack.Screen name="Habits" component={HabitsScreen} />
-      <Stack.Screen name="MoodTracker" component={MoodTrackerScreen} />
-      <Stack.Screen name="FamilyMeeting" component={FamilyMeetingScreen} />
-      <Stack.Screen name="FamilyTimeline" component={FamilyTimelineScreen} />
-      <Stack.Screen name="KidsMode" component={KidsModeScreen} />
-      <Stack.Screen name="FamilyPolls" component={FamilyPollsScreen} />
-      <Stack.Screen name="ChoreRotation" component={ChoreRotationScreen} />
-      <Stack.Screen name="Allowance" component={AllowanceScreen} />
-      <Stack.Screen name="FamilyJournal" component={FamilyJournalScreen} />
-      <Stack.Screen name="GiftPlanner" component={GiftPlannerScreen} />
-      <Stack.Screen name="FamilyGoals" component={FamilyGoalsScreen} />
-      <Stack.Screen name="BucketList" component={BucketListScreen} />
-      <Stack.Screen name="HomeworkTracker" component={HomeworkTrackerScreen} />
-      <Stack.Screen name="ActivitiesTracker" component={ActivitiesTrackerScreen} />
-      <Stack.Screen name="BirthdayTracker" component={BirthdayTrackerScreen} />
       <Stack.Screen name="FamilyBoard" component={FamilyBoardScreen} />
+
+      {/* Invite / joining */}
+      <Stack.Screen name="JoinFamily" component={JoinFamilyScreen} />
+
+      <Stack.Screen name="FamilyInviteQR">
+        {() => (
+          <RoleGuard allowParent>
+            <FamilyInviteQRScreen />
+          </RoleGuard>
+        )}
+      </Stack.Screen>
+
+      <Stack.Screen name="JoinRequests">
+        {() => (
+          <RoleGuard allowParent>
+            <JoinRequestsScreen />
+          </RoleGuard>
+        )}
+      </Stack.Screen>
+
+      {/* Tasks / school */}
+      <Stack.Screen name="Tasks" component={TasksScreen} />
+      <Stack.Screen name="HomeworkTracker" component={HomeworkTrackerScreen} />
+
+      <Stack.Screen name="SchoolCenter">
+        {() => (
+          <RoleGuard allowParent allowChild>
+            <SchoolCenterScreen />
+          </RoleGuard>
+        )}
+      </Stack.Screen>
+
+      {/* Family memory / legacy */}
+      <Stack.Screen name="LegacyVault">
+        {() => (
+          <RoleGuard allowParent allowGrandparent>
+            <LegacyVaultScreen />
+          </RoleGuard>
+        )}
+      </Stack.Screen>
+
+      <Stack.Screen name="FamilyTimeline">
+        {() => (
+          <RoleGuard allowParent allowGrandparent>
+            <FamilyTimelineScreen />
+          </RoleGuard>
+        )}
+      </Stack.Screen>
+
+      <Stack.Screen name="BirthdayTracker">
+        {() => (
+          <RoleGuard allowParent allowGrandparent>
+            <BirthdayTrackerScreen />
+          </RoleGuard>
+        )}
+      </Stack.Screen>
+
+      <Stack.Screen name="GiftPlanner">
+        {() => (
+          <RoleGuard allowParent allowGrandparent>
+            <GiftPlannerScreen />
+          </RoleGuard>
+        )}
+      </Stack.Screen>
+
+      <Stack.Screen name="FamilyJournal">
+        {() => (
+          <RoleGuard allowParent allowGrandparent>
+            <FamilyJournalScreen />
+          </RoleGuard>
+        )}
+      </Stack.Screen>
+
+      {/* Wellness / relationship */}
+      <Stack.Screen name="RelationshipHealth">
+        {() => (
+          <RoleGuard allowParent allowGrandparent>
+            <RelationshipHealthScreen />
+          </RoleGuard>
+        )}
+      </Stack.Screen>
+
+      <Stack.Screen name="MoodTracker">
+        {() => (
+          <RoleGuard allowParent allowChild>
+            <MoodTrackerScreen />
+          </RoleGuard>
+        )}
+      </Stack.Screen>
+
+      <Stack.Screen name="Habits">
+        {() => (
+          <RoleGuard allowParent allowChild>
+            <HabitsScreen />
+          </RoleGuard>
+        )}
+      </Stack.Screen>
+
+      {/* Parent/admin household controls */}
+      <Stack.Screen name="ConflictResolver">
+        {() => (
+          <RoleGuard allowParent>
+            <ConflictResolverScreen />
+          </RoleGuard>
+        )}
+      </Stack.Screen>
+
+      <Stack.Screen name="Reputation">
+        {() => (
+          <RoleGuard allowParent>
+            <ReputationScreen />
+          </RoleGuard>
+        )}
+      </Stack.Screen>
+
+      <Stack.Screen name="FamilyMeeting">
+        {() => (
+          <RoleGuard allowParent>
+            <FamilyMeetingScreen />
+          </RoleGuard>
+        )}
+      </Stack.Screen>
+
+      <Stack.Screen name="FamilyPolls">
+        {() => (
+          <RoleGuard allowParent>
+            <FamilyPollsScreen />
+          </RoleGuard>
+        )}
+      </Stack.Screen>
+
+      <Stack.Screen name="ChoreRotation">
+        {() => (
+          <RoleGuard allowParent>
+            <ChoreRotationScreen />
+          </RoleGuard>
+        )}
+      </Stack.Screen>
+
+      <Stack.Screen name="Allowance">
+        {() => (
+          <RoleGuard allowParent>
+            <AllowanceScreen />
+          </RoleGuard>
+        )}
+      </Stack.Screen>
+
+      <Stack.Screen name="FamilyGoals">
+        {() => (
+          <RoleGuard allowParent>
+            <FamilyGoalsScreen />
+          </RoleGuard>
+        )}
+      </Stack.Screen>
+
+      <Stack.Screen name="BucketList">
+        {() => (
+          <RoleGuard allowParent>
+            <BucketListScreen />
+          </RoleGuard>
+        )}
+      </Stack.Screen>
+
+      <Stack.Screen name="ActivitiesTracker">
+        {() => (
+          <RoleGuard allowParent>
+            <ActivitiesTrackerScreen />
+          </RoleGuard>
+        )}
+      </Stack.Screen>
+
+      {/* Child-specific */}
+      <Stack.Screen name="KidsMode">
+        {() => (
+          <RoleGuard allowParent allowChild>
+            <KidsModeScreen />
+          </RoleGuard>
+        )}
+      </Stack.Screen>
+
+      <Stack.Screen name="Achievements">
+        {() => (
+          <RoleGuard allowParent allowChild>
+            <AchievementsScreen />
+          </RoleGuard>
+        )}
+      </Stack.Screen>
     </Stack.Navigator>
   );
 }

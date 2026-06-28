@@ -1,3 +1,4 @@
+import { enqueueSync } from '../sync/enqueueSync';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { mmkvStorage } from '../storage/mmkvStorage';
@@ -40,16 +41,46 @@ export const useActivitiesStore = create<ActivitiesState>()(
     (set, get) => ({
   activities: [],
 
-  addActivity: (a) =>
-    set((s) => ({ activities: [...s.activities, { ...a, id: generateId() }] })),
+  addActivity: (a) => {
+  const activity = { ...a, id: generateId() };
 
-  toggleActive: (id) =>
-    set((s) => ({
-      activities: s.activities.map((a) => (a.id === id ? { ...a, isActive: !a.isActive } : a)),
-    })),
+  set((s) => ({ activities: [...s.activities, activity] }));
 
-  deleteActivity: (id) =>
-    set((s) => ({ activities: s.activities.filter((a) => a.id !== id) })),
+  enqueueSync({
+    entity: 'activities',
+    action: 'create',
+    payload: { type: 'activity', data: activity },
+  });
+},
+
+  toggleActive: (id) => {
+  let updatedIsActive = false;
+
+  set((s) => ({
+    activities: s.activities.map((a) => {
+      if (a.id !== id) return a;
+
+      updatedIsActive = !a.isActive;
+      return { ...a, isActive: updatedIsActive };
+    }),
+  }));
+
+  enqueueSync({
+    entity: 'activities',
+    action: 'update',
+    payload: { type: 'activity', id, updates: { isActive: updatedIsActive } },
+  });
+},
+
+  deleteActivity: (id) => {
+  set((s) => ({ activities: s.activities.filter((a) => a.id !== id) }));
+
+  enqueueSync({
+    entity: 'activities',
+    action: 'delete',
+    payload: { type: 'activity', id },
+  });
+},
 
   getTotalMonthlyCost: () =>
     get()
