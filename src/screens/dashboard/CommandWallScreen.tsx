@@ -218,32 +218,31 @@ const todayEvents = visibleEvents.filter(
   (
     isChild
       ? [
-          { label: 'My Homework', icon: 'school', color: '#2980B9', route: 'HomeworkTracker' },
-          { label: 'My Rewards', icon: 'trophy', color: '#F5A623', route: 'Rewards' },
-          { label: 'My Tasks', icon: 'checkbox', color: '#27AE60', route: 'Tasks' },
-          { label: 'Family Board', icon: 'people', color: '#8E44AD', route: 'FamilyBoard' },
+          { label: 'My Homework', icon: 'school', color: '#2980B9', tab: 'Family', screen: 'HomeworkTracker' },
+          { label: 'My Rewards', icon: 'trophy', color: '#F5A623', tab: 'Operations', screen: 'Rewards' },
+          { label: 'My Tasks', icon: 'checkbox', color: '#27AE60', tab: 'Family', screen: 'Tasks' },
+          { label: 'Family Board', icon: 'people', color: '#8E44AD', tab: 'Family', screen: 'FamilyBoard' },
         ]
       : isGrandparent
         ? [
-            { label: 'Birthdays', icon: 'gift', color: '#E91E63', route: 'BirthdayTracker' },
-            { label: 'Timeline', icon: 'time', color: '#2980B9', route: 'FamilyTimeline' },
-            { label: 'Family Board', icon: 'people', color: '#8E44AD', route: 'FamilyBoard' },
-            { label: 'Events', icon: 'calendar', color: '#27AE60', route: 'Calendar' },
+            { label: 'Birthdays', icon: 'gift', color: '#E91E63', tab: 'Family', screen: 'BirthdayTracker' },
+            { label: 'Timeline', icon: 'time', color: '#2980B9', tab: 'Family', screen: 'FamilyTimeline' },
+            { label: 'Family Board', icon: 'people', color: '#8E44AD', tab: 'Family', screen: 'FamilyBoard' },
+            { label: 'Events', icon: 'calendar', color: '#27AE60', tab: 'Family', screen: 'Calendar' },
           ]
         : [
-            { label: 'AI Assistant', icon: 'sparkles', color: '#8E44AD', route: 'AI Assistant' },
-            { label: 'Add Task', icon: 'add-circle', color: '#2980B9', route: 'Family' },
-            { label: 'View Budget', icon: 'wallet', color: '#27AE60', route: 'Finance' },
-            { label: 'Emergency', icon: 'alert-circle', color: '#E74C3C', route: 'Operations' },
+            { label: 'AI Assistant', icon: 'sparkles', color: '#8E44AD', tab: 'AI Assistant', screen: null },
+            { label: 'Add Task', icon: 'add-circle', color: '#2980B9', tab: 'Family', screen: null },
+            { label: 'View Budget', icon: 'wallet', color: '#27AE60', tab: 'Finance', screen: null },
+            { label: 'Emergency', icon: 'alert-circle', color: '#E74C3C', tab: 'Operations', screen: 'Emergency' },
           ]
          ).map((action, i) => (
             <Pressable key={i} onPress={() =>
   navigation.navigate(
-    action.route === 'Rewards' ? 'OperationsRewards' : action.route,
-    {
-      memberId: activeMember?.id,
-      role: activeMember?.role,
-    }
+    action.tab,
+    action.screen
+      ? { screen: action.screen, params: { memberId: activeMember?.id, role: activeMember?.role } }
+      : undefined,
   )
 } style={[styles.actionBtn, { backgroundColor: action.color + '15' }]}>
               <Ionicons name={action.icon as any} size={24} color={action.color} />

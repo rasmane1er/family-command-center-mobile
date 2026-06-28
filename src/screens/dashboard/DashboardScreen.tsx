@@ -287,10 +287,13 @@ export function DashboardScreen({ navigation }: any) {
     }
 
     if (route === 'OperationsRewards') {
-      navigation.navigate('OperationsRewards', {
-        memberId: activeMember?.id,
-        role: activeMember?.role,
-        source: 'dashboard',
+      navigation.navigate('Operations', {
+        screen: 'Rewards',
+        params: {
+          memberId: activeMember?.id,
+          role: activeMember?.role,
+          source: 'dashboard',
+        },
       });
       return;
     }

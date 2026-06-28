@@ -128,11 +128,14 @@ export function SearchScreen({ navigation }: any) {
           icon: 'trophy',
           color: '#F5A623',
           bg: '#FEF3E2',
-          route: 'OperationsRewards',
+          route: 'Operations',
           params: {
-            memberId: activeMember?.id,
-            role: activeMember?.role,
-            source: 'search',
+            screen: 'Rewards',
+            params: {
+              memberId: activeMember?.id,
+              role: activeMember?.role,
+              source: 'search',
+            },
           },
         },
       ];
