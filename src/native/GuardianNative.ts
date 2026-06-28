@@ -1,6 +1,6 @@
 import { NativeModules, Platform } from 'react-native';
 
-const { UsageStatsModule, LocationModule, DeviceControlModule, FamilyControlsModule, IOSLocationModule } = NativeModules;
+const { UsageStatsModule, LocationModule, DeviceControlModule, FamilyControlsModule, IOSLocationModule, AppBlockerModule } = NativeModules;
 
 export interface NativeAppUsage {
   packageName: string;
@@ -102,4 +102,18 @@ export const GuardianNative = {
     isAndroid ? DeviceControlModule.setBedtimeMode(enabled) : Promise.resolve(false),
   setSchoolMode: (enabled: boolean): Promise<boolean> =>
     isAndroid ? DeviceControlModule.setSchoolMode(enabled) : Promise.resolve(false),
+
+  // App Blocker (Android only — AccessibilityService)
+  setBlockedApps: (packages: string[]): Promise<boolean> =>
+    isAndroid ? AppBlockerModule.setBlockedApps(packages) : Promise.resolve(false),
+  getBlockedApps: (): Promise<string[]> =>
+    isAndroid ? AppBlockerModule.getBlockedApps() : Promise.resolve([]),
+  isAccessibilityServiceEnabled: (): Promise<boolean> =>
+    isAndroid ? AppBlockerModule.isAccessibilityServiceEnabled() : Promise.resolve(false),
+  openAccessibilitySettings: (): Promise<boolean> =>
+    isAndroid ? AppBlockerModule.openAccessibilitySettings() : Promise.resolve(false),
+
+  // FCM token - handled by expo-notifications in the child app
+  // In the parent app we just expose a placeholder
+  getFCMToken: (): Promise<string | null> => Promise.resolve(null),
 };
