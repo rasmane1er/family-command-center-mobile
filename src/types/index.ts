@@ -659,3 +659,117 @@ export interface FamilyHealthScore {
   communication: number;
   lastCalculated: string;
 }
+
+// ===================== GUARDIAN MODULE =====================
+
+export type ChildDeviceStatus = 'online' | 'offline' | 'school_mode' | 'bedtime' | 'restricted';
+export type GeofenceAction = 'alert_entry' | 'alert_exit' | 'alert_both';
+export type DayOfWeek = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
+
+export interface ChildDevice {
+  id: string;
+  familyId: string;
+  memberId: string;
+  deviceName: string;
+  platform: 'android' | 'ios';
+  status: ChildDeviceStatus;
+  batteryLevel: number;
+  lastSeen: string;
+  location?: DeviceLocation;
+  appVersion?: string;
+  osVersion?: string;
+  pairingCode?: string;
+  isPaired: boolean;
+}
+
+export interface DeviceLocation {
+  lat: number;
+  lng: number;
+  accuracy: number;
+  address?: string;
+  timestamp: string;
+}
+
+export interface GeofenceZone {
+  id: string;
+  familyId: string;
+  name: string;
+  lat: number;
+  lng: number;
+  radius: number;
+  action: GeofenceAction;
+  icon: string;
+  color: string;
+  isActive: boolean;
+  linkedMembers: string[];
+  createdAt: string;
+}
+
+export interface ScreenTimeRule {
+  id: string;
+  familyId: string;
+  memberId: string;
+  label: string;
+  dailyLimitMinutes: number;
+  scheduledDowntime: ScheduledDowntime[];
+  blockedApps: string[];
+  allowedApps: string[];
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface ScheduledDowntime {
+  id: string;
+  label: string;
+  days: DayOfWeek[];
+  startTime: string;
+  endTime: string;
+  isActive: boolean;
+}
+
+export interface AppUsageEntry {
+  id: string;
+  deviceId: string;
+  appName: string;
+  packageName: string;
+  usageMinutes: number;
+  date: string;
+  icon?: string;
+}
+
+export interface SOSAlert {
+  id: string;
+  familyId: string;
+  memberId: string;
+  deviceId: string;
+  location?: DeviceLocation;
+  message?: string;
+  isResolved: boolean;
+  resolvedAt?: string;
+  resolvedBy?: string;
+  createdAt: string;
+}
+
+export interface ParentApprovalRequest {
+  id: string;
+  familyId: string;
+  memberId: string;
+  type: 'app_install' | 'screen_time_extension' | 'location_override' | 'purchase' | 'website';
+  title: string;
+  description: string;
+  status: 'pending' | 'approved' | 'denied';
+  respondedAt?: string;
+  respondedBy?: string;
+  createdAt: string;
+}
+
+export interface GuardianCommand {
+  id: string;
+  familyId: string;
+  deviceId: string;
+  type: 'lock' | 'unlock' | 'bedtime_on' | 'bedtime_off' | 'school_on' | 'school_off' | 'location_request' | 'sos_ack';
+  payload?: Record<string, unknown>;
+  sentAt: string;
+  executedAt?: string;
+  status: 'pending' | 'executed' | 'failed';
+}

@@ -31,7 +31,13 @@ import { HomeworkTrackerScreen } from '../screens/family/HomeworkTrackerScreen';
 import { ActivitiesTrackerScreen } from '../screens/family/ActivitiesTrackerScreen';
 import { BirthdayTrackerScreen } from '../screens/family/BirthdayTrackerScreen';
 import { FamilyBoardScreen } from '../screens/family/FamilyBoardScreen';
-
+import { GuardianDashboardScreen } from '../screens/family/guardian/GuardianDashboardScreen';
+import { ChildDeviceDetailScreen } from '../screens/family/guardian/ChildDeviceDetailScreen';
+import { GeofenceScreen } from '../screens/family/guardian/GeofenceScreen';
+import { ScreenTimeScreen } from '../screens/family/guardian/ScreenTimeScreen';
+import { SOSAlertsScreen } from '../screens/family/guardian/SOSAlertsScreen';
+import { ApprovalRequestsScreen } from '../screens/family/guardian/ApprovalRequestsScreen';
+import { PairDeviceScreen } from '../screens/family/guardian/PairDeviceScreen';
 
 
 const Stack = createNativeStackNavigator();
@@ -215,6 +221,15 @@ export function FamilyNavigator() {
           </RoleGuard>
         )}
       </Stack.Screen>
+
+      {/* Guardian / parental controls — use component= so navigation/route props are passed correctly */}
+      <Stack.Screen name="GuardianDashboard" component={GuardianDashboardScreen} />
+      <Stack.Screen name="ChildDeviceDetail" component={ChildDeviceDetailScreen} />
+      <Stack.Screen name="Geofence" component={GeofenceScreen} />
+      <Stack.Screen name="ScreenTime" component={ScreenTimeScreen} />
+      <Stack.Screen name="SOSAlerts" component={SOSAlertsScreen} />
+      <Stack.Screen name="ApprovalRequests" component={ApprovalRequestsScreen} />
+      <Stack.Screen name="PairDevice" component={PairDeviceScreen} />
 
       {/* Child-specific */}
       <Stack.Screen name="KidsMode">

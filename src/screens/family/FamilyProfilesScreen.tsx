@@ -423,6 +423,25 @@ const handleImportContacts = async () => {
           </View>
         )}
 
+        {/* Family Guardian — only visible to parents and guardians */}
+        {(activeMember?.role === 'parent' || activeMember?.role === 'guardian' || activeMember?.isAdmin) && (
+          <Pressable
+            onPress={() => navigation.navigate('GuardianDashboard')}
+            style={[styles.guardianCard, shadows.md]}
+          >
+            <View style={styles.guardianCardLeft}>
+              <View style={styles.guardianIcon}>
+                <Ionicons name="shield-checkmark" size={28} color="#fff" />
+              </View>
+              <View style={styles.guardianText}>
+                <Text style={styles.guardianTitle}>Family Guardian</Text>
+                <Text style={styles.guardianDesc}>Parental controls, screen time & location</Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.7)" />
+          </Pressable>
+        )}
+
         <Text style={styles.featureSectionTitle}>Family Features</Text>
 
         <View style={styles.featureGrid}>
@@ -1123,4 +1142,47 @@ activeProfileName: {
   fontWeight: '700',
   marginHorizontal: 8,
 },
+
+  guardianCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#0F2952',
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 8,
+    marginBottom: 20,
+  },
+
+  guardianCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    flex: 1,
+  },
+
+  guardianIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  guardianText: {
+    flex: 1,
+  },
+
+  guardianTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#fff',
+  },
+
+  guardianDesc: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.65)',
+    marginTop: 3,
+  },
 });
