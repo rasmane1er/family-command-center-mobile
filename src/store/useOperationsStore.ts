@@ -172,7 +172,7 @@ export const useOperationsStore = create<OperationsState>()(
       { id: generateId(), familyId, name: 'Living Room Furniture', category: 'Furniture', value: 3500, purchaseDate: '2021-03-20', purchasePrice: 4200, createdAt: now },
     ];
 
-    set({ pantryItems, vehicles, documents, assets });
+    set({ pantryItems, vehicles, documents, assets, shoppingLists: [], mealPlans: [] });
   },
     }),
     {

@@ -2,11 +2,9 @@ import React, { useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, TextInput, Modal,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { StatusBar } from 'expo-status-bar';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
+import { PremiumHeader } from '../../components/common/PremiumHeader';
 import { colors } from '../../theme/colors';
 import { Card } from '../../components/common/Card';
 import { useRecipesStore, Recipe, RecipeCategory } from '../../store/useRecipesStore';
@@ -109,7 +107,6 @@ function RecipeDetailModal({ recipe, onClose, onFavorite }: { recipe: Recipe; on
 }
 
 export function RecipesScreen({ navigation }: any) {
-  const insets = useSafeAreaInsets();
   const { recipes, toggleFavorite, seedDemoData } = useRecipesStore();
   const { pantryItems } = useOperationsStore();
   const [filter, setFilter] = useState<RecipeCategory | 'all' | 'favorites'>('all');
@@ -145,15 +142,11 @@ export function RecipesScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      <StatusBar style="light" />
-      <LinearGradient colors={['#C0392B', '#E74C3C']} style={[styles.header, { paddingTop: insets.top + 12 }]}>
-        <View style={styles.headerRow}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <Text style={styles.headerTitle}>Recipe Book</Text>
-          <View style={{ width: 38 }} />
-        </View>
+      <PremiumHeader
+        title="Recipe Book"
+        colors={['#C0392B', '#E74C3C']}
+        onBack={() => navigation.goBack()}
+      >
         <View style={styles.searchBar}>
           <Ionicons name="search" size={16} color="rgba(255,255,255,0.6)" />
           <TextInput
@@ -169,10 +162,10 @@ export function RecipesScreen({ navigation }: any) {
             </Pressable>
           )}
         </View>
-      </LinearGradient>
+      </PremiumHeader>
 
       {/* Category filters */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll} contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 10, gap: 8 }}>
+      <View style={styles.filtersBar}>
         {CAT_FILTERS.map((f) => (
           <Pressable
             key={f.key}
@@ -183,7 +176,7 @@ export function RecipesScreen({ navigation }: any) {
             <Text style={[styles.filterText, filter === f.key && styles.filterTextActive]}>{f.label}</Text>
           </Pressable>
         ))}
-      </ScrollView>
+      </View>
 
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]} showsVerticalScrollIndicator={false}>
         {/* Cook Tonight */}
@@ -265,13 +258,9 @@ export function RecipesScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { paddingHorizontal: 20, paddingBottom: 16 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  back: { marginRight: 12 },
-  headerTitle: { flex: 1, fontSize: 22, fontWeight: '800', color: '#fff' },
   searchBar: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10 },
   searchInput: { flex: 1, fontSize: 15, color: '#fff' },
-  filtersScroll: { backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border, maxHeight: 56 },
+  filtersBar: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 12, paddingVertical: 8, gap: 8, backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border },
   filterChip: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: colors.background, borderRadius: 20, paddingVertical: 8, paddingHorizontal: 12, borderWidth: 1, borderColor: colors.border },
   filterChipActive: { backgroundColor: '#E74C3C', borderColor: '#E74C3C' },
   filterEmoji: { fontSize: 13 },

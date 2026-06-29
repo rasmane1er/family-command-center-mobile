@@ -116,13 +116,13 @@ export function AchievementsScreen({ navigation }: any) {
         ))}
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
+      <View style={styles.categoryBar}>
         {CATEGORIES.map((c) => (
           <Pressable key={c} onPress={() => setCategory(c)} style={[styles.catChip, category === c && styles.catChipActive]}>
             <Text style={[styles.catChipText, category === c && styles.catChipTextActive]}>{c}</Text>
           </Pressable>
         ))}
-      </ScrollView>
+      </View>
 
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
         <View style={styles.grid}>
@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
   tabActive: { borderBottomWidth: 2.5, borderBottomColor: colors.primary },
   tabText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
   tabTextActive: { color: colors.primary },
-  categoryScroll: { backgroundColor: colors.card, paddingVertical: 10, maxHeight: 50, borderBottomWidth: 1, borderBottomColor: colors.border },
+  categoryBar: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 12, paddingVertical: 8, gap: 8, backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border },
   catChip: { paddingVertical: 5, paddingHorizontal: 14, borderRadius: 20, backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border },
   catChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   catChipText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -8,6 +8,7 @@ import { colors } from '../../theme/colors';
 import { Card } from '../../components/common/Card';
 import { ProgressBar } from '../../components/common/ProgressBar';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { chatWithParentingCoach, AIMessage } from '../../services/aiService';
 
 const COACHING_MODULES = [
   { id: 'm1', title: 'Positive Discipline', icon: 'heart', color: '#E74C3C', bg: '#FDEDEC', desc: 'Science-backed strategies that build connection while setting boundaries', sessions: 8, completed: 5, rating: 4.9 },
@@ -33,8 +34,14 @@ const AGE_ADVICE: Record<string, { range: string; tips: string[] }> = {
 
 export function ParentingCoachScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
-  const [activeTab, setActiveTab] = useState<'modules' | 'tips' | 'advice'>('modules');
+  const [activeTab, setActiveTab] = useState<'modules' | 'tips' | 'advice' | 'chat'>('modules');
   const [tipIndex, setTipIndex] = useState(0);
+  const [chatInput, setChatInput] = useState('');
+  const [chatHistory, setChatHistory] = useState<AIMessage[]>([]);
+  const [chatLoading, setChatLoading] = useState(false);
+  const [lastReply, setLastReply] = useState('');
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const chatScrollRef = useRef<ScrollView>(null);
   const members = useFamilyStore((s) => s.members);
   const children = members.filter((m) => m.role === 'child');
 
@@ -49,6 +56,29 @@ export function ParentingCoachScreen({ navigation }: any) {
     if (age < 6) return 'toddler';
     if (age < 13) return 'school';
     return 'teen';
+  };
+
+  const handleChatSend = async (text?: string) => {
+    const msg = text ?? chatInput.trim();
+    if (!msg || chatLoading) return;
+    setChatInput('');
+    const newHistory: AIMessage[] = [...chatHistory, { role: 'user', content: msg }];
+    setChatHistory(newHistory);
+    setChatLoading(true);
+    setLastReply('');
+    setTimeout(() => chatScrollRef.current?.scrollToEnd({ animated: true }), 100);
+
+    const context = children.length
+      ? `Family has ${children.length} child(ren): ${children.map((c) => c.name).join(', ')}`
+      : 'General parenting question';
+
+    const result = await chatWithParentingCoach({ message: msg, context, history: chatHistory });
+    const modelHistory: AIMessage[] = [...newHistory, { role: 'model', content: result.reply }];
+    setChatHistory(modelHistory);
+    setLastReply(result.reply);
+    setSuggestions(result.suggestions);
+    setChatLoading(false);
+    setTimeout(() => chatScrollRef.current?.scrollToEnd({ animated: true }), 100);
   };
 
   return (
@@ -81,10 +111,10 @@ export function ParentingCoachScreen({ navigation }: any) {
       </LinearGradient>
 
       <View style={styles.tabs}>
-        {(['modules', 'tips', 'advice'] as const).map((tab) => (
+        {(['modules', 'tips', 'advice', 'chat'] as const).map((tab) => (
           <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
             <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-              {tab === 'modules' ? 'Modules' : tab === 'tips' ? 'Daily Tips' : 'Age Advice'}
+              {tab === 'modules' ? 'Modules' : tab === 'tips' ? 'Tips' : tab === 'advice' ? 'Ages' : '✨ Ask AI'}
             </Text>
           </Pressable>
         ))}
@@ -163,7 +193,61 @@ export function ParentingCoachScreen({ navigation }: any) {
             </Card>
           );
         })}
+
       </ScrollView>
+
+      {activeTab === 'chat' && (
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.chatPanel}>
+          <ScrollView ref={chatScrollRef} style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 20 }}>
+            {chatHistory.length === 0 && (
+              <View style={styles.chatEmpty}>
+                <Text style={styles.chatEmptyTitle}>Ask the AI Parenting Coach</Text>
+                <Text style={styles.chatEmptyDesc}>Get personalized, evidence-based advice for your family</Text>
+                {['How do I handle tantrums effectively?', 'Tips for improving homework habits', 'How to talk to my teen about phone limits'].map((q) => (
+                  <Pressable key={q} style={styles.chatStarter} onPress={() => handleChatSend(q)}>
+                    <Text style={styles.chatStarterText}>{q}</Text>
+                    <Ionicons name="arrow-forward" size={14} color="#1A6B3C" />
+                  </Pressable>
+                ))}
+              </View>
+            )}
+            {chatHistory.map((m, i) => (
+              <View key={i} style={[styles.chatBubble, m.role === 'user' ? styles.chatBubbleUser : styles.chatBubbleAI]}>
+                <Text style={m.role === 'user' ? styles.chatBubbleUserText : styles.chatBubbleAIText}>{m.content}</Text>
+              </View>
+            ))}
+            {chatLoading && (
+              <View style={styles.chatBubbleAI}>
+                <ActivityIndicator size="small" color="#1A6B3C" />
+              </View>
+            )}
+            {suggestions.length > 0 && !chatLoading && (
+              <View style={{ marginTop: 8 }}>
+                {suggestions.map((s) => (
+                  <Pressable key={s} style={styles.chatSuggestion} onPress={() => handleChatSend(s)}>
+                    <Text style={styles.chatSuggestionText}>{s}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+          </ScrollView>
+          <View style={styles.chatInputRow}>
+            <TextInput
+              style={styles.chatInput}
+              value={chatInput}
+              onChangeText={setChatInput}
+              placeholder="Ask your parenting question..."
+              placeholderTextColor={colors.textMuted}
+              onSubmitEditing={() => handleChatSend()}
+              returnKeyType="send"
+              multiline
+            />
+            <Pressable style={[styles.chatSendBtn, !chatInput.trim() && { opacity: 0.4 }]} onPress={() => handleChatSend()} disabled={!chatInput.trim()}>
+              <Ionicons name="send" size={18} color="#fff" />
+            </Pressable>
+          </View>
+        </KeyboardAvoidingView>
+      )}
     </View>
   );
 }
@@ -210,4 +294,22 @@ const styles = StyleSheet.create({
   ageRange: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
   adviceTip: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 10 },
   adviceTipText: { flex: 1, fontSize: 13, color: colors.textSecondary, lineHeight: 19 },
+
+  /* chat tab */
+  chatEmpty: { alignItems: 'center', paddingTop: 20, paddingBottom: 8 },
+  chatEmptyTitle: { fontSize: 18, fontWeight: '800', color: colors.text, marginBottom: 6 },
+  chatEmptyDesc: { fontSize: 13, color: colors.textSecondary, textAlign: 'center', marginBottom: 20 },
+  chatStarter: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#E8F5EE', borderRadius: 12, padding: 14, marginBottom: 8, width: '100%' },
+  chatStarterText: { flex: 1, fontSize: 14, color: '#1A6B3C', fontWeight: '500' },
+  chatBubble: { borderRadius: 16, padding: 12, marginBottom: 10, maxWidth: '85%' },
+  chatBubbleUser: { backgroundColor: '#1A6B3C', alignSelf: 'flex-end' },
+  chatBubbleAI: { backgroundColor: colors.card, alignSelf: 'flex-start', borderWidth: 1, borderColor: colors.border },
+  chatBubbleUserText: { fontSize: 14, color: '#fff', lineHeight: 20 },
+  chatBubbleAIText: { fontSize: 14, color: colors.text, lineHeight: 20 },
+  chatSuggestion: { backgroundColor: '#E8F5EE', borderRadius: 20, paddingVertical: 8, paddingHorizontal: 14, marginBottom: 6, alignSelf: 'flex-start' },
+  chatSuggestionText: { fontSize: 13, color: '#1A6B3C', fontWeight: '500' },
+  chatPanel: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: colors.background },
+  chatInputRow: { flexDirection: 'row', alignItems: 'flex-end', padding: 12, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.background, gap: 10 },
+  chatInput: { flex: 1, backgroundColor: colors.card, borderRadius: 22, paddingVertical: 10, paddingHorizontal: 16, fontSize: 14, color: colors.text, maxHeight: 100, borderWidth: 1, borderColor: colors.border },
+  chatSendBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#1A6B3C', alignItems: 'center', justifyContent: 'center' },
 });

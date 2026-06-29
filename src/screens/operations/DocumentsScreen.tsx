@@ -6,7 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format, differenceInDays } from 'date-fns';
 import * as Haptics from 'expo-haptics';
-import { colors } from '../../theme/colors';
+import { useTheme } from '../../theme/ThemeContext';
 import { shadows } from '../../theme/spacing';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
@@ -16,21 +16,22 @@ import { useOperationsStore } from '../../store/useOperationsStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import type { DocumentCategory, Document } from '../../types';
 
-const CATEGORIES: { key: DocumentCategory | 'all'; label: string; icon: string; color: string }[] = [
-  { key: 'all', label: 'All', icon: 'folder', color: colors.primary },
-  { key: 'identity', label: 'Identity', icon: 'person', color: '#27AE60' },
-  { key: 'medical', label: 'Medical', icon: 'medkit', color: '#E74C3C' },
-  { key: 'financial', label: 'Financial', icon: 'wallet', color: '#F5A623' },
-  { key: 'insurance', label: 'Insurance', icon: 'shield', color: '#2980B9' },
-  { key: 'legal', label: 'Legal', icon: 'briefcase', color: '#8E44AD' },
-  { key: 'education', label: 'Education', icon: 'school', color: '#16A085' },
-  { key: 'vehicle', label: 'Vehicle', icon: 'car', color: '#E74C3C' },
+const CATEGORIES_CONFIG = [
+  { key: 'all' as const, label: 'All', icon: 'folder', color: '#2980B9' },
+  { key: 'identity' as const, label: 'Identity', icon: 'person', color: '#27AE60' },
+  { key: 'medical' as const, label: 'Medical', icon: 'medkit', color: '#E74C3C' },
+  { key: 'financial' as const, label: 'Financial', icon: 'wallet', color: '#F5A623' },
+  { key: 'insurance' as const, label: 'Insurance', icon: 'shield', color: '#2980B9' },
+  { key: 'legal' as const, label: 'Legal', icon: 'briefcase', color: '#8E44AD' },
+  { key: 'education' as const, label: 'Education', icon: 'school', color: '#16A085' },
+  { key: 'vehicle' as const, label: 'Vehicle', icon: 'car', color: '#E74C3C' },
 ];
 
 const DOC_CATEGORIES: DocumentCategory[] = ['identity', 'medical', 'financial', 'insurance', 'legal', 'education', 'vehicle', 'home', 'other'];
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
 export function DocumentsScreen({ navigation }: any) {
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const { documents, addDocument, deleteDocument } = useOperationsStore();
@@ -55,7 +56,7 @@ export function DocumentsScreen({ navigation }: any) {
     return null;
   };
 
-  const getCategoryInfo = (cat: string) => CATEGORIES.find((c) => c.key === cat) || CATEGORIES[0];
+  const getCategoryInfo = (cat: string) => CATEGORIES_CONFIG.find((c) => c.key === cat) || CATEGORIES_CONFIG[0];
 
   const handleAdd = () => {
     if (!newTitle.trim()) return;
@@ -85,64 +86,66 @@ export function DocumentsScreen({ navigation }: any) {
     ]);
   };
 
+  const s = makeStyles(colors);
+
   return (
-    <View style={styles.container}>
+    <View style={s.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#2980B9', '#1A5276']} style={[styles.header, { paddingTop: insets.top + 12 }]}>
-        <View style={styles.headerTop}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+      <LinearGradient colors={['#2980B9', '#1A5276']} style={[s.header, { paddingTop: insets.top + 12 }]}>
+        <View style={s.headerTop}>
+          <Pressable onPress={() => navigation.goBack()} style={s.back}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </Pressable>
-          <Text style={styles.headerTitle}>Document Vault</Text>
-          <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
+          <Text style={s.headerTitle}>Document Vault</Text>
+          <Pressable onPress={() => setShowModal(true)} style={s.addBtn}>
             <Ionicons name="add" size={26} color="#fff" />
           </Pressable>
         </View>
 
-        <View style={styles.vaultInfo}>
+        <View style={s.vaultInfo}>
           <Ionicons name="lock-closed" size={20} color="rgba(255,255,255,0.7)" />
-          <Text style={styles.vaultText}>{documents.length} documents • End-to-end encrypted</Text>
+          <Text style={s.vaultText}>{documents.length} documents • End-to-end encrypted</Text>
         </View>
       </LinearGradient>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.catScroll} contentContainerStyle={styles.catContent}>
-        {CATEGORIES.map((cat) => (
-          <Pressable key={cat.key} onPress={() => setActiveCategory(cat.key)} style={[styles.catChip, activeCategory === cat.key && { borderColor: cat.color, backgroundColor: cat.color + '15' }]}>
+      <View style={s.catBar}>
+        {CATEGORIES_CONFIG.map((cat) => (
+          <Pressable key={cat.key} onPress={() => setActiveCategory(cat.key)} style={[s.catChip, activeCategory === cat.key && { borderColor: cat.color, backgroundColor: cat.color + '15' }]}>
             <Ionicons name={cat.icon as any} size={14} color={activeCategory === cat.key ? cat.color : colors.textSecondary} />
-            <Text style={[styles.catText, activeCategory === cat.key && { color: cat.color }]}>{cat.label}</Text>
+            <Text style={[s.catText, activeCategory === cat.key && { color: cat.color }]}>{cat.label}</Text>
           </Pressable>
         ))}
-      </ScrollView>
+      </View>
 
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
+      <ScrollView contentContainerStyle={[s.content, { paddingBottom: 100 }]}>
         {filtered.map((doc) => {
           const catInfo = getCategoryInfo(doc.category);
           return (
-            <Card key={doc.id} style={styles.docCard} variant="elevated">
-              <View style={styles.docRow}>
-                <View style={[styles.docIcon, { backgroundColor: catInfo.color + '15' }]}>
+            <Card key={doc.id} style={s.docCard} variant="elevated">
+              <View style={s.docRow}>
+                <View style={[s.docIcon, { backgroundColor: catInfo.color + '15' }]}>
                   <Ionicons name={catInfo.icon as any} size={22} color={catInfo.color} />
                 </View>
                 <View style={{ flex: 1, marginLeft: 14 }}>
-                  <View style={styles.docHeader}>
-                    <Text style={styles.docTitle}>{doc.title}</Text>
+                  <View style={s.docHeader}>
+                    <Text style={s.docTitle}>{doc.title}</Text>
                     {doc.isSensitive && <Ionicons name="lock-closed" size={14} color={colors.textMuted} />}
                   </View>
-                  <View style={styles.docMeta}>
+                  <View style={s.docMeta}>
                     <Badge label={doc.category} variant="primary" size="sm" />
                     {doc.isShared && <Badge label="Shared" variant="info" size="sm" />}
                     {getExpiryBadge(doc.expiryDate)}
                   </View>
                   {doc.expiryDate && (
-                    <Text style={styles.docExpiry}>Expires {format(new Date(doc.expiryDate), 'MMM d, yyyy')}</Text>
+                    <Text style={s.docExpiry}>Expires {format(new Date(doc.expiryDate), 'MMM d, yyyy')}</Text>
                   )}
-                  {doc.issuer && <Text style={styles.docIssuer}>Issued by {doc.issuer}</Text>}
+                  {doc.issuer && <Text style={s.docIssuer}>Issued by {doc.issuer}</Text>}
                 </View>
-                <View style={styles.docActions}>
-                  <Pressable style={styles.docActionBtn}>
+                <View style={s.docActions}>
+                  <Pressable style={s.docActionBtn}>
                     <Ionicons name="share-outline" size={18} color={colors.primary} />
                   </Pressable>
-                  <Pressable onPress={() => handleDelete(doc.id, doc.title)} style={styles.docActionBtn}>
+                  <Pressable onPress={() => handleDelete(doc.id, doc.title)} style={s.docActionBtn}>
                     <Ionicons name="trash-outline" size={16} color={colors.danger} />
                   </Pressable>
                 </View>
@@ -152,40 +155,40 @@ export function DocumentsScreen({ navigation }: any) {
         })}
 
         {filtered.length === 0 && (
-          <View style={styles.emptyState}>
+          <View style={s.emptyState}>
             <Ionicons name="folder-open-outline" size={64} color={colors.textMuted} />
-            <Text style={styles.emptyTitle}>No documents</Text>
-            <Text style={styles.emptyDesc}>Upload important family documents to keep them secure and accessible</Text>
+            <Text style={s.emptyTitle}>No documents</Text>
+            <Text style={s.emptyDesc}>Upload important family documents to keep them secure and accessible</Text>
           </View>
         )}
 
-        <View style={styles.securityNote}>
+        <View style={s.securityNote}>
           <Ionicons name="shield-checkmark" size={18} color={colors.info} />
-          <Text style={styles.securityText}>
+          <Text style={s.securityText}>
             All documents are encrypted and stored securely. Only you and authorized family members can access them.
           </Text>
         </View>
       </ScrollView>
 
       <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowModal(false)}>
-        <ScrollView style={styles.modal} contentContainerStyle={{ paddingBottom: 40 }}>
-          <View style={styles.modalHandle} />
-          <Text style={styles.modalTitle}>Add Document</Text>
+        <ScrollView style={s.modal} contentContainerStyle={{ paddingBottom: 40 }}>
+          <View style={s.modalHandle} />
+          <Text style={s.modalTitle}>Add Document</Text>
 
-          <Text style={styles.modalLabel}>Title *</Text>
-          <TextInput style={styles.modalInput} placeholder="e.g. John's Passport" value={newTitle} onChangeText={setNewTitle} placeholderTextColor={colors.textMuted} autoFocus />
+          <Text style={s.modalLabel}>Title *</Text>
+          <TextInput style={s.modalInput} placeholder="e.g. John's Passport" value={newTitle} onChangeText={setNewTitle} placeholderTextColor={colors.textMuted} autoFocus />
 
-          <Text style={styles.modalLabel}>Issuer</Text>
-          <TextInput style={styles.modalInput} placeholder="e.g. US Department of State" value={newIssuer} onChangeText={setNewIssuer} placeholderTextColor={colors.textMuted} />
+          <Text style={s.modalLabel}>Issuer</Text>
+          <TextInput style={s.modalInput} placeholder="e.g. US Department of State" value={newIssuer} onChangeText={setNewIssuer} placeholderTextColor={colors.textMuted} />
 
-          <Text style={styles.modalLabel}>Category</Text>
-          <View style={styles.catGrid}>
+          <Text style={s.modalLabel}>Category</Text>
+          <View style={s.catGrid}>
             {DOC_CATEGORIES.map((cat) => {
               const info = getCategoryInfo(cat);
               return (
-                <Pressable key={cat} onPress={() => setNewCategory(cat)} style={[styles.catGridItem, newCategory === cat && { backgroundColor: (info?.color || colors.primary) + '20', borderColor: info?.color || colors.primary }]}>
+                <Pressable key={cat} onPress={() => setNewCategory(cat)} style={[s.catGridItem, newCategory === cat && { backgroundColor: (info?.color || colors.primary) + '20', borderColor: info?.color || colors.primary }]}>
                   <Ionicons name={(info?.icon || 'folder') as any} size={16} color={newCategory === cat ? (info?.color || colors.primary) : colors.textSecondary} />
-                  <Text style={[styles.catGridText, newCategory === cat && { color: info?.color || colors.primary }]}>
+                  <Text style={[s.catGridText, newCategory === cat && { color: info?.color || colors.primary }]}>
                     {cat.charAt(0).toUpperCase() + cat.slice(1)}
                   </Text>
                 </Pressable>
@@ -193,31 +196,31 @@ export function DocumentsScreen({ navigation }: any) {
             })}
           </View>
 
-          <Text style={styles.modalLabel}>Assign To Member</Text>
+          <Text style={s.modalLabel}>Assign To Member</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
-            <Pressable onPress={() => setNewMemberId(null)} style={[styles.memberChip, !newMemberId && styles.memberChipActive]}>
-              <Text style={styles.memberChipName}>Family</Text>
+            <Pressable onPress={() => setNewMemberId(null)} style={[s.memberChip, !newMemberId && s.memberChipActive]}>
+              <Text style={s.memberChipName}>Family</Text>
             </Pressable>
             {members.map((m) => (
-              <Pressable key={m.id} onPress={() => setNewMemberId(m.id)} style={[styles.memberChip, newMemberId === m.id && styles.memberChipActive]}>
+              <Pressable key={m.id} onPress={() => setNewMemberId(m.id)} style={[s.memberChip, newMemberId === m.id && s.memberChipActive]}>
                 <Avatar name={m.name} color={m.avatarColor} size={28} />
-                <Text style={styles.memberChipName}>{m.name.split(' ')[0]}</Text>
+                <Text style={s.memberChipName}>{m.name.split(' ')[0]}</Text>
               </Pressable>
             ))}
           </ScrollView>
 
-          <View style={styles.toggleRow}>
+          <View style={s.toggleRow}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.toggleLabel}>Sensitive</Text>
-              <Text style={styles.toggleDesc}>Requires extra authentication to view</Text>
+              <Text style={s.toggleLabel}>Sensitive</Text>
+              <Text style={s.toggleDesc}>Requires extra authentication to view</Text>
             </View>
             <Switch value={newSensitive} onValueChange={setNewSensitive} trackColor={{ true: colors.danger }} />
           </View>
 
-          <View style={[styles.toggleRow, { marginBottom: 24 }]}>
+          <View style={[s.toggleRow, { marginBottom: 24 }]}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.toggleLabel}>Shared with Family</Text>
-              <Text style={styles.toggleDesc}>All family members can view this document</Text>
+              <Text style={s.toggleLabel}>Shared with Family</Text>
+              <Text style={s.toggleDesc}>All family members can view this document</Text>
             </View>
             <Switch value={newShared} onValueChange={setNewShared} trackColor={{ true: colors.primary }} />
           </View>
@@ -230,47 +233,48 @@ export function DocumentsScreen({ navigation }: any) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  header: { paddingHorizontal: 20, paddingBottom: 20 },
-  headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  back: { marginRight: 12 },
-  headerTitle: { flex: 1, fontSize: 22, fontWeight: '800', color: '#fff' },
-  addBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
-  vaultInfo: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  vaultText: { fontSize: 13, color: 'rgba(255,255,255,0.7)' },
-  catScroll: { maxHeight: 50, backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border },
-  catContent: { paddingHorizontal: 16, alignItems: 'center', gap: 8 },
-  catChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 20, borderWidth: 1.5, borderColor: 'transparent' },
-  catText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
-  content: { padding: 16 },
-  docCard: { marginBottom: 10, borderRadius: 16 },
-  docRow: { flexDirection: 'row', alignItems: 'flex-start' },
-  docIcon: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  docHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
-  docTitle: { fontSize: 15, fontWeight: '700', color: colors.text, flex: 1 },
-  docMeta: { flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginBottom: 5 },
-  docExpiry: { fontSize: 12, color: colors.textSecondary, marginBottom: 2 },
-  docIssuer: { fontSize: 12, color: colors.textMuted },
-  docActions: { gap: 4 },
-  docActionBtn: { width: 32, height: 32, borderRadius: 8, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
-  emptyState: { alignItems: 'center', paddingVertical: 60 },
-  emptyTitle: { fontSize: 20, fontWeight: '700', color: colors.text, marginTop: 16 },
-  emptyDesc: { fontSize: 14, color: colors.textSecondary, marginTop: 8, textAlign: 'center', paddingHorizontal: 32 },
-  securityNote: { flexDirection: 'row', gap: 10, backgroundColor: colors.infoLight, borderRadius: 12, padding: 14, marginTop: 8 },
-  securityText: { flex: 1, fontSize: 13, color: colors.info, lineHeight: 20 },
-  modal: { flex: 1, padding: 24, backgroundColor: colors.background },
-  modalHandle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 24 },
-  modalTitle: { fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 20 },
-  modalLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
-  modalInput: { backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 16, color: colors.text, borderWidth: 1.5, borderColor: colors.border, marginBottom: 16, ...shadows.sm },
-  catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
-  catGridItem: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.card },
-  catGridText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
-  memberChip: { alignItems: 'center', marginRight: 12, padding: 10, borderRadius: 12, borderWidth: 1.5, borderColor: 'transparent', gap: 4 },
-  memberChipActive: { borderColor: '#2980B9', backgroundColor: '#EBF5FB' },
-  memberChipName: { fontSize: 11, color: colors.textSecondary, fontWeight: '600' },
-  toggleRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 12, padding: 14, marginBottom: 12, borderWidth: 1.5, borderColor: colors.border },
-  toggleLabel: { fontSize: 15, fontWeight: '600', color: colors.text, marginBottom: 2 },
-  toggleDesc: { fontSize: 12, color: colors.textSecondary },
-});
+function makeStyles(colors: any) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    header: { paddingHorizontal: 20, paddingBottom: 20 },
+    headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+    back: { marginRight: 12 },
+    headerTitle: { flex: 1, fontSize: 22, fontWeight: '800', color: '#fff' },
+    addBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
+    vaultInfo: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    vaultText: { fontSize: 13, color: 'rgba(255,255,255,0.7)' },
+    catBar: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 12, paddingVertical: 8, gap: 8, backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border },
+    catChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 20, borderWidth: 1.5, borderColor: 'transparent' },
+    catText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+    content: { padding: 16 },
+    docCard: { marginBottom: 10, borderRadius: 16 },
+    docRow: { flexDirection: 'row', alignItems: 'flex-start' },
+    docIcon: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+    docHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
+    docTitle: { fontSize: 15, fontWeight: '700', color: colors.text, flex: 1 },
+    docMeta: { flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginBottom: 5 },
+    docExpiry: { fontSize: 12, color: colors.textSecondary, marginBottom: 2 },
+    docIssuer: { fontSize: 12, color: colors.textMuted },
+    docActions: { gap: 4 },
+    docActionBtn: { width: 32, height: 32, borderRadius: 8, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
+    emptyState: { alignItems: 'center', paddingVertical: 60 },
+    emptyTitle: { fontSize: 20, fontWeight: '700', color: colors.text, marginTop: 16 },
+    emptyDesc: { fontSize: 14, color: colors.textSecondary, marginTop: 8, textAlign: 'center', paddingHorizontal: 32 },
+    securityNote: { flexDirection: 'row', gap: 10, backgroundColor: colors.infoLight, borderRadius: 12, padding: 14, marginTop: 8 },
+    securityText: { flex: 1, fontSize: 13, color: colors.info, lineHeight: 20 },
+    modal: { flex: 1, padding: 24, backgroundColor: colors.background },
+    modalHandle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 24 },
+    modalTitle: { fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 20 },
+    modalLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+    modalInput: { backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 16, color: colors.text, borderWidth: 1.5, borderColor: colors.border, marginBottom: 16, ...shadows.sm },
+    catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
+    catGridItem: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.card },
+    catGridText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
+    memberChip: { alignItems: 'center', marginRight: 12, padding: 10, borderRadius: 12, borderWidth: 1.5, borderColor: 'transparent', gap: 4 },
+    memberChipActive: { borderColor: '#2980B9', backgroundColor: '#EBF5FB' },
+    memberChipName: { fontSize: 11, color: colors.textSecondary, fontWeight: '600' },
+    toggleRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 12, padding: 14, marginBottom: 12, borderWidth: 1.5, borderColor: colors.border },
+    toggleLabel: { fontSize: 15, fontWeight: '600', color: colors.text, marginBottom: 2 },
+    toggleDesc: { fontSize: 12, color: colors.textSecondary },
+  });
+}

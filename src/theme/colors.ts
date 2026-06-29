@@ -19,12 +19,13 @@ export const colors = {
   infoLight: '#D6EAF8',
 
   // Neutrals
-  background: '#F4F6FB',
+  background: '#F0F3F9',
   backgroundDark: '#0D1B2A',
   card: '#FFFFFF',
   cardDark: '#132338',
-  border: '#E2E8F0',
+  border: '#E4EAF2',
   borderDark: '#1E3A5F',
+  surface: '#F8FAFD',
 
   // Text
   text: '#0D1B2A',

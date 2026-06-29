@@ -27,7 +27,7 @@ export function NotificationsScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
 
-  const { notifications, markRead, markAllRead, deleteNotification, seedDemoData } =
+  const { notifications, markRead, markAllRead, deleteNotification } =
     useNotificationsStore();
 
   const activeMemberId = useFamilyStore((s) => s.activeMemberId);
@@ -35,12 +35,6 @@ export function NotificationsScreen({ navigation }: any) {
 
   const activeMember = members.find((member) => member.id === activeMemberId);
   const allowedTypes = getAllowedNotificationTypes(activeMember?.role);
-
-  useEffect(() => {
-    if (notifications.length === 0) {
-      seedDemoData();
-    }
-  }, [notifications.length, seedDemoData]);
 
   const roleNotifications = notifications.filter((notification) =>
     allowedTypes.includes(notification.type)

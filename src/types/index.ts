@@ -648,6 +648,7 @@ export interface AppSettings {
   militaryMode: boolean;
   weekStartsOn: 0 | 1 | 6;
   displayName?: string;
+  subscriptionTier?: 'free' | 'premium' | 'family_pro';
 }
 
 export interface FamilyHealthScore {

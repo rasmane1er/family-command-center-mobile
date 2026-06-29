@@ -15,7 +15,7 @@ const FILTERS: RequestFilter[] = ['pending', 'approved', 'rejected'];
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
-export function JoinRequestsScreen() {
+export function JoinRequestsScreen({ navigation }: any) {
   const [filter, setFilter] = useState<RequestFilter>('pending');
 
   const requests = useJoinRequestsStore((s) => s.requests);
@@ -83,6 +83,9 @@ export function JoinRequestsScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.header}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Ionicons name="arrow-back" size={22} color={colors.text} />
+        </Pressable>
         <View style={styles.headerIcon}>
           <Ionicons name="person-add-outline" size={34} color={colors.primary} />
         </View>
@@ -215,6 +218,7 @@ const styles = StyleSheet.create({
   content: { padding: 16, paddingBottom: 100 },
 
   header: { alignItems: 'center', paddingVertical: 28 },
+  backBtn: { position: 'absolute', top: 16, left: 0, width: 40, height: 40, borderRadius: 20, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
 
   headerIcon: {
     width: 68,

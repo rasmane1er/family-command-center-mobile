@@ -8,12 +8,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
-import { colors } from '../../theme/colors';
+import { useTheme } from '../../theme/ThemeContext';
+import { useTranslation } from 'react-i18next';
 import { Card } from '../../components/common/Card';
 import { useAIStore } from '../../store/useAIStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { useOperationsStore } from '../../store/useOperationsStore';
+import { useSubscription } from '../../hooks/useSubscription';
+import { UpgradePrompt } from '../../components/common/UpgradePrompt';
 
 const QUICK_SUGGESTIONS = [
   { label: 'Budget check', prompt: 'How are we doing with our budget this month?', icon: 'wallet-outline' },
@@ -34,9 +37,16 @@ const AI_FEATURES = [
 
 export function AIAssistantScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const { t } = useTranslation();
+  // CustomTabBar: paddingTop(10) + icon(34) + label(14) + gap(8) + safe area bottom
+  const tabBarHeight = Math.max(insets.bottom, 34) + 72;
   const [input, setInput] = useState('');
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   const { messages, insights, isTyping, sendMessage, clearMessages } = useAIStore();
+  const { features } = useSubscription();
+  const aiQueryCount = useAIStore((s) => s.messages?.filter((m) => m.role === 'user').length ?? 0);
   const family = useFamilyStore((s) => s.family);
   const members = useFamilyStore((s) => s.members);
   const { accounts } = useFinanceStore();
@@ -51,85 +61,91 @@ export function AIAssistantScreen({ navigation }: any) {
   const handleSend = async (text?: string) => {
     const msg = text || input.trim();
     if (!msg) return;
+    if (!features.unlimitedAI && aiQueryCount >= features.aiQueriesPerMonth) {
+      setShowUpgradePrompt(true);
+      return;
+    }
     setInput('');
     await sendMessage(msg, '');
   };
 
   const unreadInsights = insights.filter((i) => !i.isRead);
 
+  const dynStyles = makeStyles(colors);
+
   return (
-    <View style={styles.container}>
+    <View style={[dynStyles.container, { paddingBottom: tabBarHeight }]}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#0F2952', '#1a3a70']} style={[styles.header, { paddingTop: insets.top + 12 }]}>
-        <View style={styles.headerRow}>
-          <View style={styles.aiAvatar}>
+      <LinearGradient colors={['#0F2952', '#1a3a70']} style={[dynStyles.header, { paddingTop: insets.top + 12 }]}>
+        <View style={dynStyles.headerRow}>
+          <View style={dynStyles.aiAvatar}>
             <Ionicons name="sparkles" size={22} color={colors.secondary} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.headerTitle}>AI Chief of Staff</Text>
-            <View style={styles.statusRow}>
-              <View style={styles.statusDot} />
-              <Text style={styles.statusText}>Online • Powered by Claude</Text>
+            <Text style={dynStyles.headerTitle}>{t('ai.title')}</Text>
+            <View style={dynStyles.statusRow}>
+              <View style={dynStyles.statusDot} />
+              <Text style={dynStyles.statusText}>Online • Powered by Gemini</Text>
             </View>
           </View>
-          <Pressable onPress={clearMessages} style={styles.clearBtn}>
+          <Pressable onPress={clearMessages} style={dynStyles.clearBtn}>
             <Ionicons name="refresh-outline" size={20} color="rgba(255,255,255,0.6)" />
           </Pressable>
         </View>
 
-        <View style={styles.contextRow}>
-          <View style={styles.contextChip}>
+        <View style={dynStyles.contextRow}>
+          <View style={dynStyles.contextChip}>
             <Ionicons name="people-outline" size={12} color="rgba(255,255,255,0.7)" />
-            <Text style={styles.contextChipText}>{members.length} members</Text>
+            <Text style={dynStyles.contextChipText}>{members.length} members</Text>
           </View>
-          <View style={styles.contextChip}>
+          <View style={dynStyles.contextChip}>
             <Ionicons name="wallet-outline" size={12} color="rgba(255,255,255,0.7)" />
-            <Text style={styles.contextChipText}>${(netWorth / 1000).toFixed(0)}k net worth</Text>
+            <Text style={dynStyles.contextChipText}>${(netWorth / 1000).toFixed(0)}k net worth</Text>
           </View>
-          <View style={styles.contextChip}>
+          <View style={dynStyles.contextChip}>
             <Ionicons name="nutrition-outline" size={12} color="rgba(255,255,255,0.7)" />
-            <Text style={styles.contextChipText}>{pantryItems.length} pantry items</Text>
+            <Text style={dynStyles.contextChipText}>{pantryItems.length} pantry items</Text>
           </View>
         </View>
 
         {/* AI Feature shortcuts */}
-        <View style={styles.featuresRow}>
+        <View style={dynStyles.featuresRow}>
           {AI_FEATURES.map((f) => (
-            <Pressable key={f.screen} onPress={() => navigation.navigate(f.screen)} style={[styles.featureBtn, { backgroundColor: f.color + '30', borderColor: f.color + '60' }]}>
+            <Pressable key={f.screen} onPress={() => navigation.navigate(f.screen)} style={[dynStyles.featureBtn, { backgroundColor: f.color + '30', borderColor: f.color + '60' }]}>
               <Ionicons name={f.icon as any} size={14} color={f.color === '#0F2952' ? '#7FAAFF' : f.color === '#2D2D8F' ? '#8888FF' : '#fff'} />
-              <Text style={styles.featureBtnText}>{f.label}</Text>
+              <Text style={dynStyles.featureBtnText}>{f.label}</Text>
             </Pressable>
           ))}
         </View>
       </LinearGradient>
 
       {unreadInsights.length > 0 && (
-        <View style={styles.insightsBar}>
+        <View style={dynStyles.insightsBar}>
           <Ionicons name="bulb-outline" size={16} color={colors.secondary} />
-          <Text style={styles.insightsText} numberOfLines={1}>
+          <Text style={dynStyles.insightsText} numberOfLines={1}>
             {unreadInsights[0].title}: {unreadInsights[0].summary}
           </Text>
-          <Text style={styles.insightsCount}>{unreadInsights.length}</Text>
+          <Text style={dynStyles.insightsCount}>{unreadInsights.length}</Text>
         </View>
       )}
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={insets.bottom + 60}
+        keyboardVerticalOffset={0}
       >
         <ScrollView
           ref={scrollRef}
-          contentContainerStyle={[styles.messages, { paddingBottom: 16 }]}
+          contentContainerStyle={[dynStyles.messages, { paddingBottom: 16 }]}
           showsVerticalScrollIndicator={false}
         >
           {messages.length === 0 && (
-            <View style={styles.emptyChat}>
-              <View style={styles.emptyChatIcon}>
+            <View style={dynStyles.emptyChat}>
+              <View style={dynStyles.emptyChatIcon}>
                 <Ionicons name="sparkles" size={40} color={colors.primary} />
               </View>
-              <Text style={styles.emptyChatTitle}>Hi{family?.name ? `, ${family.name} family` : ''}!</Text>
-              <Text style={styles.emptyChatSubtitle}>
+              <Text style={dynStyles.emptyChatTitle}>Hi{family?.name ? `, ${family.name} family` : ''}!</Text>
+              <Text style={dynStyles.emptyChatSubtitle}>
                 I'm your AI Household Chief of Staff. I have full context of your family's finances, tasks, pantry, vehicles, and goals. Ask me anything!
               </Text>
             </View>
@@ -138,18 +154,18 @@ export function AIAssistantScreen({ navigation }: any) {
           {messages.map((msg) => (
             <View
               key={msg.id}
-              style={[styles.messageBubble, msg.role === 'user' ? styles.userBubble : styles.aiBubble]}
+              style={[dynStyles.messageBubble, msg.role === 'user' ? dynStyles.userBubble : dynStyles.aiBubble]}
             >
               {msg.role === 'assistant' && (
-                <View style={styles.aiAvatarSmall}>
+                <View style={dynStyles.aiAvatarSmall}>
                   <Ionicons name="sparkles" size={14} color={colors.secondary} />
                 </View>
               )}
-              <View style={[styles.bubbleContent, msg.role === 'user' ? styles.userBubbleContent : styles.aiBubbleContent]}>
-                <Text style={[styles.bubbleText, msg.role === 'user' ? styles.userBubbleText : styles.aiBubbleText]}>
+              <View style={[dynStyles.bubbleContent, msg.role === 'user' ? dynStyles.userBubbleContent : dynStyles.aiBubbleContent]}>
+                <Text style={[dynStyles.bubbleText, msg.role === 'user' ? dynStyles.userBubbleText : dynStyles.aiBubbleText]}>
                   {msg.content}
                 </Text>
-                <Text style={[styles.bubbleTime, msg.role === 'user' ? styles.userBubbleTime : styles.aiBubbleTime]}>
+                <Text style={[dynStyles.bubbleTime, msg.role === 'user' ? dynStyles.userBubbleTime : dynStyles.aiBubbleTime]}>
                   {format(new Date(msg.timestamp), 'h:mm a')}
                 </Text>
               </View>
@@ -157,28 +173,28 @@ export function AIAssistantScreen({ navigation }: any) {
           ))}
 
           {isTyping && (
-            <View style={[styles.messageBubble, styles.aiBubble]}>
-              <View style={styles.aiAvatarSmall}>
+            <View style={[dynStyles.messageBubble, dynStyles.aiBubble]}>
+              <View style={dynStyles.aiAvatarSmall}>
                 <Ionicons name="sparkles" size={14} color={colors.secondary} />
               </View>
-              <View style={styles.typingBubble}>
-                <View style={styles.typingDots}>
-                  <View style={[styles.dot, styles.dot1]} />
-                  <View style={[styles.dot, styles.dot2]} />
-                  <View style={[styles.dot, styles.dot3]} />
+              <View style={dynStyles.typingBubble}>
+                <View style={dynStyles.typingDots}>
+                  <View style={[dynStyles.dot, dynStyles.dot1]} />
+                  <View style={[dynStyles.dot, dynStyles.dot2]} />
+                  <View style={[dynStyles.dot, dynStyles.dot3]} />
                 </View>
               </View>
             </View>
           )}
 
           {messages.length === 0 && (
-            <View style={styles.suggestions}>
-              <Text style={styles.suggestionsTitle}>Quick questions</Text>
-              <View style={styles.suggestionsGrid}>
+            <View style={dynStyles.suggestions}>
+              <Text style={dynStyles.suggestionsTitle}>{t('ai.suggestions')}</Text>
+              <View style={dynStyles.suggestionsGrid}>
                 {QUICK_SUGGESTIONS.map((s) => (
-                  <Pressable key={s.label} onPress={() => handleSend(s.prompt)} style={styles.suggestionChip}>
+                  <Pressable key={s.label} onPress={() => handleSend(s.prompt)} style={dynStyles.suggestionChip}>
                     <Ionicons name={s.icon as any} size={16} color={colors.primary} />
-                    <Text style={styles.suggestionText}>{s.label}</Text>
+                    <Text style={dynStyles.suggestionText}>{s.label}</Text>
                   </Pressable>
                 ))}
               </View>
@@ -187,19 +203,19 @@ export function AIAssistantScreen({ navigation }: any) {
         </ScrollView>
 
         {messages.length > 0 && !isTyping && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.quickSuggestions} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
+          <View style={dynStyles.quickSuggestions}>
             {QUICK_SUGGESTIONS.slice(0, 4).map((s) => (
-              <Pressable key={s.label} onPress={() => handleSend(s.prompt)} style={styles.quickChip}>
-                <Text style={styles.quickChipText}>{s.label}</Text>
+              <Pressable key={s.label} onPress={() => handleSend(s.prompt)} style={dynStyles.quickChip}>
+                <Text style={dynStyles.quickChipText}>{s.label}</Text>
               </Pressable>
             ))}
-          </ScrollView>
+          </View>
         )}
 
-        <View style={[styles.inputBar, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+        <View style={dynStyles.inputBar}>
           <TextInput
-            style={styles.input}
-            placeholder="Ask about your family, finances, tasks..."
+            style={dynStyles.input}
+            placeholder={t('ai.placeholder')}
             placeholderTextColor={colors.textMuted}
             value={input}
             onChangeText={setInput}
@@ -210,7 +226,7 @@ export function AIAssistantScreen({ navigation }: any) {
           />
           <Pressable
             onPress={() => handleSend()}
-            style={[styles.sendBtn, (!input.trim() || isTyping) && styles.sendBtnDisabled]}
+            style={[dynStyles.sendBtn, (!input.trim() || isTyping) && dynStyles.sendBtnDisabled]}
             disabled={!input.trim() || isTyping}
           >
             {isTyping ? (
@@ -221,11 +237,20 @@ export function AIAssistantScreen({ navigation }: any) {
           </Pressable>
         </View>
       </KeyboardAvoidingView>
+
+      <UpgradePrompt
+        visible={showUpgradePrompt}
+        onClose={() => setShowUpgradePrompt(false)}
+        featureName="Unlimited AI Queries"
+        requiredTier="premium"
+        description="You've used your monthly AI queries. Upgrade to Premium for 50 queries/month or Family Pro for unlimited access."
+      />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors: import('../../theme/ThemeContext').ThemeColors) {
+  return StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: { paddingHorizontal: 20, paddingBottom: 16 },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 12 },
@@ -273,11 +298,12 @@ const styles = StyleSheet.create({
   suggestionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   suggestionChip: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.card, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, borderWidth: 1, borderColor: colors.border, width: '47%' },
   suggestionText: { fontSize: 13, fontWeight: '600', color: colors.text, flex: 1 },
-  quickSuggestions: { maxHeight: 44, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.background },
+  quickSuggestions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.background },
   quickChip: { backgroundColor: '#E8EEF9', borderRadius: 20, paddingVertical: 8, paddingHorizontal: 14 },
   quickChipText: { fontSize: 12, fontWeight: '600', color: colors.primary },
-  inputBar: { flexDirection: 'row', alignItems: 'flex-end', gap: 10, paddingHorizontal: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.background },
+  inputBar: { flexDirection: 'row', alignItems: 'flex-end', gap: 10, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.background },
   input: { flex: 1, backgroundColor: colors.card, borderRadius: 22, paddingVertical: 10, paddingHorizontal: 16, fontSize: 14, color: colors.text, maxHeight: 100, borderWidth: 1, borderColor: colors.border },
   sendBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
   sendBtnDisabled: { backgroundColor: colors.textMuted },
-});
+  });
+}

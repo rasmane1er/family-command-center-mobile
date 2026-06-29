@@ -11,16 +11,16 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { StatusBar } from 'expo-status-bar';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { format } from 'date-fns';
-import { colors } from '../../theme/colors';
+import { useTheme } from '../../theme/ThemeContext';
 import { shadows } from '../../theme/spacing';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
+import { PremiumHeader } from '../../components/common/PremiumHeader';
 import { useSleepStore, SleepQuality } from '../../store/useSleepStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { useNavigation } from '@react-navigation/native';
 
 const QUALITY_CONFIG: Record<SleepQuality, { emoji: string; label: string; color: string }> = {
   1: { emoji: '😩', label: 'Terrible', color: '#E74C3C' },
@@ -84,8 +84,10 @@ const SLEEP_TIPS: Record<string, string[]> = {
   ],
 };
 
-export function SleepTrackerScreen({ navigation }: any) {
-  const insets = useSafeAreaInsets();
+export function SleepTrackerScreen({ navigation: navProp }: any) {
+  const { colors } = useTheme();
+  const navHook = useNavigation<any>();
+  const navigation = navProp ?? navHook;
   const { logs, addLog, deleteLog, getAverageSleep, seedDemoData } = useSleepStore();
   const members = useFamilyStore((s) => s.members);
 
@@ -175,54 +177,50 @@ export function SleepTrackerScreen({ navigation }: any) {
   };
 
   const maxBarDuration = 12;
+  const s = makeStyles(colors);
 
   return (
-    <View style={styles.container}>
-      <StatusBar style="light" />
-      <LinearGradient
+    <View style={s.container}>
+      <PremiumHeader
+        title="Sleep Tracker"
+        onBack={() => navigation.goBack()}
         colors={['#1A1A2E', '#16213E', '#0F3460']}
-        style={{ paddingTop: insets.top + 12, paddingBottom: 20, paddingHorizontal: 20 }}
-      >
-        <View style={styles.headerTop}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <Text style={styles.headerTitle}>Sleep Tracker</Text>
+        rightAction={
           <Pressable
             onPress={() => {
               setModalMemberId(selectedMemberId);
               setShowModal(true);
             }}
-            style={styles.addBtn}
+            style={s.addBtn}
           >
             <Ionicons name="add" size={22} color="#fff" />
           </Pressable>
+        }
+      >
+        <View style={s.headerStats}>
+          <View style={s.headerStatBlock}>
+            <Text style={s.headerStatValue}>{familyAvg.toFixed(1)}h</Text>
+            <Text style={s.headerStatLabel}>Family Avg Sleep</Text>
+          </View>
+          <View style={s.headerStatDivider} />
+          <View style={s.headerStatBlock}>
+            <Text style={s.headerTrendEmoji}>{getTrendEmoji(familyAvg)}</Text>
+            <Text style={s.headerStatLabel}>Weekly Trend</Text>
+          </View>
+          <View style={s.headerStatDivider} />
+          <View style={s.headerStatBlock}>
+            <Text style={s.headerStatValue}>{recommended.range}</Text>
+            <Text style={s.headerStatLabel}>{recommended.label} Rec.</Text>
+          </View>
         </View>
-
-        <View style={styles.headerStats}>
-          <View style={styles.headerStatBlock}>
-            <Text style={styles.headerStatValue}>{familyAvg.toFixed(1)}h</Text>
-            <Text style={styles.headerStatLabel}>Family Avg Sleep</Text>
-          </View>
-          <View style={styles.headerStatDivider} />
-          <View style={styles.headerStatBlock}>
-            <Text style={styles.headerTrendEmoji}>{getTrendEmoji(familyAvg)}</Text>
-            <Text style={styles.headerStatLabel}>Weekly Trend</Text>
-          </View>
-          <View style={styles.headerStatDivider} />
-          <View style={styles.headerStatBlock}>
-            <Text style={styles.headerStatValue}>{recommended.range}</Text>
-            <Text style={styles.headerStatLabel}>{recommended.label} Rec.</Text>
-          </View>
-        </View>
-      </LinearGradient>
+      </PremiumHeader>
 
       {/* Member Selector */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={styles.memberScrollView}
-        contentContainerStyle={styles.memberScrollContent}
+        style={s.memberScrollView}
+        contentContainerStyle={s.memberScrollContent}
       >
         {members.map((m) => {
           const avg = getAverageSleep(m.id);
@@ -231,13 +229,13 @@ export function SleepTrackerScreen({ navigation }: any) {
             <Pressable
               key={m.id}
               onPress={() => setSelectedMemberId(m.id)}
-              style={[styles.memberTab, isActive && styles.memberTabActive]}
+              style={[s.memberTab, isActive && s.memberTabActive]}
             >
-              <View style={[styles.memberDot, { backgroundColor: m.avatarColor }]} />
-              <Text style={[styles.memberTabName, isActive && styles.memberTabNameActive]}>
+              <View style={[s.memberDot, { backgroundColor: m.avatarColor }]} />
+              <Text style={[s.memberTabName, isActive && s.memberTabNameActive]}>
                 {m.name.split(' ')[0]}
               </Text>
-              <Text style={[styles.memberTabAvg, isActive && styles.memberTabAvgActive]}>
+              <Text style={[s.memberTabAvg, isActive && s.memberTabAvgActive]}>
                 {avg > 0 ? `${avg.toFixed(1)}h avg` : 'No data'}
               </Text>
             </Pressable>
@@ -247,9 +245,9 @@ export function SleepTrackerScreen({ navigation }: any) {
 
       <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
         {/* 7-Night Bar Chart */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Last 7 Nights</Text>
-          <Card style={styles.chartCard} variant="elevated">
+        <View style={s.section}>
+          <Text style={s.sectionTitle}>Last 7 Nights</Text>
+          <Card style={s.chartCard} variant="elevated">
             {last7Days.map((date, i) => {
               const log = last7Logs[i];
               const dur = log?.durationHours ?? 0;
@@ -257,9 +255,9 @@ export function SleepTrackerScreen({ navigation }: any) {
               const qColor = log ? QUALITY_CONFIG[log.quality].color : colors.border;
               const dayLabel = format(new Date(date + 'T12:00:00'), 'EEE');
               return (
-                <View key={date} style={styles.barRow}>
-                  <Text style={styles.barDayLabel}>{dayLabel}</Text>
-                  <View style={styles.barTrack}>
+                <View key={date} style={s.barRow}>
+                  <Text style={s.barDayLabel}>{dayLabel}</Text>
+                  <View style={s.barTrack}>
                     <View
                       style={{
                         width: `${barWidth}%`,
@@ -270,7 +268,7 @@ export function SleepTrackerScreen({ navigation }: any) {
                       }}
                     />
                   </View>
-                  <Text style={styles.barDurLabel}>
+                  <Text style={s.barDurLabel}>
                     {dur > 0 ? `${dur}h` : '—'}
                   </Text>
                 </View>
@@ -280,79 +278,79 @@ export function SleepTrackerScreen({ navigation }: any) {
         </View>
 
         {/* Weekly Summary */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Weekly Summary</Text>
-          <Card style={styles.summaryCard} variant="elevated">
-            <View style={styles.summaryGrid}>
-              <View style={styles.summaryStat}>
-                <Text style={styles.summaryValue}>{avgDuration > 0 ? avgDuration.toFixed(1) : '—'}</Text>
-                <Text style={styles.summaryLabel}>Avg Hours</Text>
+        <View style={s.section}>
+          <Text style={s.sectionTitle}>Weekly Summary</Text>
+          <Card style={s.summaryCard} variant="elevated">
+            <View style={s.summaryGrid}>
+              <View style={s.summaryStat}>
+                <Text style={s.summaryValue}>{avgDuration > 0 ? avgDuration.toFixed(1) : '—'}</Text>
+                <Text style={s.summaryLabel}>Avg Hours</Text>
               </View>
-              <View style={styles.summaryStat}>
-                <Text style={styles.summaryValue}>
+              <View style={s.summaryStat}>
+                <Text style={s.summaryValue}>
                   {avgQuality > 0 ? '⭐'.repeat(Math.round(avgQuality)) : '—'}
                 </Text>
-                <Text style={styles.summaryLabel}>Avg Quality</Text>
+                <Text style={s.summaryLabel}>Avg Quality</Text>
               </View>
-              <View style={styles.summaryStat}>
-                <Text style={styles.summaryValue}>
+              <View style={s.summaryStat}>
+                <Text style={s.summaryValue}>
                   {bestLog ? `${bestLog.durationHours}h` : '—'}
                 </Text>
-                <Text style={styles.summaryLabel}>Best Night</Text>
+                <Text style={s.summaryLabel}>Best Night</Text>
               </View>
-              <View style={styles.summaryStat}>
-                <Text style={styles.summaryValue}>
+              <View style={s.summaryStat}>
+                <Text style={s.summaryValue}>
                   {worstLog ? `${worstLog.durationHours}h` : '—'}
                 </Text>
-                <Text style={styles.summaryLabel}>Worst Night</Text>
+                <Text style={s.summaryLabel}>Worst Night</Text>
               </View>
             </View>
           </Card>
         </View>
 
         {/* Sleep Insights */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Sleep Insights</Text>
+        <View style={s.section}>
+          <Text style={s.sectionTitle}>Sleep Insights</Text>
           {tips.map((tip, i) => (
-            <Card key={i} style={styles.tipCard} variant="elevated">
-              <View style={styles.tipRow}>
-                <View style={[styles.tipIconWrap, { backgroundColor: '#1A1A2E' + '20' }]}>
+            <Card key={i} style={s.tipCard} variant="elevated">
+              <View style={s.tipRow}>
+                <View style={[s.tipIconWrap, { backgroundColor: '#1A1A2E' + '20' }]}>
                   <Ionicons name="moon" size={16} color="#7B8FD4" />
                 </View>
-                <Text style={styles.tipText}>{tip}</Text>
+                <Text style={s.tipText}>{tip}</Text>
               </View>
             </Card>
           ))}
         </View>
 
         {/* Recent Logs */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Recent Logs</Text>
+        <View style={s.section}>
+          <Text style={s.sectionTitle}>Recent Logs</Text>
           {memberLogs.length === 0 && (
-            <Card style={styles.emptyCard} variant="elevated">
-              <Text style={styles.emptyText}>No sleep logs yet. Tap + to add one!</Text>
+            <Card style={s.emptyCard} variant="elevated">
+              <Text style={s.emptyText}>No sleep logs yet. Tap + to add one!</Text>
             </Card>
           )}
           {memberLogs.slice(0, 10).map((log) => {
             const qc = QUALITY_CONFIG[log.quality];
             return (
-              <Card key={log.id} style={styles.logCard} variant="elevated">
-                <View style={styles.logRow}>
-                  <View style={styles.logLeft}>
-                    <Text style={styles.logEmoji}>{qc.emoji}</Text>
+              <Card key={log.id} style={s.logCard} variant="elevated">
+                <View style={s.logRow}>
+                  <View style={s.logLeft}>
+                    <Text style={s.logEmoji}>{qc.emoji}</Text>
                     <View>
-                      <Text style={styles.logDate}>
+                      <Text style={s.logDate}>
                         {format(new Date(log.date + 'T12:00:00'), 'EEE, MMM d')}
                       </Text>
-                      <Text style={styles.logTime}>
+                      <Text style={s.logTime}>
                         {log.bedtime} → {log.wakeTime}
                       </Text>
                       {log.notes ? (
-                        <Text style={styles.logNotes}>{log.notes}</Text>
+                        <Text style={s.logNotes}>{log.notes}</Text>
                       ) : null}
                     </View>
                   </View>
-                  <View style={styles.logRight}>
+                  <View style={s.logRight}>
                     <Badge
                       label={`${log.durationHours}h`}
                       variant={
@@ -364,8 +362,8 @@ export function SleepTrackerScreen({ navigation }: any) {
                       }
                       size="sm"
                     />
-                    <Text style={[styles.logQualityLabel, { color: qc.color }]}>{qc.label}</Text>
-                    <Pressable onPress={() => handleDelete(log.id)} style={styles.deleteBtn}>
+                    <Text style={[s.logQualityLabel, { color: qc.color }]}>{qc.label}</Text>
+                    <Pressable onPress={() => handleDelete(log.id)} style={s.deleteBtn}>
                       <Ionicons name="trash-outline" size={14} color={colors.textMuted} />
                     </Pressable>
                   </View>
@@ -378,45 +376,45 @@ export function SleepTrackerScreen({ navigation }: any) {
 
       {/* Add Sleep Log Modal */}
       <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet">
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Log Sleep</Text>
+        <View style={s.modalContainer}>
+          <View style={s.modalHeader}>
+            <Text style={s.modalTitle}>Log Sleep</Text>
             <Pressable onPress={() => setShowModal(false)}>
               <Ionicons name="close" size={24} color={colors.text} />
             </Pressable>
           </View>
-          <ScrollView contentContainerStyle={styles.modalContent}>
-            <Text style={styles.fieldLabel}>Family Member</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.modalMemberScroll}>
+          <ScrollView contentContainerStyle={s.modalContent}>
+            <Text style={s.fieldLabel}>Family Member</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.modalMemberScroll}>
               {members.map((m) => (
                 <Pressable
                   key={m.id}
                   onPress={() => setModalMemberId(m.id)}
                   style={[
-                    styles.modalMemberChip,
+                    s.modalMemberChip,
                     modalMemberId === m.id && { backgroundColor: m.avatarColor + '30', borderColor: m.avatarColor },
                   ]}
                 >
-                  <View style={[styles.memberDot, { backgroundColor: m.avatarColor }]} />
-                  <Text style={[styles.modalMemberName, modalMemberId === m.id && { color: m.avatarColor }]}>
+                  <View style={[s.memberDot, { backgroundColor: m.avatarColor }]} />
+                  <Text style={[s.modalMemberName, modalMemberId === m.id && { color: m.avatarColor }]}>
                     {m.name.split(' ')[0]}
                   </Text>
                 </Pressable>
               ))}
             </ScrollView>
 
-            <Text style={styles.fieldLabel}>Date (YYYY-MM-DD)</Text>
+            <Text style={s.fieldLabel}>Date (YYYY-MM-DD)</Text>
             <TextInput
-              style={styles.textInput}
+              style={s.textInput}
               value={modalDate}
               onChangeText={setModalDate}
               placeholder="2026-06-23"
               placeholderTextColor={colors.textMuted}
             />
 
-            <Text style={styles.fieldLabel}>Bedtime (HH:MM)</Text>
+            <Text style={s.fieldLabel}>Bedtime (HH:MM)</Text>
             <TextInput
-              style={styles.textInput}
+              style={s.textInput}
               value={modalBedtime}
               onChangeText={setModalBedtime}
               placeholder="22:30"
@@ -424,9 +422,9 @@ export function SleepTrackerScreen({ navigation }: any) {
               keyboardType="numbers-and-punctuation"
             />
 
-            <Text style={styles.fieldLabel}>Wake Time (HH:MM)</Text>
+            <Text style={s.fieldLabel}>Wake Time (HH:MM)</Text>
             <TextInput
-              style={styles.textInput}
+              style={s.textInput}
               value={modalWakeTime}
               onChangeText={setModalWakeTime}
               placeholder="06:30"
@@ -435,16 +433,16 @@ export function SleepTrackerScreen({ navigation }: any) {
             />
 
             {calcDuration(modalBedtime, modalWakeTime) > 0 && (
-              <View style={styles.durationPreview}>
+              <View style={s.durationPreview}>
                 <Ionicons name="time-outline" size={16} color="#7B8FD4" />
-                <Text style={styles.durationPreviewText}>
+                <Text style={s.durationPreviewText}>
                   Duration: {calcDuration(modalBedtime, modalWakeTime).toFixed(1)} hours
                 </Text>
               </View>
             )}
 
-            <Text style={styles.fieldLabel}>Sleep Quality</Text>
-            <View style={styles.qualityRow}>
+            <Text style={s.fieldLabel}>Sleep Quality</Text>
+            <View style={s.qualityRow}>
               {([1, 2, 3, 4, 5] as SleepQuality[]).map((q) => {
                 const qc = QUALITY_CONFIG[q];
                 return (
@@ -452,12 +450,12 @@ export function SleepTrackerScreen({ navigation }: any) {
                     key={q}
                     onPress={() => setModalQuality(q)}
                     style={[
-                      styles.qualityBtn,
+                      s.qualityBtn,
                       modalQuality === q && { backgroundColor: qc.color + '20', borderColor: qc.color },
                     ]}
                   >
-                    <Text style={styles.qualityEmoji}>{qc.emoji}</Text>
-                    <Text style={[styles.qualityLabel, modalQuality === q && { color: qc.color }]}>
+                    <Text style={s.qualityEmoji}>{qc.emoji}</Text>
+                    <Text style={[s.qualityLabel, modalQuality === q && { color: qc.color }]}>
                       {qc.label}
                     </Text>
                   </Pressable>
@@ -465,9 +463,9 @@ export function SleepTrackerScreen({ navigation }: any) {
               })}
             </View>
 
-            <Text style={styles.fieldLabel}>Notes (optional)</Text>
+            <Text style={s.fieldLabel}>Notes (optional)</Text>
             <TextInput
-              style={[styles.textInput, styles.textInputMultiline]}
+              style={[s.textInput, s.textInputMultiline]}
               value={modalNotes}
               onChangeText={setModalNotes}
               placeholder="How did you sleep? Any disturbances?"
@@ -476,13 +474,13 @@ export function SleepTrackerScreen({ navigation }: any) {
               numberOfLines={3}
             />
 
-            <Pressable style={styles.saveBtn} onPress={handleAddLog}>
+            <Pressable style={s.saveBtn} onPress={handleAddLog}>
               <LinearGradient
                 colors={['#1A1A2E', '#0F3460']}
-                style={styles.saveBtnGradient}
+                style={s.saveBtnGradient}
               >
                 <Ionicons name="moon" size={18} color="#fff" />
-                <Text style={styles.saveBtnText}>Save Sleep Log</Text>
+                <Text style={s.saveBtnText}>Save Sleep Log</Text>
               </LinearGradient>
             </Pressable>
           </ScrollView>
@@ -492,373 +490,356 @@ export function SleepTrackerScreen({ navigation }: any) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  headerTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  addBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerStats: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 14,
-    padding: 14,
-    alignItems: 'center',
-  },
-  headerStatBlock: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  headerStatValue: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  headerStatLabel: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.7)',
-    marginTop: 2,
-    textAlign: 'center',
-  },
-  headerStatDivider: {
-    width: 1,
-    height: 32,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    marginHorizontal: 8,
-  },
-  headerTrendEmoji: {
-    fontSize: 22,
-  },
-  memberScrollView: {
-    backgroundColor: colors.card,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    maxHeight: 80,
-  },
-  memberScrollContent: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 8,
-    flexDirection: 'row',
-  },
-  memberTab: {
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
-    marginRight: 8,
-  },
-  memberTabActive: {
-    backgroundColor: '#1A1A2E',
-    borderColor: '#0F3460',
-  },
-  memberDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginBottom: 2,
-  },
-  memberTabName: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  memberTabNameActive: {
-    color: '#fff',
-  },
-  memberTabAvg: {
-    fontSize: 10,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-  memberTabAvgActive: {
-    color: 'rgba(255,255,255,0.7)',
-  },
-  section: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 12,
-  },
-  chartCard: {
-    padding: 16,
-  },
-  barRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  barDayLabel: {
-    width: 32,
-    fontSize: 12,
-    color: colors.textSecondary,
-    fontWeight: '600',
-  },
-  barTrack: {
-    flex: 1,
-    height: 18,
-    backgroundColor: colors.border,
-    borderRadius: 4,
-    marginHorizontal: 8,
-    overflow: 'hidden',
-  },
-  barDurLabel: {
-    width: 32,
-    fontSize: 12,
-    color: colors.textSecondary,
-    textAlign: 'right',
-  },
-  summaryCard: {
-    padding: 16,
-  },
-  summaryGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  summaryStat: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  summaryValue: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  summaryLabel: {
-    fontSize: 11,
-    color: colors.textMuted,
-    marginTop: 4,
-    textAlign: 'center',
-  },
-  tipCard: {
-    padding: 12,
-    marginBottom: 8,
-  },
-  tipRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  tipIconWrap: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#7B8FD420',
-  },
-  tipText: {
-    flex: 1,
-    fontSize: 13,
-    color: colors.textSecondary,
-    lineHeight: 18,
-  },
-  emptyCard: {
-    padding: 24,
-    alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: 14,
-    color: colors.textMuted,
-    textAlign: 'center',
-  },
-  logCard: {
-    padding: 14,
-    marginBottom: 10,
-  },
-  logRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  logLeft: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-    flex: 1,
-  },
-  logEmoji: {
-    fontSize: 24,
-  },
-  logDate: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  logTime: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  logNotes: {
-    fontSize: 11,
-    color: colors.textMuted,
-    marginTop: 2,
-    fontStyle: 'italic',
-  },
-  logRight: {
-    alignItems: 'flex-end',
-    gap: 4,
-  },
-  logQualityLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  deleteBtn: {
-    padding: 4,
-    marginTop: 2,
-  },
-  // Modal
-  modalContainer: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    backgroundColor: colors.card,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  modalContent: {
-    padding: 20,
-    paddingBottom: 60,
-  },
-  fieldLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    marginBottom: 8,
-    marginTop: 16,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  modalMemberScroll: {
-    marginBottom: 4,
-  },
-  modalMemberChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
-    marginRight: 8,
-  },
-  modalMemberName: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  textInput: {
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    padding: 14,
-    fontSize: 15,
-    color: colors.text,
-  },
-  textInputMultiline: {
-    minHeight: 80,
-    textAlignVertical: 'top',
-  },
-  durationPreview: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 8,
-    padding: 10,
-    backgroundColor: '#7B8FD415',
-    borderRadius: 8,
-  },
-  durationPreviewText: {
-    fontSize: 13,
-    color: '#7B8FD4',
-    fontWeight: '600',
-  },
-  qualityRow: {
-    flexDirection: 'row',
-    gap: 8,
-    flexWrap: 'wrap',
-  },
-  qualityBtn: {
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
-    minWidth: 60,
-  },
-  qualityEmoji: {
-    fontSize: 20,
-  },
-  qualityLabel: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: colors.textMuted,
-    marginTop: 4,
-  },
-  saveBtn: {
-    marginTop: 28,
-    borderRadius: 14,
-    overflow: 'hidden',
-  },
-  saveBtnGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 16,
-  },
-  saveBtnText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#fff',
-  },
-});
+function makeStyles(colors: any) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    addBtn: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: 'rgba(255,255,255,0.2)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    headerStats: {
+      flexDirection: 'row',
+      backgroundColor: 'rgba(255,255,255,0.1)',
+      borderRadius: 14,
+      padding: 14,
+      alignItems: 'center',
+    },
+    headerStatBlock: {
+      flex: 1,
+      alignItems: 'center',
+    },
+    headerStatValue: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: '#fff',
+    },
+    headerStatLabel: {
+      fontSize: 11,
+      color: 'rgba(255,255,255,0.7)',
+      marginTop: 2,
+      textAlign: 'center',
+    },
+    headerStatDivider: {
+      width: 1,
+      height: 32,
+      backgroundColor: 'rgba(255,255,255,0.2)',
+      marginHorizontal: 8,
+    },
+    headerTrendEmoji: {
+      fontSize: 22,
+    },
+    memberScrollView: {
+      backgroundColor: colors.card,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      maxHeight: 80,
+    },
+    memberScrollContent: {
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      gap: 8,
+      flexDirection: 'row',
+    },
+    memberTab: {
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.background,
+      marginRight: 8,
+    },
+    memberTabActive: {
+      backgroundColor: '#1A1A2E',
+      borderColor: '#0F3460',
+    },
+    memberDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      marginBottom: 2,
+    },
+    memberTabName: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    memberTabNameActive: {
+      color: '#fff',
+    },
+    memberTabAvg: {
+      fontSize: 10,
+      color: colors.textMuted,
+      marginTop: 2,
+    },
+    memberTabAvgActive: {
+      color: 'rgba(255,255,255,0.7)',
+    },
+    section: {
+      paddingHorizontal: 20,
+      paddingTop: 20,
+    },
+    sectionTitle: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.text,
+      marginBottom: 12,
+    },
+    chartCard: {
+      padding: 16,
+    },
+    barRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+    barDayLabel: {
+      width: 32,
+      fontSize: 12,
+      color: colors.textSecondary,
+      fontWeight: '600',
+    },
+    barTrack: {
+      flex: 1,
+      height: 18,
+      backgroundColor: colors.border,
+      borderRadius: 4,
+      marginHorizontal: 8,
+      overflow: 'hidden',
+    },
+    barDurLabel: {
+      width: 32,
+      fontSize: 12,
+      color: colors.textSecondary,
+      textAlign: 'right',
+    },
+    summaryCard: {
+      padding: 16,
+    },
+    summaryGrid: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+    },
+    summaryStat: {
+      alignItems: 'center',
+      flex: 1,
+    },
+    summaryValue: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: colors.text,
+    },
+    summaryLabel: {
+      fontSize: 11,
+      color: colors.textMuted,
+      marginTop: 4,
+      textAlign: 'center',
+    },
+    tipCard: {
+      padding: 12,
+      marginBottom: 8,
+    },
+    tipRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    tipIconWrap: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: '#7B8FD420',
+    },
+    tipText: {
+      flex: 1,
+      fontSize: 13,
+      color: colors.textSecondary,
+      lineHeight: 18,
+    },
+    emptyCard: {
+      padding: 24,
+      alignItems: 'center',
+    },
+    emptyText: {
+      fontSize: 14,
+      color: colors.textMuted,
+      textAlign: 'center',
+    },
+    logCard: {
+      padding: 14,
+      marginBottom: 10,
+    },
+    logRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    logLeft: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 10,
+      flex: 1,
+    },
+    logEmoji: {
+      fontSize: 24,
+    },
+    logDate: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    logTime: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      marginTop: 2,
+    },
+    logNotes: {
+      fontSize: 11,
+      color: colors.textMuted,
+      marginTop: 2,
+      fontStyle: 'italic',
+    },
+    logRight: {
+      alignItems: 'flex-end',
+      gap: 4,
+    },
+    logQualityLabel: {
+      fontSize: 11,
+      fontWeight: '600',
+    },
+    deleteBtn: {
+      padding: 4,
+      marginTop: 2,
+    },
+    // Modal
+    modalContainer: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: 20,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      backgroundColor: colors.card,
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: colors.text,
+    },
+    modalContent: {
+      padding: 20,
+      paddingBottom: 60,
+    },
+    fieldLabel: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: colors.textSecondary,
+      marginBottom: 8,
+      marginTop: 16,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+    modalMemberScroll: {
+      marginBottom: 4,
+    },
+    modalMemberChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: 20,
+      borderWidth: 1.5,
+      borderColor: colors.border,
+      backgroundColor: colors.card,
+      marginRight: 8,
+    },
+    modalMemberName: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    textInput: {
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 12,
+      padding: 14,
+      fontSize: 15,
+      color: colors.text,
+    },
+    textInputMultiline: {
+      minHeight: 80,
+      textAlignVertical: 'top',
+    },
+    durationPreview: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      marginTop: 8,
+      padding: 10,
+      backgroundColor: '#7B8FD415',
+      borderRadius: 8,
+    },
+    durationPreviewText: {
+      fontSize: 13,
+      color: '#7B8FD4',
+      fontWeight: '600',
+    },
+    qualityRow: {
+      flexDirection: 'row',
+      gap: 8,
+      flexWrap: 'wrap',
+    },
+    qualityBtn: {
+      alignItems: 'center',
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      borderRadius: 12,
+      borderWidth: 1.5,
+      borderColor: colors.border,
+      backgroundColor: colors.card,
+      minWidth: 60,
+    },
+    qualityEmoji: {
+      fontSize: 20,
+    },
+    qualityLabel: {
+      fontSize: 10,
+      fontWeight: '600',
+      color: colors.textMuted,
+      marginTop: 4,
+    },
+    saveBtn: {
+      marginTop: 28,
+      borderRadius: 14,
+      overflow: 'hidden',
+    },
+    saveBtnGradient: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      paddingVertical: 16,
+    },
+    saveBtnText: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: '#fff',
+    },
+  });
+}

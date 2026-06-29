@@ -56,17 +56,17 @@ export function FamilyNavigator() {
       <Stack.Screen name="JoinFamily" component={JoinFamilyScreen} />
 
       <Stack.Screen name="FamilyInviteQR">
-        {() => (
+        {(props) => (
           <RoleGuard allowParent>
-            <FamilyInviteQRScreen />
+            <FamilyInviteQRScreen {...props} />
           </RoleGuard>
         )}
       </Stack.Screen>
 
       <Stack.Screen name="JoinRequests">
-        {() => (
+        {(props) => (
           <RoleGuard allowParent>
-            <JoinRequestsScreen />
+            <JoinRequestsScreen {...props} />
           </RoleGuard>
         )}
       </Stack.Screen>
@@ -76,153 +76,153 @@ export function FamilyNavigator() {
       <Stack.Screen name="HomeworkTracker" component={HomeworkTrackerScreen} />
 
       <Stack.Screen name="SchoolCenter">
-        {() => (
+        {(props) => (
           <RoleGuard allowParent allowChild>
-            <SchoolCenterScreen />
+            <SchoolCenterScreen {...props} />
           </RoleGuard>
         )}
       </Stack.Screen>
 
       {/* Family memory / legacy */}
       <Stack.Screen name="LegacyVault">
-        {() => (
+        {(props) => (
           <RoleGuard allowParent allowGrandparent>
-            <LegacyVaultScreen />
+            <LegacyVaultScreen {...props} />
           </RoleGuard>
         )}
       </Stack.Screen>
 
       <Stack.Screen name="FamilyTimeline">
-        {() => (
+        {(props) => (
           <RoleGuard allowParent allowGrandparent>
-            <FamilyTimelineScreen />
+            <FamilyTimelineScreen {...props} />
           </RoleGuard>
         )}
       </Stack.Screen>
 
       <Stack.Screen name="BirthdayTracker">
-        {() => (
+        {(props) => (
           <RoleGuard allowParent allowGrandparent>
-            <BirthdayTrackerScreen />
+            <BirthdayTrackerScreen {...props} />
           </RoleGuard>
         )}
       </Stack.Screen>
 
       <Stack.Screen name="GiftPlanner">
-        {() => (
+        {(props) => (
           <RoleGuard allowParent allowGrandparent>
-            <GiftPlannerScreen />
+            <GiftPlannerScreen {...props} />
           </RoleGuard>
         )}
       </Stack.Screen>
 
       <Stack.Screen name="FamilyJournal">
-        {() => (
+        {(props) => (
           <RoleGuard allowParent allowGrandparent>
-            <FamilyJournalScreen />
+            <FamilyJournalScreen {...props} />
           </RoleGuard>
         )}
       </Stack.Screen>
 
       {/* Wellness / relationship */}
       <Stack.Screen name="RelationshipHealth">
-        {() => (
+        {(props) => (
           <RoleGuard allowParent allowGrandparent>
-            <RelationshipHealthScreen />
+            <RelationshipHealthScreen {...props} />
           </RoleGuard>
         )}
       </Stack.Screen>
 
       <Stack.Screen name="MoodTracker">
-        {() => (
+        {(props) => (
           <RoleGuard allowParent allowChild>
-            <MoodTrackerScreen />
+            <MoodTrackerScreen {...props} />
           </RoleGuard>
         )}
       </Stack.Screen>
 
       <Stack.Screen name="Habits">
-        {() => (
+        {(props) => (
           <RoleGuard allowParent allowChild>
-            <HabitsScreen />
+            <HabitsScreen {...props} />
           </RoleGuard>
         )}
       </Stack.Screen>
 
       {/* Parent/admin household controls */}
       <Stack.Screen name="ConflictResolver">
-        {() => (
+        {(props) => (
           <RoleGuard allowParent>
-            <ConflictResolverScreen />
+            <ConflictResolverScreen {...props} />
           </RoleGuard>
         )}
       </Stack.Screen>
 
       <Stack.Screen name="Reputation">
-        {() => (
+        {(props) => (
           <RoleGuard allowParent>
-            <ReputationScreen />
+            <ReputationScreen {...props} />
           </RoleGuard>
         )}
       </Stack.Screen>
 
       <Stack.Screen name="FamilyMeeting">
-        {() => (
+        {(props) => (
           <RoleGuard allowParent>
-            <FamilyMeetingScreen />
+            <FamilyMeetingScreen {...props} />
           </RoleGuard>
         )}
       </Stack.Screen>
 
       <Stack.Screen name="FamilyPolls">
-        {() => (
+        {(props) => (
           <RoleGuard allowParent>
-            <FamilyPollsScreen />
+            <FamilyPollsScreen {...props} />
           </RoleGuard>
         )}
       </Stack.Screen>
 
       <Stack.Screen name="ChoreRotation">
-        {() => (
+        {(props) => (
           <RoleGuard allowParent>
-            <ChoreRotationScreen />
+            <ChoreRotationScreen {...props} />
           </RoleGuard>
         )}
       </Stack.Screen>
 
       <Stack.Screen name="Allowance">
-        {() => (
+        {(props) => (
           <RoleGuard allowParent>
-            <AllowanceScreen />
+            <AllowanceScreen {...props} />
           </RoleGuard>
         )}
       </Stack.Screen>
 
       <Stack.Screen name="FamilyGoals">
-        {() => (
+        {(props) => (
           <RoleGuard allowParent>
-            <FamilyGoalsScreen />
+            <FamilyGoalsScreen {...props} />
           </RoleGuard>
         )}
       </Stack.Screen>
 
       <Stack.Screen name="BucketList">
-        {() => (
+        {(props) => (
           <RoleGuard allowParent>
-            <BucketListScreen />
+            <BucketListScreen {...props} />
           </RoleGuard>
         )}
       </Stack.Screen>
 
       <Stack.Screen name="ActivitiesTracker">
-        {() => (
+        {(props) => (
           <RoleGuard allowParent>
-            <ActivitiesTrackerScreen />
+            <ActivitiesTrackerScreen {...props} />
           </RoleGuard>
         )}
       </Stack.Screen>
 
-      {/* Guardian / parental controls — use component= so navigation/route props are passed correctly */}
+      {/* Guardian / parental controls */}
       <Stack.Screen name="GuardianDashboard" component={GuardianDashboardScreen} />
       <Stack.Screen name="ChildDeviceDetail" component={ChildDeviceDetailScreen} />
       <Stack.Screen name="Geofence" component={GeofenceScreen} />
@@ -233,17 +233,17 @@ export function FamilyNavigator() {
 
       {/* Child-specific */}
       <Stack.Screen name="KidsMode">
-        {() => (
+        {(props) => (
           <RoleGuard allowParent allowChild>
-            <KidsModeScreen />
+            <KidsModeScreen {...props} />
           </RoleGuard>
         )}
       </Stack.Screen>
 
       <Stack.Screen name="Achievements">
-        {() => (
+        {(props) => (
           <RoleGuard allowParent allowChild>
-            <AchievementsScreen />
+            <AchievementsScreen {...props} />
           </RoleGuard>
         )}
       </Stack.Screen>

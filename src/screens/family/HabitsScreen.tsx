@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { StatusBar } from 'expo-status-bar';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
 import * as Haptics from 'expo-haptics';
+import { PremiumHeader } from '../../components/common/PremiumHeader';
 import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
 import { Card } from '../../components/common/Card';
@@ -32,7 +30,6 @@ function getLastSevenDays(): string[] {
 }
 
 export function HabitsScreen({ navigation }: any) {
-  const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<'family' | 'personal'>('family');
   const [showModal, setShowModal] = useState(false);
   const [newTitle, setNewTitle] = useState('');
@@ -98,18 +95,16 @@ export function HabitsScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      <StatusBar style="light" />
-      <LinearGradient colors={['#E67E22', '#D35400']} style={[styles.header, { paddingTop: insets.top + 12 }]}>
-        <View style={styles.headerRow}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <Text style={styles.headerTitle}>Family Habits</Text>
+      <PremiumHeader
+        title="Family Habits"
+        colors={['#E67E22', '#D35400']}
+        onBack={() => navigation.goBack()}
+        rightAction={
           <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
             <Ionicons name="add" size={22} color="#fff" />
           </Pressable>
-        </View>
-
+        }
+      >
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{completedToday}/{habits.length}</Text>
@@ -132,7 +127,7 @@ export function HabitsScreen({ navigation }: any) {
         <View style={styles.progressBar}>
           <View style={[styles.progressFill, { width: `${(completedToday / Math.max(habits.length, 1)) * 100}%` }]} />
         </View>
-      </LinearGradient>
+      </PremiumHeader>
 
       <View style={styles.tabs}>
         {(['family', 'personal'] as const).map((t) => (
@@ -302,10 +297,6 @@ export function HabitsScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { paddingHorizontal: 20, paddingBottom: 20 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 18 },
-  back: { marginRight: 12 },
-  headerTitle: { flex: 1, fontSize: 22, fontWeight: '800', color: '#fff' },
   addBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   statsRow: { flexDirection: 'row', marginBottom: 14 },
   statItem: { flex: 1, alignItems: 'center' },

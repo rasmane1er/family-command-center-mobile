@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format, startOfWeek, endOfWeek, subWeeks, isWithinInterval } from 'date-fns';
+import { useNavigation } from '@react-navigation/native';
 import { colors } from '../../theme/colors';
 import { Card } from '../../components/common/Card';
 import { ProgressBar } from '../../components/common/ProgressBar';
@@ -17,7 +18,9 @@ import { useHabitsStore } from '../../store/useHabitsStore';
 
 const { width } = Dimensions.get('window');
 
-export function WeeklyReportScreen({ navigation }: any) {
+export function WeeklyReportScreen({ navigation: navProp }: any) {
+  const navHook = useNavigation<any>();
+  const navigation = navProp ?? navHook;
   const insets = useSafeAreaInsets();
   const [weekOffset, setWeekOffset] = useState(0);
 

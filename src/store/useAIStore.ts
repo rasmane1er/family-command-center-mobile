@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { mmkvStorage } from '../storage/mmkvStorage';
 import type { ChatMessage, AIInsight } from '../types';
+import { API_BASE_URL } from '../config/api';
 
 interface AIState {
   messages: ChatMessage[];
@@ -38,7 +39,7 @@ export const useAIStore = create<AIState>()(
   setApiKey: (key) => set({ apiKey: key }),
 
   sendMessage: async (content: string, familyContext: string) => {
-    const { messages, apiKey } = get();
+    const { messages } = get();
     const userMessage: ChatMessage = {
       id: generateId(),
       role: 'user',
@@ -48,54 +49,27 @@ export const useAIStore = create<AIState>()(
     set((s) => ({ messages: [...s.messages, userMessage], isTyping: true }));
 
     try {
-      const systemPrompt = `You are the Family Command Center AI — an intelligent, warm, and proactive household chief of staff.
-You help families manage their finances, schedules, tasks, health, and home operations.
-You speak in a supportive, organized, and occasionally encouraging tone.
-Keep responses concise and actionable. Use emoji sparingly for visual clarity.
+      const history = messages.slice(-10).map((m) => ({
+        role: m.role === 'assistant' ? 'model' : 'user' as 'user' | 'model',
+        content: m.content,
+      }));
 
-Current family context:
-${familyContext}
-
-You can help with:
-- Financial planning and budget analysis
-- Task management and scheduling
-- Meal planning and pantry management
-- Health and wellness suggestions
-- Goal tracking and milestone celebrations
-- Home operations and vehicle maintenance
-- Emergency preparedness
-- Kid reward system management
-- Military family support
-
-Always provide specific, personalized advice based on the family context provided.`;
-
-      const allMessages = [
-        ...messages.slice(-10),
-        userMessage,
-      ].map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
-
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const response = await fetch(`${API_BASE_URL}/ai/chat`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey || 'demo-key',
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 1024,
-          system: systemPrompt,
-          messages: allMessages,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: content, context: familyContext, history }),
       });
 
       let assistantContent = '';
+      let suggestions: string[] = [];
 
-      if (!response.ok || !apiKey) {
-        assistantContent = getDemoResponse(content);
+      if (response.ok) {
+        const data = (await response.json()) as { reply: string; suggestions?: string[] };
+        assistantContent = data.reply || getDemoResponse(content);
+        suggestions = data.suggestions ?? getContextSuggestions(content);
       } else {
-        const data = await response.json();
-        assistantContent = data.content?.[0]?.text || getDemoResponse(content);
+        assistantContent = getDemoResponse(content);
+        suggestions = getContextSuggestions(content);
       }
 
       const assistantMessage: ChatMessage = {
@@ -103,7 +77,7 @@ Always provide specific, personalized advice based on the family context provide
         role: 'assistant',
         content: assistantContent,
         timestamp: new Date().toISOString(),
-        suggestions: getContextSuggestions(content),
+        suggestions,
       };
 
       set((s) => ({ messages: [...s.messages, assistantMessage], isTyping: false }));

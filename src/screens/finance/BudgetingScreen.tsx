@@ -2,14 +2,12 @@ import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Modal, TextInput, Alert,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { StatusBar } from 'expo-status-bar';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { colors } from '../../theme/colors';
+import { useTheme } from '../../theme/ThemeContext';
 import { Card } from '../../components/common/Card';
 import { ProgressBar } from '../../components/common/ProgressBar';
+import { PremiumHeader } from '../../components/common/PremiumHeader';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { useAIStore } from '../../store/useAIStore';
 
@@ -32,7 +30,7 @@ const PRESET_ICONS = [
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
 export function BudgetingScreen({ navigation }: any) {
-  const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
   const { budgets, monthlyIncome, monthlyExpenses, addBudget, deleteBudget } = useFinanceStore();
   const { insights } = useAIStore();
 
@@ -84,59 +82,59 @@ export function BudgetingScreen({ navigation }: any) {
     ]);
   };
 
+  const s = makeStyles(colors);
+
   return (
-    <View style={styles.container}>
-      <StatusBar style="light" />
-      <LinearGradient colors={['#27AE60', '#1ABC9C']} style={[styles.header, { paddingTop: insets.top + 12 }]}>
-        <View style={styles.headerTop}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <Text style={styles.headerTitle}>Budget Tracker</Text>
-          <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
+    <View style={s.container}>
+      <PremiumHeader
+        title="Budget Tracker"
+        onBack={() => navigation.goBack()}
+        colors={['#27AE60', '#1ABC9C']}
+        rightAction={
+          <Pressable onPress={() => setShowAddModal(true)} style={s.addBtn}>
             <Ionicons name="add" size={26} color="#fff" />
           </Pressable>
-        </View>
-
-        <View style={styles.totalCard}>
-          <View style={styles.totalItem}>
-            <Text style={styles.totalLabel}>Budgeted</Text>
-            <Text style={styles.totalValue}>${totalBudgeted.toLocaleString()}</Text>
+        }
+      >
+        <View style={s.totalCard}>
+          <View style={s.totalItem}>
+            <Text style={s.totalLabel}>Budgeted</Text>
+            <Text style={s.totalValue}>${totalBudgeted.toLocaleString()}</Text>
           </View>
-          <View style={styles.totalDivider} />
-          <View style={styles.totalItem}>
-            <Text style={styles.totalLabel}>Spent</Text>
-            <Text style={styles.totalValue}>${totalSpent.toLocaleString()}</Text>
+          <View style={s.totalDivider} />
+          <View style={s.totalItem}>
+            <Text style={s.totalLabel}>Spent</Text>
+            <Text style={s.totalValue}>${totalSpent.toLocaleString()}</Text>
           </View>
-          <View style={styles.totalDivider} />
-          <View style={styles.totalItem}>
-            <Text style={styles.totalLabel}>Remaining</Text>
-            <Text style={[styles.totalValue, { color: totalBudgeted - totalSpent < 0 ? '#FF8080' : '#9FFFDE' }]}>
+          <View style={s.totalDivider} />
+          <View style={s.totalItem}>
+            <Text style={s.totalLabel}>Remaining</Text>
+            <Text style={[s.totalValue, { color: totalBudgeted - totalSpent < 0 ? '#FF8080' : '#9FFFDE' }]}>
               ${(totalBudgeted - totalSpent).toLocaleString()}
             </Text>
           </View>
         </View>
-      </LinearGradient>
+      </PremiumHeader>
 
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Budget by Category</Text>
-          <Text style={styles.budgetCount}>{budgets.length} categories</Text>
+      <ScrollView contentContainerStyle={[s.content, { paddingBottom: 100 }]}>
+        <View style={s.sectionHeader}>
+          <Text style={s.sectionTitle}>Budget by Category</Text>
+          <Text style={s.budgetCount}>{budgets.length} categories</Text>
         </View>
 
         {budgets.map((budget) => {
           const pct = budget.spent / budget.monthlyLimit;
           const overBudget = budget.spent > budget.monthlyLimit;
           return (
-            <Card key={budget.id} style={styles.budgetCard} variant="elevated">
-              <View style={styles.budgetTop}>
-                <View style={[styles.budgetIcon, { backgroundColor: budget.color + '22' }]}>
+            <Card key={budget.id} style={s.budgetCard} variant="elevated">
+              <View style={s.budgetTop}>
+                <View style={[s.budgetIcon, { backgroundColor: budget.color + '22' }]}>
                   <Ionicons name={budget.icon as any} size={22} color={budget.color} />
                 </View>
                 <View style={{ flex: 1, marginLeft: 12 }}>
-                  <View style={styles.budgetTitleRow}>
-                    <Text style={styles.budgetCategory}>{budget.category}</Text>
-                    {overBudget && <Text style={styles.overBudget}>OVER!</Text>}
+                  <View style={s.budgetTitleRow}>
+                    <Text style={s.budgetCategory}>{budget.category}</Text>
+                    {overBudget && <Text style={s.overBudget}>OVER!</Text>}
                   </View>
                   <ProgressBar
                     progress={Math.min(pct, 1)}
@@ -146,31 +144,31 @@ export function BudgetingScreen({ navigation }: any) {
                     radius={5}
                     style={{ marginTop: 8 }}
                   />
-                  <View style={styles.budgetAmounts}>
-                    <Text style={[styles.budgetSpent, { color: overBudget ? colors.danger : colors.text }]}>
+                  <View style={s.budgetAmounts}>
+                    <Text style={[s.budgetSpent, { color: overBudget ? colors.danger : colors.text }]}>
                       ${budget.spent.toFixed(2)} spent
                     </Text>
-                    <Text style={styles.budgetLimit}>of ${budget.monthlyLimit}/mo</Text>
+                    <Text style={s.budgetLimit}>of ${budget.monthlyLimit}/mo</Text>
                   </View>
                 </View>
-                <Pressable onPress={() => handleDelete(budget.id, budget.category)} style={styles.deleteBtn}>
+                <Pressable onPress={() => handleDelete(budget.id, budget.category)} style={s.deleteBtn}>
                   <Ionicons name="trash-outline" size={16} color={colors.textMuted} />
                 </Pressable>
               </View>
-              <View style={styles.budgetStats}>
-                <View style={styles.budgetStat}>
-                  <Text style={styles.budgetStatValue}>{Math.round(pct * 100)}%</Text>
-                  <Text style={styles.budgetStatLabel}>Used</Text>
+              <View style={s.budgetStats}>
+                <View style={s.budgetStat}>
+                  <Text style={s.budgetStatValue}>{Math.round(pct * 100)}%</Text>
+                  <Text style={s.budgetStatLabel}>Used</Text>
                 </View>
-                <View style={styles.budgetStat}>
-                  <Text style={[styles.budgetStatValue, { color: overBudget ? colors.danger : colors.success }]}>
+                <View style={s.budgetStat}>
+                  <Text style={[s.budgetStatValue, { color: overBudget ? colors.danger : colors.success }]}>
                     ${Math.abs(budget.monthlyLimit - budget.spent).toFixed(0)}
                   </Text>
-                  <Text style={styles.budgetStatLabel}>{overBudget ? 'Over' : 'Left'}</Text>
+                  <Text style={s.budgetStatLabel}>{overBudget ? 'Over' : 'Left'}</Text>
                 </View>
-                <View style={styles.budgetStat}>
-                  <Text style={styles.budgetStatValue}>${budget.monthlyLimit}</Text>
-                  <Text style={styles.budgetStatLabel}>Limit/mo</Text>
+                <View style={s.budgetStat}>
+                  <Text style={s.budgetStatValue}>${budget.monthlyLimit}</Text>
+                  <Text style={s.budgetStatLabel}>Limit/mo</Text>
                 </View>
               </View>
             </Card>
@@ -178,19 +176,19 @@ export function BudgetingScreen({ navigation }: any) {
         })}
 
         {budgets.length === 0 && (
-          <View style={styles.emptyState}>
+          <View style={s.emptyState}>
             <Ionicons name="wallet-outline" size={56} color={colors.textMuted} />
-            <Text style={styles.emptyTitle}>No budgets yet</Text>
-            <Text style={styles.emptyDesc}>Tap + to create your first budget category.</Text>
+            <Text style={s.emptyTitle}>No budgets yet</Text>
+            <Text style={s.emptyDesc}>Tap + to create your first budget category.</Text>
           </View>
         )}
 
-        <Card style={styles.insightCard} padding={20}>
-          <View style={styles.insightRow}>
+        <Card style={s.insightCard} padding={20}>
+          <View style={s.insightRow}>
             <Ionicons name="bulb" size={24} color={colors.secondary} />
             <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={styles.insightTitle}>{financialInsight?.title ?? 'AI Budget Insight'}</Text>
-              <Text style={styles.insightText}>
+              <Text style={s.insightTitle}>{financialInsight?.title ?? 'AI Budget Insight'}</Text>
+              <Text style={s.insightText}>
                 {financialInsight?.summary ?? 'Your spending is tracking well. Review your top categories for savings opportunities.'}
               </Text>
             </View>
@@ -200,27 +198,27 @@ export function BudgetingScreen({ navigation }: any) {
 
       {/* Add Budget Modal */}
       <Modal visible={showAddModal} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Add Budget Category</Text>
+        <View style={s.modalOverlay}>
+          <View style={s.modalSheet}>
+            <View style={s.modalHeader}>
+              <Text style={s.modalTitle}>Add Budget Category</Text>
               <Pressable onPress={() => setShowAddModal(false)}>
                 <Ionicons name="close" size={24} color={colors.text} />
               </Pressable>
             </View>
 
-            <Text style={styles.modalLabel}>Category Name</Text>
+            <Text style={s.modalLabel}>Category Name</Text>
             <TextInput
-              style={styles.modalInput}
+              style={s.modalInput}
               value={newCategory}
               onChangeText={setNewCategory}
               placeholder="e.g. Dining Out"
               placeholderTextColor={colors.textMuted}
             />
 
-            <Text style={styles.modalLabel}>Monthly Limit ($)</Text>
+            <Text style={s.modalLabel}>Monthly Limit ($)</Text>
             <TextInput
-              style={styles.modalInput}
+              style={s.modalInput}
               value={newLimit}
               onChangeText={setNewLimit}
               placeholder="0"
@@ -228,27 +226,27 @@ export function BudgetingScreen({ navigation }: any) {
               keyboardType="decimal-pad"
             />
 
-            <Text style={styles.modalLabel}>Icon</Text>
+            <Text style={s.modalLabel}>Icon</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
               {PRESET_ICONS.map((pi) => (
                 <Pressable
                   key={pi.icon}
                   onPress={() => setNewIcon(pi.icon)}
-                  style={[styles.iconChip, newIcon === pi.icon && { backgroundColor: newColor, borderColor: newColor }]}
+                  style={[s.iconChip, newIcon === pi.icon && { backgroundColor: newColor, borderColor: newColor }]}
                 >
                   <Ionicons name={pi.icon as any} size={18} color={newIcon === pi.icon ? '#fff' : colors.textSecondary} />
-                  <Text style={[styles.iconChipText, newIcon === pi.icon && { color: '#fff' }]}>{pi.label}</Text>
+                  <Text style={[s.iconChipText, newIcon === pi.icon && { color: '#fff' }]}>{pi.label}</Text>
                 </Pressable>
               ))}
             </ScrollView>
 
-            <Text style={styles.modalLabel}>Color</Text>
-            <View style={styles.colorRow}>
+            <Text style={s.modalLabel}>Color</Text>
+            <View style={s.colorRow}>
               {PRESET_COLORS.map((c) => (
                 <Pressable
                   key={c}
                   onPress={() => setNewColor(c)}
-                  style={[styles.colorSwatch, { backgroundColor: c }, newColor === c && styles.colorSwatchActive]}
+                  style={[s.colorSwatch, { backgroundColor: c }, newColor === c && s.colorSwatchActive]}
                 >
                   {newColor === c && <Ionicons name="checkmark" size={14} color="#fff" />}
                 </Pressable>
@@ -257,10 +255,10 @@ export function BudgetingScreen({ navigation }: any) {
 
             <Pressable
               onPress={handleAddBudget}
-              style={[styles.modalSubmit, { backgroundColor: newColor }, (!newCategory.trim() || !newLimit) && styles.modalSubmitDisabled]}
+              style={[s.modalSubmit, { backgroundColor: newColor }, (!newCategory.trim() || !newLimit) && s.modalSubmitDisabled]}
             >
               <Ionicons name="add-circle" size={18} color="#fff" />
-              <Text style={styles.modalSubmitText}>Add Budget</Text>
+              <Text style={s.modalSubmitText}>Add Budget</Text>
             </Pressable>
           </View>
         </View>
@@ -269,55 +267,53 @@ export function BudgetingScreen({ navigation }: any) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  header: { paddingHorizontal: 20, paddingBottom: 24 },
-  headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
-  back: { marginRight: 12 },
-  headerTitle: { flex: 1, fontSize: 22, fontWeight: '800', color: '#fff' },
-  addBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
-  totalCard: { flexDirection: 'row', backgroundColor: 'rgba(0,0,0,0.15)', borderRadius: 16, padding: 16 },
-  totalItem: { flex: 1, alignItems: 'center' },
-  totalDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.2)' },
-  totalLabel: { fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: '600', marginBottom: 6 },
-  totalValue: { fontSize: 18, fontWeight: '800', color: '#fff' },
-  content: { padding: 16 },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
-  sectionTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
-  budgetCount: { fontSize: 13, color: colors.textSecondary },
-  budgetCard: { marginBottom: 14, borderRadius: 16 },
-  budgetTop: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 14 },
-  budgetIcon: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  budgetTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  budgetCategory: { fontSize: 17, fontWeight: '700', color: colors.text },
-  overBudget: { fontSize: 11, fontWeight: '800', color: colors.danger, backgroundColor: colors.dangerLight, paddingVertical: 2, paddingHorizontal: 8, borderRadius: 6 },
-  budgetAmounts: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 },
-  budgetSpent: { fontSize: 13, fontWeight: '600' },
-  budgetLimit: { fontSize: 13, color: colors.textSecondary },
-  deleteBtn: { width: 32, height: 32, borderRadius: 10, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
-  budgetStats: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12, gap: 8 },
-  budgetStat: { flex: 1, alignItems: 'center' },
-  budgetStatValue: { fontSize: 17, fontWeight: '700', color: colors.text, marginBottom: 2 },
-  budgetStatLabel: { fontSize: 10, color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 },
-  emptyState: { alignItems: 'center', paddingVertical: 50 },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginTop: 14 },
-  emptyDesc: { fontSize: 13, color: colors.textSecondary, marginTop: 6 },
-  insightCard: { backgroundColor: '#FEF3E2', borderRadius: 16, marginTop: 8 },
-  insightRow: { flexDirection: 'row', alignItems: 'flex-start' },
-  insightTitle: { fontSize: 15, fontWeight: '700', color: colors.text, marginBottom: 6 },
-  insightText: { fontSize: 13, color: colors.textSecondary, lineHeight: 20 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalSheet: { backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  modalTitle: { fontSize: 20, fontWeight: '800', color: colors.text },
-  modalLabel: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
-  modalInput: { borderWidth: 1.5, borderColor: colors.border, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, fontSize: 15, color: colors.text, marginBottom: 16 },
-  iconChip: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1.5, borderColor: colors.border, borderRadius: 20, paddingVertical: 6, paddingHorizontal: 12, marginRight: 8 },
-  iconChipText: { fontSize: 11, color: colors.textSecondary },
-  colorRow: { flexDirection: 'row', gap: 10, marginBottom: 20, flexWrap: 'wrap' },
-  colorSwatch: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  colorSwatchActive: { borderWidth: 3, borderColor: '#fff', shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 4, elevation: 4 },
-  modalSubmit: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 14, paddingVertical: 14 },
-  modalSubmitDisabled: { opacity: 0.5 },
-  modalSubmitText: { fontSize: 15, fontWeight: '700', color: '#fff' },
-});
+function makeStyles(colors: any) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    addBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
+    totalCard: { flexDirection: 'row', backgroundColor: 'rgba(0,0,0,0.15)', borderRadius: 16, padding: 16 },
+    totalItem: { flex: 1, alignItems: 'center' },
+    totalDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.2)' },
+    totalLabel: { fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: '600', marginBottom: 6 },
+    totalValue: { fontSize: 18, fontWeight: '800', color: '#fff' },
+    content: { padding: 16 },
+    sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
+    sectionTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
+    budgetCount: { fontSize: 13, color: colors.textSecondary },
+    budgetCard: { marginBottom: 14, borderRadius: 16 },
+    budgetTop: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 14 },
+    budgetIcon: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+    budgetTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    budgetCategory: { fontSize: 17, fontWeight: '700', color: colors.text },
+    overBudget: { fontSize: 11, fontWeight: '800', color: colors.danger, backgroundColor: colors.dangerLight, paddingVertical: 2, paddingHorizontal: 8, borderRadius: 6 },
+    budgetAmounts: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 },
+    budgetSpent: { fontSize: 13, fontWeight: '600' },
+    budgetLimit: { fontSize: 13, color: colors.textSecondary },
+    deleteBtn: { width: 32, height: 32, borderRadius: 10, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
+    budgetStats: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12, gap: 8 },
+    budgetStat: { flex: 1, alignItems: 'center' },
+    budgetStatValue: { fontSize: 17, fontWeight: '700', color: colors.text, marginBottom: 2 },
+    budgetStatLabel: { fontSize: 10, color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 },
+    emptyState: { alignItems: 'center', paddingVertical: 50 },
+    emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginTop: 14 },
+    emptyDesc: { fontSize: 13, color: colors.textSecondary, marginTop: 6 },
+    insightCard: { backgroundColor: '#FEF3E2', borderRadius: 16, marginTop: 8 },
+    insightRow: { flexDirection: 'row', alignItems: 'flex-start' },
+    insightTitle: { fontSize: 15, fontWeight: '700', color: colors.text, marginBottom: 6 },
+    insightText: { fontSize: 13, color: colors.textSecondary, lineHeight: 20 },
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+    modalSheet: { backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+    modalTitle: { fontSize: 20, fontWeight: '800', color: colors.text },
+    modalLabel: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
+    modalInput: { borderWidth: 1.5, borderColor: colors.border, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, fontSize: 15, color: colors.text, marginBottom: 16 },
+    iconChip: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1.5, borderColor: colors.border, borderRadius: 20, paddingVertical: 6, paddingHorizontal: 12, marginRight: 8 },
+    iconChipText: { fontSize: 11, color: colors.textSecondary },
+    colorRow: { flexDirection: 'row', gap: 10, marginBottom: 20, flexWrap: 'wrap' },
+    colorSwatch: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+    colorSwatchActive: { borderWidth: 3, borderColor: '#fff', shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 4, elevation: 4 },
+    modalSubmit: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 14, paddingVertical: 14 },
+    modalSubmitDisabled: { opacity: 0.5 },
+    modalSubmitText: { fontSize: 15, fontWeight: '700', color: '#fff' },
+  });
+}

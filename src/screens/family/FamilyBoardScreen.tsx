@@ -435,7 +435,7 @@ export function FamilyBoardScreen({ navigation }: any) {
         </View>
       </LinearGradient>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll} contentContainerStyle={styles.filtersContent}>
+      <View style={styles.filtersBar}>
         {FILTERS.map((f) => (
           <Pressable
             key={f.key}
@@ -447,7 +447,7 @@ export function FamilyBoardScreen({ navigation }: any) {
             </Text>
           </Pressable>
         ))}
-      </ScrollView>
+      </View>
 
       <ScrollView
         contentContainerStyle={[styles.content, { paddingBottom: 100 }]}
@@ -532,8 +532,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.15)',
     alignItems: 'center', justifyContent: 'center',
   },
-  filtersScroll: { maxHeight: 56, backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border },
-  filtersContent: { paddingHorizontal: 16, paddingVertical: 10, gap: 8, flexDirection: 'row', alignItems: 'center' },
+  filtersBar: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 12, paddingVertical: 8, gap: 8, backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border },
   filterChip: {
     paddingHorizontal: 14, paddingVertical: 6,
     borderRadius: 20, backgroundColor: colors.border,

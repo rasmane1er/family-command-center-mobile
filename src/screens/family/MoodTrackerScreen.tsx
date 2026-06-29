@@ -108,7 +108,7 @@ export function MoodTrackerScreen({ navigation }: any) {
       </LinearGradient>
 
       {/* Member selector */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.memberScroll} contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 10, gap: 10 }}>
+      <View style={styles.memberBar}>
         {members.map((m) => (
           <Pressable
             key={m.id}
@@ -119,7 +119,7 @@ export function MoodTrackerScreen({ navigation }: any) {
             <Text style={styles.memberChipName}>{m.name.split(' ')[0]}</Text>
           </Pressable>
         ))}
-      </ScrollView>
+      </View>
 
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
         {/* Today's check-in */}
@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
   memberMoodRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   memberMoodName: { fontSize: 13, color: 'rgba(255,255,255,0.8)', fontWeight: '600' },
   memberMoodEmoji: { fontSize: 18 },
-  memberScroll: { backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border, maxHeight: 68 },
+  memberBar: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 12, paddingVertical: 8, gap: 8, backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border },
   memberChip: { alignItems: 'center', gap: 4, paddingVertical: 4, paddingHorizontal: 8, borderRadius: 12 },
   memberChipActive: { backgroundColor: '#FCE4EC' },
   memberChipName: { fontSize: 11, fontWeight: '600', color: colors.textSecondary },

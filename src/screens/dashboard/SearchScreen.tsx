@@ -3,8 +3,9 @@ import { View, Text, StyleSheet, ScrollView, Pressable, TextInput } from 'react-
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 
-import { colors } from '../../theme/colors';
+import { useTheme } from '../../theme/ThemeContext';
 import { Card } from '../../components/common/Card';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { useFinanceStore } from '../../store/useFinanceStore';
@@ -48,8 +49,11 @@ const CAT_CONFIG: Record<ResultCategory, { icon: string; color: string; label: s
 
 const RECENT_SEARCHES = ['Budget this month', 'Aiden homework', 'Car insurance', 'Hawaii vacation fund'];
 
-export function SearchScreen({ navigation }: any) {
+export function SearchScreen({ navigation: navProp }: any) {
+  const navHook = useNavigation<any>();
+  const navigation = navProp ?? navHook;
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
   const [query, setQuery] = useState('');
 
   const members = useFamilyStore((s) => s.members);
@@ -441,15 +445,17 @@ export function SearchScreen({ navigation }: any) {
     navigation.navigate(result.route);
   };
 
+  const dynStyles = makeStyles(colors);
+
   return (
-    <View style={styles.container}>
+    <View style={dynStyles.container}>
       <StatusBar style="dark" />
 
-      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
-        <View style={styles.searchBar}>
+      <View style={[dynStyles.header, { paddingTop: insets.top + 12 }]}>
+        <View style={dynStyles.searchBar}>
           <Ionicons name="search" size={20} color={colors.textMuted} />
           <TextInput
-            style={styles.searchInput}
+            style={dynStyles.searchInput}
             placeholder={placeholder}
             placeholderTextColor={colors.textMuted}
             value={query}
@@ -465,51 +471,51 @@ export function SearchScreen({ navigation }: any) {
           )}
         </View>
 
-        <Pressable onPress={() => navigation.goBack()} style={styles.cancelBtn}>
-          <Text style={styles.cancelText}>Cancel</Text>
+        <Pressable onPress={() => navigation.goBack()} style={dynStyles.cancelBtn}>
+          <Text style={dynStyles.cancelText}>Cancel</Text>
         </Pressable>
       </View>
 
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: 100 }]}
+        contentContainerStyle={[dynStyles.content, { paddingBottom: 100 }]}
         keyboardShouldPersistTaps="handled"
       >
         {query.trim().length < 2 ? (
           <>
-            <Text style={styles.sectionLabel}>Recent Searches</Text>
+            <Text style={dynStyles.sectionLabel}>Recent Searches</Text>
 
             {RECENT_SEARCHES.map((s) => (
-              <Pressable key={s} onPress={() => setQuery(s)} style={styles.recentRow}>
+              <Pressable key={s} onPress={() => setQuery(s)} style={dynStyles.recentRow}>
                 <Ionicons name="time-outline" size={16} color={colors.textMuted} />
-                <Text style={styles.recentText}>{s}</Text>
+                <Text style={dynStyles.recentText}>{s}</Text>
                 <Ionicons name="arrow-forward" size={14} color={colors.textMuted} />
               </Pressable>
             ))}
 
-            <Text style={[styles.sectionLabel, { marginTop: 24 }]}>Browse Sections</Text>
+            <Text style={[dynStyles.sectionLabel, { marginTop: 24 }]}>Browse Sections</Text>
 
-            <View style={styles.browseGrid}>
+            <View style={dynStyles.browseGrid}>
               {browseSections.map((b) => (
                 <Pressable
                   key={b.label}
                   onPress={() => navigation.navigate(b.route as string, (b as any).params)}
-                  style={[styles.browseCard, { backgroundColor: b.bg }]}
+                  style={[dynStyles.browseCard, { backgroundColor: b.bg }]}
                 >
                   <Ionicons name={b.icon as any} size={22} color={b.color} />
-                  <Text style={[styles.browseLabel, { color: b.color }]}>{b.label}</Text>
+                  <Text style={[dynStyles.browseLabel, { color: b.color }]}>{b.label}</Text>
                 </Pressable>
               ))}
             </View>
           </>
         ) : results.length === 0 ? (
-          <View style={styles.noResults}>
+          <View style={dynStyles.noResults}>
             <Ionicons name="search-outline" size={56} color={colors.textMuted} />
-            <Text style={styles.noResultsTitle}>No results for "{query}"</Text>
-            <Text style={styles.noResultsDesc}>Try searching with different keywords</Text>
+            <Text style={dynStyles.noResultsTitle}>No results for "{query}"</Text>
+            <Text style={dynStyles.noResultsDesc}>Try searching with different keywords</Text>
           </View>
         ) : (
           <>
-            <Text style={styles.resultCount}>
+            <Text style={dynStyles.resultCount}>
               {results.length} result{results.length !== 1 ? 's' : ''} found
             </Text>
 
@@ -518,23 +524,23 @@ export function SearchScreen({ navigation }: any) {
 
               return (
                 <View key={cat}>
-                  <View style={styles.catHeader}>
+                  <View style={dynStyles.catHeader}>
                     <Ionicons name={cfg.icon as any} size={14} color={cfg.color} />
-                    <Text style={[styles.catLabel, { color: cfg.color }]}>{cfg.label}s</Text>
-                    <Text style={styles.catCount}>{items.length}</Text>
+                    <Text style={[dynStyles.catLabel, { color: cfg.color }]}>{cfg.label}s</Text>
+                    <Text style={dynStyles.catCount}>{items.length}</Text>
                   </View>
 
                   {items.map((r) => (
                     <Pressable key={`${r.category}-${r.id}`} onPress={() => handleResultPress(r)}>
-                      <Card style={styles.resultCard} variant="elevated">
-                        <View style={styles.resultRow}>
-                          <View style={[styles.resultIcon, { backgroundColor: r.color + '20' }]}>
+                      <Card style={dynStyles.resultCard} variant="elevated">
+                        <View style={dynStyles.resultRow}>
+                          <View style={[dynStyles.resultIcon, { backgroundColor: r.color + '20' }]}>
                             <Ionicons name={r.icon as any} size={18} color={r.color} />
                           </View>
 
                           <View style={{ flex: 1, marginLeft: 12 }}>
-                            <Text style={styles.resultTitle}>{r.title}</Text>
-                            <Text style={styles.resultSub} numberOfLines={1}>
+                            <Text style={dynStyles.resultTitle}>{r.title}</Text>
+                            <Text style={dynStyles.resultSub} numberOfLines={1}>
                               {r.subtitle}
                             </Text>
                           </View>
@@ -554,7 +560,8 @@ export function SearchScreen({ navigation }: any) {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors: import('../../theme/ThemeContext').ThemeColors) {
+  return StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
 
   header: {
@@ -675,4 +682,5 @@ const styles = StyleSheet.create({
   resultTitle: { fontSize: 14, fontWeight: '600', color: colors.text, marginBottom: 2 },
 
   resultSub: { fontSize: 12, color: colors.textSecondary },
-});
+  });
+}

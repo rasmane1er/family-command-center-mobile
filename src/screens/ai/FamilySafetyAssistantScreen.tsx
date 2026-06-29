@@ -19,6 +19,7 @@ import { useGuardianStore } from '../../store/useGuardianStore';
 import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
 import type { ChatMessage } from '../../types';
+import { API_BASE_URL } from '../../config/api';
 
 const PURPLE = '#8E44AD';
 const PURPLE_LIGHT = '#F3E8FA';
@@ -133,7 +134,7 @@ export function FamilySafetyAssistantScreen({ navigation }: any) {
       .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
 
     try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000'}/ai/guardian-chat`, {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL ?? API_BASE_URL}/ai/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: trimmed, context: contextString, history, mode: contextMode }),

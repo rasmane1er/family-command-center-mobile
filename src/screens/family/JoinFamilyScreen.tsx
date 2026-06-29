@@ -116,6 +116,9 @@ export function JoinFamilyScreen({ navigation }: any) {
       />
 
       <View style={styles.overlay}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Ionicons name="arrow-back" size={22} color="#fff" />
+        </Pressable>
         <Text style={styles.title}>Scan Family QR Code</Text>
         <Text style={styles.subtitle}>Point your camera at the invite QR code.</Text>
 
@@ -214,6 +217,7 @@ export function JoinFamilyScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
+  backBtn: { position: 'absolute', top: 52, left: 20, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center', zIndex: 10 },
 
   permissionContainer: {
     flex: 1,

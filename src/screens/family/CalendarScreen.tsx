@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions, Modal, TextInput, Switch, Alert } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { StatusBar } from 'expo-status-bar';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, isToday } from 'date-fns';
 import * as Haptics from 'expo-haptics';
+import { PremiumHeader } from '../../components/common/PremiumHeader';
 import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
 import { Avatar } from '../../components/common/Avatar';
@@ -22,7 +20,6 @@ const { width } = Dimensions.get('window');
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export function CalendarScreen({ navigation }: any) {
-  const insets = useSafeAreaInsets();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showModal, setShowModal] = useState(false);
@@ -95,18 +92,15 @@ export function CalendarScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      <StatusBar style="light" />
-      <LinearGradient colors={['#0F2952', '#1E4A8A']} style={[styles.header, { paddingTop: insets.top + 12 }]}>
-        <View style={styles.headerTop}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <Text style={styles.headerTitle}>Family Calendar</Text>
+      <PremiumHeader
+        title="Family Calendar"
+        onBack={() => navigation.goBack()}
+        rightAction={
           <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
             <Ionicons name="add" size={26} color="#fff" />
           </Pressable>
-        </View>
-
+        }
+      >
         {/* Month navigator */}
         <View style={styles.monthNav}>
           <Pressable onPress={prevMonth} style={styles.monthBtn}>
@@ -148,7 +142,7 @@ export function CalendarScreen({ navigation }: any) {
             );
           })}
         </View>
-      </LinearGradient>
+      </PremiumHeader>
 
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
         <View style={styles.selectedDateRow}>
@@ -274,10 +268,6 @@ export function CalendarScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { paddingHorizontal: 16, paddingBottom: 16 },
-  headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
-  back: { marginRight: 12 },
-  headerTitle: { flex: 1, fontSize: 22, fontWeight: '800', color: '#fff' },
   addBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   monthNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
   monthBtn: { padding: 8 },

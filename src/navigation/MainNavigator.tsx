@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { TabNavigator } from './TabNavigator';
 
 import { SettingsScreen } from '../screens/settings/SettingsScreen';
+import HelpSupportScreen from '../screens/settings/HelpSupportScreen';
 import { HealthHubScreen } from '../screens/health/HealthHubScreen';
 import { MedicationManagerScreen } from '../screens/health/MedicationManagerScreen';
 import { SleepTrackerScreen } from '../screens/health/SleepTrackerScreen';
@@ -82,24 +83,18 @@ export function MainNavigator() {
         options={{ animation: 'slide_from_right' }}
       />
 
-      {/* Parent + Grandparent */}
       <Stack.Screen
         name="WeeklyReport"
+        component={WeeklyReportScreen}
         options={{ animation: 'slide_from_right' }}
-      >
-        {() => (
-          <ProtectedRoute allowParent allowGrandparent>
-            <WeeklyReportScreen />
-          </ProtectedRoute>
-        )}
-      </Stack.Screen>
+      />
 
       {/* Parent only */}
-   <Stack.Screen
-  name="Settings"
-  component={SettingsScreen}
-  options={{ animation: 'slide_from_right' }}
-/>
+      <Stack.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{ animation: 'slide_from_right' }}
+      />
 
       {/* Shared health */}
       <Stack.Screen
@@ -113,9 +108,9 @@ export function MainNavigator() {
         name="MedicationManager"
         options={{ animation: 'slide_from_right' }}
       >
-        {() => (
+        {(props) => (
           <ProtectedRoute allowParent allowChild>
-            <MedicationManagerScreen />
+            <MedicationManagerScreen {...props} />
           </ProtectedRoute>
         )}
       </Stack.Screen>
@@ -124,9 +119,9 @@ export function MainNavigator() {
         name="SleepTracker"
         options={{ animation: 'slide_from_right' }}
       >
-        {() => (
+        {(props) => (
           <ProtectedRoute allowParent allowChild>
-            <SleepTrackerScreen />
+            <SleepTrackerScreen {...props} />
           </ProtectedRoute>
         )}
       </Stack.Screen>
@@ -135,12 +130,18 @@ export function MainNavigator() {
         name="WorkoutTracker"
         options={{ animation: 'slide_from_right' }}
       >
-        {() => (
+        {(props) => (
           <ProtectedRoute allowParent allowChild>
-            <WorkoutTrackerScreen />
+            <WorkoutTrackerScreen {...props} />
           </ProtectedRoute>
         )}
       </Stack.Screen>
+
+      <Stack.Screen
+        name="HelpSupport"
+        component={HelpSupportScreen}
+        options={{ animation: 'slide_from_right' }}
+      />
     </Stack.Navigator>
   );
 }

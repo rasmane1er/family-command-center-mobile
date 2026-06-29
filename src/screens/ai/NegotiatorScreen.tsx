@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Alert } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -8,6 +8,7 @@ import { colors } from '../../theme/colors';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { useAutomationStore } from '../../store/useAutomationStore';
+import { chatWithNegotiator, AIMessage } from '../../services/aiService';
 
 const NEGOTIATION_SCENARIOS = [
   { id: 's1', title: 'Bill Negotiation Script', desc: 'Lower your cable, insurance or phone bill', icon: 'call', color: '#2980B9', savings: '$240/yr avg', category: 'bills' },
@@ -28,11 +29,33 @@ const CHIEF_OF_STAFF_BRIEFINGS = [
 
 export function NegotiatorScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
-  const [activeTab, setActiveTab] = useState<'chief' | 'negotiate' | 'conflicts'>('chief');
+  const [activeTab, setActiveTab] = useState<'chief' | 'negotiate' | 'conflicts' | 'chat'>('chief');
   const [selectedScenario, setSelectedScenario] = useState<string | null>(null);
+  const [chatInput, setChatInput] = useState('');
+  const [chatHistory, setChatHistory] = useState<AIMessage[]>([]);
+  const [chatLoading, setChatLoading] = useState(false);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const chatScrollRef = useRef<ScrollView>(null);
   const { conflicts } = useAutomationStore();
 
   const openConflicts = conflicts.filter((c) => c.status !== 'resolved');
+
+  const handleChatSend = async (text?: string) => {
+    const msg = text ?? chatInput.trim();
+    if (!msg || chatLoading) return;
+    setChatInput('');
+    const newHistory: AIMessage[] = [...chatHistory, { role: 'user', content: msg }];
+    setChatHistory(newHistory);
+    setChatLoading(true);
+    setSuggestions([]);
+    setTimeout(() => chatScrollRef.current?.scrollToEnd({ animated: true }), 100);
+    const result = await chatWithNegotiator({ message: msg, history: chatHistory });
+    const modelHistory: AIMessage[] = [...newHistory, { role: 'model', content: result.reply }];
+    setChatHistory(modelHistory);
+    setSuggestions(result.suggestions);
+    setChatLoading(false);
+    setTimeout(() => chatScrollRef.current?.scrollToEnd({ animated: true }), 100);
+  };
 
   const handleNegotiate = (scenario: typeof NEGOTIATION_SCENARIOS[0]) => {
     Alert.alert(
@@ -75,10 +98,10 @@ export function NegotiatorScreen({ navigation }: any) {
       </LinearGradient>
 
       <View style={styles.tabs}>
-        {(['chief', 'negotiate', 'conflicts'] as const).map((tab) => (
+        {(['chief', 'negotiate', 'conflicts', 'chat'] as const).map((tab) => (
           <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
             <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-              {tab === 'chief' ? 'Briefing' : tab === 'negotiate' ? 'Negotiate' : 'Conflicts'}
+              {tab === 'chief' ? 'Briefing' : tab === 'negotiate' ? 'Scripts' : tab === 'conflicts' ? 'Conflicts' : '✨ Ask AI'}
             </Text>
           </Pressable>
         ))}
@@ -159,6 +182,57 @@ export function NegotiatorScreen({ navigation }: any) {
           </>
         )}
       </ScrollView>
+
+      {activeTab === 'chat' && (
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.chatPanel}>
+          <ScrollView ref={chatScrollRef} style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 20 }}>
+            {chatHistory.length === 0 && (
+              <View style={styles.chatEmpty}>
+                <Text style={styles.chatEmptyTitle}>AI Negotiation Coach</Text>
+                <Text style={styles.chatEmptyDesc}>Get personalized scripts and strategies for any negotiation</Text>
+                {['How do I negotiate my cable bill down?', 'Give me a salary negotiation script', 'How do I dispute a medical bill?'].map((q) => (
+                  <Pressable key={q} style={styles.chatStarter} onPress={() => handleChatSend(q)}>
+                    <Text style={styles.chatStarterText}>{q}</Text>
+                    <Ionicons name="arrow-forward" size={14} color="#0F2952" />
+                  </Pressable>
+                ))}
+              </View>
+            )}
+            {chatHistory.map((m, i) => (
+              <View key={i} style={[styles.chatBubble, m.role === 'user' ? styles.chatBubbleUser : styles.chatBubbleAI]}>
+                <Text style={m.role === 'user' ? styles.chatBubbleUserText : styles.chatBubbleAIText}>{m.content}</Text>
+              </View>
+            ))}
+            {chatLoading && (
+              <View style={styles.chatBubbleAI}><ActivityIndicator size="small" color="#0F2952" /></View>
+            )}
+            {suggestions.length > 0 && !chatLoading && (
+              <View style={{ marginTop: 8 }}>
+                {suggestions.map((s) => (
+                  <Pressable key={s} style={styles.chatSuggestion} onPress={() => handleChatSend(s)}>
+                    <Text style={styles.chatSuggestionText}>{s}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+          </ScrollView>
+          <View style={styles.chatInputRow}>
+            <TextInput
+              style={styles.chatInput}
+              value={chatInput}
+              onChangeText={setChatInput}
+              placeholder="Describe your negotiation situation..."
+              placeholderTextColor={colors.textMuted}
+              onSubmitEditing={() => handleChatSend()}
+              returnKeyType="send"
+              multiline
+            />
+            <Pressable style={[styles.chatSendBtn, !chatInput.trim() && { opacity: 0.4 }]} onPress={() => handleChatSend()} disabled={!chatInput.trim()}>
+              <Ionicons name="send" size={18} color="#fff" />
+            </Pressable>
+          </View>
+        </KeyboardAvoidingView>
+      )}
     </View>
   );
 }
@@ -207,4 +281,20 @@ const styles = StyleSheet.create({
   emptyState: { alignItems: 'center', paddingVertical: 60 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginTop: 16 },
   emptyDesc: { fontSize: 13, color: colors.textSecondary, marginTop: 8, textAlign: 'center', paddingHorizontal: 32 },
+  chatPanel: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: colors.background },
+  chatEmpty: { alignItems: 'center', paddingTop: 20, paddingBottom: 8 },
+  chatEmptyTitle: { fontSize: 18, fontWeight: '800', color: colors.text, marginBottom: 6 },
+  chatEmptyDesc: { fontSize: 13, color: colors.textSecondary, textAlign: 'center', marginBottom: 20 },
+  chatStarter: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#EEF2FA', borderRadius: 12, padding: 14, marginBottom: 8, width: '100%' },
+  chatStarterText: { flex: 1, fontSize: 14, color: '#0F2952', fontWeight: '500' },
+  chatBubble: { borderRadius: 16, padding: 12, marginBottom: 10, maxWidth: '85%' },
+  chatBubbleUser: { backgroundColor: '#0F2952', alignSelf: 'flex-end' },
+  chatBubbleAI: { backgroundColor: colors.card, alignSelf: 'flex-start', borderWidth: 1, borderColor: colors.border },
+  chatBubbleUserText: { fontSize: 14, color: '#fff', lineHeight: 20 },
+  chatBubbleAIText: { fontSize: 14, color: colors.text, lineHeight: 20 },
+  chatSuggestion: { backgroundColor: '#EEF2FA', borderRadius: 20, paddingVertical: 8, paddingHorizontal: 14, marginBottom: 6, alignSelf: 'flex-start' },
+  chatSuggestionText: { fontSize: 13, color: '#0F2952', fontWeight: '500' },
+  chatInputRow: { flexDirection: 'row', alignItems: 'flex-end', padding: 12, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.background, gap: 10 },
+  chatInput: { flex: 1, backgroundColor: colors.card, borderRadius: 22, paddingVertical: 10, paddingHorizontal: 16, fontSize: 14, color: colors.text, maxHeight: 100, borderWidth: 1, borderColor: colors.border },
+  chatSendBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#0F2952', alignItems: 'center', justifyContent: 'center' },
 });

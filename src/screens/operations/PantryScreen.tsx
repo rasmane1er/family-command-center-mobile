@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Modal, Alert } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { StatusBar } from 'expo-status-bar';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { differenceInDays } from 'date-fns';
 import * as Haptics from 'expo-haptics';
-import { colors } from '../../theme/colors';
+import { PremiumHeader } from '../../components/common/PremiumHeader';
+import { useTheme } from '../../theme/ThemeContext';
 import { shadows } from '../../theme/spacing';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
@@ -30,7 +28,7 @@ const categoryIcons: Record<string, string> = {
 };
 
 export function PantryScreen({ navigation }: any) {
-  const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All');
   const [showModal, setShowModal] = useState(false);
@@ -89,83 +87,83 @@ export function PantryScreen({ navigation }: any) {
     return differenceInDays(new Date(i.expiryDate), new Date()) <= 3;
   }).length;
 
-  return (
-    <View style={styles.container}>
-      <StatusBar style="light" />
-      <LinearGradient colors={['#27AE60', '#1ABC9C']} style={[styles.header, { paddingTop: insets.top + 12 }]}>
-        <View style={styles.headerTop}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <Text style={styles.headerTitle}>Pantry</Text>
-          <View style={styles.headerActions}>
-            <Pressable style={styles.actionBtn}><Ionicons name="cart-outline" size={22} color="#fff" /></Pressable>
-            <Pressable onPress={() => setShowModal(true)} style={styles.actionBtn}><Ionicons name="add" size={24} color="#fff" /></Pressable>
-          </View>
-        </View>
+  const s = makeStyles(colors);
 
-        <View style={styles.alertRow}>
+  return (
+    <View style={s.container}>
+      <PremiumHeader
+        title="Pantry"
+        colors={['#27AE60', '#1ABC9C']}
+        onBack={() => navigation.goBack()}
+        rightAction={
+          <View style={s.headerActions}>
+            <Pressable style={s.actionBtn}><Ionicons name="cart-outline" size={22} color="#fff" /></Pressable>
+            <Pressable onPress={() => setShowModal(true)} style={s.actionBtn}><Ionicons name="add" size={24} color="#fff" /></Pressable>
+          </View>
+        }
+      >
+        <View style={s.alertRow}>
           {lowStock > 0 && (
-            <View style={styles.alertChip}>
+            <View style={s.alertChip}>
               <Ionicons name="warning" size={14} color={colors.warning} />
-              <Text style={styles.alertText}>{lowStock} low stock</Text>
+              <Text style={s.alertText}>{lowStock} low stock</Text>
             </View>
           )}
           {expiring > 0 && (
-            <View style={[styles.alertChip, { backgroundColor: 'rgba(231,76,60,0.25)' }]}>
+            <View style={[s.alertChip, { backgroundColor: 'rgba(231,76,60,0.25)' }]}>
               <Ionicons name="time" size={14} color={colors.danger} />
-              <Text style={[styles.alertText, { color: colors.danger }]}>{expiring} expiring soon</Text>
+              <Text style={[s.alertText, { color: colors.danger }]}>{expiring} expiring soon</Text>
             </View>
           )}
-          <Text style={styles.pantryCount}>{pantryItems.length} items</Text>
+          <Text style={s.pantryCount}>{pantryItems.length} items</Text>
         </View>
 
-        <View style={styles.searchBar}>
+        <View style={s.searchBar}>
           <Ionicons name="search-outline" size={18} color="rgba(255,255,255,0.7)" />
           <TextInput
-            style={styles.searchInput}
+            style={s.searchInput}
             placeholder="Search pantry..."
             placeholderTextColor="rgba(255,255,255,0.5)"
             value={search}
             onChangeText={setSearch}
           />
         </View>
-      </LinearGradient>
+      </PremiumHeader>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll} contentContainerStyle={styles.categoryContent}>
+      <View style={s.categoryBar}>
         {CATEGORIES.map((cat) => (
-          <Pressable key={cat} onPress={() => setCategory(cat)} style={[styles.catChip, category === cat && styles.catChipActive]}>
-            <Text style={[styles.catText, category === cat && styles.catTextActive]}>{cat}</Text>
+          <Pressable key={cat} onPress={() => setCategory(cat)} style={[s.catChip, category === cat && s.catChipActive]}>
+            <Text style={[s.catText, category === cat && s.catTextActive]}>{cat}</Text>
           </Pressable>
         ))}
-      </ScrollView>
+      </View>
 
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
+      <ScrollView contentContainerStyle={[s.content, { paddingBottom: 100 }]}>
         {filtered.map((item) => {
           const expiry = getExpiryStatus(item.expiryDate);
           const isLowStock = item.minQuantity !== undefined && item.quantity <= item.minQuantity;
           return (
-            <Card key={item.id} style={styles.itemCard} variant="elevated">
-              <View style={styles.itemRow}>
-                <View style={[styles.itemIcon, { backgroundColor: isLowStock ? colors.warningLight : '#E8F8F7' }]}>
+            <Card key={item.id} style={s.itemCard} variant="elevated">
+              <View style={s.itemRow}>
+                <View style={[s.itemIcon, { backgroundColor: isLowStock ? colors.warningLight : '#E8F8F7' }]}>
                   <Ionicons name={(categoryIcons[item.category] || 'nutrition') as any} size={22} color={isLowStock ? colors.warning : '#27AE60'} />
                 </View>
                 <View style={{ flex: 1, marginLeft: 14 }}>
-                  <View style={styles.itemHeader}>
-                    <Text style={styles.itemName}>{item.name}</Text>
+                  <View style={s.itemHeader}>
+                    <Text style={s.itemName}>{item.name}</Text>
                     <Badge label={expiry.label} variant={expiry.variant} size="sm" />
                   </View>
-                  <Text style={styles.itemCategory}>{item.category} • {item.location || 'Pantry'}</Text>
-                  <View style={styles.itemQuantityRow}>
-                    <Pressable onPress={() => updatePantryItem(item.id, { quantity: Math.max(0, item.quantity - 1) })} style={styles.qtyBtn}>
+                  <Text style={s.itemCategory}>{item.category} • {item.location || 'Pantry'}</Text>
+                  <View style={s.itemQuantityRow}>
+                    <Pressable onPress={() => updatePantryItem(item.id, { quantity: Math.max(0, item.quantity - 1) })} style={s.qtyBtn}>
                       <Ionicons name="remove" size={16} color={colors.primary} />
                     </Pressable>
-                    <Text style={styles.itemQuantity}>{item.quantity} {item.unit}</Text>
-                    <Pressable onPress={() => updatePantryItem(item.id, { quantity: item.quantity + 1 })} style={styles.qtyBtn}>
+                    <Text style={s.itemQuantity}>{item.quantity} {item.unit}</Text>
+                    <Pressable onPress={() => updatePantryItem(item.id, { quantity: item.quantity + 1 })} style={s.qtyBtn}>
                       <Ionicons name="add" size={16} color={colors.primary} />
                     </Pressable>
                     {isLowStock && <Badge label="Low" variant="warning" size="sm" style={{ marginLeft: 8 }} />}
-                    <Pressable onPress={() => handleDelete(item.id, item.name)} style={styles.deleteBtn}>
+                    <Pressable onPress={() => handleDelete(item.id, item.name)} style={s.deleteBtn}>
                       <Ionicons name="trash-outline" size={14} color={colors.danger} />
                     </Pressable>
                   </View>
@@ -176,43 +174,43 @@ export function PantryScreen({ navigation }: any) {
         })}
 
         {filtered.length === 0 && (
-          <View style={styles.emptyState}>
+          <View style={s.emptyState}>
             <Ionicons name="nutrition-outline" size={60} color={colors.textMuted} />
-            <Text style={styles.emptyTitle}>No items found</Text>
+            <Text style={s.emptyTitle}>No items found</Text>
           </View>
         )}
       </ScrollView>
 
       <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowModal(false)}>
-        <ScrollView style={styles.modal} contentContainerStyle={{ paddingBottom: 40 }}>
-          <View style={styles.modalHandle} />
-          <Text style={styles.modalTitle}>Add Pantry Item</Text>
+        <ScrollView style={s.modal} contentContainerStyle={{ paddingBottom: 40 }}>
+          <View style={s.modalHandle} />
+          <Text style={s.modalTitle}>Add Pantry Item</Text>
 
-          <Text style={styles.modalLabel}>Item Name *</Text>
-          <TextInput style={styles.modalInput} placeholder="e.g. Olive Oil" value={newName} onChangeText={setNewName} placeholderTextColor={colors.textMuted} autoFocus />
+          <Text style={s.modalLabel}>Item Name *</Text>
+          <TextInput style={s.modalInput} placeholder="e.g. Olive Oil" value={newName} onChangeText={setNewName} placeholderTextColor={colors.textMuted} autoFocus />
 
-          <View style={styles.rowInputs}>
+          <View style={s.rowInputs}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.modalLabel}>Quantity</Text>
-              <TextInput style={styles.modalInput} placeholder="1" value={newQuantity} onChangeText={setNewQuantity} keyboardType="numeric" placeholderTextColor={colors.textMuted} />
+              <Text style={s.modalLabel}>Quantity</Text>
+              <TextInput style={s.modalInput} placeholder="1" value={newQuantity} onChangeText={setNewQuantity} keyboardType="numeric" placeholderTextColor={colors.textMuted} />
             </View>
             <View style={{ flex: 1, marginLeft: 10 }}>
-              <Text style={styles.modalLabel}>Unit</Text>
-              <TextInput style={styles.modalInput} placeholder="pcs / lbs / oz" value={newUnit} onChangeText={setNewUnit} placeholderTextColor={colors.textMuted} />
+              <Text style={s.modalLabel}>Unit</Text>
+              <TextInput style={s.modalInput} placeholder="pcs / lbs / oz" value={newUnit} onChangeText={setNewUnit} placeholderTextColor={colors.textMuted} />
             </View>
           </View>
 
-          <Text style={styles.modalLabel}>Category</Text>
+          <Text style={s.modalLabel}>Category</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
             {CATEGORIES.filter((c) => c !== 'All').map((cat) => (
-              <Pressable key={cat} onPress={() => setNewCategory(cat)} style={[styles.catChip, newCategory === cat && styles.catChipActive]}>
-                <Text style={[styles.catText, newCategory === cat && styles.catTextActive]}>{cat}</Text>
+              <Pressable key={cat} onPress={() => setNewCategory(cat)} style={[s.catChip, newCategory === cat && s.catChipActive]}>
+                <Text style={[s.catText, newCategory === cat && s.catTextActive]}>{cat}</Text>
               </Pressable>
             ))}
           </ScrollView>
 
-          <Text style={styles.modalLabel}>Storage Location</Text>
-          <TextInput style={[styles.modalInput, { marginBottom: 24 }]} placeholder="e.g. Pantry, Fridge, Freezer" value={newLocation} onChangeText={setNewLocation} placeholderTextColor={colors.textMuted} />
+          <Text style={s.modalLabel}>Storage Location</Text>
+          <TextInput style={[s.modalInput, { marginBottom: 24 }]} placeholder="e.g. Pantry, Fridge, Freezer" value={newLocation} onChangeText={setNewLocation} placeholderTextColor={colors.textMuted} />
 
           <Button title="Add Item" onPress={handleAdd} fullWidth size="lg" disabled={!newName.trim()} />
           <Button title="Cancel" onPress={() => setShowModal(false)} variant="ghost" fullWidth style={{ marginTop: 8 }} />
@@ -222,43 +220,40 @@ export function PantryScreen({ navigation }: any) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  header: { paddingHorizontal: 20, paddingBottom: 16 },
-  headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
-  back: { marginRight: 12 },
-  headerTitle: { flex: 1, fontSize: 22, fontWeight: '800', color: '#fff' },
-  headerActions: { flexDirection: 'row', gap: 8 },
-  actionBtn: { width: 38, height: 38, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
-  alertRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
-  alertChip: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(243,156,18,0.25)', borderRadius: 20, paddingVertical: 4, paddingHorizontal: 10 },
-  alertText: { fontSize: 12, color: colors.warning, fontWeight: '600' },
-  pantryCount: { marginLeft: 'auto' as any, fontSize: 12, color: 'rgba(255,255,255,0.7)' },
-  searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 12, paddingHorizontal: 12, gap: 8 },
-  searchInput: { flex: 1, paddingVertical: 12, fontSize: 15, color: '#fff' },
-  categoryScroll: { maxHeight: 48, backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border },
-  categoryContent: { paddingHorizontal: 16, alignItems: 'center', gap: 8 },
-  catChip: { paddingVertical: 6, paddingHorizontal: 14, borderRadius: 20, borderWidth: 1.5, borderColor: 'transparent' },
-  catChipActive: { borderColor: colors.success, backgroundColor: '#D5F5E3' },
-  catText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
-  catTextActive: { color: colors.success },
-  content: { padding: 16 },
-  itemCard: { marginBottom: 10, borderRadius: 14 },
-  itemRow: { flexDirection: 'row', alignItems: 'center' },
-  itemIcon: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  itemHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 },
-  itemName: { fontSize: 16, fontWeight: '700', color: colors.text, flex: 1 },
-  itemCategory: { fontSize: 12, color: colors.textSecondary, marginBottom: 8 },
-  itemQuantityRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  qtyBtn: { width: 28, height: 28, borderRadius: 8, backgroundColor: '#E8EEF9', alignItems: 'center', justifyContent: 'center' },
-  itemQuantity: { fontSize: 15, fontWeight: '700', color: colors.text, minWidth: 60, textAlign: 'center' },
-  emptyState: { alignItems: 'center', paddingVertical: 60 },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginTop: 16 },
-  deleteBtn: { marginLeft: 4, padding: 4 },
-  modal: { flex: 1, padding: 24, backgroundColor: colors.background },
-  modalHandle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 24 },
-  modalTitle: { fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 20 },
-  modalLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
-  modalInput: { backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 16, color: colors.text, borderWidth: 1.5, borderColor: colors.border, marginBottom: 16, ...shadows.sm },
-  rowInputs: { flexDirection: 'row' },
-});
+function makeStyles(colors: any) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    headerActions: { flexDirection: 'row', gap: 8 },
+    actionBtn: { width: 38, height: 38, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
+    alertRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
+    alertChip: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(243,156,18,0.25)', borderRadius: 20, paddingVertical: 4, paddingHorizontal: 10 },
+    alertText: { fontSize: 12, color: colors.warning, fontWeight: '600' },
+    pantryCount: { marginLeft: 'auto' as any, fontSize: 12, color: 'rgba(255,255,255,0.7)' },
+    searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 12, paddingHorizontal: 12, gap: 8 },
+    searchInput: { flex: 1, paddingVertical: 12, fontSize: 15, color: '#fff' },
+    categoryBar: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 12, paddingVertical: 8, gap: 8, backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border },
+    catChip: { paddingVertical: 6, paddingHorizontal: 14, borderRadius: 20, borderWidth: 1.5, borderColor: 'transparent' },
+    catChipActive: { borderColor: colors.success, backgroundColor: '#D5F5E3' },
+    catText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+    catTextActive: { color: colors.success },
+    content: { padding: 16 },
+    itemCard: { marginBottom: 10, borderRadius: 14 },
+    itemRow: { flexDirection: 'row', alignItems: 'center' },
+    itemIcon: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+    itemHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 },
+    itemName: { fontSize: 16, fontWeight: '700', color: colors.text, flex: 1 },
+    itemCategory: { fontSize: 12, color: colors.textSecondary, marginBottom: 8 },
+    itemQuantityRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    qtyBtn: { width: 28, height: 28, borderRadius: 8, backgroundColor: '#E8EEF9', alignItems: 'center', justifyContent: 'center' },
+    itemQuantity: { fontSize: 15, fontWeight: '700', color: colors.text, minWidth: 60, textAlign: 'center' },
+    emptyState: { alignItems: 'center', paddingVertical: 60 },
+    emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginTop: 16 },
+    deleteBtn: { marginLeft: 4, padding: 4 },
+    modal: { flex: 1, padding: 24, backgroundColor: colors.background },
+    modalHandle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 24 },
+    modalTitle: { fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 20 },
+    modalLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+    modalInput: { backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 16, color: colors.text, borderWidth: 1.5, borderColor: colors.border, marginBottom: 16, ...shadows.sm },
+    rowInputs: { flexDirection: 'row' },
+  });
+}

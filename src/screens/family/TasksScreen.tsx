@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Modal, TextInput } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { StatusBar } from 'expo-status-bar';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
 import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
+import { PremiumHeader } from '../../components/common/PremiumHeader';
 import { Avatar } from '../../components/common/Avatar';
 import { Badge } from '../../components/common/Badge';
 import { Card } from '../../components/common/Card';
@@ -25,7 +23,6 @@ const priorityColors = {
 };
 
 export function TasksScreen({ navigation, route }: any) {
-  const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState('All');
   const [showAddModal, setShowAddModal] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
@@ -89,18 +86,15 @@ const filteredTasks = visibleTasks
 
   return (
     <View style={styles.container}>
-      <StatusBar style="light" />
-      <LinearGradient colors={['#0F2952', '#1E4A8A']} style={[styles.header, { paddingTop: insets.top + 12 }]}>
-        <View style={styles.headerTop}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <Text style={styles.headerTitle}>Family Tasks</Text>
+      <PremiumHeader
+        title="Family Tasks"
+        onBack={() => navigation.goBack()}
+        rightAction={
           <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
             <Ionicons name="add" size={26} color="#fff" />
           </Pressable>
-        </View>
-
+        }
+      >
         <View style={styles.statsRow}>
           {[
             { label: 'Total', value: stats.total, color: 'rgba(255,255,255,0.8)' },
@@ -122,7 +116,7 @@ const filteredTasks = visibleTasks
             </Pressable>
           ))}
         </ScrollView>
-      </LinearGradient>
+      </PremiumHeader>
 
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
         {filteredTasks.length === 0 ? (
@@ -230,10 +224,6 @@ const filteredTasks = visibleTasks
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { paddingHorizontal: 20, paddingBottom: 16 },
-  headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
-  back: { marginRight: 12 },
-  headerTitle: { flex: 1, fontSize: 22, fontWeight: '800', color: '#fff' },
   addBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   statsRow: { flexDirection: 'row', gap: 10, marginBottom: 14 },
   statChip: { flex: 1, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 10, padding: 10, alignItems: 'center' },

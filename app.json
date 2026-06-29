@@ -11,7 +11,6 @@
       "resizeMode": "contain",
       "backgroundColor": "#0F2952"
     },
-    
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.familycommandcenter.app"
@@ -36,18 +35,19 @@
         }
       ],
       [
-    "expo-contacts",
-    {
-      "contactsPermission": "Allow Family Command Center to access your contacts so you can invite family members."
-    }
-  ],
+        "expo-contacts",
+        {
+          "contactsPermission": "Allow Family Command Center to access your contacts so you can invite family members."
+        }
+      ],
       [
         "expo-document-picker",
         {
           "iCloudContainerEnvironment": "Production"
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-web-browser"
     ],
     "extra": {
       "eas": {

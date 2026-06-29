@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions, Alert } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions, Alert, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -10,6 +10,7 @@ import { Card } from '../../components/common/Card';
 import { ProgressBar } from '../../components/common/ProgressBar';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { useFinanceStore } from '../../store/useFinanceStore';
+import { chatWithDigitalTwin, AIMessage } from '../../services/aiService';
 
 const { width } = Dimensions.get('window');
 
@@ -65,9 +66,31 @@ function getLabelPosition(i: number, total: number, centerX: number, centerY: nu
 
 export function DigitalTwinScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
-  const [tab, setTab] = useState<'twin' | 'predict' | 'whatif'>('twin');
+  const [tab, setTab] = useState<'twin' | 'predict' | 'whatif' | 'chat'>('twin');
+  const [chatInput, setChatInput] = useState('');
+  const [chatHistory, setChatHistory] = useState<AIMessage[]>([]);
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatSuggestions, setChatSuggestions] = useState<string[]>([]);
+  const chatScrollRef = useRef<ScrollView>(null);
   const members = useFamilyStore((s) => s.members);
   const { monthlyIncome, monthlyExpenses } = useFinanceStore();
+
+  const handleChatSend = async (text?: string) => {
+    const msg = text ?? chatInput.trim();
+    if (!msg || chatLoading) return;
+    setChatInput('');
+    const newHistory: AIMessage[] = [...chatHistory, { role: 'user', content: msg }];
+    setChatHistory(newHistory);
+    setChatLoading(true);
+    setChatSuggestions([]);
+    setTimeout(() => chatScrollRef.current?.scrollToEnd({ animated: true }), 100);
+    const familyData = { members: members.length, monthlyIncome, monthlyExpenses, overallScore };
+    const result = await chatWithDigitalTwin({ message: msg, history: chatHistory, familyData });
+    setChatHistory([...newHistory, { role: 'model', content: result.reply }]);
+    setChatSuggestions(result.suggestions);
+    setChatLoading(false);
+    setTimeout(() => chatScrollRef.current?.scrollToEnd({ animated: true }), 100);
+  };
 
   const overallScore = Math.round(DIMENSIONS_CONFIG.reduce((s, d) => s + d.value, 0) / DIMENSIONS_CONFIG.length);
   const predictedScore = Math.round(DIMENSIONS_CONFIG.reduce((s, d) => s + d.prediction, 0) / DIMENSIONS_CONFIG.length);
@@ -118,10 +141,10 @@ export function DigitalTwinScreen({ navigation }: any) {
       </LinearGradient>
 
       <View style={styles.tabs}>
-        {(['twin', 'predict', 'whatif'] as const).map((t) => (
+        {(['twin', 'predict', 'whatif', 'chat'] as const).map((t) => (
           <Pressable key={t} onPress={() => setTab(t)} style={[styles.tab, tab === t && styles.tabActive]}>
             <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
-              {t === 'twin' ? '🧬 DNA' : t === 'predict' ? '🔮 Predict' : '💡 What-If'}
+              {t === 'twin' ? '🧬 DNA' : t === 'predict' ? '🔮 Predict' : t === 'whatif' ? '💡 What-If' : '✨ Ask AI'}
             </Text>
           </Pressable>
         ))}
@@ -308,6 +331,42 @@ export function DigitalTwinScreen({ navigation }: any) {
           </>
         )}
       </ScrollView>
+
+      {tab === 'chat' && (
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.chatPanel}>
+          <ScrollView ref={chatScrollRef} style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 20 }}>
+            {chatHistory.length === 0 && (
+              <View style={styles.chatEmpty}>
+                <Text style={styles.chatEmptyTitle}>Ask Your Digital Twin</Text>
+                <Text style={styles.chatEmptyDesc}>AI-powered insights about your family's patterns and future</Text>
+                {['What should we improve to raise our score?', 'Predict our finances for the next 6 months', 'What habits are hurting our family wellbeing?'].map((q) => (
+                  <Pressable key={q} style={styles.chatStarter} onPress={() => handleChatSend(q)}>
+                    <Text style={styles.chatStarterText}>{q}</Text>
+                    <Ionicons name="arrow-forward" size={14} color="#2D2D8F" />
+                  </Pressable>
+                ))}
+              </View>
+            )}
+            {chatHistory.map((m, i) => (
+              <View key={i} style={[styles.chatBubble, m.role === 'user' ? styles.chatBubbleUser : styles.chatBubbleAI]}>
+                <Text style={m.role === 'user' ? styles.chatBubbleUserText : styles.chatBubbleAIText}>{m.content}</Text>
+              </View>
+            ))}
+            {chatLoading && <View style={styles.chatBubbleAI}><ActivityIndicator size="small" color="#2D2D8F" /></View>}
+            {chatSuggestions.length > 0 && !chatLoading && chatSuggestions.map((s) => (
+              <Pressable key={s} style={styles.chatSuggestion} onPress={() => handleChatSend(s)}>
+                <Text style={styles.chatSuggestionText}>{s}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+          <View style={styles.chatInputRow}>
+            <TextInput style={styles.chatInput} value={chatInput} onChangeText={setChatInput} placeholder="Ask about your family patterns..." placeholderTextColor={colors.textMuted} onSubmitEditing={() => handleChatSend()} returnKeyType="send" multiline />
+            <Pressable style={[styles.chatSendBtn, !chatInput.trim() && { opacity: 0.4 }]} onPress={() => handleChatSend()} disabled={!chatInput.trim()}>
+              <Ionicons name="send" size={18} color="#fff" />
+            </Pressable>
+          </View>
+        </KeyboardAvoidingView>
+      )}
     </View>
   );
 }
@@ -376,6 +435,22 @@ const styles = StyleSheet.create({
   whatIfScenario: { flex: 1, fontSize: 15, fontWeight: '700', color: colors.text },
   whatIfResults: { marginBottom: 14 },
   whatIfResult: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 8, paddingVertical: 6, paddingHorizontal: 10, marginBottom: 8, alignSelf: 'flex-start' },
+  chatPanel: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: colors.background },
+  chatEmpty: { alignItems: 'center', paddingTop: 20, paddingBottom: 8 },
+  chatEmptyTitle: { fontSize: 18, fontWeight: '800', color: colors.text, marginBottom: 6 },
+  chatEmptyDesc: { fontSize: 13, color: colors.textSecondary, textAlign: 'center', marginBottom: 20 },
+  chatStarter: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#EEEEF8', borderRadius: 12, padding: 14, marginBottom: 8, width: '100%' },
+  chatStarterText: { flex: 1, fontSize: 14, color: '#2D2D8F', fontWeight: '500' },
+  chatBubble: { borderRadius: 16, padding: 12, marginBottom: 10, maxWidth: '85%' },
+  chatBubbleUser: { backgroundColor: '#2D2D8F', alignSelf: 'flex-end' },
+  chatBubbleAI: { backgroundColor: colors.card, alignSelf: 'flex-start', borderWidth: 1, borderColor: colors.border },
+  chatBubbleUserText: { fontSize: 14, color: '#fff', lineHeight: 20 },
+  chatBubbleAIText: { fontSize: 14, color: colors.text, lineHeight: 20 },
+  chatSuggestion: { backgroundColor: '#EEEEF8', borderRadius: 20, paddingVertical: 8, paddingHorizontal: 14, marginBottom: 6, alignSelf: 'flex-start' },
+  chatSuggestionText: { fontSize: 13, color: '#2D2D8F', fontWeight: '500' },
+  chatInputRow: { flexDirection: 'row', alignItems: 'flex-end', padding: 12, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.background, gap: 10 },
+  chatInput: { flex: 1, backgroundColor: colors.card, borderRadius: 22, paddingVertical: 10, paddingHorizontal: 16, fontSize: 14, color: colors.text, maxHeight: 100, borderWidth: 1, borderColor: colors.border },
+  chatSendBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#2D2D8F', alignItems: 'center', justifyContent: 'center' },
   whatIfImpact: { fontSize: 14, fontWeight: '800' },
   whatIfEffect: { fontSize: 13, color: colors.textSecondary, lineHeight: 19 },
   whatIfBtn: { borderRadius: 10, paddingVertical: 8, alignItems: 'center' },

@@ -2,13 +2,11 @@ import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Modal, TextInput, Alert,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { StatusBar } from 'expo-status-bar';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { colors } from '../../theme/colors';
+import { useTheme } from '../../theme/ThemeContext';
 import { Card } from '../../components/common/Card';
+import { PremiumHeader } from '../../components/common/PremiumHeader';
 import { useOperationsStore } from '../../store/useOperationsStore';
 import type { Asset } from '../../types';
 
@@ -39,7 +37,7 @@ const categoryColors: Record<string, string> = {
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
 export function AssetsScreen({ navigation }: any) {
-  const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
   const { assets, vehicles, addAsset, deleteAsset } = useOperationsStore();
 
   const [showAddModal, setShowAddModal] = useState(false);
@@ -107,53 +105,53 @@ export function AssetsScreen({ navigation }: any) {
     ]);
   };
 
+  const s = makeStyles(colors);
+
   return (
-    <View style={styles.container}>
-      <StatusBar style="light" />
-      <LinearGradient colors={['#1A1A2E', '#16213E']} style={[styles.header, { paddingTop: insets.top + 12 }]}>
-        <View style={styles.headerTop}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <Text style={styles.headerTitle}>Asset Tracker</Text>
-          <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
+    <View style={s.container}>
+      <PremiumHeader
+        title="Asset Tracker"
+        onBack={() => navigation.goBack()}
+        colors={['#1A1A2E', '#16213E']}
+        rightAction={
+          <Pressable onPress={() => setShowAddModal(true)} style={s.addBtn}>
             <Ionicons name="add" size={26} color="#fff" />
           </Pressable>
+        }
+      >
+        <Text style={s.totalLabel}>Total Asset Value</Text>
+        <Text style={s.totalValue}>${totalAssets.toLocaleString('en-US', { minimumFractionDigits: 2 })}</Text>
+        <View style={s.statsRow}>
+          <Text style={s.totalSub}>{allAssets.length} assets tracked</Text>
+          <Text style={s.totalSub}>•</Text>
+          <Text style={s.totalSub}>{Object.keys(grouped).length} categories</Text>
         </View>
+      </PremiumHeader>
 
-        <Text style={styles.totalLabel}>Total Asset Value</Text>
-        <Text style={styles.totalValue}>${totalAssets.toLocaleString('en-US', { minimumFractionDigits: 2 })}</Text>
-        <View style={styles.statsRow}>
-          <Text style={styles.totalSub}>{allAssets.length} assets tracked</Text>
-          <Text style={styles.totalSub}>•</Text>
-          <Text style={styles.totalSub}>{Object.keys(grouped).length} categories</Text>
-        </View>
-      </LinearGradient>
-
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
+      <ScrollView contentContainerStyle={[s.content, { paddingBottom: 100 }]}>
         {/* Allocation bar */}
         {totalAssets > 0 && (
-          <Card style={styles.allocationCard} variant="elevated">
-            <Text style={styles.allocationTitle}>Portfolio Mix</Text>
-            <View style={styles.allocationBar}>
+          <Card style={s.allocationCard} variant="elevated">
+            <Text style={s.allocationTitle}>Portfolio Mix</Text>
+            <View style={s.allocationBar}>
               {Object.entries(grouped).map(([cat, catAssets]) => {
                 const catTotal = catAssets.reduce((s, a) => s + a.value, 0);
                 return (
                   <View
                     key={cat}
-                    style={[styles.allocationSegment, { flex: catTotal / totalAssets * 100, backgroundColor: categoryColors[cat] ?? '#95A5A6' }]}
+                    style={[s.allocationSegment, { flex: catTotal / totalAssets * 100, backgroundColor: categoryColors[cat] ?? '#95A5A6' }]}
                   />
                 );
               })}
             </View>
-            <View style={styles.allocationLegend}>
+            <View style={s.allocationLegend}>
               {Object.entries(grouped).map(([cat, catAssets]) => {
                 const catTotal = catAssets.reduce((s, a) => s + a.value, 0);
                 return (
-                  <View key={cat} style={styles.legendItem}>
-                    <View style={[styles.legendDot, { backgroundColor: categoryColors[cat] ?? '#95A5A6' }]} />
-                    <Text style={styles.legendLabel}>{cat}</Text>
-                    <Text style={styles.legendPct}>{((catTotal / totalAssets) * 100).toFixed(0)}%</Text>
+                  <View key={cat} style={s.legendItem}>
+                    <View style={[s.legendDot, { backgroundColor: categoryColors[cat] ?? '#95A5A6' }]} />
+                    <Text style={s.legendLabel}>{cat}</Text>
+                    <Text style={s.legendPct}>{((catTotal / totalAssets) * 100).toFixed(0)}%</Text>
                   </View>
                 );
               })}
@@ -166,19 +164,19 @@ export function AssetsScreen({ navigation }: any) {
           const isVehicleCat = category === 'Vehicle';
           return (
             <View key={category}>
-              <View style={styles.categoryHeader}>
-                <View style={[styles.categoryIcon, { backgroundColor: (categoryColors[category] ?? '#95A5A6') + '20' }]}>
+              <View style={s.categoryHeader}>
+                <View style={[s.categoryIcon, { backgroundColor: (categoryColors[category] ?? '#95A5A6') + '20' }]}>
                   <Ionicons name={(CATEGORY_ICONS[category] ?? 'cube') as any} size={16} color={categoryColors[category] ?? '#95A5A6'} />
                 </View>
-                <Text style={styles.categoryName}>{category}</Text>
-                <Text style={styles.categoryTotal}>${catTotal.toLocaleString()}</Text>
+                <Text style={s.categoryName}>{category}</Text>
+                <Text style={s.categoryTotal}>${catTotal.toLocaleString()}</Text>
               </View>
               {categoryAssets.map((asset) => {
                 const gain = asset.purchasePrice != null ? asset.value - asset.purchasePrice : null;
                 return (
-                  <Card key={asset.id} style={styles.assetCard} variant="elevated">
-                    <View style={styles.assetRow}>
-                      <View style={[styles.assetIcon, { backgroundColor: (categoryColors[asset.category] ?? '#95A5A6') + '22' }]}>
+                  <Card key={asset.id} style={s.assetCard} variant="elevated">
+                    <View style={s.assetRow}>
+                      <View style={[s.assetIcon, { backgroundColor: (categoryColors[asset.category] ?? '#95A5A6') + '22' }]}>
                         <Ionicons
                           name={(CATEGORY_ICONS[asset.category] ?? 'cube') as any}
                           size={22}
@@ -186,10 +184,10 @@ export function AssetsScreen({ navigation }: any) {
                         />
                       </View>
                       <View style={{ flex: 1, marginLeft: 14 }}>
-                        <Text style={styles.assetName}>{asset.name}</Text>
-                        <Text style={styles.assetCategory}>{asset.category}</Text>
+                        <Text style={s.assetName}>{asset.name}</Text>
+                        <Text style={s.assetCategory}>{asset.category}</Text>
                         {asset.purchasePrice != null && (
-                          <Text style={styles.assetAppreciation}>
+                          <Text style={s.assetAppreciation}>
                             Purchase: ${asset.purchasePrice.toLocaleString()} •{' '}
                             <Text style={{ color: asset.value >= asset.purchasePrice ? colors.success : colors.danger }}>
                               {asset.value >= asset.purchasePrice ? '+' : '-'}$
@@ -199,9 +197,9 @@ export function AssetsScreen({ navigation }: any) {
                         )}
                       </View>
                       <View style={{ alignItems: 'flex-end' }}>
-                        <Text style={styles.assetValue}>${asset.value.toLocaleString()}</Text>
+                        <Text style={s.assetValue}>${asset.value.toLocaleString()}</Text>
                         {!isVehicleCat && (
-                          <Pressable onPress={() => handleDelete(asset.id, asset.name, isVehicleCat)} style={styles.deleteBtn}>
+                          <Pressable onPress={() => handleDelete(asset.id, asset.name, isVehicleCat)} style={s.deleteBtn}>
                             <Ionicons name="trash-outline" size={14} color={colors.textMuted} />
                           </Pressable>
                         )}
@@ -215,51 +213,51 @@ export function AssetsScreen({ navigation }: any) {
         })}
 
         {allAssets.length === 0 && (
-          <View style={styles.emptyState}>
+          <View style={s.emptyState}>
             <Ionicons name="briefcase-outline" size={56} color={colors.textMuted} />
-            <Text style={styles.emptyTitle}>No assets tracked</Text>
-            <Text style={styles.emptyDesc}>Tap + to add your first asset.</Text>
+            <Text style={s.emptyTitle}>No assets tracked</Text>
+            <Text style={s.emptyDesc}>Tap + to add your first asset.</Text>
           </View>
         )}
       </ScrollView>
 
       {/* Add Asset Modal */}
       <Modal visible={showAddModal} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Add Asset</Text>
+        <View style={s.modalOverlay}>
+          <View style={s.modalSheet}>
+            <View style={s.modalHeader}>
+              <Text style={s.modalTitle}>Add Asset</Text>
               <Pressable onPress={() => setShowAddModal(false)}>
                 <Ionicons name="close" size={24} color={colors.text} />
               </Pressable>
             </View>
 
-            <Text style={styles.modalLabel}>Asset Name</Text>
+            <Text style={s.modalLabel}>Asset Name</Text>
             <TextInput
-              style={styles.modalInput}
+              style={s.modalInput}
               value={newName}
               onChangeText={setNewName}
               placeholder="e.g. MacBook Pro, Dining Table"
               placeholderTextColor={colors.textMuted}
             />
 
-            <Text style={styles.modalLabel}>Category</Text>
+            <Text style={s.modalLabel}>Category</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
               {CATEGORIES.map((c) => (
                 <Pressable
                   key={c}
                   onPress={() => setNewCategory(c)}
-                  style={[styles.catChip, newCategory === c && { backgroundColor: categoryColors[c] ?? colors.primary, borderColor: categoryColors[c] ?? colors.primary }]}
+                  style={[s.catChip, newCategory === c && { backgroundColor: categoryColors[c] ?? colors.primary, borderColor: categoryColors[c] ?? colors.primary }]}
                 >
                   <Ionicons name={(CATEGORY_ICONS[c] ?? 'cube') as any} size={14} color={newCategory === c ? '#fff' : colors.textSecondary} />
-                  <Text style={[styles.catChipText, newCategory === c && { color: '#fff' }]}>{c}</Text>
+                  <Text style={[s.catChipText, newCategory === c && { color: '#fff' }]}>{c}</Text>
                 </Pressable>
               ))}
             </ScrollView>
 
-            <Text style={styles.modalLabel}>Current Value ($)</Text>
+            <Text style={s.modalLabel}>Current Value ($)</Text>
             <TextInput
-              style={styles.modalInput}
+              style={s.modalInput}
               value={newValue}
               onChangeText={setNewValue}
               placeholder="0"
@@ -267,9 +265,9 @@ export function AssetsScreen({ navigation }: any) {
               keyboardType="decimal-pad"
             />
 
-            <Text style={styles.modalLabel}>Purchase Price ($) — Optional</Text>
+            <Text style={s.modalLabel}>Purchase Price ($) — Optional</Text>
             <TextInput
-              style={styles.modalInput}
+              style={s.modalInput}
               value={newPurchasePrice}
               onChangeText={setNewPurchasePrice}
               placeholder="0"
@@ -279,10 +277,10 @@ export function AssetsScreen({ navigation }: any) {
 
             <Pressable
               onPress={handleAddAsset}
-              style={[styles.modalSubmit, (!newName.trim() || !newValue) && styles.modalSubmitDisabled]}
+              style={[s.modalSubmit, (!newName.trim() || !newValue) && s.modalSubmitDisabled]}
             >
               <Ionicons name="add-circle" size={18} color="#fff" />
-              <Text style={styles.modalSubmitText}>Add Asset</Text>
+              <Text style={s.modalSubmitText}>Add Asset</Text>
             </Pressable>
           </View>
         </View>
@@ -291,51 +289,49 @@ export function AssetsScreen({ navigation }: any) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  header: { paddingHorizontal: 20, paddingBottom: 28 },
-  headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
-  back: { marginRight: 12 },
-  headerTitle: { flex: 1, fontSize: 22, fontWeight: '800', color: '#fff' },
-  addBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' },
-  totalLabel: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: '600', marginBottom: 6 },
-  totalValue: { fontSize: 40, fontWeight: '800', color: '#fff', letterSpacing: -1, marginBottom: 4 },
-  statsRow: { flexDirection: 'row', gap: 8 },
-  totalSub: { fontSize: 13, color: 'rgba(255,255,255,0.5)' },
-  content: { padding: 16 },
-  allocationCard: { marginBottom: 20, borderRadius: 16 },
-  allocationTitle: { fontSize: 14, fontWeight: '700', color: colors.text, marginBottom: 10 },
-  allocationBar: { flexDirection: 'row', height: 12, borderRadius: 6, overflow: 'hidden', marginBottom: 12, gap: 2 },
-  allocationSegment: { borderRadius: 3 },
-  allocationLegend: { gap: 6 },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  legendDot: { width: 8, height: 8, borderRadius: 4 },
-  legendLabel: { flex: 1, fontSize: 12, color: colors.text, fontWeight: '600' },
-  legendPct: { fontSize: 12, color: colors.textSecondary, fontWeight: '700' },
-  categoryHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10, marginTop: 12, gap: 8 },
-  categoryIcon: { width: 28, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  categoryName: { flex: 1, fontSize: 14, fontWeight: '700', color: colors.text },
-  categoryTotal: { fontSize: 14, fontWeight: '700', color: colors.text },
-  assetCard: { marginBottom: 10, borderRadius: 14 },
-  assetRow: { flexDirection: 'row', alignItems: 'center' },
-  assetIcon: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  assetName: { fontSize: 15, fontWeight: '700', color: colors.text, marginBottom: 3 },
-  assetCategory: { fontSize: 12, color: colors.textSecondary, marginBottom: 3 },
-  assetAppreciation: { fontSize: 12, color: colors.textSecondary },
-  assetValue: { fontSize: 18, fontWeight: '800', color: colors.text },
-  deleteBtn: { marginTop: 6, width: 28, height: 28, borderRadius: 8, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
-  emptyState: { alignItems: 'center', paddingVertical: 60 },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginTop: 14 },
-  emptyDesc: { fontSize: 13, color: colors.textSecondary, marginTop: 6 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalSheet: { backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  modalTitle: { fontSize: 20, fontWeight: '800', color: colors.text },
-  modalLabel: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
-  modalInput: { borderWidth: 1.5, borderColor: colors.border, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, fontSize: 15, color: colors.text, marginBottom: 16 },
-  catChip: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1.5, borderColor: colors.border, borderRadius: 20, paddingVertical: 6, paddingHorizontal: 12, marginRight: 8 },
-  catChipText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
-  modalSubmit: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.primary, borderRadius: 14, paddingVertical: 14 },
-  modalSubmitDisabled: { opacity: 0.5 },
-  modalSubmitText: { fontSize: 15, fontWeight: '700', color: '#fff' },
-});
+function makeStyles(colors: any) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    addBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' },
+    totalLabel: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: '600', marginBottom: 6 },
+    totalValue: { fontSize: 40, fontWeight: '800', color: '#fff', letterSpacing: -1, marginBottom: 4 },
+    statsRow: { flexDirection: 'row', gap: 8 },
+    totalSub: { fontSize: 13, color: 'rgba(255,255,255,0.5)' },
+    content: { padding: 16 },
+    allocationCard: { marginBottom: 20, borderRadius: 16 },
+    allocationTitle: { fontSize: 14, fontWeight: '700', color: colors.text, marginBottom: 10 },
+    allocationBar: { flexDirection: 'row', height: 12, borderRadius: 6, overflow: 'hidden', marginBottom: 12, gap: 2 },
+    allocationSegment: { borderRadius: 3 },
+    allocationLegend: { gap: 6 },
+    legendItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    legendDot: { width: 8, height: 8, borderRadius: 4 },
+    legendLabel: { flex: 1, fontSize: 12, color: colors.text, fontWeight: '600' },
+    legendPct: { fontSize: 12, color: colors.textSecondary, fontWeight: '700' },
+    categoryHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10, marginTop: 12, gap: 8 },
+    categoryIcon: { width: 28, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+    categoryName: { flex: 1, fontSize: 14, fontWeight: '700', color: colors.text },
+    categoryTotal: { fontSize: 14, fontWeight: '700', color: colors.text },
+    assetCard: { marginBottom: 10, borderRadius: 14 },
+    assetRow: { flexDirection: 'row', alignItems: 'center' },
+    assetIcon: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+    assetName: { fontSize: 15, fontWeight: '700', color: colors.text, marginBottom: 3 },
+    assetCategory: { fontSize: 12, color: colors.textSecondary, marginBottom: 3 },
+    assetAppreciation: { fontSize: 12, color: colors.textSecondary },
+    assetValue: { fontSize: 18, fontWeight: '800', color: colors.text },
+    deleteBtn: { marginTop: 6, width: 28, height: 28, borderRadius: 8, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
+    emptyState: { alignItems: 'center', paddingVertical: 60 },
+    emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginTop: 14 },
+    emptyDesc: { fontSize: 13, color: colors.textSecondary, marginTop: 6 },
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+    modalSheet: { backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+    modalTitle: { fontSize: 20, fontWeight: '800', color: colors.text },
+    modalLabel: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
+    modalInput: { borderWidth: 1.5, borderColor: colors.border, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, fontSize: 15, color: colors.text, marginBottom: 16 },
+    catChip: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1.5, borderColor: colors.border, borderRadius: 20, paddingVertical: 6, paddingHorizontal: 12, marginRight: 8 },
+    catChipText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
+    modalSubmit: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.primary, borderRadius: 14, paddingVertical: 14 },
+    modalSubmitDisabled: { opacity: 0.5 },
+    modalSubmitText: { fontSize: 15, fontWeight: '700', color: '#fff' },
+  });
+}

@@ -36,6 +36,7 @@ const defaultSettings: AppSettings = {
   language: 'en',
   militaryMode: false,
   weekStartsOn: 0,
+  subscriptionTier: 'free',
 };
 
 export const useAppStore = create<AppState>()(
