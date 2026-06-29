@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Modal, TextInput, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,6 +10,10 @@ import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
+import { useOperationsStore } from '../../store/useOperationsStore';
+import { useShoppingStore } from '../../store/useShoppingStore';
+import type { MealPlan } from '../../types';
+import type { ShopCategory } from '../../store/useShoppingStore';
 
 interface PlannedMeal {
   name: string;

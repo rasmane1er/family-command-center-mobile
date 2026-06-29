@@ -88,7 +88,7 @@ const filteredTasks = visibleTasks
     <View style={styles.container}>
       <PremiumHeader
         title="Family Tasks"
-        onBack={() => navigation.goBack()}
+        onBack={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()}
         rightAction={
           <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
             <Ionicons name="add" size={26} color="#fff" />

@@ -89,9 +89,22 @@ function TabItem({
   );
 }
 
+const HIDDEN_SCREENS = new Set(['ReceiptScanner']);
+
+function getActiveNestedRoute(tabRoute: BottomTabBarProps['state']['routes'][number]): string | undefined {
+  const nested = tabRoute.state;
+  if (!nested || nested.index == null) return undefined;
+  const active = nested.routes[nested.index];
+  return active?.name;
+}
+
 export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useTheme();
+
+  // Hide tab bar for specific full-screen nested routes
+  const activeNestedRoute = getActiveNestedRoute(state.routes[state.index]);
+  if (activeNestedRoute && HIDDEN_SCREENS.has(activeNestedRoute)) return null;
 
   return (
     <View style={[s.container, { paddingBottom: insets.bottom || 8, borderTopColor: colors.border }]}>

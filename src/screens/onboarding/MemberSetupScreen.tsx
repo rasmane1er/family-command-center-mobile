@@ -10,6 +10,7 @@ import { Button } from '../../components/common/Button';
 import { Card } from '../../components/common/Card';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import type { FamilyMember, MemberRole } from '../../types';
+import { defaultPermissionsForRole } from '../../types';
 
 const roles: { value: MemberRole; label: string; icon: string }[] = [
   { value: 'parent', label: 'Parent', icon: 'person' },
@@ -41,6 +42,11 @@ export function MemberSetupScreen({ navigation }: any) {
       points: 0,
       level: 1,
       isAdmin: role === 'parent' || role === 'guardian',
+      isLocalProfile: role === 'child',
+      linkedUserId: null,
+      isPinProtected: false,
+      permissions: defaultPermissionsForRole(role),
+      inviteStatus: 'none',
       createdAt: new Date().toISOString(),
     };
     setMembers([...members, newMember]);

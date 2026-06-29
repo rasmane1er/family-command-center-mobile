@@ -8,6 +8,7 @@ import { useFamilyStore } from '../../store/useFamilyStore';
 import { useJoinRequestsStore } from '../../store/useJoinRequestsStore';
 import { colors } from '../../theme/colors';
 import type { FamilyMember } from '../../types';
+import { defaultPermissionsForRole } from '../../types';
 
 type RequestFilter = 'pending' | 'approved' | 'rejected';
 
@@ -15,7 +16,7 @@ const FILTERS: RequestFilter[] = ['pending', 'approved', 'rejected'];
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
-export function JoinRequestsScreen({ navigation }: any) {
+export function JoinRequestsScreen({ navigation, route }: any) {
   const [filter, setFilter] = useState<RequestFilter>('pending');
 
   const requests = useJoinRequestsStore((s) => s.requests);
@@ -58,6 +59,11 @@ export function JoinRequestsScreen({ navigation }: any) {
       points: 0,
       level: 1,
       isAdmin: false,
+      isLocalProfile: false,
+      linkedUserId: null,
+      isPinProtected: false,
+      permissions: defaultPermissionsForRole(request.requesterRole),
+      inviteStatus: 'accepted',
       createdAt: new Date().toISOString(),
     };
 
@@ -83,7 +89,7 @@ export function JoinRequestsScreen({ navigation }: any) {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Pressable onPress={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color={colors.text} />
         </Pressable>
         <View style={styles.headerIcon}>

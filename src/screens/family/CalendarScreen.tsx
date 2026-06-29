@@ -19,7 +19,7 @@ const generateId = () => Math.random().toString(36).substring(2, 11);
 const { width } = Dimensions.get('window');
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-export function CalendarScreen({ navigation }: any) {
+export function CalendarScreen({ navigation, route }: any) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showModal, setShowModal] = useState(false);
@@ -94,7 +94,7 @@ export function CalendarScreen({ navigation }: any) {
     <View style={styles.container}>
       <PremiumHeader
         title="Family Calendar"
-        onBack={() => navigation.goBack()}
+        onBack={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()}
         rightAction={
           <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
             <Ionicons name="add" size={26} color="#fff" />

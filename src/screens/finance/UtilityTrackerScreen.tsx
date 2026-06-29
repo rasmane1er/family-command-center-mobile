@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   TextInput,
   Switch,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,10 +17,11 @@ import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
-import { shadows } from '../../theme/spacing';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { useUtilityStore } from '../../store/useUtilityStore';
+import { getDetectedUtilities } from '../../services/autoFillService';
+import type { DetectedUtility } from '../../services/autoFillService';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -62,12 +64,18 @@ const UTILITY_TYPES: UtilityType[] = ['electric', 'water', 'gas', 'internet', 'p
 
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+function inferUtilityType(type: string): UtilityType {
+  if (UTILITY_TYPES.includes(type as UtilityType)) return type as UtilityType;
+  return 'other';
+}
+
 export function UtilityTrackerScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const { bills, addBill, markPaid, deleteBill, getMonthlyTotal, getAverageForType, getCurrentMonthTotal, seedDemoData } = useUtilityStore();
 
   const [activeTab, setActiveTab] = useState<'This Month' | 'Trends' | 'By Type'>('This Month');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   const [newType, setNewType] = useState<UtilityType>('electric');
   const [newProvider, setNewProvider] = useState('');
@@ -79,6 +87,10 @@ export function UtilityTrackerScreen({ navigation }: any) {
   const [newUsage, setNewUsage] = useState('');
   const [newUsageUnit, setNewUsageUnit] = useState('');
   const [newIsPaid, setNewIsPaid] = useState(false);
+
+  // Detected utilities
+  const [detectedUtilities, setDetectedUtilities] = useState<DetectedUtility[]>([]);
+  const [detectedLoading, setDetectedLoading] = useState(false);
 
   const currentMonth = (() => {
     const now = new Date();
@@ -97,7 +109,6 @@ export function UtilityTrackerScreen({ navigation }: any) {
   const unpaidCount = thisMonthBills.filter((b) => !b.isPaid).length;
   const pctChange = lastMonthTotal > 0 ? ((thisMonthTotal - lastMonthTotal) / lastMonthTotal) * 100 : 0;
 
-  // Build 6 months of data for trends
   const trendMonths: string[] = [];
   for (let i = 5; i >= 0; i--) {
     const d = new Date();
@@ -107,13 +118,74 @@ export function UtilityTrackerScreen({ navigation }: any) {
   const trendTotals = trendMonths.map((m) => getMonthlyTotal(m));
   const maxTrend = Math.max(...trendTotals, 1);
 
-  // Group by type
-  const byType: Record<UtilityType, typeof bills> = {} as any;
+  const byType: Record<UtilityType, typeof bills> = {} as Record<UtilityType, typeof bills>;
   UTILITY_TYPES.forEach((t) => {
     byType[t] = bills.filter((b) => b.type === t);
   });
 
-  const handleMarkPaid = (id: string, provider: string) => {
+  const loadDetectedUtilities = () => {
+    setDetectedLoading(true);
+    getDetectedUtilities(currentMonth)
+      .then((res) => setDetectedUtilities(res.utilities))
+      .catch(() => {/* silent */ })
+      .finally(() => setDetectedLoading(false));
+  };
+
+  const handleImportAll = () => {
+    let imported = 0;
+    for (const du of detectedUtilities) {
+      const month = du.date.substring(0, 7);
+      const alreadyExists = bills.some(
+        (b) => b.provider.toLowerCase() === du.merchantName.toLowerCase() && b.month === month,
+      );
+      if (!alreadyExists) {
+        addBill({
+          familyId: 'demo-family',
+          type: inferUtilityType(du.type),
+          provider: du.merchantName,
+          month,
+          amount: du.amount,
+          isPaid: true,
+        });
+        imported++;
+      }
+    }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    Alert.alert('Import Complete', `${imported} utilities imported.`);
+    setShowImportModal(false);
+  };
+
+  const handleImportOne = (du: DetectedUtility) => {
+    const month = du.date.substring(0, 7);
+    const alreadyExists = bills.some(
+      (b) => b.provider.toLowerCase() === du.merchantName.toLowerCase() && b.month === month,
+    );
+    if (alreadyExists) {
+      Alert.alert('Already exists', 'This utility is already in your records.');
+      return;
+    }
+    addBill({
+      familyId: 'demo-family',
+      type: inferUtilityType(du.type),
+      provider: du.merchantName,
+      month,
+      amount: du.amount,
+      isPaid: true,
+    });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const prefillFromDetected = (du: DetectedUtility) => {
+    setNewType(inferUtilityType(du.type));
+    setNewProvider(du.merchantName);
+    setNewAmount(String(du.amount));
+    setNewMonth(du.date.substring(0, 7));
+    setNewIsPaid(true);
+    setShowImportModal(false);
+    setShowAddModal(true);
+  };
+
+  const handleMarkPaid = (id: string, _provider: string) => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     markPaid(id);
   };
@@ -156,6 +228,9 @@ export function UtilityTrackerScreen({ navigation }: any) {
     setNewIsPaid(false);
     setShowAddModal(false);
   };
+
+  // Current month bank chips for add modal
+  const currentMonthChips = detectedUtilities.filter((d) => d.date.startsWith(currentMonth));
 
   const renderThisMonthTab = () => (
     <ScrollView contentContainerStyle={styles.tabContent}>
@@ -291,7 +366,7 @@ export function UtilityTrackerScreen({ navigation }: any) {
               </View>
               <View style={styles.typeHeaderInfo}>
                 <Text style={styles.typeHeaderName}>{UTILITY_LABELS[type]}</Text>
-                <Text style={styles.typeHeaderSub}>{typeBills.length} bills • avg ${avg.toFixed(2)}/mo</Text>
+                <Text style={styles.typeHeaderSub}>{typeBills.length} bills · avg ${avg.toFixed(2)}/mo</Text>
               </View>
             </View>
             {typeBills.slice().sort((a, b) => b.month.localeCompare(a.month)).slice(0, 3).map((bill) => (
@@ -326,6 +401,15 @@ export function UtilityTrackerScreen({ navigation }: any) {
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </Pressable>
           <Text style={styles.headerTitle}>Utility Tracker</Text>
+          <Pressable
+            onPress={() => {
+              loadDetectedUtilities();
+              setShowImportModal(true);
+            }}
+            style={styles.importBtn}
+          >
+            <Ionicons name="cloud-download-outline" size={20} color="#fff" />
+          </Pressable>
           <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
             <Ionicons name="add" size={26} color="#fff" />
           </Pressable>
@@ -356,7 +440,6 @@ export function UtilityTrackerScreen({ navigation }: any) {
         </View>
       </LinearGradient>
 
-      {/* Tabs */}
       <View style={styles.tabBar}>
         {(['This Month', 'Trends', 'By Type'] as const).map((tab) => (
           <Pressable
@@ -375,6 +458,55 @@ export function UtilityTrackerScreen({ navigation }: any) {
       {activeTab === 'Trends' && renderTrendsTab()}
       {activeTab === 'By Type' && renderByTypeTab()}
 
+      {/* Import from Bank Modal */}
+      <Modal visible={showImportModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Import from Bank</Text>
+              <Pressable onPress={() => setShowImportModal(false)}>
+                <Ionicons name="close" size={24} color={colors.text} />
+              </Pressable>
+            </View>
+            <Text style={styles.modalSubtitle}>{currentMonth} utility transactions</Text>
+
+            {detectedLoading ? (
+              <ActivityIndicator size="large" color="#006064" style={{ marginVertical: 24 }} />
+            ) : detectedUtilities.length === 0 ? (
+              <View style={styles.emptyImport}>
+                <Ionicons name="cloud-offline-outline" size={40} color={colors.textMuted} />
+                <Text style={styles.emptyImportText}>No utility transactions found for this month.</Text>
+              </View>
+            ) : (
+              <ScrollView style={{ maxHeight: 320 }}>
+                {detectedUtilities.map((du, i) => (
+                  <View key={i} style={styles.importRow}>
+                    <View style={[styles.importTypeIcon, { backgroundColor: UTILITY_COLORS[inferUtilityType(du.type)] + '22' }]}>
+                      <Ionicons name={UTILITY_ICONS[inferUtilityType(du.type)] as any} size={18} color={UTILITY_COLORS[inferUtilityType(du.type)]} />
+                    </View>
+                    <View style={{ flex: 1, marginLeft: 10 }}>
+                      <Text style={styles.importProvider}>{du.merchantName}</Text>
+                      <Text style={styles.importDate}>{du.date}</Text>
+                    </View>
+                    <Text style={styles.importAmount}>${du.amount.toFixed(2)}</Text>
+                    <Pressable style={styles.importOneBtn} onPress={() => handleImportOne(du)}>
+                      <Text style={styles.importOneBtnText}>Import</Text>
+                    </Pressable>
+                  </View>
+                ))}
+              </ScrollView>
+            )}
+
+            {!detectedLoading && detectedUtilities.length > 0 && (
+              <Pressable style={styles.importAllBtn} onPress={handleImportAll}>
+                <Ionicons name="cloud-download" size={18} color="#fff" />
+                <Text style={styles.importAllBtnText}>Import All ({detectedUtilities.length})</Text>
+              </Pressable>
+            )}
+          </View>
+        </View>
+      </Modal>
+
       {/* Add Bill Modal */}
       <Modal visible={showAddModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
@@ -385,6 +517,24 @@ export function UtilityTrackerScreen({ navigation }: any) {
                 <Ionicons name="close" size={24} color={colors.text} />
               </Pressable>
             </View>
+
+            {/* Recent from bank chips */}
+            {currentMonthChips.length > 0 && (
+              <View style={styles.bankChipsContainer}>
+                <Text style={styles.bankChipsLabel}>
+                  <Ionicons name="cloud-download-outline" size={12} color="#006064" /> Recent from bank
+                </Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }}>
+                  {currentMonthChips.map((du, i) => (
+                    <Pressable key={i} style={styles.bankChip} onPress={() => prefillFromDetected(du)}>
+                      <Ionicons name={UTILITY_ICONS[inferUtilityType(du.type)] as any} size={12} color="#006064" />
+                      <Text style={styles.bankChipText}>{du.merchantName}</Text>
+                      <Text style={styles.bankChipAmount}>${du.amount.toFixed(0)}</Text>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
 
             <Text style={styles.modalLabel}>Utility Type *</Text>
             <View style={styles.typeIconGrid}>
@@ -481,6 +631,7 @@ const styles = StyleSheet.create({
   headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
   backBtn: { marginRight: 12 },
   headerTitle: { flex: 1, fontSize: 22, fontWeight: '800', color: '#fff' },
+  importBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center', marginRight: 8 },
   addBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   headerStats: { flexDirection: 'row', alignItems: 'center' },
   statBlock: { flex: 1, alignItems: 'center' },
@@ -542,10 +693,29 @@ const styles = StyleSheet.create({
   typeCardMonth: { fontSize: 12, color: colors.textMuted, width: 60 },
   typeCardProvider: { flex: 1, fontSize: 13, color: colors.text, fontWeight: '600' },
   typeCardAmount: { fontSize: 14, fontWeight: '700', color: colors.text },
+  // Import modal
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalSheet: { backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '90%' },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
   modalTitle: { fontSize: 20, fontWeight: '800', color: colors.text },
+  modalSubtitle: { fontSize: 12, color: colors.textSecondary, marginBottom: 16 },
+  emptyImport: { alignItems: 'center', paddingVertical: 24 },
+  emptyImportText: { fontSize: 13, color: colors.textSecondary, marginTop: 10, textAlign: 'center' },
+  importRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
+  importTypeIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  importProvider: { fontSize: 14, fontWeight: '700', color: colors.text },
+  importDate: { fontSize: 11, color: colors.textSecondary },
+  importAmount: { fontSize: 15, fontWeight: '800', color: colors.text, marginRight: 10 },
+  importOneBtn: { paddingVertical: 6, paddingHorizontal: 12, backgroundColor: '#006064', borderRadius: 8 },
+  importOneBtnText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  importAllBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#006064', borderRadius: 14, paddingVertical: 14, marginTop: 16 },
+  importAllBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  // Bank chips in add modal
+  bankChipsContainer: { backgroundColor: '#E0F7FA', borderRadius: 12, padding: 12, marginBottom: 16, borderLeftWidth: 3, borderLeftColor: '#006064' },
+  bankChipsLabel: { fontSize: 12, fontWeight: '700', color: '#006064' },
+  bankChip: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 10, borderWidth: 1.5, borderColor: '#006064', paddingVertical: 6, paddingHorizontal: 10, marginRight: 8, backgroundColor: '#fff' },
+  bankChipText: { fontSize: 12, fontWeight: '600', color: colors.text },
+  bankChipAmount: { fontSize: 11, color: '#006064', fontWeight: '700' },
   modalLabel: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
   modalInput: { borderWidth: 1.5, borderColor: colors.border, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, fontSize: 15, color: colors.text, marginBottom: 16 },
   typeIconGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },

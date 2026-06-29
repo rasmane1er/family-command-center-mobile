@@ -45,6 +45,7 @@ export function TabNavigator() {
     <Tab.Navigator
       tabBar={(props) => <CustomTabBar {...props} />}
       screenOptions={{ headerShown: false }}
+      backBehavior="none"
     >
       <Tab.Screen
         name="Home"

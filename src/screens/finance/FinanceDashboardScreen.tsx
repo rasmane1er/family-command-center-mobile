@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions, Modal, TextInput } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions, Modal, TextInput, FlatList } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -12,7 +12,9 @@ import { shadows } from '../../theme/spacing';
 import { ProgressBar } from '../../components/common/ProgressBar';
 import { Button } from '../../components/common/Button';
 import { useFinanceStore } from '../../store/useFinanceStore';
-import type { AccountType } from '../../types';
+import { useFinancialHealth } from '../../hooks/useFinancialHealth';
+import { getAccounts } from '../../services/plaidService';
+import type { AccountType, PlaidAccount } from '../../types';
 
 const { width } = Dimensions.get('window');
 const generateId = () => Math.random().toString(36).substring(2, 11);
@@ -44,12 +46,16 @@ const NAV_TABS = [
 ];
 
 const FINANCE_TOOLS = [
-  { key: 'WealthBuilder',    icon: 'trending-up',      label: 'Wealth',     color: '#059669', bg: '#ECFDF5' },
-  { key: 'InsuranceManager', icon: 'shield-checkmark', label: 'Insurance',  color: '#2563EB', bg: '#EFF6FF' },
+  { key: 'WealthBuilder',    icon: 'trending-up',      label: 'Wealth',       color: '#059669', bg: '#ECFDF5' },
+  { key: 'InsuranceManager', icon: 'shield-checkmark', label: 'Insurance',    color: '#2563EB', bg: '#EFF6FF' },
   { key: 'Subscriptions',    icon: 'reload',           label: 'Subscriptions', color: '#7C3AED', bg: '#F5F3FF' },
-  { key: 'Assets',           icon: 'briefcase',        label: 'Assets',     color: '#D97706', bg: '#FFFBEB' },
-  { key: 'DebtPayoff',       icon: 'trending-down',    label: 'Debt',       color: '#DC2626', bg: '#FEF2F2' },
-  { key: 'UtilityTracker',   icon: 'flash',            label: 'Utilities',  color: '#0891B2', bg: '#ECFEFF' },
+  { key: 'Assets',           icon: 'briefcase',        label: 'Assets',       color: '#D97706', bg: '#FFFBEB' },
+  { key: 'DebtPayoff',       icon: 'trending-down',    label: 'Debt',         color: '#DC2626', bg: '#FEF2F2' },
+  { key: 'UtilityTracker',   icon: 'flash',            label: 'Utilities',    color: '#0891B2', bg: '#ECFEFF' },
+  { key: 'ConnectBank',      icon: 'link',             label: 'Connect Bank', color: '#10B981', bg: '#ECFDF5' },
+  { key: 'Transactions',     icon: 'list-outline',     label: 'Transactions', color: '#6366F1', bg: '#EEF2FF' },
+  { key: 'SpendingInsights', icon: 'pie-chart-outline', label: 'Insights',    color: '#F59E0B', bg: '#FFFBEB' },
+  { key: 'ReceiptScanner',   icon: 'camera-outline',   label: 'Scan Receipt', color: '#8B5CF6', bg: '#F5F3FF' },
 ];
 
 /* ── Mini arc ring for budget % ── */
@@ -70,6 +76,7 @@ function BudgetRing({ ratio, color, size = 44 }: { ratio: number; color: string;
 export function FinanceDashboardScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState('overview');
+  const [plaidAccounts, setPlaidAccounts] = useState<PlaidAccount[]>([]);
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [newAccName, setNewAccName] = useState('');
@@ -87,8 +94,18 @@ export function FinanceDashboardScreen({ navigation }: any) {
     addAccount, addFinancialGoal,
   } = useFinanceStore();
 
+  useEffect(() => {
+    getAccounts().then((res) => setPlaidAccounts(res.accounts)).catch(() => {});
+  }, []);
+
+  const plaidNetWorth = plaidAccounts.reduce((sum, acc) => {
+    if (acc.accountType === 'credit') return sum - acc.balance;
+    return sum + acc.balance;
+  }, 0);
+
   const savingsRate = monthlyIncome > 0 ? Math.round((monthlySavings / monthlyIncome) * 100) : 0;
   const overdueBills = bills.filter((b) => b.status === 'overdue');
+  const fh = useFinancialHealth();
 
   const handleAddAccount = () => {
     if (!newAccName.trim()) return;
@@ -154,17 +171,12 @@ export function FinanceDashboardScreen({ navigation }: any) {
               <Text style={s.trendAmount}>+$1,240</Text>
             </View>
           </View>
-          <View style={s.headerRight}>
-            {overdueBills.length > 0 && (
-              <Pressable onPress={() => navigation.navigate('Bills')} style={s.urgentPill}>
-                <Ionicons name="warning" size={12} color="#fff" />
-                <Text style={s.urgentPillText}>{overdueBills.length} overdue</Text>
-              </Pressable>
-            )}
-            <Pressable style={s.notifBtn}>
-              <Ionicons name="notifications-outline" size={20} color="rgba(255,255,255,0.7)" />
+          {overdueBills.length > 0 && (
+            <Pressable onPress={() => navigation.navigate('Bills')} style={s.urgentPill}>
+              <Ionicons name="warning" size={12} color="#fff" />
+              <Text style={s.urgentPillText}>{overdueBills.length} overdue</Text>
             </Pressable>
-          </View>
+          )}
         </View>
 
         {/* Stats strip */}
@@ -185,7 +197,8 @@ export function FinanceDashboardScreen({ navigation }: any) {
         </View>
 
         {/* Tab pill row */}
-        <View style={s.tabPills}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.tabPills}
+          contentContainerStyle={{ gap: 6, paddingRight: 16 }}>
           {NAV_TABS.map((tab) => {
             const active = activeTab === tab.key;
             return (
@@ -197,11 +210,56 @@ export function FinanceDashboardScreen({ navigation }: any) {
               </Pressable>
             );
           })}
-        </View>
+        </ScrollView>
       </LinearGradient>
 
       {/* ══════════ SCROLL BODY ══════════ */}
       <ScrollView contentContainerStyle={s.body} showsVerticalScrollIndicator={false}>
+
+        {/* ── PLAID BANK ACCOUNTS ── */}
+        {plaidAccounts.length > 0 && (
+          <>
+            <View style={s.sectionRow}>
+              <View style={s.sectionLeft}>
+                <View style={s.sectionDot} />
+                <Text style={s.sectionTitle}>Bank Accounts</Text>
+              </View>
+              <Text style={s.netWorthSmall}>
+                Net: ${plaidNetWorth.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+              </Text>
+            </View>
+            <FlatList
+              data={plaidAccounts}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              keyExtractor={(item) => item.plaidAccountId}
+              style={s.plaidScroll}
+              contentContainerStyle={s.plaidContent}
+              renderItem={({ item: acc }) => (
+                <View style={s.plaidCard}>
+                  <View style={s.plaidCardTop}>
+                    <Ionicons name="wallet-outline" size={20} color="#4A90D9" />
+                    <View style={[s.plaidTypeBadge]}>
+                      <Text style={s.plaidTypeBadgeText}>{acc.accountType.toUpperCase()}</Text>
+                    </View>
+                  </View>
+                  <Text style={s.plaidCardName} numberOfLines={1}>{acc.name}</Text>
+                  {acc.mask && <Text style={s.plaidCardMask}>••••{acc.mask}</Text>}
+                  <Text style={[s.plaidCardBalance, acc.accountType === 'credit' && { color: '#EF4444' }]}>
+                    ${acc.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  </Text>
+                </View>
+              )}
+            />
+          </>
+        )}
+        {plaidAccounts.length === 0 && (
+          <Pressable onPress={() => navigation.navigate('ConnectBank')} style={s.connectPrompt}>
+            <Ionicons name="link" size={20} color="#10B981" />
+            <Text style={s.connectPromptText}>Connect your bank to see live balances</Text>
+            <Ionicons name="chevron-forward" size={16} color="#10B981" />
+          </Pressable>
+        )}
 
         {/* ── ACCOUNTS ── */}
         <View style={s.sectionRow}>
@@ -314,8 +372,90 @@ export function FinanceDashboardScreen({ navigation }: any) {
           );
         })}
 
-        {/* ── FINANCIAL GOALS ── */}
+        {/* ── FINANCIAL HEALTH ── */}
         <View style={s.sectionRow}>
+          <View style={s.sectionLeft}>
+            <View style={s.sectionDot} />
+            <Text style={s.sectionTitle}>Financial Health</Text>
+          </View>
+          <View style={[s.gradeChip, {
+            backgroundColor:
+              fh.grade === 'A' ? '#D5F5E3' : fh.grade === 'B' ? '#D6EAF8' :
+              fh.grade === 'C' ? '#FEF9E7' : fh.grade === 'D' ? '#FDEBD0' : '#FDEDEC',
+          }]}>
+            <Text style={[s.gradeText, {
+              color:
+                fh.grade === 'A' ? '#1E8449' : fh.grade === 'B' ? '#1A5276' :
+                fh.grade === 'C' ? '#9A7D0A' : fh.grade === 'D' ? '#A04000' : '#922B21',
+            }]}>Grade {fh.grade}</Text>
+          </View>
+        </View>
+
+        {/* Score ring + breakdown */}
+        <View style={s.healthCard}>
+          {/* Left: ring */}
+          <View style={s.healthLeft}>
+            <View style={s.healthRingWrap}>
+              <BudgetRing ratio={fh.financial / 100} color={
+                fh.financial >= 75 ? '#27AE60' : fh.financial >= 50 ? '#F5A623' : '#E74C3C'
+              } size={80} />
+              <View style={s.healthRingCenter}>
+                <Text style={[s.healthRingScore, {
+                  color: fh.financial >= 75 ? '#27AE60' : fh.financial >= 50 ? '#F5A623' : '#E74C3C',
+                }]}>{fh.financial}</Text>
+              </View>
+            </View>
+            <Text style={s.healthScoreLabel}>Financial</Text>
+          </View>
+
+          {/* Right: 4 sub-bars */}
+          <View style={s.healthRight}>
+            {[
+              { label: 'Savings Rate',    value: fh.breakdown.savingsRate,      suffix: '%',  good: 20 },
+              { label: 'Budget Control',  value: fh.breakdown.budgetAdherence,  suffix: '%',  good: 80 },
+              { label: 'Bills On Time',   value: fh.breakdown.billsOnTime,      suffix: '%',  good: 90 },
+              { label: 'Goal Progress',   value: fh.breakdown.goalProgress,     suffix: '%',  good: 50 },
+            ].map((item) => {
+              const color = item.value >= item.good ? '#27AE60' : item.value >= item.good * 0.6 ? '#F5A623' : '#E74C3C';
+              return (
+                <View key={item.label} style={s.healthSubRow}>
+                  <Text style={s.healthSubLabel}>{item.label}</Text>
+                  <View style={s.healthSubBar}>
+                    <View style={[s.healthSubFill, { width: `${Math.min(100, item.value)}%`, backgroundColor: color }]} />
+                  </View>
+                  <Text style={[s.healthSubValue, { color }]}>{item.value}{item.suffix}</Text>
+                </View>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Stats strip */}
+        <View style={s.healthStats}>
+          {[
+            { icon: 'warning-outline',        color: fh.breakdown.overdueCount > 0 ? '#E74C3C' : '#27AE60', label: 'Overdue Bills',   value: fh.breakdown.overdueCount.toString() },
+            { icon: 'pie-chart-outline',      color: fh.breakdown.overBudgetCount > 0 ? '#F5A623' : '#27AE60', label: 'Over Budget',  value: fh.breakdown.overBudgetCount.toString() },
+            { icon: 'trending-up-outline',    color: '#2980B9', label: 'Savings Rate',   value: `${fh.breakdown.savingsRate}%` },
+            { icon: 'flag-outline',           color: '#8E44AD', label: 'Goal Progress',  value: `${fh.breakdown.goalProgress}%` },
+          ].map((stat, i) => (
+            <View key={i} style={s.healthStat}>
+              <Ionicons name={stat.icon as any} size={18} color={stat.color} />
+              <Text style={[s.healthStatValue, { color: stat.color }]}>{stat.value}</Text>
+              <Text style={s.healthStatLabel}>{stat.label}</Text>
+            </View>
+          ))}
+        </View>
+
+        {/* Tips */}
+        {fh.tips.slice(0, 2).map((tip, i) => (
+          <View key={i} style={s.tipRow}>
+            <Ionicons name="bulb-outline" size={16} color="#F5A623" style={{ marginTop: 1 }} />
+            <Text style={s.tipText}>{tip}</Text>
+          </View>
+        ))}
+
+        {/* ── FINANCIAL GOALS ── */}
+        <View style={[s.sectionRow, { marginTop: 12 }]}>
           <View style={s.sectionLeft}>
             <View style={s.sectionDot} />
             <Text style={s.sectionTitle}>Financial Goals</Text>
@@ -404,6 +544,14 @@ export function FinanceDashboardScreen({ navigation }: any) {
         </View>
 
       </ScrollView>
+
+      {/* ── RECEIPT SCANNER FAB ── */}
+      <Pressable
+        onPress={() => navigation.navigate('ReceiptScanner')}
+        style={({ pressed }) => [s.fab, pressed && { opacity: 0.85, transform: [{ scale: 0.94 }] }]}
+      >
+        <Ionicons name="camera" size={26} color="#fff" />
+      </Pressable>
 
       {/* ── ADD ACCOUNT MODAL ── */}
       <Modal visible={showAccountModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowAccountModal(false)}>
@@ -496,18 +644,12 @@ const s = StyleSheet.create({
   },
   trendPillText: { fontSize: 12, color: '#34D399', fontWeight: '700' },
   trendAmount: { fontSize: 13, color: 'rgba(255,255,255,0.5)', fontWeight: '500' },
-  headerRight: { alignItems: 'flex-end', gap: 8 },
   urgentPill: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
     backgroundColor: '#EF4444', borderRadius: 20,
     paddingVertical: 5, paddingHorizontal: 10,
   },
   urgentPillText: { fontSize: 11, color: '#fff', fontWeight: '800' },
-  notifBtn: {
-    width: 38, height: 38, borderRadius: 19,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    alignItems: 'center', justifyContent: 'center',
-  },
 
   /* Stats strip */
   statsStrip: {
@@ -526,7 +668,7 @@ const s = StyleSheet.create({
   statLabel: { fontSize: 10, color: 'rgba(255,255,255,0.45)', fontWeight: '600', letterSpacing: 0.3 },
 
   /* Tab pills */
-  tabPills: { flexDirection: 'row', gap: 6, paddingBottom: 0, flexWrap: 'nowrap' },
+  tabPills: { flexGrow: 0 },
   tabPill: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
     paddingVertical: 8, paddingHorizontal: 12,
@@ -551,6 +693,20 @@ const s = StyleSheet.create({
     paddingVertical: 5, paddingHorizontal: 10,
   },
   addBtnText: { fontSize: 13, color: colors.primary, fontWeight: '700' },
+
+  /* ── Plaid bank account cards ── */
+  netWorthSmall: { fontSize: 13, fontWeight: '700', color: colors.primary },
+  plaidScroll: { marginBottom: 16, marginHorizontal: -16 },
+  plaidContent: { paddingHorizontal: 16, gap: 12 },
+  plaidCard: { width: 160, backgroundColor: '#fff', borderRadius: 16, padding: 14, ...SHADOW },
+  plaidCardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  plaidTypeBadge: { backgroundColor: '#EEF2FF', borderRadius: 6, paddingVertical: 2, paddingHorizontal: 6 },
+  plaidTypeBadgeText: { fontSize: 9, fontWeight: '800', color: '#6366F1', letterSpacing: 0.5 },
+  plaidCardName: { fontSize: 13, fontWeight: '700', color: '#1A1A2E', marginBottom: 2 },
+  plaidCardMask: { fontSize: 11, color: '#6B7280', marginBottom: 6 },
+  plaidCardBalance: { fontSize: 18, fontWeight: '900', color: '#1A1A2E' },
+  connectPrompt: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#ECFDF5', borderRadius: 12, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: '#A7F3D0' },
+  connectPromptText: { flex: 1, fontSize: 13, fontWeight: '600', color: '#065F46' },
 
   /* ── Account cards ── */
   cardsScroll: { marginBottom: 26, marginHorizontal: -16 },
@@ -635,6 +791,14 @@ const s = StyleSheet.create({
   txMeta: { fontSize: 11, color: colors.textSecondary },
   txAmount: { fontSize: 15, fontWeight: '800' },
 
+  fab: {
+    position: 'absolute', bottom: 90, right: 20,
+    width: 58, height: 58, borderRadius: 29,
+    backgroundColor: '#8B5CF6', alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#8B5CF6', shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.45, shadowRadius: 14, elevation: 10,
+  },
+
   /* ── Tools ── */
   toolsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 16 },
   toolCard: {
@@ -664,4 +828,40 @@ const s = StyleSheet.create({
   colorRow: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
   colorSwatch: { width: 36, height: 36, borderRadius: 18 },
   colorSwatchSelected: { borderWidth: 3, borderColor: colors.text },
+
+  /* ── Financial Health ── */
+  gradeChip: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20 },
+  gradeText: { fontSize: 12, fontWeight: '800' },
+  healthCard: {
+    flexDirection: 'row', backgroundColor: colors.card,
+    borderRadius: 20, padding: 16, marginBottom: 10,
+    borderWidth: 1, borderColor: colors.border, gap: 16,
+    ...SHADOW,
+  },
+  healthLeft: { alignItems: 'center', gap: 6, width: 80 },
+  healthRingWrap: { position: 'relative', width: 80, height: 80, alignItems: 'center', justifyContent: 'center' },
+  healthRingCenter: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
+  healthRingScore: { fontSize: 22, fontWeight: '900' },
+  healthScoreLabel: { fontSize: 11, fontWeight: '700', color: colors.textMuted, textAlign: 'center' },
+  healthRight: { flex: 1, gap: 8 },
+  healthSubRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  healthSubLabel: { fontSize: 11, color: colors.textSecondary, width: 88 },
+  healthSubBar: { flex: 1, height: 6, borderRadius: 3, backgroundColor: colors.border, overflow: 'hidden' },
+  healthSubFill: { height: 6, borderRadius: 3 },
+  healthSubValue: { fontSize: 11, fontWeight: '700', width: 30, textAlign: 'right' },
+  healthStats: {
+    flexDirection: 'row', backgroundColor: colors.card,
+    borderRadius: 16, padding: 14, marginBottom: 10,
+    borderWidth: 1, borderColor: colors.border, justifyContent: 'space-around',
+    ...SHADOW,
+  },
+  healthStat: { alignItems: 'center', gap: 4 },
+  healthStatValue: { fontSize: 15, fontWeight: '800' },
+  healthStatLabel: { fontSize: 10, color: colors.textMuted, textAlign: 'center' },
+  tipRow: {
+    flexDirection: 'row', gap: 10, alignItems: 'flex-start',
+    backgroundColor: '#FEF9E7', borderRadius: 12, padding: 12,
+    marginBottom: 8, borderWidth: 1, borderColor: '#F9E79F',
+  },
+  tipText: { flex: 1, fontSize: 13, color: '#7D6608', lineHeight: 19 },
 });

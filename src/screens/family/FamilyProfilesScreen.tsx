@@ -30,6 +30,7 @@ import { useTheme } from '../../theme/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { shadows } from '../../theme/spacing';
 import type { FamilyMember, MemberRole } from '../../types';
+import { defaultPermissionsForRole } from '../../types';
 
 const { width } = Dimensions.get('window');
 
@@ -206,6 +207,11 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
       points: 0,
       level: 1,
       isAdmin: false,
+      isLocalProfile: true,
+      linkedUserId: null,
+      isPinProtected: false,
+      permissions: defaultPermissionsForRole(newRole),
+      inviteStatus: 'none',
       createdAt: new Date().toISOString(),
     };
     addMember(member);
@@ -283,6 +289,11 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
       >
         {/* Top row */}
         <View style={dynStyles.headerTop}>
+          {route?.params?.source === 'dashboard' && (
+            <Pressable onPress={() => navigation.getParent()?.navigate('Home')} style={dynStyles.backBtn}>
+              <Ionicons name="arrow-back" size={22} color="#fff" />
+            </Pressable>
+          )}
           <View style={dynStyles.headerLeft}>
             <Text style={dynStyles.headerTitle}>{t('family.title')}</Text>
             <Text style={dynStyles.headerSubtitle}>
@@ -700,6 +711,13 @@ function makeStyles(colors: import('../../theme/ThemeContext').ThemeColors) {
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 20,
+  },
+
+  backBtn: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center', justifyContent: 'center',
+    marginRight: 10,
   },
 
   headerLeft: { flex: 1, minWidth: 0 },

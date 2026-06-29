@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Modal,
-  TextInput, Switch, Alert,
+  TextInput, Switch, Alert, ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { format, differenceInDays } from 'date-fns';
@@ -12,6 +12,8 @@ import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
 import { PremiumHeader } from '../../components/common/PremiumHeader';
 import { useFinanceStore } from '../../store/useFinanceStore';
+import { getDetectedBills } from '../../services/autoFillService';
+import type { DetectedBill } from '../../services/autoFillService';
 import type { Bill } from '../../types';
 
 const statusBadge = { upcoming: 'neutral', due_soon: 'warning', overdue: 'danger', paid: 'success' } as const;
@@ -25,12 +27,18 @@ const CATEGORY_ICONS: Record<string, string> = {
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
-export function BillsScreen({ navigation }: any) {
+export function BillsScreen({ navigation, route }: any) {
   const { colors } = useTheme();
   const [filter, setFilter] = useState('All');
   const [showAddModal, setShowAddModal] = useState(false);
   const { bills, markBillPaid, deleteBill, addBill } = useFinanceStore();
 
+  // Detected bills state
+  const [detectedBills, setDetectedBills] = useState<DetectedBill[]>([]);
+  const [detectedLoading, setDetectedLoading] = useState(false);
+  const [detectedExpanded, setDetectedExpanded] = useState(true);
+
+  // Modal form state
   const [newName, setNewName] = useState('');
   const [newAmount, setNewAmount] = useState('');
   const [newDueDays, setNewDueDays] = useState('14');
@@ -40,6 +48,14 @@ export function BillsScreen({ navigation }: any) {
   const totalDue = bills.filter((b) => b.status !== 'paid').reduce((sum, b) => sum + b.amount, 0);
   const overdueBills = bills.filter((b) => b.status === 'overdue');
   const filtered = filter === 'All' ? bills : bills.filter((b) => b.status === filter.toLowerCase().replace(' ', '_'));
+
+  useEffect(() => {
+    setDetectedLoading(true);
+    getDetectedBills()
+      .then((res) => setDetectedBills(res.bills))
+      .catch(() => {/* silent */ })
+      .finally(() => setDetectedLoading(false));
+  }, []);
 
   const handleAddBill = () => {
     const amount = parseFloat(newAmount);
@@ -65,12 +81,47 @@ export function BillsScreen({ navigation }: any) {
       icon: CATEGORY_ICONS[newCategory] ?? 'receipt',
     };
     addBill(newBill);
+    resetModal();
+    setShowAddModal(false);
+  };
+
+  const resetModal = () => {
     setNewName('');
     setNewAmount('');
     setNewDueDays('14');
     setNewCategory('Utilities');
     setNewIsAutoPay(false);
-    setShowAddModal(false);
+  };
+
+  const handleAddDetectedBill = (detected: DetectedBill) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const dueDate = new Date(detected.nextDueDate).toISOString();
+    const daysUntil = differenceInDays(new Date(detected.nextDueDate), new Date());
+    const status: Bill['status'] = daysUntil < 0 ? 'overdue' : daysUntil <= 5 ? 'due_soon' : 'upcoming';
+    const newBill: Bill = {
+      id: generateId(),
+      familyId: 'family-1',
+      name: detected.merchantName,
+      amount: detected.amount,
+      dueDate,
+      category: detected.category,
+      status,
+      isAutoPay: false,
+      isRecurring: true,
+      recurrence: 'monthly',
+      icon: CATEGORY_ICONS[detected.category] ?? 'receipt',
+    };
+    addBill(newBill);
+    setDetectedBills((prev) => prev.filter((d) => d.merchantName !== detected.merchantName));
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const prefillFromDetected = (detected: DetectedBill) => {
+    setNewName(detected.merchantName);
+    setNewAmount(String(detected.amount));
+    setNewCategory(detected.category);
+    const daysUntil = differenceInDays(new Date(detected.nextDueDate), new Date());
+    setNewDueDays(String(Math.max(0, daysUntil)));
   };
 
   const handleDelete = (id: string, name: string) => {
@@ -86,7 +137,7 @@ export function BillsScreen({ navigation }: any) {
     <View style={s.container}>
       <PremiumHeader
         title="Bills"
-        onBack={() => navigation.goBack()}
+        onBack={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()}
         colors={['#0F2952', '#1E4A8A']}
         rightAction={
           <Pressable onPress={() => setShowAddModal(true)} style={s.addBtn}>
@@ -119,6 +170,44 @@ export function BillsScreen({ navigation }: any) {
       </PremiumHeader>
 
       <ScrollView contentContainerStyle={[s.content, { paddingBottom: 100 }]}>
+        {/* Smart Detection Banner */}
+        {(detectedLoading || detectedBills.length > 0) && (
+          <View style={s.smartBanner}>
+            <Pressable style={s.smartBannerHeader} onPress={() => setDetectedExpanded((v) => !v)}>
+              <View style={s.smartBannerLeft}>
+                <Ionicons name="sparkles" size={16} color="#4A90D9" />
+                <Text style={s.smartBannerTitle}>Smart Detection</Text>
+                {!detectedLoading && (
+                  <View style={s.countBadge}>
+                    <Text style={s.countBadgeText}>{detectedBills.length}</Text>
+                  </View>
+                )}
+              </View>
+              {detectedLoading
+                ? <ActivityIndicator size="small" color="#4A90D9" />
+                : <Ionicons name={detectedExpanded ? 'chevron-up' : 'chevron-down'} size={16} color="#4A90D9" />}
+            </Pressable>
+            {detectedExpanded && !detectedLoading && detectedBills.map((d) => (
+              <View key={d.merchantName} style={s.detectedRow}>
+                <View style={s.detectedIcon}>
+                  <Ionicons name={(CATEGORY_ICONS[d.category] ?? 'receipt') as any} size={18} color="#4A90D9" />
+                </View>
+                <View style={{ flex: 1, marginLeft: 10 }}>
+                  <Text style={s.detectedName}>{d.merchantName}</Text>
+                  <Text style={s.detectedMeta}>
+                    Due {d.nextDueDate} · {d.category}
+                  </Text>
+                </View>
+                <Text style={s.detectedAmount}>${d.amount.toFixed(2)}</Text>
+                <Pressable style={s.addDetectedBtn} onPress={() => handleAddDetectedBill(d)}>
+                  <Ionicons name="add" size={14} color="#fff" />
+                  <Text style={s.addDetectedBtnText}>Add</Text>
+                </Pressable>
+              </View>
+            ))}
+          </View>
+        )}
+
         {overdueBills.length > 0 && filter === 'All' && (
           <View style={s.overdueAlert}>
             <Ionicons name="warning" size={20} color={colors.danger} />
@@ -185,13 +274,30 @@ export function BillsScreen({ navigation }: any) {
       {/* Add Bill Modal */}
       <Modal visible={showAddModal} transparent animationType="slide">
         <View style={s.modalOverlay}>
-          <View style={s.modalSheet}>
+          <ScrollView style={s.modalSheet} contentContainerStyle={{ paddingBottom: 40 }}>
             <View style={s.modalHeader}>
               <Text style={s.modalTitle}>Add Bill</Text>
-              <Pressable onPress={() => setShowAddModal(false)}>
+              <Pressable onPress={() => { resetModal(); setShowAddModal(false); }}>
                 <Ionicons name="close" size={24} color={colors.text} />
               </Pressable>
             </View>
+
+            {/* Import from detected section */}
+            {detectedBills.length > 0 && (
+              <View style={s.importSection}>
+                <Text style={s.importSectionTitle}>
+                  <Ionicons name="sparkles" size={13} color="#4A90D9" /> Import from detected
+                </Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }}>
+                  {detectedBills.map((d) => (
+                    <Pressable key={d.merchantName} style={s.importChip} onPress={() => prefillFromDetected(d)}>
+                      <Text style={s.importChipName}>{d.merchantName}</Text>
+                      <Text style={s.importChipAmount}>${d.amount.toFixed(2)}</Text>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
 
             <Text style={s.modalLabel}>Bill Name</Text>
             <TextInput
@@ -256,7 +362,7 @@ export function BillsScreen({ navigation }: any) {
               <Ionicons name="add-circle" size={18} color="#fff" />
               <Text style={s.modalSubmitText}>Add Bill</Text>
             </Pressable>
-          </View>
+          </ScrollView>
         </View>
       </Modal>
     </View>
@@ -278,6 +384,20 @@ function makeStyles(colors: any) {
     filterText: { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.7)' },
     filterTextActive: { color: colors.primary },
     content: { padding: 16 },
+    // Smart Detection banner
+    smartBanner: { backgroundColor: '#EBF3FD', borderRadius: 14, marginBottom: 16, borderLeftWidth: 3, borderLeftColor: '#4A90D9', overflow: 'hidden' },
+    smartBannerHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 14 },
+    smartBannerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    smartBannerTitle: { fontSize: 13, fontWeight: '700', color: '#4A90D9' },
+    countBadge: { backgroundColor: '#4A90D9', borderRadius: 10, paddingHorizontal: 7, paddingVertical: 2 },
+    countBadgeText: { fontSize: 11, fontWeight: '800', color: '#fff' },
+    detectedRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingBottom: 12, gap: 0 },
+    detectedIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#D6E8F9', alignItems: 'center', justifyContent: 'center' },
+    detectedName: { fontSize: 14, fontWeight: '700', color: colors.text },
+    detectedMeta: { fontSize: 11, color: colors.textSecondary, marginTop: 1 },
+    detectedAmount: { fontSize: 15, fontWeight: '800', color: colors.text, marginRight: 10, marginLeft: 8 },
+    addDetectedBtn: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#4A90D9', borderRadius: 8, paddingVertical: 6, paddingHorizontal: 10 },
+    addDetectedBtnText: { fontSize: 12, fontWeight: '700', color: '#fff' },
     overdueAlert: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.dangerLight, borderRadius: 12, padding: 14, marginBottom: 16 },
     overdueAlertText: { flex: 1, fontSize: 13, color: colors.danger, fontWeight: '600' },
     billCard: { marginBottom: 12, borderRadius: 16 },
@@ -294,9 +414,15 @@ function makeStyles(colors: any) {
     emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginTop: 14 },
     emptyDesc: { fontSize: 13, color: colors.textSecondary, marginTop: 6 },
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-    modalSheet: { backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 },
+    modalSheet: { backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '90%' },
     modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
     modalTitle: { fontSize: 20, fontWeight: '800', color: colors.text },
+    // Import section
+    importSection: { backgroundColor: '#EBF3FD', borderRadius: 12, padding: 12, marginBottom: 16, borderLeftWidth: 3, borderLeftColor: '#4A90D9' },
+    importSectionTitle: { fontSize: 12, fontWeight: '700', color: '#4A90D9' },
+    importChip: { borderRadius: 10, borderWidth: 1.5, borderColor: '#4A90D9', paddingVertical: 8, paddingHorizontal: 12, marginRight: 8, backgroundColor: '#fff', alignItems: 'center' },
+    importChipName: { fontSize: 12, fontWeight: '700', color: colors.text },
+    importChipAmount: { fontSize: 11, color: '#4A90D9', fontWeight: '600', marginTop: 2 },
     modalLabel: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
     modalInput: { borderWidth: 1.5, borderColor: colors.border, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, fontSize: 15, color: colors.text, marginBottom: 16 },
     catChip: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1.5, borderColor: colors.border, borderRadius: 20, paddingVertical: 6, paddingHorizontal: 12, marginRight: 8 },

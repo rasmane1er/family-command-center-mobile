@@ -1,7 +1,7 @@
 import { createMMKV } from 'react-native-mmkv';
 import type { StateStorage } from 'zustand/middleware';
 
-const storage = createMMKV({
+export const storage = createMMKV({
   id: 'family-command-center-storage',
 });
 

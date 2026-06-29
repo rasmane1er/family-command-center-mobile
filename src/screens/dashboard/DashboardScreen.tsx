@@ -17,6 +17,7 @@ import Svg, { Circle, Defs, LinearGradient as SvgGradient, Stop } from 'react-na
 
 import { useTranslation } from 'react-i18next';
 import { useJoinRequestsStore } from '../../store/useJoinRequestsStore';
+import { useFinancialHealth } from '../../hooks/useFinancialHealth';
 import { Avatar } from '../../components/common/Avatar';
 import { Card } from '../../components/common/Card';
 import { ProgressBar } from '../../components/common/ProgressBar';
@@ -88,21 +89,16 @@ export function DashboardScreen({ navigation }: any) {
   const isChild = activeMember?.role === 'child';
   const isGrandparent = activeMember?.role === 'grandparent';
 
-  const healthScore = useAppStore((s) => s.healthScore);
+  const healthScore = useFinancialHealth();
   const { monthlyIncome, monthlyExpenses, monthlySavings, bills } = useFinanceStore();
 
   const insights = useAIStore((s) => s.insights);
   const notifications = useNotificationsStore((s) => s.notifications);
-  const seedNotifications = useNotificationsStore((s) => s.seedDemoData);
   const joinRequests = useJoinRequestsStore((s) => s.requests);
 
   const pendingJoinRequestsCount = joinRequests.filter(
     (request) => request.status === 'pending'
   ).length;
-
-  useEffect(() => {
-    if (notifications.length === 0) seedNotifications();
-  }, [notifications.length, seedNotifications]);
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -253,12 +249,14 @@ export function DashboardScreen({ navigation }: any) {
         route: 'Bills',
       },
       {
-        icon: 'trending-up',
+        icon: monthlySavings < 0 ? 'trending-down' : 'trending-up',
         label: 'Monthly Savings',
-        value: `$${monthlySavings.toFixed(0)}`,
-        color: '#27AE60',
-        bg: '#D5F5E3',
-        urgent: false,
+        value: monthlySavings === 0 && monthlyIncome === 0
+          ? 'No data'
+          : `$${Math.abs(monthlySavings).toLocaleString('en-US', { maximumFractionDigits: 0 })}`,
+        color: monthlySavings < 0 ? colors.danger : '#27AE60',
+        bg: monthlySavings < 0 ? colors.dangerLight : '#D5F5E3',
+        urgent: monthlySavings < 0,
         route: 'Budgeting',
       },
     ];
@@ -274,6 +272,7 @@ export function DashboardScreen({ navigation }: any) {
     overdueTasks,
     overdueBills,
     monthlySavings,
+    monthlyIncome,
   ]);
 
   const roleActions = useMemo(() => {
@@ -310,20 +309,21 @@ export function DashboardScreen({ navigation }: any) {
   const openMemberDetails = (memberId: string) => {
     navigation.navigate('Family', {
       screen: 'MemberDetails',
-      params: { memberId },
+      params: { memberId, source: 'dashboard' },
     });
   };
 
   const openInviteMember = () => {
     navigation.navigate('Family', {
       screen: 'FamilyProfiles',
-      params: { openInviteOptions: true },
+      params: { openInviteOptions: true, source: 'dashboard' },
     });
   };
 
   const openFamilyMembers = () => {
     navigation.navigate('Family', {
       screen: 'FamilyProfiles',
+      params: { source: 'dashboard' },
     });
   };
 
@@ -340,11 +340,11 @@ export function DashboardScreen({ navigation }: any) {
       return;
     }
     if (route === 'Bills') {
-      navigation.navigate('Finance', { screen: 'Bills' } as any);
+      navigation.navigate('Finance', { screen: 'Bills', params: { source: 'dashboard' } } as any);
       return;
     }
     if (route === 'Budgeting') {
-      navigation.navigate('Finance', { screen: 'Budgeting' } as any);
+      navigation.navigate('Finance', { screen: 'Budgeting', params: { source: 'dashboard' } } as any);
       return;
     }
 
@@ -414,6 +414,7 @@ export function DashboardScreen({ navigation }: any) {
                     onPress={() =>
                       navigation.navigate('Family', {
                         screen: 'ProfileSwitcher',
+                        params: { source: 'dashboard' },
                       })
                     }
                   >
@@ -484,8 +485,12 @@ export function DashboardScreen({ navigation }: any) {
                 </View>
                 <Text style={dynStyles.healthScoreLabel}>HEALTH SCORE</Text>
                 <View style={dynStyles.healthScoreTrend}>
-                  <Ionicons name="trending-up" size={13} color={colors.success} />
-                  <Text style={dynStyles.healthScoreTrendText}>+4 pts</Text>
+                  <Text style={[dynStyles.healthScoreTrendText, {
+                    color: healthScore.grade === 'A' ? colors.success :
+                           healthScore.grade === 'B' ? '#27AE60' :
+                           healthScore.grade === 'C' ? '#F5A623' :
+                           healthScore.grade === 'D' ? '#E67E22' : '#E74C3C',
+                  }]}>Grade {healthScore.grade}</Text>
                 </View>
               </View>
 
@@ -719,14 +724,14 @@ export function DashboardScreen({ navigation }: any) {
 
           <View style={dynStyles.sectionHeader}>
             <Text style={dynStyles.sectionTitle}>{isChild ? 'My Schedule' : "Today's Schedule"}</Text>
-            <Pressable onPress={() => navigation.navigate('Family', { screen: 'Calendar' })}>
+            <Pressable onPress={() => navigation.navigate('Family', { screen: 'Calendar', params: { source: 'dashboard' } })}>
               <Text style={dynStyles.seeAll}>Calendar</Text>
             </Pressable>
           </View>
 
           {todayEvents.length > 0 ? (
             todayEvents.slice(0, 3).map((event) => (
-              <Card key={event.id} style={dynStyles.eventCard} onPress={() => navigation.navigate('Family', { screen: 'Calendar' })} variant="elevated" padding={0}>
+              <Card key={event.id} style={dynStyles.eventCard} onPress={() => navigation.navigate('Family', { screen: 'Calendar', params: { source: 'dashboard' } })} variant="elevated" padding={0}>
                 <View style={dynStyles.eventRow}>
                   <View style={[dynStyles.eventColorStrip, { backgroundColor: event.color ?? colors.primary }]} />
                   <View style={{ flex: 1, paddingVertical: 14, paddingLeft: 14 }}>
@@ -768,7 +773,7 @@ export function DashboardScreen({ navigation }: any) {
               </Card>
             ))
           ) : (
-            <Card style={dynStyles.emptyCard} padding={20} onPress={() => navigation.navigate('Family', { screen: 'Calendar' })}>
+            <Card style={dynStyles.emptyCard} padding={20} onPress={() => navigation.navigate('Family', { screen: 'Calendar', params: { source: 'dashboard' } })}>
               <Ionicons name="calendar-outline" size={32} color={colors.textMuted} />
               <Text style={dynStyles.emptyText}>No events today — enjoy the free time!</Text>
               <Text style={dynStyles.emptyAction}>Add Event →</Text>

@@ -2,13 +2,16 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { usePermissions } from '../../hooks/usePermissions';
 import { colors } from '../../theme/colors';
+import type { MemberPermissions } from '../../types';
 
 interface RoleGuardProps {
   children: React.ReactNode;
   allowParent?: boolean;
   allowChild?: boolean;
   allowGrandparent?: boolean;
+  permission?: keyof MemberPermissions;
   title?: string;
   message?: string;
 }
@@ -18,26 +21,36 @@ export function RoleGuard({
   allowParent = false,
   allowChild = false,
   allowGrandparent = false,
+  permission,
   title = 'Access Restricted',
   message = 'This section is not available for the active profile.',
 }: RoleGuardProps) {
   const members = useFamilyStore((s) => s.members);
   const activeMemberId = useFamilyStore((s) => s.activeMemberId);
+  const perms = usePermissions();
 
   const activeMember = members.find((member) => member.id === activeMemberId);
 
-  const isParent =
-    activeMember?.role === 'parent' ||
-    activeMember?.role === 'guardian' ||
-    activeMember?.isAdmin === true;
+  let allowed: boolean;
 
-  const isChild = activeMember?.role === 'child';
-  const isGrandparent = activeMember?.role === 'grandparent';
+  if (permission !== undefined) {
+    // Permission-based check
+    allowed = perms[permission] === true;
+  } else {
+    // Legacy role-based check
+    const isParent =
+      activeMember?.role === 'parent' ||
+      activeMember?.role === 'guardian' ||
+      activeMember?.isAdmin === true;
 
-  const allowed =
-    (allowParent && isParent) ||
-    (allowChild && isChild) ||
-    (allowGrandparent && isGrandparent);
+    const isChild = activeMember?.role === 'child';
+    const isGrandparent = activeMember?.role === 'grandparent';
+
+    allowed =
+      (allowParent && isParent) ||
+      (allowChild && isChild) ||
+      (allowGrandparent && isGrandparent);
+  }
 
   if (!allowed) {
     return (

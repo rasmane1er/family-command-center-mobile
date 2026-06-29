@@ -27,7 +27,7 @@ export function NotificationsScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
 
-  const { notifications, markRead, markAllRead, deleteNotification } =
+  const { notifications, markRead, markAllRead, deleteNotification, clearAll } =
     useNotificationsStore();
 
   const activeMemberId = useFamilyStore((s) => s.activeMemberId);
@@ -91,12 +91,32 @@ export function NotificationsScreen({ navigation }: any) {
             {unreadCount > 0 && <Text style={styles.headerSub}>{unreadCount} unread</Text>}
           </View>
 
-          {unreadCount > 0 && (
-            <Pressable onPress={markAllRead} style={styles.markAllBtn}>
-              <Ionicons name="checkmark-done" size={18} color="#fff" />
-              <Text style={styles.markAllText}>All read</Text>
-            </Pressable>
-          )}
+          <View style={styles.headerActions}>
+            {unreadCount > 0 && (
+              <Pressable onPress={markAllRead} style={styles.headerActionBtn}>
+                <Ionicons name="checkmark-done" size={16} color="#fff" />
+                <Text style={styles.headerActionText}>Mark all read</Text>
+              </Pressable>
+            )}
+            {roleNotifications.length > 0 && (
+              <Pressable
+                onPress={() =>
+                  Alert.alert(
+                    'Clear All Notifications',
+                    'This will permanently remove all notifications. This cannot be undone.',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      { text: 'Clear All', style: 'destructive', onPress: clearAll },
+                    ]
+                  )
+                }
+                style={[styles.headerActionBtn, styles.clearBtn]}
+              >
+                <Ionicons name="trash-outline" size={16} color="#FF6B6B" />
+                <Text style={[styles.headerActionText, { color: '#FF6B6B' }]}>Clear all</Text>
+              </Pressable>
+            )}
+          </View>
         </View>
 
         <View style={styles.filterRow}>
@@ -192,7 +212,9 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 22, fontWeight: '800', color: '#fff' },
   headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
 
-  markAllBtn: {
+  headerActions: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+
+  headerActionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
@@ -202,7 +224,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
 
-  markAllText: { fontSize: 12, color: '#fff', fontWeight: '600' },
+  clearBtn: { backgroundColor: 'rgba(255,107,107,0.15)' },
+
+  headerActionText: { fontSize: 12, color: '#fff', fontWeight: '600' },
 
   filterRow: { flexDirection: 'row', gap: 8 },
 

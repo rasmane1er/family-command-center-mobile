@@ -2,6 +2,7 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { RoleGuard } from '../components/auth/RoleGuard';
 import { ProfileSwitcherScreen } from '../screens/family/ProfileSwitcherScreen';
+import { AddMemberScreen } from '../screens/family/AddMemberScreen';
 import { JoinFamilyScreen } from '../screens/family/JoinFamilyScreen';
 import { JoinRequestsScreen } from '../screens/family/JoinRequestsScreen';
 import { FamilyInviteQRScreen } from '../screens/family/FamilyInviteQRScreen';
@@ -48,6 +49,7 @@ export function FamilyNavigator() {
       {/* Shared family core */}
       <Stack.Screen name="FamilyProfiles" component={FamilyProfilesScreen} />
       <Stack.Screen name="ProfileSwitcher" component={ProfileSwitcherScreen} />
+      <Stack.Screen name="AddMember" component={AddMemberScreen} />
       <Stack.Screen name="MemberDetails" component={MemberDetailsScreen} />
       <Stack.Screen name="Calendar" component={CalendarScreen} />
       <Stack.Screen name="FamilyBoard" component={FamilyBoardScreen} />

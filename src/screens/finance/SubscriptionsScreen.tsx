@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Modal, TextInput, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, Modal, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -14,6 +14,8 @@ import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { getDetectedSubscriptions, confirmSubscription } from '../../services/subscriptionDetectionService';
+import type { DetectedSubscription } from '../../services/subscriptionDetectionService';
 import type { Subscription } from '../../types';
 
 const SUB_CATEGORIES = ['Entertainment', 'Music', 'Software', 'News', 'Fitness', 'Education', 'Gaming', 'Other'];
@@ -44,6 +46,30 @@ export function SubscriptionsScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const { subscriptions, addSubscription, deleteSubscription, updateSubscription } = useFinanceStore();
   const members = useFamilyStore((s) => s.members);
+
+  const [detected, setDetected] = useState<DetectedSubscription[]>([]);
+  const [loadingDetected, setLoadingDetected] = useState(true);
+  const [dismissedMerchants, setDismissedMerchants] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    getDetectedSubscriptions()
+      .then((res) => setDetected(res.subscriptions))
+      .catch(() => setDetected([]))
+      .finally(() => setLoadingDetected(false));
+  }, []);
+
+  const visibleDetected = detected.filter((d) => !dismissedMerchants.has(d.merchantName));
+
+  const handleConfirmDetected = (d: DetectedSubscription) => {
+    confirmSubscription(d);
+    setDismissedMerchants((prev) => new Set([...prev, d.merchantName]));
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const handleDismissDetected = (merchantName: string) => {
+    setDismissedMerchants((prev) => new Set([...prev, merchantName]));
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
 
   const [showModal, setShowModal] = useState(false);
   const [newName, setNewName] = useState('');
@@ -130,6 +156,69 @@ export function SubscriptionsScreen({ navigation }: any) {
       </LinearGradient>
 
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
+
+        {(loadingDetected || visibleDetected.length > 0) && (
+          <View style={styles.detectedSection}>
+            <View style={styles.detectedHeader}>
+              <View style={styles.detectedTitleRow}>
+                <Ionicons name="flash" size={16} color="#8B5CF6" />
+                <Text style={styles.detectedTitle}>Smart Detection</Text>
+                {visibleDetected.length > 0 && (
+                  <View style={styles.detectedBadge}>
+                    <Text style={styles.detectedBadgeText}>{visibleDetected.length}</Text>
+                  </View>
+                )}
+              </View>
+              <Text style={styles.detectedSubtitle}>Recurring charges found in your transactions</Text>
+            </View>
+
+            {loadingDetected ? (
+              <View style={styles.detectedLoading}>
+                <ActivityIndicator size="small" color="#8B5CF6" />
+                <Text style={styles.detectedLoadingText}>Analyzing transactions…</Text>
+              </View>
+            ) : visibleDetected.length === 0 ? (
+              <View style={styles.detectedEmpty}>
+                <Ionicons name="checkmark-circle" size={32} color="#27AE60" />
+                <Text style={styles.detectedEmptyText}>All caught up!</Text>
+              </View>
+            ) : (
+              visibleDetected.map((d) => (
+                <View key={d.merchantName} style={styles.detectedCard}>
+                  <View style={styles.detectedCardLeft}>
+                    <View style={styles.detectedIconWrap}>
+                      <Ionicons name="repeat" size={20} color="#8B5CF6" />
+                    </View>
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                      <Text style={styles.detectedMerchant}>{d.merchantName}</Text>
+                      <Text style={styles.detectedMeta}>{d.occurrences} charges found · next {d.nextExpectedDate}</Text>
+                      <View style={styles.detectedFreqRow}>
+                        <View style={styles.detectedFreqBadge}>
+                          <Text style={styles.detectedFreqText}>{d.frequency}</Text>
+                        </View>
+                        <Text style={styles.detectedCategory}>{d.category}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.detectedRight}>
+                      <Text style={styles.detectedAmount}>${d.amount.toFixed(2)}</Text>
+                      <Text style={styles.detectedAmountLabel}>/{d.frequency === 'monthly' ? 'mo' : d.frequency === 'weekly' ? 'wk' : 'qtr'}</Text>
+                    </View>
+                  </View>
+                  <View style={styles.detectedActions}>
+                    <Pressable onPress={() => handleDismissDetected(d.merchantName)} style={styles.detectedDismiss}>
+                      <Ionicons name="close" size={18} color={colors.textMuted} />
+                    </Pressable>
+                    <Pressable onPress={() => handleConfirmDetected(d)} style={styles.detectedAddBtn}>
+                      <Ionicons name="add" size={16} color="#fff" />
+                      <Text style={styles.detectedAddText}>Add</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ))
+            )}
+          </View>
+        )}
+
         <View style={styles.aiInsight}>
           <Ionicons name="bulb" size={18} color={colors.secondary} />
           <Text style={styles.aiInsightText}>
@@ -302,4 +391,32 @@ const styles = StyleSheet.create({
   memberChip: { alignItems: 'center', marginRight: 12, padding: 10, borderRadius: 12, borderWidth: 1.5, borderColor: 'transparent', gap: 4 },
   memberChipActive: { borderColor: '#9B59B6', backgroundColor: '#F3E5F5' },
   memberChipName: { fontSize: 11, color: colors.textSecondary, fontWeight: '600' },
+
+  detectedSection: { backgroundColor: '#F5F3FF', borderRadius: 16, padding: 14, marginBottom: 20, borderWidth: 1, borderColor: '#DDD6FE' },
+  detectedHeader: { marginBottom: 12 },
+  detectedTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
+  detectedTitle: { fontSize: 15, fontWeight: '800', color: '#5B21B6' },
+  detectedBadge: { backgroundColor: '#8B5CF6', borderRadius: 10, minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
+  detectedBadgeText: { fontSize: 11, fontWeight: '800', color: '#fff' },
+  detectedSubtitle: { fontSize: 12, color: '#6D28D9' },
+  detectedLoading: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12 },
+  detectedLoadingText: { fontSize: 13, color: '#6D28D9' },
+  detectedEmpty: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 },
+  detectedEmptyText: { fontSize: 14, fontWeight: '600', color: '#27AE60' },
+  detectedCard: { backgroundColor: '#fff', borderRadius: 12, padding: 12, marginBottom: 8, ...shadows.sm },
+  detectedCardLeft: { flexDirection: 'row', alignItems: 'flex-start' },
+  detectedIconWrap: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#EDE9FE', alignItems: 'center', justifyContent: 'center' },
+  detectedMerchant: { fontSize: 15, fontWeight: '700', color: colors.text, marginBottom: 2 },
+  detectedMeta: { fontSize: 11, color: colors.textMuted, marginBottom: 5 },
+  detectedFreqRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  detectedFreqBadge: { backgroundColor: '#EDE9FE', borderRadius: 6, paddingVertical: 2, paddingHorizontal: 7 },
+  detectedFreqText: { fontSize: 10, fontWeight: '700', color: '#7C3AED' },
+  detectedCategory: { fontSize: 11, color: colors.textSecondary },
+  detectedRight: { alignItems: 'flex-end', marginLeft: 8 },
+  detectedAmount: { fontSize: 17, fontWeight: '800', color: colors.text },
+  detectedAmountLabel: { fontSize: 11, color: colors.textSecondary },
+  detectedActions: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 8, marginTop: 10 },
+  detectedDismiss: { width: 32, height: 32, borderRadius: 8, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
+  detectedAddBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#8B5CF6', borderRadius: 10, paddingVertical: 7, paddingHorizontal: 14 },
+  detectedAddText: { fontSize: 13, fontWeight: '700', color: '#fff' },
 });

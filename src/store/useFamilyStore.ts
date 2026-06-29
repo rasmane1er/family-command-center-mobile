@@ -3,6 +3,7 @@ import { mmkvStorage } from '../storage/mmkvStorage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import type { Family, FamilyMember, Task, CalendarEvent, Goal, Reward, Achievement } from '../types';
+import { defaultPermissionsForRole } from '../types';
 import { colors } from '../theme/colors';
 
 interface FamilyState {
@@ -17,6 +18,7 @@ interface FamilyState {
 
   setFamily: (f: Family) => void;
   addMember: (m: FamilyMember) => void;
+  addLocalProfile: (m: FamilyMember) => void;
   updateMember: (id: string, updates: Partial<FamilyMember>) => void;
   removeMember: (id: string) => void;
   setActiveMember: (id: string | null) => void;
@@ -56,15 +58,22 @@ export const useFamilyStore = create<FamilyState>()(
   activeMemberId: null,
 
   setFamily: (f) => set({ family: f }),
- addMember: (m) => {
-  set((s) => ({ members: [...s.members, m] }));
-
-  enqueueSync({
-    entity: 'family',
-    action: 'create',
-    payload: { type: 'member', data: m },
-  });
-},
+  addMember: (m) => {
+    set((s) => ({ members: [...s.members, m] }));
+    enqueueSync({
+      entity: 'family',
+      action: 'create',
+      payload: { type: 'member', data: m },
+    });
+  },
+  addLocalProfile: (m) => {
+    set((s) => ({ members: [...s.members, m] }));
+    enqueueSync({
+      entity: 'family',
+      action: 'create',
+      payload: { type: 'member', data: m },
+    });
+  },
   updateMember: (id, updates) =>
     set((s) => ({ members: s.members.map((m) => (m.id === id ? { ...m, ...updates } : m)) })),
   removeMember: (id) => set((s) => ({ members: s.members.filter((m) => m.id !== id) })),
@@ -175,6 +184,11 @@ export const useFamilyStore = create<FamilyState>()(
         level: 12,
         isAdmin: true,
         createdAt: now,
+        isLocalProfile: false,
+        linkedUserId: 'demo-user-1',
+        isPinProtected: false,
+        permissions: defaultPermissionsForRole('parent'),
+        inviteStatus: 'accepted',
       },
       {
         id: 'member-2',
@@ -190,6 +204,11 @@ export const useFamilyStore = create<FamilyState>()(
         level: 14,
         isAdmin: true,
         createdAt: now,
+        isLocalProfile: false,
+        linkedUserId: 'demo-user-2',
+        isPinProtected: false,
+        permissions: defaultPermissionsForRole('parent'),
+        inviteStatus: 'accepted',
       },
       {
         id: 'member-3',
@@ -203,6 +222,11 @@ export const useFamilyStore = create<FamilyState>()(
         level: 8,
         isAdmin: false,
         createdAt: now,
+        isLocalProfile: true,
+        linkedUserId: null,
+        isPinProtected: false,
+        permissions: defaultPermissionsForRole('child'),
+        inviteStatus: 'accepted',
       },
       {
         id: 'member-4',
@@ -216,6 +240,11 @@ export const useFamilyStore = create<FamilyState>()(
         level: 4,
         isAdmin: false,
         createdAt: now,
+        isLocalProfile: true,
+        linkedUserId: null,
+        isPinProtected: false,
+        permissions: defaultPermissionsForRole('child'),
+        inviteStatus: 'accepted',
       },
     ];
 

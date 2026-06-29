@@ -7,6 +7,8 @@ export interface AuthUser {
   id: string;
   email: string;
   displayName: string;
+  firstName?: string;
+  lastName?: string;
   phone?: string;
   dateOfBirth?: string;
   gender?: 'male' | 'female' | 'non_binary' | 'prefer_not';
@@ -18,7 +20,10 @@ export interface AuthUser {
   familyMotto?: string;
   familyRole?: 'parent' | 'co_parent' | 'single_parent' | 'guardian' | 'other';
   numberOfChildren?: number;
+  streetAddress?: string;
   city?: string;
+  state?: string;
+  zipCode?: string;
   emergencyContactName?: string;
   emergencyContactPhone?: string;
   provider: 'email' | 'apple' | 'google';
@@ -39,6 +44,8 @@ interface AuthState {
 
 export interface SignUpData {
   displayName: string;
+  firstName: string;
+  lastName: string;
   email: string;
   password: string;
   phone?: string;
@@ -52,7 +59,10 @@ export interface SignUpData {
   familyMotto?: string;
   familyRole?: AuthUser['familyRole'];
   numberOfChildren?: number;
+  streetAddress?: string;
   city?: string;
+  state?: string;
+  zipCode?: string;
   emergencyContactName?: string;
   emergencyContactPhone?: string;
 }
@@ -108,6 +118,8 @@ export const useAuthStore = create<AuthState>()(
           id: Math.random().toString(36).substring(2),
           email: normalizedEmail,
           displayName: data.displayName.trim(),
+          firstName: data.firstName.trim(),
+          lastName: data.lastName.trim(),
           phone: data.phone,
           dateOfBirth: data.dateOfBirth,
           gender: data.gender,
@@ -119,7 +131,10 @@ export const useAuthStore = create<AuthState>()(
           familyMotto: data.familyMotto,
           familyRole: data.familyRole ?? 'parent',
           numberOfChildren: data.numberOfChildren,
+          streetAddress: data.streetAddress,
           city: data.city,
+          state: data.state,
+          zipCode: data.zipCode,
           emergencyContactName: data.emergencyContactName,
           emergencyContactPhone: data.emergencyContactPhone,
           provider: 'email',

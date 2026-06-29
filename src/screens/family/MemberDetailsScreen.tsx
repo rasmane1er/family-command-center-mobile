@@ -48,7 +48,7 @@ export function MemberDetailsScreen({ route, navigation: navProp }: any) {
         colors={[member.avatarColor + 'DD', member.avatarColor + '99', colors.background]}
         style={[styles.header, { paddingTop: insets.top + 8 }]}
       >
-        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Pressable onPress={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </Pressable>
 

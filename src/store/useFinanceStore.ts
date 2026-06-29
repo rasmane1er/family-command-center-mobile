@@ -2,7 +2,7 @@ import { enqueueSync } from '../sync/enqueueSync';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { mmkvStorage } from '../storage/mmkvStorage';
-import type { Transaction, Budget, Bill, Subscription, FinancialAccount, FinancialGoal } from '../types';
+import type { Transaction, Budget, Bill, Subscription, FinancialAccount, FinancialGoal, Debt } from '../types';
 
 interface FinanceState {
   accounts: FinancialAccount[];
@@ -11,6 +11,7 @@ interface FinanceState {
   bills: Bill[];
   subscriptions: Subscription[];
   financialGoals: FinancialGoal[];
+  debts: Debt[];
   totalNetWorth: number;
   monthlyIncome: number;
   monthlyExpenses: number;
@@ -32,10 +33,24 @@ interface FinanceState {
   deleteSubscription: (id: string) => void;
   addFinancialGoal: (g: FinancialGoal) => void;
   updateFinancialGoal: (id: string, updates: Partial<FinancialGoal>) => void;
+  addDebt: (d: Omit<Debt, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  updateDebt: (id: string, updates: Partial<Debt>) => void;
+  removeDebt: (id: string) => void;
+  recordPayment: (debtId: string, amount: number, date: string) => void;
   seedDemoData: () => void;
 }
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
+
+function calcDerived(
+  accounts: FinancialAccount[],
+  transactions: Transaction[],
+) {
+  const totalNetWorth = accounts.reduce((sum, a) => sum + a.balance, 0);
+  const monthlyIncome = transactions.filter((t) => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+  const monthlyExpenses = transactions.filter((t) => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+  return { totalNetWorth, monthlyIncome, monthlyExpenses, monthlySavings: monthlyIncome - monthlyExpenses };
+}
 
 export const useFinanceStore = create<FinanceState>()(
   persist(
@@ -46,32 +61,34 @@ export const useFinanceStore = create<FinanceState>()(
   bills: [],
   subscriptions: [],
   financialGoals: [],
+  debts: [],
   totalNetWorth: 0,
   monthlyIncome: 0,
   monthlyExpenses: 0,
   monthlySavings: 0,
 
-  addAccount: (a) => set((s) => ({ accounts: [...s.accounts, a] })),
-  updateAccount: (id, updates) =>
-    set((s) => ({ accounts: s.accounts.map((a) => (a.id === id ? { ...a, ...updates } : a)) })),
+  addAccount: (a) => set((s) => {
+    const accounts = [...s.accounts, a];
+    return { accounts, ...calcDerived(accounts, s.transactions) };
+  }),
+  updateAccount: (id, updates) => set((s) => {
+    const accounts = s.accounts.map((a) => (a.id === id ? { ...a, ...updates } : a));
+    return { accounts, ...calcDerived(accounts, s.transactions) };
+  }),
   addTransaction: (t) => {
-  set((s) => ({ transactions: [t, ...s.transactions] }));
-
-  enqueueSync({
-    entity: 'finance',
-    action: 'create',
-    payload: { type: 'transaction', data: t },
-  });
-},
+    set((s) => {
+      const transactions = [t, ...s.transactions];
+      return { transactions, ...calcDerived(s.accounts, transactions) };
+    });
+    enqueueSync({ entity: 'finance', action: 'create', payload: { type: 'transaction', data: t } });
+  },
   deleteTransaction: (id) => {
-  set((s) => ({ transactions: s.transactions.filter((t) => t.id !== id) }));
-
-  enqueueSync({
-    entity: 'finance',
-    action: 'delete',
-    payload: { type: 'transaction', id },
-  });
-},
+    set((s) => {
+      const transactions = s.transactions.filter((tx) => tx.id !== id);
+      return { transactions, ...calcDerived(s.accounts, transactions) };
+    });
+    enqueueSync({ entity: 'finance', action: 'delete', payload: { type: 'transaction', id } });
+  },
   addBudget: (b) => set((s) => ({ budgets: [...s.budgets, b] })),
   updateBudget: (id, updates) =>
     set((s) => ({ budgets: s.budgets.map((b) => (b.id === id ? { ...b, ...updates } : b)) })),
@@ -106,6 +123,33 @@ export const useFinanceStore = create<FinanceState>()(
   addFinancialGoal: (g) => set((s) => ({ financialGoals: [...s.financialGoals, g] })),
   updateFinancialGoal: (id, updates) =>
     set((s) => ({ financialGoals: s.financialGoals.map((g) => (g.id === id ? { ...g, ...updates } : g)) })),
+
+  addDebt: (d) => {
+    const now = new Date().toISOString();
+    const debt: Debt = { ...d, id: generateId(), createdAt: now, updatedAt: now };
+    set((s) => ({ debts: [...s.debts, debt] }));
+  },
+  updateDebt: (id, updates) => {
+    const now = new Date().toISOString();
+    set((s) => ({ debts: s.debts.map((d) => (d.id === id ? { ...d, ...updates, updatedAt: now } : d)) }));
+  },
+  removeDebt: (id) => set((s) => ({ debts: s.debts.filter((d) => d.id !== id) })),
+  recordPayment: (debtId, amount, date) => {
+    const now = new Date().toISOString();
+    set((s) => ({
+      debts: s.debts.map((d) =>
+        d.id === debtId
+          ? {
+              ...d,
+              balance: Math.max(0, d.balance - amount),
+              lastPaymentDate: date,
+              lastPaymentAmount: amount,
+              updatedAt: now,
+            }
+          : d
+      ),
+    }));
+  },
 
   seedDemoData: () => {
     const familyId = 'demo-family';
@@ -194,6 +238,7 @@ export const useFinanceStore = create<FinanceState>()(
         bills: state.bills,
         subscriptions: state.subscriptions,
         financialGoals: state.financialGoals,
+        debts: state.debts,
         totalNetWorth: state.totalNetWorth,
         monthlyIncome: state.monthlyIncome,
         monthlyExpenses: state.monthlyExpenses,

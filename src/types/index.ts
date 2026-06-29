@@ -3,6 +3,28 @@
 export type MemberRole = 'parent' | 'child' | 'guardian' | 'grandparent' | 'caregiver';
 export type MemberStatus = 'active' | 'away' | 'school' | 'work' | 'sleeping';
 
+export interface MemberPermissions {
+  viewFinance: boolean;
+  manageFinance: boolean;
+  viewTasks: boolean;
+  manageTasks: boolean;
+  viewCalendar: boolean;
+  manageCalendar: boolean;
+  viewHealth: boolean;
+  manageHealth: boolean;
+  viewDocuments: boolean;
+  manageDocuments: boolean;
+  viewFamily: boolean;
+  manageFamily: boolean;
+  viewOperations: boolean;
+  manageOperations: boolean;
+  approveRequests: boolean;
+  viewAI: boolean;
+  manageAI: boolean;
+  switchProfiles: boolean;
+  viewAllProfiles: boolean;
+}
+
 export interface FamilyMember {
   id: string;
   familyId: string;
@@ -19,6 +41,52 @@ export interface FamilyMember {
   isAdmin: boolean;
   medicalInfo?: MedicalInfo;
   createdAt: string;
+  // Household model additions
+  linkedUserId?: string | null;
+  isLocalProfile: boolean;
+  pin?: string;
+  isPinProtected: boolean;
+  permissions: MemberPermissions;
+  inviteStatus?: 'none' | 'pending' | 'accepted';
+  inviteToken?: string;
+}
+
+export function defaultPermissionsForRole(role: MemberRole): MemberPermissions {
+  const full: MemberPermissions = {
+    viewFinance: true, manageFinance: true, viewTasks: true, manageTasks: true,
+    viewCalendar: true, manageCalendar: true, viewHealth: true, manageHealth: true,
+    viewDocuments: true, manageDocuments: true, viewFamily: true, manageFamily: true,
+    viewOperations: true, manageOperations: true, approveRequests: true,
+    viewAI: true, manageAI: true, switchProfiles: true, viewAllProfiles: true,
+  };
+  const childPerms: MemberPermissions = {
+    viewFinance: false, manageFinance: false, viewTasks: true, manageTasks: false,
+    viewCalendar: true, manageCalendar: false, viewHealth: true, manageHealth: false,
+    viewDocuments: false, manageDocuments: false, viewFamily: true, manageFamily: false,
+    viewOperations: false, manageOperations: false, approveRequests: false,
+    viewAI: true, manageAI: false, switchProfiles: false, viewAllProfiles: false,
+  };
+  const grandparentPerms: MemberPermissions = {
+    viewFinance: false, manageFinance: false, viewTasks: true, manageTasks: false,
+    viewCalendar: true, manageCalendar: false, viewHealth: true, manageHealth: false,
+    viewDocuments: true, manageDocuments: false, viewFamily: true, manageFamily: false,
+    viewOperations: false, manageOperations: false, approveRequests: false,
+    viewAI: true, manageAI: false, switchProfiles: false, viewAllProfiles: false,
+  };
+  const caregiverPerms: MemberPermissions = {
+    viewFinance: false, manageFinance: false, viewTasks: true, manageTasks: true,
+    viewCalendar: true, manageCalendar: true, viewHealth: true, manageHealth: false,
+    viewDocuments: false, manageDocuments: false, viewFamily: true, manageFamily: false,
+    viewOperations: true, manageOperations: false, approveRequests: false,
+    viewAI: false, manageAI: false, switchProfiles: false, viewAllProfiles: false,
+  };
+  switch (role) {
+    case 'parent': case 'guardian': return full;
+    case 'child': return childPerms;
+    case 'grandparent': return grandparentPerms;
+    case 'caregiver': return caregiverPerms;
+    default: return childPerms;
+  }
 }
 
 export interface Family {
@@ -201,6 +269,7 @@ export interface Vehicle {
   registrationExpiry?: string;
   lastService?: string;
   nextService?: string;
+  lastServiceMileage?: number;
   primaryDriver?: string;
   notes?: string;
   image?: string;
@@ -648,48 +717,61 @@ export interface AppSettings {
   militaryMode: boolean;
   weekStartsOn: 0 | 1 | 6;
   displayName?: string;
-  subscriptionTier?: 'free' | 'premium' | 'family_pro';
+  subscriptionTier?: string;
 }
 
-export interface FamilyHealthScore {
-  overall: number;
-  financial: number;
-  tasks: number;
-  goals: number;
-  health: number;
-  communication: number;
-  lastCalculated: string;
-}
+// ===================== GUARDIAN / PARENTAL CONTROL =====================
 
-// ===================== GUARDIAN MODULE =====================
-
-export type ChildDeviceStatus = 'online' | 'offline' | 'school_mode' | 'bedtime' | 'restricted';
-export type GeofenceAction = 'alert_entry' | 'alert_exit' | 'alert_both';
 export type DayOfWeek = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
+
+export interface ScheduledDowntime {
+  id: string;
+  label?: string;
+  startTime: string;  // "HH:MM"
+  endTime: string;    // "HH:MM"
+  days: DayOfWeek[];
+  isActive: boolean;
+}
+
+export interface ScreenTimeRule {
+  id: string;
+  familyId: string;
+  memberId: string;
+  label: string;
+  dailyLimitMinutes: number;
+  blockedApps: string[];
+  allowedApps: string[];
+  scheduledDowntime: ScheduledDowntime[];
+  isActive: boolean;
+  createdAt: string;
+}
+
+export type ChildDeviceStatus = 'online' | 'offline' | 'restricted' | 'school_mode' | 'bedtime';
 
 export interface ChildDevice {
   id: string;
   familyId: string;
   memberId: string;
   deviceName: string;
-  platform: 'android' | 'ios';
+  platform: 'ios' | 'android';
   status: ChildDeviceStatus;
   batteryLevel: number;
   lastSeen: string;
-  location?: DeviceLocation;
-  appVersion?: string;
-  osVersion?: string;
-  pairingCode?: string;
+  lat?: number | null;
+  lng?: number | null;
+  accuracy?: number | null;
+  address?: string | null;
+  location?: { lat: number; lng: number; accuracy?: number; address?: string; timestamp?: string } | null;
+  locationAt?: string | null;
+  appVersion?: string | null;
+  osVersion?: string | null;
+  pairingCode?: string | null;
   isPaired: boolean;
+  fcmToken?: string | null;
+  createdAt: string;
 }
 
-export interface DeviceLocation {
-  lat: number;
-  lng: number;
-  accuracy: number;
-  address?: string;
-  timestamp: string;
-}
+export type GeofenceAction = 'alert' | 'lock' | 'notify' | 'alert_entry' | 'alert_exit' | 'alert_both';
 
 export interface GeofenceZone {
   id: string;
@@ -706,36 +788,15 @@ export interface GeofenceZone {
   createdAt: string;
 }
 
-export interface ScreenTimeRule {
-  id: string;
-  familyId: string;
-  memberId: string;
-  label: string;
-  dailyLimitMinutes: number;
-  scheduledDowntime: ScheduledDowntime[];
-  blockedApps: string[];
-  allowedApps: string[];
-  isActive: boolean;
-  createdAt: string;
-}
-
-export interface ScheduledDowntime {
-  id: string;
-  label: string;
-  days: DayOfWeek[];
-  startTime: string;
-  endTime: string;
-  isActive: boolean;
-}
-
 export interface AppUsageEntry {
   id: string;
   deviceId: string;
+  familyId: string;
   appName: string;
   packageName: string;
   usageMinutes: number;
   date: string;
-  icon?: string;
+  createdAt: string;
 }
 
 export interface SOSAlert {
@@ -743,11 +804,14 @@ export interface SOSAlert {
   familyId: string;
   memberId: string;
   deviceId: string;
-  location?: DeviceLocation;
-  message?: string;
+  lat?: number | null;
+  lng?: number | null;
+  address?: string | null;
+  location?: { lat: number; lng: number; address?: string } | null;
+  message?: string | null;
   isResolved: boolean;
-  resolvedAt?: string;
-  resolvedBy?: string;
+  resolvedAt?: string | null;
+  resolvedBy?: string | null;
   createdAt: string;
 }
 
@@ -755,12 +819,12 @@ export interface ParentApprovalRequest {
   id: string;
   familyId: string;
   memberId: string;
-  type: 'app_install' | 'screen_time_extension' | 'location_override' | 'purchase' | 'website';
+  type: string;
   title: string;
   description: string;
-  status: 'pending' | 'approved' | 'denied';
-  respondedAt?: string;
-  respondedBy?: string;
+  status: 'pending' | 'approved' | 'rejected' | 'denied';
+  respondedAt?: string | null;
+  respondedBy?: string | null;
   createdAt: string;
 }
 
@@ -768,9 +832,114 @@ export interface GuardianCommand {
   id: string;
   familyId: string;
   deviceId: string;
-  type: 'lock' | 'unlock' | 'bedtime_on' | 'bedtime_off' | 'school_on' | 'school_off' | 'location_request' | 'sos_ack';
-  payload?: Record<string, unknown>;
+  type: string;
+  payload?: Record<string, unknown> | null;
   sentAt: string;
-  executedAt?: string;
+  executedAt?: string | null;
   status: 'pending' | 'executed' | 'failed';
+}
+
+export interface FamilyHealthScore {
+  overall: number;
+  financial: number;
+  tasks: number;
+  goals: number;
+  health: number;
+  communication: number;
+  lastCalculated: string;
+}
+
+export interface PlaidTransaction {
+  id: string;
+  plaidTransactionId: string;
+  plaidAccountId: string;
+  amount: number;
+  date: string;
+  name: string;
+  merchantName: string | null;
+  category: string;
+  pending: boolean;
+  currencyCode: string;
+}
+
+export interface PlaidAccount {
+  plaidAccountId: string;
+  name: string;
+  officialName: string | null;
+  balance: number;
+  accountType: 'checking' | 'savings' | 'credit' | 'investment' | string;
+  currency: string;
+  mask: string | null;
+}
+
+// ===================== DEBT MANAGEMENT =====================
+
+export type DebtType = 'credit_card' | 'personal_loan' | 'mortgage' | 'student_loan' | 'auto_loan' | 'medical' | 'other';
+export type PayoffStrategy = 'avalanche' | 'snowball';
+
+export interface Debt {
+  id: string;
+  familyId: string;
+  name: string;
+  type: DebtType;
+  balance: number;
+  originalBalance: number;
+  interestRate: number;       // APR as decimal e.g. 0.2199 for 21.99%
+  minimumPayment: number;
+  dueDate: number;            // day of month 1-31
+  plaidAccountId?: string;
+  plaidItemId?: string;
+  lastPaymentDate?: string;   // YYYY-MM-DD
+  lastPaymentAmount?: number;
+  isAutoPay: boolean;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PayoffPlanMonth {
+  month: string;              // "2026-07"
+  payment: number;
+  principal: number;
+  interest: number;
+  remainingBalance: number;
+}
+
+export interface DebtPayoffPlan {
+  debtId: string;
+  debtName: string;
+  strategy: PayoffStrategy;
+  months: PayoffPlanMonth[];
+  totalInterest: number;
+  payoffDate: string;         // YYYY-MM
+  monthsToPayoff: number;
+}
+
+export interface PayoffSummary {
+  strategy: PayoffStrategy;
+  totalMonths: number;
+  payoffDate: string;
+  totalInterestPaid: number;
+  totalPaid: number;
+  order: string[];            // debt names in payoff order
+  monthlyBudget: number;
+  plans: DebtPayoffPlan[];
+}
+
+export interface DetectedDebt {
+  plaidAccountId: string;
+  name: string;
+  balance: number;
+  mask: string | null;
+  estimatedMinPayment: number;
+  lastPaymentDate: string | null;
+  lastPaymentAmount: number | null;
+}
+
+export interface PaymentDetection {
+  plaidTransactionId: string;
+  date: string;
+  amount: number;
+  name: string;
+  merchantName: string | null;
 }

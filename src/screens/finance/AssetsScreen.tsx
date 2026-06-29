@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Modal, TextInput, Alert,
 } from 'react-native';
@@ -8,6 +8,8 @@ import { useTheme } from '../../theme/ThemeContext';
 import { Card } from '../../components/common/Card';
 import { PremiumHeader } from '../../components/common/PremiumHeader';
 import { useOperationsStore } from '../../store/useOperationsStore';
+import { getInvestmentAccounts } from '../../services/autoFillService';
+import type { PlaidInvestmentAccount } from '../../services/autoFillService';
 import type { Asset } from '../../types';
 
 const CATEGORIES = ['Real Estate', 'Vehicle', 'Electronics', 'Furniture', 'Jewelry', 'Investments', 'Collectibles', 'Other'];
@@ -46,6 +48,19 @@ export function AssetsScreen({ navigation }: any) {
   const [newValue, setNewValue] = useState('');
   const [newPurchasePrice, setNewPurchasePrice] = useState('');
 
+  // Plaid investment accounts
+  const [investmentAccounts, setInvestmentAccounts] = useState<PlaidInvestmentAccount[]>([]);
+  const [showPlaidCard, setShowPlaidCard] = useState(false);
+
+  useEffect(() => {
+    getInvestmentAccounts()
+      .then((res) => {
+        setInvestmentAccounts(res.accounts);
+        if (res.accounts.length > 0) setShowPlaidCard(true);
+      })
+      .catch(() => {/* silent */ });
+  }, []);
+
   const vehicleAssets = vehicles.map((v) => ({
     id: v.id,
     familyId: v.familyId,
@@ -63,6 +78,19 @@ export function AssetsScreen({ navigation }: any) {
     acc[a.category].push(a);
     return acc;
   }, {} as Record<string, Asset[]>);
+
+  // Filter out already-imported accounts
+  const availableAccounts = investmentAccounts.filter(
+    (acct) => !allAssets.some((a) => a.name === acct.name),
+  );
+
+  const prefillFromPlaid = (acct: PlaidInvestmentAccount) => {
+    setNewName(acct.name);
+    setNewCategory('Investments');
+    setNewValue(String(acct.balance));
+    setNewPurchasePrice('');
+    setShowAddModal(true);
+  };
 
   const handleAddAsset = () => {
     const value = parseFloat(newValue);
@@ -129,24 +157,53 @@ export function AssetsScreen({ navigation }: any) {
       </PremiumHeader>
 
       <ScrollView contentContainerStyle={[s.content, { paddingBottom: 100 }]}>
+        {/* Plaid Investment Accounts Card */}
+        {showPlaidCard && availableAccounts.length > 0 && (
+          <View style={s.plaidCard}>
+            <View style={s.plaidCardHeader}>
+              <Ionicons name="link" size={16} color="#8E44AD" />
+              <Text style={s.plaidCardTitle}>Link Plaid Accounts</Text>
+              <Pressable onPress={() => setShowPlaidCard(false)}>
+                <Ionicons name="close" size={16} color={colors.textMuted} />
+              </Pressable>
+            </View>
+            <Text style={s.plaidCardSub}>{availableAccounts.length} investment account{availableAccounts.length > 1 ? 's' : ''} found</Text>
+            {availableAccounts.map((acct) => (
+              <View key={acct.plaidAccountId} style={s.plaidAccountRow}>
+                <View style={s.plaidAccountIcon}>
+                  <Ionicons name="trending-up" size={18} color="#8E44AD" />
+                </View>
+                <View style={{ flex: 1, marginLeft: 10 }}>
+                  <Text style={s.plaidAccountName}>{acct.name}</Text>
+                  {acct.mask && <Text style={s.plaidAccountMask}>••••{acct.mask}</Text>}
+                </View>
+                <Text style={s.plaidAccountBalance}>${acct.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</Text>
+                <Pressable style={s.importBtn} onPress={() => prefillFromPlaid(acct)}>
+                  <Text style={s.importBtnText}>Import</Text>
+                </Pressable>
+              </View>
+            ))}
+          </View>
+        )}
+
         {/* Allocation bar */}
         {totalAssets > 0 && (
           <Card style={s.allocationCard} variant="elevated">
             <Text style={s.allocationTitle}>Portfolio Mix</Text>
             <View style={s.allocationBar}>
               {Object.entries(grouped).map(([cat, catAssets]) => {
-                const catTotal = catAssets.reduce((s, a) => s + a.value, 0);
+                const catTotal = catAssets.reduce((sum, a) => sum + a.value, 0);
                 return (
                   <View
                     key={cat}
-                    style={[s.allocationSegment, { flex: catTotal / totalAssets * 100, backgroundColor: categoryColors[cat] ?? '#95A5A6' }]}
+                    style={[s.allocationSegment, { flex: (catTotal / totalAssets) * 100, backgroundColor: categoryColors[cat] ?? '#95A5A6' }]}
                   />
                 );
               })}
             </View>
             <View style={s.allocationLegend}>
               {Object.entries(grouped).map(([cat, catAssets]) => {
-                const catTotal = catAssets.reduce((s, a) => s + a.value, 0);
+                const catTotal = catAssets.reduce((sum, a) => sum + a.value, 0);
                 return (
                   <View key={cat} style={s.legendItem}>
                     <View style={[s.legendDot, { backgroundColor: categoryColors[cat] ?? '#95A5A6' }]} />
@@ -171,43 +228,40 @@ export function AssetsScreen({ navigation }: any) {
                 <Text style={s.categoryName}>{category}</Text>
                 <Text style={s.categoryTotal}>${catTotal.toLocaleString()}</Text>
               </View>
-              {categoryAssets.map((asset) => {
-                const gain = asset.purchasePrice != null ? asset.value - asset.purchasePrice : null;
-                return (
-                  <Card key={asset.id} style={s.assetCard} variant="elevated">
-                    <View style={s.assetRow}>
-                      <View style={[s.assetIcon, { backgroundColor: (categoryColors[asset.category] ?? '#95A5A6') + '22' }]}>
-                        <Ionicons
-                          name={(CATEGORY_ICONS[asset.category] ?? 'cube') as any}
-                          size={22}
-                          color={categoryColors[asset.category] ?? '#95A5A6'}
-                        />
-                      </View>
-                      <View style={{ flex: 1, marginLeft: 14 }}>
-                        <Text style={s.assetName}>{asset.name}</Text>
-                        <Text style={s.assetCategory}>{asset.category}</Text>
-                        {asset.purchasePrice != null && (
-                          <Text style={s.assetAppreciation}>
-                            Purchase: ${asset.purchasePrice.toLocaleString()} •{' '}
-                            <Text style={{ color: asset.value >= asset.purchasePrice ? colors.success : colors.danger }}>
-                              {asset.value >= asset.purchasePrice ? '+' : '-'}$
-                              {Math.abs(asset.value - asset.purchasePrice).toLocaleString()}
-                            </Text>
-                          </Text>
-                        )}
-                      </View>
-                      <View style={{ alignItems: 'flex-end' }}>
-                        <Text style={s.assetValue}>${asset.value.toLocaleString()}</Text>
-                        {!isVehicleCat && (
-                          <Pressable onPress={() => handleDelete(asset.id, asset.name, isVehicleCat)} style={s.deleteBtn}>
-                            <Ionicons name="trash-outline" size={14} color={colors.textMuted} />
-                          </Pressable>
-                        )}
-                      </View>
+              {categoryAssets.map((asset) => (
+                <Card key={asset.id} style={s.assetCard} variant="elevated">
+                  <View style={s.assetRow}>
+                    <View style={[s.assetIcon, { backgroundColor: (categoryColors[asset.category] ?? '#95A5A6') + '22' }]}>
+                      <Ionicons
+                        name={(CATEGORY_ICONS[asset.category] ?? 'cube') as any}
+                        size={22}
+                        color={categoryColors[asset.category] ?? '#95A5A6'}
+                      />
                     </View>
-                  </Card>
-                );
-              })}
+                    <View style={{ flex: 1, marginLeft: 14 }}>
+                      <Text style={s.assetName}>{asset.name}</Text>
+                      <Text style={s.assetCategory}>{asset.category}</Text>
+                      {asset.purchasePrice != null && (
+                        <Text style={s.assetAppreciation}>
+                          Purchase: ${asset.purchasePrice.toLocaleString()} •{' '}
+                          <Text style={{ color: asset.value >= asset.purchasePrice ? colors.success : colors.danger }}>
+                            {asset.value >= asset.purchasePrice ? '+' : '-'}$
+                            {Math.abs(asset.value - asset.purchasePrice).toLocaleString()}
+                          </Text>
+                        </Text>
+                      )}
+                    </View>
+                    <View style={{ alignItems: 'flex-end' }}>
+                      <Text style={s.assetValue}>${asset.value.toLocaleString()}</Text>
+                      {!isVehicleCat && (
+                        <Pressable onPress={() => handleDelete(asset.id, asset.name, isVehicleCat)} style={s.deleteBtn}>
+                          <Ionicons name="trash-outline" size={14} color={colors.textMuted} />
+                        </Pressable>
+                      )}
+                    </View>
+                  </View>
+                </Card>
+              ))}
             </View>
           );
         })}
@@ -298,6 +352,18 @@ function makeStyles(colors: any) {
     statsRow: { flexDirection: 'row', gap: 8 },
     totalSub: { fontSize: 13, color: 'rgba(255,255,255,0.5)' },
     content: { padding: 16 },
+    // Plaid card
+    plaidCard: { backgroundColor: '#F3E8FD', borderRadius: 14, marginBottom: 16, borderLeftWidth: 3, borderLeftColor: '#8E44AD', padding: 14 },
+    plaidCardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+    plaidCardTitle: { flex: 1, fontSize: 14, fontWeight: '700', color: '#8E44AD' },
+    plaidCardSub: { fontSize: 12, color: colors.textSecondary, marginBottom: 12 },
+    plaidAccountRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderTopWidth: 1, borderTopColor: '#E5D0F8' },
+    plaidAccountIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#E5D0F8', alignItems: 'center', justifyContent: 'center' },
+    plaidAccountName: { fontSize: 13, fontWeight: '700', color: colors.text },
+    plaidAccountMask: { fontSize: 11, color: colors.textSecondary, fontFamily: 'monospace' },
+    plaidAccountBalance: { fontSize: 14, fontWeight: '800', color: colors.text, marginRight: 10 },
+    importBtn: { backgroundColor: '#8E44AD', borderRadius: 8, paddingVertical: 6, paddingHorizontal: 12 },
+    importBtnText: { color: '#fff', fontSize: 12, fontWeight: '700' },
     allocationCard: { marginBottom: 20, borderRadius: 16 },
     allocationTitle: { fontSize: 14, fontWeight: '700', color: colors.text, marginBottom: 10 },
     allocationBar: { flexDirection: 'row', height: 12, borderRadius: 6, overflow: 'hidden', marginBottom: 12, gap: 2 },

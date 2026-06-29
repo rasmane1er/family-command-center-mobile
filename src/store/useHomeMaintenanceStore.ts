@@ -38,7 +38,35 @@ export const useHomeMaintenanceStore = create<HomeMaintenanceState>((set) => ({
   addTask: (t) => set((s) => ({ tasks: [{ ...t, id: generateId(), createdAt: new Date().toISOString() }, ...s.tasks] })),
   updateTask: (id, updates) => set((s) => ({ tasks: s.tasks.map((t) => t.id === id ? { ...t, ...updates } : t) })),
   deleteTask: (id) => set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) })),
-  completeTask: (id) => set((s) => ({ tasks: s.tasks.map((t) => t.id === id ? { ...t, status: 'done', completedDate: new Date().toISOString() } : t) })),
+  completeTask: (id) => set((s) => {
+    const task = s.tasks.find((t) => t.id === id);
+    if (!task) return s;
+    const updatedTasks = s.tasks.map((t) =>
+      t.id === id ? { ...t, status: 'done' as MaintenanceStatus, completedDate: new Date().toISOString() } : t
+    );
+    // Auto-spawn next occurrence for recurring tasks
+    if (task.isRecurring && task.recurringInterval && task.dueDate) {
+      const intervalDays: Record<string, number> = {
+        monthly: 30,
+        quarterly: 90,
+        biannual: 182,
+        annual: 365,
+      };
+      const days = intervalDays[task.recurringInterval] ?? 90;
+      const nextDate = new Date(task.dueDate);
+      nextDate.setDate(nextDate.getDate() + days);
+      const nextTask: MaintenanceTask = {
+        ...task,
+        id: generateId(),
+        status: 'pending',
+        completedDate: undefined,
+        dueDate: nextDate.toISOString().split('T')[0],
+        createdAt: new Date().toISOString(),
+      };
+      return { tasks: [...updatedTasks, nextTask] };
+    }
+    return { tasks: updatedTasks };
+  }),
   seedDemoData: () => {
     const now = new Date().toISOString();
     const soon = new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0];

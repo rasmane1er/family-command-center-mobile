@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Modal,
   TextInput, Alert, Switch,
@@ -15,6 +15,8 @@ import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
 import { useInsuranceStore, InsuranceType, PremiumFrequency } from '../../store/useInsuranceStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { getDetectedInsurance } from '../../services/autoFillService';
+import type { DetectedInsurance } from '../../services/autoFillService';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -66,6 +68,11 @@ function daysUntil(dateStr: string): number {
   return Math.ceil((target.getTime() - now.getTime()) / 86400000);
 }
 
+function normalizeInsuranceType(raw: string): InsuranceType {
+  if (INSURANCE_TYPES.includes(raw as InsuranceType)) return raw as InsuranceType;
+  return 'other';
+}
+
 export function InsuranceManagerScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const { policies, addPolicy, deletePolicy, getTotalMonthlyPremium, seedDemoData } = useInsuranceStore();
@@ -73,6 +80,10 @@ export function InsuranceManagerScreen({ navigation }: any) {
 
   const [activeTab, setActiveTab] = useState<'Policies' | 'Coverage' | 'Calendar'>('Policies');
   const [showAddModal, setShowAddModal] = useState(false);
+
+  // Detected insurance
+  const [detectedInsurance, setDetectedInsurance] = useState<DetectedInsurance[]>([]);
+  const [detectedExpanded, setDetectedExpanded] = useState(true);
 
   // Modal state
   const [newType, setNewType] = useState<InsuranceType>('health');
@@ -95,6 +106,12 @@ export function InsuranceManagerScreen({ navigation }: any) {
     .filter((p) => p.renewalDate)
     .sort((a, b) => new Date(a.renewalDate!).getTime() - new Date(b.renewalDate!).getTime())[0];
 
+  useEffect(() => {
+    getDetectedInsurance()
+      .then((res) => setDetectedInsurance(res.insurance))
+      .catch(() => {/* silent */ });
+  }, []);
+
   const resetModal = () => {
     setNewType('health');
     setNewProvider('');
@@ -108,6 +125,15 @@ export function InsuranceManagerScreen({ navigation }: any) {
     setNewAgentPhone('');
     setNewMembersInsured([]);
     setNewColor(TYPE_COLORS['health']);
+  };
+
+  const prefillFromDetected = (d: DetectedInsurance) => {
+    setNewType(normalizeInsuranceType(d.type));
+    setNewProvider(d.merchantName);
+    setNewPremium(String(d.amount));
+    setNewFrequency(d.frequency);
+    setNewColor(TYPE_COLORS[normalizeInsuranceType(d.type)]);
+    setShowAddModal(true);
   };
 
   const handleAdd = () => {
@@ -133,6 +159,8 @@ export function InsuranceManagerScreen({ navigation }: any) {
       color: newColor,
       isActive: true,
     });
+    // Remove from detected list
+    setDetectedInsurance((prev) => prev.filter((d) => d.merchantName !== newProvider));
     resetModal();
     setShowAddModal(false);
   };
@@ -155,12 +183,10 @@ export function InsuranceManagerScreen({ navigation }: any) {
 
   const tabs = ['Policies', 'Coverage', 'Calendar'] as const;
 
-  // Coverage tab helpers
   const coveredTypes = new Set(activePolicies.map((p) => p.type));
   const allTypes = INSURANCE_TYPES;
   const missingTypes = allTypes.filter((t) => !coveredTypes.has(t));
 
-  // Calendar tab
   const renewals = activePolicies
     .filter((p) => p.renewalDate)
     .map((p) => ({ ...p, days: daysUntil(p.renewalDate!) }))
@@ -207,8 +233,39 @@ export function InsuranceManagerScreen({ navigation }: any) {
       </LinearGradient>
 
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
-        {/* Seed demo button if empty */}
-        {policies.length === 0 && (
+        {/* Detected Insurance Banner */}
+        {detectedInsurance.length > 0 && (
+          <View style={styles.detectedBanner}>
+            <Pressable style={styles.detectedBannerHeader} onPress={() => setDetectedExpanded((v) => !v)}>
+              <View style={styles.detectedBannerLeft}>
+                <Ionicons name="sparkles" size={15} color="#1565C0" />
+                <Text style={styles.detectedBannerTitle}>
+                  {detectedInsurance.length} insurance payment{detectedInsurance.length > 1 ? 's' : ''} detected from bank
+                </Text>
+              </View>
+              <Ionicons name={detectedExpanded ? 'chevron-up' : 'chevron-down'} size={16} color="#1565C0" />
+            </Pressable>
+            {detectedExpanded && detectedInsurance.map((d) => (
+              <View key={d.merchantName} style={styles.detectedRow}>
+                <View style={[styles.detectedTypeIcon, { backgroundColor: TYPE_COLORS[normalizeInsuranceType(d.type)] + '20' }]}>
+                  <Ionicons name={TYPE_ICONS[normalizeInsuranceType(d.type)] as any} size={18} color={TYPE_COLORS[normalizeInsuranceType(d.type)]} />
+                </View>
+                <View style={{ flex: 1, marginLeft: 10 }}>
+                  <Text style={styles.detectedProvider}>{d.merchantName}</Text>
+                  <Text style={styles.detectedMeta}>{TYPE_LABELS[normalizeInsuranceType(d.type)]} · {d.frequency}</Text>
+                </View>
+                <Text style={styles.detectedAmount}>${d.amount.toFixed(2)}</Text>
+                <Badge label={d.frequency} variant="info" size="sm" />
+                <Pressable style={styles.addDetectedBtn} onPress={() => prefillFromDetected(d)}>
+                  <Ionicons name="add" size={14} color="#fff" />
+                  <Text style={styles.addDetectedBtnText}>Add</Text>
+                </Pressable>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {policies.length === 0 && detectedInsurance.length === 0 && (
           <Pressable onPress={seedDemoData} style={styles.seedBtn}>
             <Ionicons name="flask" size={18} color={colors.primary} />
             <Text style={styles.seedBtnText}>Load Demo Data</Text>
@@ -349,8 +406,8 @@ export function InsuranceManagerScreen({ navigation }: any) {
                     <View style={{ flex: 1 }}>
                       <Text style={styles.suggestionType}>{TYPE_LABELS[type]} Insurance</Text>
                       <Text style={styles.suggestionDesc}>
-                        {type === 'life' ? 'Protect your family\'s financial future' :
-                          type === 'disability' ? 'Income protection if you can\'t work' :
+                        {type === 'life' ? "Protect your family's financial future" :
+                          type === 'disability' ? "Income protection if you can't work" :
                             type === 'vision' ? 'Cover eye exams and eyewear' :
                               `Consider adding ${TYPE_LABELS[type].toLowerCase()} coverage`}
                       </Text>
@@ -590,12 +647,23 @@ const styles = StyleSheet.create({
   tabText: { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.6)' },
   tabTextActive: { color: '#fff' },
   content: { padding: 16 },
+  // Detected insurance banner
+  detectedBanner: { backgroundColor: '#EBF2FC', borderRadius: 14, marginBottom: 16, borderLeftWidth: 3, borderLeftColor: '#1565C0', overflow: 'hidden' },
+  detectedBannerHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 14 },
+  detectedBannerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
+  detectedBannerTitle: { fontSize: 13, fontWeight: '700', color: '#1565C0', flex: 1 },
+  detectedRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingBottom: 12, gap: 6 },
+  detectedTypeIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  detectedProvider: { fontSize: 14, fontWeight: '700', color: colors.text },
+  detectedMeta: { fontSize: 11, color: colors.textSecondary, marginTop: 1 },
+  detectedAmount: { fontSize: 15, fontWeight: '800', color: colors.text },
+  addDetectedBtn: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#1565C0', borderRadius: 8, paddingVertical: 6, paddingHorizontal: 10 },
+  addDetectedBtnText: { fontSize: 12, fontWeight: '700', color: '#fff' },
   seedBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.card, borderRadius: 12, padding: 14, marginBottom: 16, ...shadows.sm },
   seedBtnText: { fontSize: 14, fontWeight: '600', color: colors.primary },
   emptyState: { alignItems: 'center', paddingVertical: 60 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginTop: 14 },
   emptyDesc: { fontSize: 13, color: colors.textSecondary, marginTop: 6, textAlign: 'center' },
-  // Policy card
   policyCard: { marginBottom: 12 },
   policyHeader: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 12 },
   typeIconCircle: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
@@ -615,7 +683,6 @@ const styles = StyleSheet.create({
   memberChipText: { fontSize: 11, color: colors.textSecondary, fontWeight: '600' },
   agentRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 },
   agentText: { fontSize: 11, color: colors.textMuted },
-  // Coverage tab
   coverageSummaryCard: { marginBottom: 12 },
   coverageSummaryTitle: { fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 14 },
   coverageRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border },
@@ -639,7 +706,6 @@ const styles = StyleSheet.create({
   costTotal: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.border },
   costTotalLabel: { fontSize: 13, fontWeight: '700', color: colors.text },
   costTotalValue: { fontSize: 16, fontWeight: '800', color: colors.primary },
-  // Calendar tab
   calendarCard: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 10 },
   calendarDateBadge: { width: 56, height: 56, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   calendarDays: { fontSize: 20, fontWeight: '800', color: '#fff' },
@@ -647,7 +713,6 @@ const styles = StyleSheet.create({
   calendarRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 },
   calendarProvider: { fontSize: 15, fontWeight: '700', color: colors.text },
   calendarDate: { fontSize: 12, color: colors.textSecondary, marginBottom: 4 },
-  // Modal
   modalContainer: { flex: 1, backgroundColor: colors.card },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: colors.border },
   modalTitle: { fontSize: 20, fontWeight: '800', color: colors.text },

@@ -6,6 +6,7 @@ import { useFamilyStore } from '../store/useFamilyStore';
 import { useAppStore } from '../store/useAppStore';
 import type { AuthUser } from '../store/useAuthStore';
 import type { Family, FamilyMember } from '../types';
+import { defaultPermissionsForRole } from '../types';
 
 const ROLE_MAP: Record<string, FamilyMember['role']> = {
   parent: 'parent',
@@ -48,6 +49,11 @@ export function populateFromSignUp(user: AuthUser) {
     level: 1,
     isAdmin: true,
     createdAt: now,
+    isLocalProfile: false,
+    linkedUserId: user.id,
+    isPinProtected: false,
+    permissions: defaultPermissionsForRole('parent'),
+    inviteStatus: 'accepted',
   };
 
   useFamilyStore.getState().setFamily(family);

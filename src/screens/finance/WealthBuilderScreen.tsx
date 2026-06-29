@@ -11,6 +11,8 @@ import { Card } from '../../components/common/Card';
 import { ProgressBar } from '../../components/common/ProgressBar';
 import { Button } from '../../components/common/Button';
 import { useWealthStore } from '../../store/useWealthStore';
+import { getAccounts } from '../../services/plaidService';
+import type { PlaidAccount } from '../../types';
 import type { WealthCategory } from '../../types';
 
 const WEALTH_CATEGORIES: WealthCategory[] = ['stocks', 'bonds', 'real_estate', 'crypto', 'savings', 'retirement', 'business', 'other'];
@@ -39,15 +41,29 @@ const CATEGORY_LABELS: Record<string, string> = {
   other: 'Other',
 };
 
+function mapAccountTypeToWealthCategory(accountType: string): WealthCategory {
+  if (accountType === 'investment') return 'stocks';
+  if (accountType === 'savings') return 'savings';
+  if (accountType === 'checking') return 'savings';
+  return 'other';
+}
+
+function firstWord(name: string): string {
+  return name.trim().split(/\s+/)[0] ?? name;
+}
+
 export function WealthBuilderScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<'portfolio' | 'forecast' | 'insights'>('portfolio');
   const [showModal, setShowModal] = useState(false);
+  const [showPlaidSubSheet, setShowPlaidSubSheet] = useState(false);
   const [newName, setNewName] = useState('');
   const [newCategory, setNewCategory] = useState<WealthCategory>('savings');
   const [newCurrentValue, setNewCurrentValue] = useState('');
   const [newCostBasis, setNewCostBasis] = useState('');
   const [newInstitution, setNewInstitution] = useState('');
+  const [plaidAccounts, setPlaidAccounts] = useState<PlaidAccount[]>([]);
+  const [plaidLoading, setPlaidLoading] = useState(false);
   const { entries, projections, getTotalNetWorth, addEntry, seedDemoData } = useWealthStore();
 
   if (entries.length === 0) seedDemoData();
@@ -70,6 +86,24 @@ export function WealthBuilderScreen({ navigation }: any) {
     setNewName(''); setNewCategory('savings'); setNewCurrentValue(''); setNewCostBasis(''); setNewInstitution('');
   };
 
+  const openPlaidSubSheet = () => {
+    setPlaidLoading(true);
+    getAccounts()
+      .then((res) => setPlaidAccounts(res.accounts))
+      .catch(() => { Alert.alert('Error', 'Failed to load Plaid accounts.'); })
+      .finally(() => setPlaidLoading(false));
+    setShowPlaidSubSheet(true);
+  };
+
+  const prefillFromPlaid = (acct: PlaidAccount) => {
+    setNewName(acct.name);
+    setNewCurrentValue(String(acct.balance));
+    setNewCategory(mapAccountTypeToWealthCategory(acct.accountType));
+    setNewInstitution(firstWord(acct.name));
+    setNewCostBasis('');
+    setShowPlaidSubSheet(false);
+  };
+
   const totalNetWorth = getTotalNetWorth();
   const totalGain = entries.reduce((s, e) => s + (e.currentValue - e.costBasis), 0);
   const gainPct = entries.length > 0 ? ((totalGain / entries.reduce((s, e) => s + e.costBasis, 0)) * 100) : 0;
@@ -81,9 +115,9 @@ export function WealthBuilderScreen({ navigation }: any) {
   }, {} as Record<string, number>);
 
   const WEALTH_INSIGHTS = [
-    { icon: 'trending-up', color: '#27AE60', text: 'At your current savings rate, you\'ll reach $1M net worth in 12 years', label: 'Projection' },
-    { icon: 'warning', color: '#F5A623', text: 'Your emergency fund covers 4.8 months of expenses — target is 6 months', label: 'Action Needed' },
-    { icon: 'pie-chart', color: '#8E44AD', text: 'Portfolio is 38% real estate — consider diversifying into bonds for stability', label: 'Rebalance' },
+    { icon: 'trending-up', color: '#27AE60', text: "At your current savings rate, you'll reach $1M net worth in 12 years", label: 'Projection' },
+    { icon: 'warning', color: '#F5A623', text: "Your emergency fund covers 4.8 months of expenses — target is 6 months", label: 'Action Needed' },
+    { icon: 'pie-chart', color: '#8E44AD', text: "Portfolio is 38% real estate — consider diversifying into bonds for stability", label: 'Rebalance' },
     { icon: 'school', color: '#2980B9', text: "Aiden's college fund is on track for 64% of 4-year tuition at current growth rate", label: 'Education' },
   ];
 
@@ -132,7 +166,7 @@ export function WealthBuilderScreen({ navigation }: any) {
                 {Object.entries(grouped).map(([cat, val]) => (
                   <View
                     key={cat}
-                    style={[styles.allocationSegment, { flex: val / totalNetWorth * 100, backgroundColor: CATEGORY_COLORS[cat] ?? '#95A5A6' }]}
+                    style={[styles.allocationSegment, { flex: (val / totalNetWorth) * 100, backgroundColor: CATEGORY_COLORS[cat] ?? '#95A5A6' }]}
                   />
                 ))}
               </View>
@@ -158,7 +192,7 @@ export function WealthBuilderScreen({ navigation }: any) {
                     </View>
                     <View style={{ flex: 1, marginLeft: 10 }}>
                       <Text style={styles.holdingName}>{e.name}</Text>
-                      <Text style={styles.holdingInst}>{e.institution} • {CATEGORY_LABELS[e.category]}</Text>
+                      <Text style={styles.holdingInst}>{e.institution} · {CATEGORY_LABELS[e.category]}</Text>
                     </View>
                     <View style={{ alignItems: 'flex-end' }}>
                       <Text style={styles.holdingValue}>${e.currentValue.toLocaleString()}</Text>
@@ -227,10 +261,18 @@ export function WealthBuilderScreen({ navigation }: any) {
         ))}
       </ScrollView>
 
+      {/* Add Holding Modal */}
       <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet">
         <ScrollView style={styles.modal} contentContainerStyle={{ paddingBottom: 40 }}>
           <View style={styles.modalHandle} />
           <Text style={styles.modalTitle}>Add Holding</Text>
+
+          {/* Import from Plaid button */}
+          <Pressable style={styles.plaidImportBtn} onPress={openPlaidSubSheet}>
+            <Ionicons name="link" size={18} color="#2E7D32" />
+            <Text style={styles.plaidImportBtnText}>Import from Plaid Accounts</Text>
+            <Ionicons name="chevron-forward" size={16} color="#2E7D32" />
+          </Pressable>
 
           <Text style={styles.modalLabel}>Category</Text>
           <View style={styles.catGrid}>
@@ -256,6 +298,42 @@ export function WealthBuilderScreen({ navigation }: any) {
           <Button title="Add Holding" onPress={handleAddEntry} />
           <Button title="Cancel" onPress={() => setShowModal(false)} variant="ghost" style={{ marginTop: 8 }} />
         </ScrollView>
+      </Modal>
+
+      {/* Plaid Sub-Sheet */}
+      <Modal visible={showPlaidSubSheet} transparent animationType="slide">
+        <View style={styles.subSheetOverlay}>
+          <View style={styles.subSheet}>
+            <View style={styles.subSheetHeader}>
+              <Text style={styles.subSheetTitle}>Plaid Accounts</Text>
+              <Pressable onPress={() => setShowPlaidSubSheet(false)}>
+                <Ionicons name="close" size={24} color={colors.text} />
+              </Pressable>
+            </View>
+            {plaidLoading ? (
+              <Text style={styles.subSheetLoading}>Loading accounts...</Text>
+            ) : plaidAccounts.length === 0 ? (
+              <Text style={styles.subSheetEmpty}>No connected accounts found.</Text>
+            ) : (
+              <ScrollView>
+                {plaidAccounts.map((acct) => (
+                  <Pressable key={acct.plaidAccountId} style={styles.plaidAcctRow} onPress={() => prefillFromPlaid(acct)}>
+                    <View style={styles.plaidAcctIcon}>
+                      <Ionicons name="wallet" size={18} color="#2E7D32" />
+                    </View>
+                    <View style={{ flex: 1, marginLeft: 10 }}>
+                      <Text style={styles.plaidAcctName}>{acct.name}</Text>
+                      <View style={styles.plaidAcctBadge}>
+                        <Text style={styles.plaidAcctType}>{acct.accountType}</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.plaidAcctBalance}>${acct.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+        </View>
       </Modal>
     </View>
   );
@@ -319,9 +397,25 @@ const styles = StyleSheet.create({
   modal: { flex: 1, padding: 24, backgroundColor: colors.background },
   modalHandle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 24 },
   modalTitle: { fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 20 },
+  // Plaid import button in modal
+  plaidImportBtn: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#E8F5E9', borderRadius: 12, padding: 14, marginBottom: 20, borderLeftWidth: 3, borderLeftColor: '#2E7D32' },
+  plaidImportBtnText: { flex: 1, fontSize: 14, fontWeight: '700', color: '#2E7D32' },
   modalLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
   modalInput: { backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 16, color: colors.text, borderWidth: 1.5, borderColor: colors.border, marginBottom: 16, ...shadows.sm },
   catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
   catChip: { borderRadius: 20, paddingVertical: 7, paddingHorizontal: 12, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.card },
   catChipText: { fontSize: 12, fontWeight: '700', color: colors.textSecondary },
+  // Plaid sub-sheet
+  subSheetOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  subSheet: { backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '60%' },
+  subSheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  subSheetTitle: { fontSize: 18, fontWeight: '800', color: colors.text },
+  subSheetLoading: { textAlign: 'center', color: colors.textSecondary, paddingVertical: 24 },
+  subSheetEmpty: { textAlign: 'center', color: colors.textSecondary, paddingVertical: 24 },
+  plaidAcctRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
+  plaidAcctIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#E8F5E9', alignItems: 'center', justifyContent: 'center' },
+  plaidAcctName: { fontSize: 14, fontWeight: '700', color: colors.text },
+  plaidAcctBadge: { backgroundColor: colors.background, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, alignSelf: 'flex-start', marginTop: 2 },
+  plaidAcctType: { fontSize: 10, color: colors.textSecondary, fontWeight: '600', textTransform: 'uppercase' },
+  plaidAcctBalance: { fontSize: 15, fontWeight: '800', color: colors.text },
 });

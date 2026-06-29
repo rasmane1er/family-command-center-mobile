@@ -198,7 +198,7 @@ export function ChildDeviceDetailScreen({ navigation, route }: any) {
                 {device.location.lat.toFixed(5)}, {device.location.lng.toFixed(5)}
               </Text>
               <Text style={styles.coordSubText}>
-                Accuracy: ±{device.location.accuracy}m · {formatLastSeen(device.location.timestamp)}
+                Accuracy: ±{device.location.accuracy}m · {formatLastSeen(device.location.timestamp ?? '')}
               </Text>
               <Pressable
                 style={styles.refreshBtn}
