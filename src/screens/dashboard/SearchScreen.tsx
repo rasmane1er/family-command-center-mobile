@@ -451,7 +451,7 @@ export function SearchScreen({ navigation: navProp }: any) {
     <View style={dynStyles.container}>
       <StatusBar style="dark" />
 
-      <View style={[dynStyles.header, { paddingTop: insets.top + 12 }]}>
+      <View style={[dynStyles.header, { paddingTop: insets.top }]}>
         <View style={dynStyles.searchBar}>
           <Ionicons name="search" size={20} color={colors.textMuted} />
           <TextInput
@@ -568,7 +568,7 @@ function makeStyles(colors: import('../../theme/ThemeContext').ThemeColors) {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: 8,
     backgroundColor: colors.card,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,

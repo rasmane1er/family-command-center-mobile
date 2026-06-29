@@ -10,35 +10,153 @@ import { Card } from '../../components/common/Card';
 import { ProgressBar } from '../../components/common/ProgressBar';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { useFinanceStore } from '../../store/useFinanceStore';
+import { useOperationsStore } from '../../store/useOperationsStore';
+import { useGuardianStore } from '../../store/useGuardianStore';
 import { chatWithDigitalTwin, AIMessage } from '../../services/aiService';
 
 const { width } = Dimensions.get('window');
 
-// Radar chart dimensions
 const RADAR_SIZE = width - 80;
 const RADAR_CENTER = RADAR_SIZE / 2;
 const RADAR_RADIUS = RADAR_SIZE / 2 - 30;
 
-const DIMENSIONS_CONFIG = [
-  { label: 'Financial', value: 72, prediction: 78, icon: 'wallet', color: '#27AE60' },
-  { label: 'Social', value: 85, prediction: 88, icon: 'people', color: '#2980B9' },
-  { label: 'Health', value: 68, prediction: 75, icon: 'heart', color: '#E74C3C' },
-  { label: 'Productivity', value: 79, prediction: 82, icon: 'checkmark-circle', color: '#F5A623' },
-  { label: 'Happiness', value: 88, prediction: 91, icon: 'happy', color: '#8E44AD' },
-];
+interface DimensionConfig {
+  label: string;
+  value: number;
+  prediction: number;
+  icon: string;
+  color: string;
+}
+
+interface PredictionItem {
+  icon: string;
+  title: string;
+  description: string;
+  impact: number;
+  category: string;
+}
+
+function useDigitalTwinScores(): { dimensions: DimensionConfig[]; predictions: PredictionItem[] } {
+  const members = useFamilyStore((s) => s.members);
+  const tasks = useFamilyStore((s) => s.tasks);
+  const bills = useFinanceStore((s) => s.bills);
+  const accounts = useFinanceStore((s) => s.accounts);
+  const monthlyIncome = useFinanceStore((s) => s.monthlyIncome);
+  const monthlyExpenses = useFinanceStore((s) => s.monthlyExpenses);
+  const financialGoals = useFinanceStore((s) => s.financialGoals);
+  const pantryItems = useOperationsStore((s) => s.pantryItems);
+  const vehicles = useOperationsStore((s) => s.vehicles);
+  const sosAlerts = useGuardianStore((s) => s.sosAlerts);
+  const approvalRequests = useGuardianStore((s) => s.approvalRequests);
+  const screenTimeRules = useGuardianStore((s) => s.screenTimeRules);
+
+  const today = new Date();
+
+  // Financial Health (0-100)
+  let financial = 50;
+  const overdueBills = bills.filter((b) => b.status !== 'paid' && new Date(b.dueDate) < today);
+  financial -= Math.min(30, overdueBills.length * 10);
+  const positiveAccounts = accounts.filter((a) => a.balance > 0);
+  financial += Math.min(20, positiveAccounts.length > 0 ? 20 : 0);
+  if (monthlyExpenses > 0 && monthlyIncome > monthlyExpenses) financial += 30;
+  if (financialGoals.length > 0) financial += 10;
+  financial = Math.max(0, Math.min(100, financial));
+
+  // Productivity (0-100)
+  const totalTasks = tasks.length;
+  const completedTasks = tasks.filter((t) => t.status === 'completed').length;
+  const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 50;
+  let productivity = 50 + completionRate * 0.5;
+  const overdueTasks = tasks.filter((t) => t.status !== 'completed' && t.dueDate && new Date(t.dueDate) < today);
+  productivity -= Math.min(25, overdueTasks.length * 5);
+  productivity = Math.max(0, Math.min(100, productivity));
+
+  // Safety (0-100)
+  let safety = 70;
+  const unresolvedSOS = sosAlerts.filter((a) => !a.isResolved);
+  safety -= Math.min(40, unresolvedSOS.length * 20);
+  const pendingApprovals = approvalRequests.filter((r) => r.status === 'pending');
+  safety -= Math.min(20, pendingApprovals.length * 5);
+  if (screenTimeRules.length > 0) safety += 10;
+  safety = Math.max(0, Math.min(100, safety));
+
+  // Home (0-100)
+  let home = 80;
+  const in30Days = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+  const vehiclesOverdue = vehicles.filter((v) => v.nextService && new Date(v.nextService) < today);
+  home -= vehiclesOverdue.length * 15;
+  const vehiclesDueSoon = vehicles.filter((v) => v.nextService && new Date(v.nextService) <= in30Days && new Date(v.nextService) >= today);
+  home -= vehiclesDueSoon.length * 5;
+  const lowPantry = pantryItems.filter((p) => p.minQuantity !== undefined && p.quantity <= p.minQuantity);
+  home -= Math.min(20, lowPantry.length * 3);
+  home = Math.max(0, Math.min(100, home));
+
+  // Wellness (0-100)
+  const children = members.filter((m) => m.role === 'child');
+  let wellness = 60;
+  const childrenWithRules = children.filter((c) => screenTimeRules.some((r) => r.memberId === c.id));
+  wellness += childrenWithRules.length * 10;
+  wellness = Math.max(0, Math.min(100, wellness));
+  if (children.length === 0) wellness = 70;
+
+  const dimensions: DimensionConfig[] = [
+    { label: 'Financial', value: Math.round(financial), prediction: Math.min(100, Math.round(financial + 6)), icon: 'wallet', color: '#27AE60' },
+    { label: 'Productivity', value: Math.round(productivity), prediction: Math.min(100, Math.round(productivity + 3)), icon: 'checkmark-circle', color: '#F5A623' },
+    { label: 'Safety', value: Math.round(safety), prediction: Math.min(100, Math.round(safety + 5)), icon: 'shield', color: '#2980B9' },
+    { label: 'Home', value: Math.round(home), prediction: Math.min(100, Math.round(home + 4)), icon: 'home', color: '#E74C3C' },
+    { label: 'Wellness', value: Math.round(wellness), prediction: Math.min(100, Math.round(wellness + 3)), icon: 'heart', color: '#8E44AD' },
+  ];
+
+  // Dynamic predictions
+  const predictions: PredictionItem[] = [];
+  if (overdueBills.length > 0) {
+    predictions.push({
+      icon: '💸',
+      title: 'Bill Overdue',
+      description: `${overdueBills.length} bill${overdueBills.length !== 1 ? 's' : ''} need attention`,
+      impact: -5,
+      category: 'financial',
+    });
+  }
+  if (vehiclesOverdue.length > 0 || vehiclesDueSoon.length > 0) {
+    predictions.push({
+      icon: '🚗',
+      title: 'Vehicle Service Due',
+      description: 'Maintenance needed soon',
+      impact: -3,
+      category: 'home',
+    });
+  }
+  if (lowPantry.length > 3) {
+    predictions.push({
+      icon: '🛒',
+      title: 'Restock Pantry',
+      description: `${lowPantry.length} items running low`,
+      impact: -2,
+      category: 'home',
+    });
+  }
+
+  // Positive prediction based on highest-scoring dimension
+  const highestDim = [...dimensions].sort((a, b) => b.value - a.value)[0];
+  if (highestDim) {
+    predictions.push({
+      icon: '🌟',
+      title: `Strong ${highestDim.label}`,
+      description: `Your ${highestDim.label.toLowerCase()} score of ${highestDim.value} is excellent — keep it up!`,
+      impact: 5,
+      category: highestDim.label.toLowerCase(),
+    });
+  }
+
+  return { dimensions, predictions };
+}
 
 const WHAT_IF_SCENARIOS = [
   { scenario: 'Cut dining out by 50%', impact: '+$340/month', effect: 'Reach Hawaii goal 4 months early', icon: 'restaurant', color: '#27AE60', positive: true },
   { scenario: 'Add 30min family exercise', impact: '+12 happiness points', effect: 'Reduce stress markers by 23%', icon: 'fitness', color: '#2980B9', positive: true },
   { scenario: 'Miss 2 weekly meetings', impact: '-8 communication score', effect: 'Conflict risk increases by 35%', icon: 'people', color: '#E74C3C', positive: false },
   { scenario: 'Automate bill payments', impact: '0 late fees ever', effect: 'Credit score up ~15 points', icon: 'card', color: '#F5A623', positive: true },
-];
-
-const PREDICTIONS = [
-  { timeframe: '30 days', prediction: 'Task completion rate will hit 82% if current streak holds', confidence: 87, icon: 'checkmark-circle', color: '#27AE60' },
-  { timeframe: '60 days', prediction: 'Hawaii vacation fund will be at 63% — on track for August goal', confidence: 91, icon: 'airplane', color: '#2980B9' },
-  { timeframe: '90 days', prediction: 'Aiden\'s grades will improve with current homework habit', confidence: 74, icon: 'school', color: '#F5A623' },
-  { timeframe: '6 months', prediction: 'Family net worth projected to reach $540k at current savings rate', confidence: 68, icon: 'trending-up', color: '#8E44AD' },
 ];
 
 const PATTERNS = [
@@ -64,7 +182,7 @@ function getLabelPosition(i: number, total: number, centerX: number, centerY: nu
   return { x: centerX + r * Math.cos(angle), y: centerY + r * Math.sin(angle) };
 }
 
-export function DigitalTwinScreen({ navigation }: any) {
+export function DigitalTwinScreen({ navigation }: { navigation: { goBack: () => void; navigate: (s: string) => void } }) {
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<'twin' | 'predict' | 'whatif' | 'chat'>('twin');
   const [chatInput, setChatInput] = useState('');
@@ -74,6 +192,11 @@ export function DigitalTwinScreen({ navigation }: any) {
   const chatScrollRef = useRef<ScrollView>(null);
   const members = useFamilyStore((s) => s.members);
   const { monthlyIncome, monthlyExpenses } = useFinanceStore();
+
+  const { dimensions: DIMENSIONS_CONFIG, predictions: PREDICTIONS } = useDigitalTwinScores();
+
+  const overallScore = Math.round(DIMENSIONS_CONFIG.reduce((s, d) => s + d.value, 0) / DIMENSIONS_CONFIG.length);
+  const predictedScore = Math.round(DIMENSIONS_CONFIG.reduce((s, d) => s + d.prediction, 0) / DIMENSIONS_CONFIG.length);
 
   const handleChatSend = async (text?: string) => {
     const msg = text ?? chatInput.trim();
@@ -92,9 +215,6 @@ export function DigitalTwinScreen({ navigation }: any) {
     setTimeout(() => chatScrollRef.current?.scrollToEnd({ animated: true }), 100);
   };
 
-  const overallScore = Math.round(DIMENSIONS_CONFIG.reduce((s, d) => s + d.value, 0) / DIMENSIONS_CONFIG.length);
-  const predictedScore = Math.round(DIMENSIONS_CONFIG.reduce((s, d) => s + d.prediction, 0) / DIMENSIONS_CONFIG.length);
-
   const currentValues = DIMENSIONS_CONFIG.map((d) => d.value);
   const predictedValues = DIMENSIONS_CONFIG.map((d) => d.prediction);
   const maxPoints = DIMENSIONS_CONFIG.map((_, i) => {
@@ -108,7 +228,7 @@ export function DigitalTwinScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#0D0D2B', '#1A1A4E', '#2D2D8F']} style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <LinearGradient colors={['#0D0D2B', '#1A1A4E', '#2D2D8F']} style={[styles.header, { paddingTop: insets.top }]}>
         <View style={styles.headerRow}>
           <Pressable onPress={() => navigation.goBack()} style={styles.back}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -117,7 +237,7 @@ export function DigitalTwinScreen({ navigation }: any) {
             <Text style={styles.headerTitle}>Family Digital Twin</Text>
             <Text style={styles.headerSub}>AI-powered simulation of your family's patterns</Text>
           </View>
-          <View style={[styles.scoreBadge]}>
+          <View style={styles.scoreBadge}>
             <Text style={styles.scoreBadgeText}>{overallScore}</Text>
           </View>
         </View>
@@ -156,15 +276,12 @@ export function DigitalTwinScreen({ navigation }: any) {
             <Text style={styles.sectionTitle}>Family Behavioral DNA</Text>
             <Card variant="elevated" style={styles.radarCard}>
               <Svg width={RADAR_SIZE} height={RADAR_SIZE}>
-                {/* Grid circles */}
                 {[0.25, 0.5, 0.75, 1].map((pct) => (
                   <Circle key={pct} cx={RADAR_CENTER} cy={RADAR_CENTER} r={RADAR_RADIUS * pct} fill="none" stroke="#E5E7EB" strokeWidth={1} />
                 ))}
-                {/* Grid lines to vertices */}
                 {maxPoints.map((pt, i) => (
                   <Line key={i} x1={RADAR_CENTER} y1={RADAR_CENTER} x2={pt.x} y2={pt.y} stroke="#E5E7EB" strokeWidth={1} />
                 ))}
-                {/* Predicted polygon */}
                 <Polygon
                   points={getPolygonPoints(predictedValues, RADAR_CENTER, RADAR_CENTER, RADAR_RADIUS)}
                   fill="#4EECD0"
@@ -172,7 +289,6 @@ export function DigitalTwinScreen({ navigation }: any) {
                   stroke="#4EECD0"
                   strokeWidth={1.5}
                 />
-                {/* Current polygon */}
                 <Polygon
                   points={getPolygonPoints(currentValues, RADAR_CENTER, RADAR_CENTER, RADAR_RADIUS)}
                   fill={colors.primary}
@@ -180,7 +296,6 @@ export function DigitalTwinScreen({ navigation }: any) {
                   stroke={colors.primary}
                   strokeWidth={2}
                 />
-                {/* Labels */}
                 {DIMENSIONS_CONFIG.map((d, i) => {
                   const pos = getLabelPosition(i, DIMENSIONS_CONFIG.length, RADAR_CENTER, RADAR_CENTER, RADAR_RADIUS);
                   return (
@@ -201,7 +316,7 @@ export function DigitalTwinScreen({ navigation }: any) {
               <Card key={d.label} variant="elevated" style={styles.dimCard}>
                 <View style={styles.dimRow}>
                   <View style={[styles.dimIcon, { backgroundColor: d.color + '20' }]}>
-                    <Ionicons name={d.icon as any} size={18} color={d.color} />
+                    <Ionicons name={d.icon as keyof typeof Ionicons.glyphMap} size={18} color={d.color} />
                   </View>
                   <View style={{ flex: 1, marginLeft: 12 }}>
                     <View style={styles.dimHeader}>
@@ -223,7 +338,7 @@ export function DigitalTwinScreen({ navigation }: any) {
               <Card key={i} variant="elevated" style={styles.patternCard}>
                 <View style={styles.patternRow}>
                   <View style={[styles.patternIcon, { backgroundColor: p.color + '20' }]}>
-                    <Ionicons name={p.icon as any} size={18} color={p.color} />
+                    <Ionicons name={p.icon as keyof typeof Ionicons.glyphMap} size={18} color={p.color} />
                   </View>
                   <View style={{ flex: 1, marginLeft: 12 }}>
                     <Text style={styles.patternTitle}>{p.pattern}</Text>
@@ -239,7 +354,7 @@ export function DigitalTwinScreen({ navigation }: any) {
           <>
             <Card variant="elevated" style={styles.predictHero}>
               <Text style={styles.predictHeroTitle}>🔮 AI Forecast</Text>
-              <Text style={styles.predictHeroDesc}>Based on 90 days of behavioral data, your family is trending {predictedScore > overallScore ? 'upward' : 'downward'}. Current trajectory leads to a {predictedScore}/100 family score in 30 days.</Text>
+              <Text style={styles.predictHeroDesc}>Based on your family's real data, you're trending {predictedScore > overallScore ? 'upward' : 'downward'}. Current trajectory leads to a {predictedScore}/100 family score in 30 days.</Text>
               <View style={styles.predictScoreRow}>
                 <View style={styles.predictScore}>
                   <Text style={styles.predictScoreLabel}>NOW</Text>
@@ -259,18 +374,20 @@ export function DigitalTwinScreen({ navigation }: any) {
             {PREDICTIONS.map((p, i) => (
               <Card key={i} variant="elevated" style={styles.predCard}>
                 <View style={styles.predRow}>
-                  <View style={[styles.predIcon, { backgroundColor: p.color + '20' }]}>
-                    <Ionicons name={p.icon as any} size={18} color={p.color} />
+                  <View style={[styles.predIcon, { backgroundColor: p.impact > 0 ? '#D5F5E3' : '#FDEDEC' }]}>
+                    <Text style={{ fontSize: 18 }}>{p.icon}</Text>
                   </View>
                   <View style={{ flex: 1, marginLeft: 12 }}>
                     <View style={styles.predHeader}>
-                      <Text style={styles.predTimeframe}>{p.timeframe}</Text>
-                      <View style={styles.confidenceBadge}>
-                        <Text style={styles.confidenceText}>{p.confidence}% confidence</Text>
+                      <Text style={styles.predTimeframe}>{p.category.toUpperCase()}</Text>
+                      <View style={[styles.confidenceBadge, { backgroundColor: p.impact > 0 ? '#D5F5E3' : '#FDEDEC' }]}>
+                        <Text style={[styles.confidenceText, { color: p.impact > 0 ? '#27AE60' : '#E74C3C' }]}>
+                          {p.impact > 0 ? '+' : ''}{p.impact} pts
+                        </Text>
                       </View>
                     </View>
-                    <Text style={styles.predPrediction}>{p.prediction}</Text>
-                    <ProgressBar progress={p.confidence / 100} color={p.color} height={3} />
+                    <Text style={styles.predTitle}>{p.title}</Text>
+                    <Text style={styles.predPrediction}>{p.description}</Text>
                   </View>
                 </View>
               </Card>
@@ -279,7 +396,7 @@ export function DigitalTwinScreen({ navigation }: any) {
             <Card variant="elevated" style={styles.modelCard}>
               <Ionicons name="information-circle" size={18} color={colors.primary} />
               <Text style={styles.modelTitle}>How the AI Model Works</Text>
-              <Text style={styles.modelDesc}>The Family Digital Twin analyzes task completion rates, spending patterns, mood data, and behavioral history to build a predictive model unique to your family. Predictions improve as more data is collected.</Text>
+              <Text style={styles.modelDesc}>The Family Digital Twin analyzes task completion rates, spending patterns, pantry data, vehicle schedules, and guardian insights to compute your family's real scores. All data comes live from your family stores.</Text>
             </Card>
           </>
         )}
@@ -291,7 +408,7 @@ export function DigitalTwinScreen({ navigation }: any) {
               <Card key={i} variant="elevated" style={styles.whatIfCard}>
                 <View style={styles.whatIfHeader}>
                   <View style={[styles.whatIfIcon, { backgroundColor: s.color + '20' }]}>
-                    <Ionicons name={s.icon as any} size={20} color={s.color} />
+                    <Ionicons name={s.icon as keyof typeof Ionicons.glyphMap} size={20} color={s.color} />
                   </View>
                   <Text style={styles.whatIfScenario}>{s.scenario}</Text>
                 </View>
@@ -318,7 +435,7 @@ export function DigitalTwinScreen({ navigation }: any) {
               <Text style={styles.customTitle}>Create Custom Scenario</Text>
               <Text style={styles.customDesc}>Tell the AI what you're planning and it will project the impact on your family's score, finances, and wellbeing.</Text>
               <Pressable
-                onPress={() => Alert.alert('Ask AI to Analyze', 'Describe a change you\'re planning — budget adjustment, routine shift, habit change — and the AI will project its impact on your family score, finances, and wellbeing.', [
+                onPress={() => Alert.alert('Ask AI to Analyze', 'Describe a change you\'re planning — budget adjustment, routine shift, habit change — and the AI will project its impact.', [
                   { text: 'Later', style: 'cancel' },
                   { text: 'Open AI Assistant', onPress: () => navigation.navigate('AI Assistant') },
                 ])}
@@ -373,8 +490,8 @@ export function DigitalTwinScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { paddingHorizontal: 20, paddingBottom: 20 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
+  header: { paddingHorizontal: 20, paddingBottom: 8 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   back: { marginRight: 12 },
   headerTitle: { fontSize: 20, fontWeight: '800', color: '#fff' },
   headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
@@ -420,11 +537,12 @@ const styles = StyleSheet.create({
   predCard: { marginBottom: 10, borderRadius: 14 },
   predRow: { flexDirection: 'row', alignItems: 'flex-start' },
   predIcon: { width: 38, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  predHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
+  predHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
   predTimeframe: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 },
-  confidenceBadge: { backgroundColor: '#EBF5FB', borderRadius: 8, paddingVertical: 2, paddingHorizontal: 7 },
-  confidenceText: { fontSize: 10, color: '#2980B9', fontWeight: '700' },
-  predPrediction: { fontSize: 13, color: colors.text, lineHeight: 19, marginBottom: 8 },
+  predTitle: { fontSize: 14, fontWeight: '700', color: colors.text, marginBottom: 2 },
+  confidenceBadge: { borderRadius: 8, paddingVertical: 2, paddingHorizontal: 7 },
+  confidenceText: { fontSize: 10, fontWeight: '700' },
+  predPrediction: { fontSize: 13, color: colors.text, lineHeight: 19, marginBottom: 4 },
   modelCard: { borderRadius: 16, marginTop: 12, backgroundColor: '#EBF5FB' },
   modelTitle: { fontSize: 14, fontWeight: '700', color: colors.text, marginTop: 6, marginBottom: 6 },
   modelDesc: { fontSize: 13, color: colors.textSecondary, lineHeight: 20 },
@@ -435,6 +553,15 @@ const styles = StyleSheet.create({
   whatIfScenario: { flex: 1, fontSize: 15, fontWeight: '700', color: colors.text },
   whatIfResults: { marginBottom: 14 },
   whatIfResult: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 8, paddingVertical: 6, paddingHorizontal: 10, marginBottom: 8, alignSelf: 'flex-start' },
+  whatIfImpact: { fontSize: 14, fontWeight: '800' },
+  whatIfEffect: { fontSize: 13, color: colors.textSecondary, lineHeight: 19 },
+  whatIfBtn: { borderRadius: 10, paddingVertical: 8, alignItems: 'center' },
+  whatIfBtnText: { fontSize: 13, fontWeight: '700', color: '#fff' },
+  customCard: { borderRadius: 16, marginTop: 8 },
+  customTitle: { fontSize: 15, fontWeight: '700', color: colors.text, marginBottom: 6 },
+  customDesc: { fontSize: 13, color: colors.textSecondary, lineHeight: 20, marginBottom: 14 },
+  customBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1.5, borderColor: colors.primary, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 16, alignSelf: 'flex-start' },
+  customBtnText: { fontSize: 13, fontWeight: '700', color: colors.primary },
   chatPanel: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: colors.background },
   chatEmpty: { alignItems: 'center', paddingTop: 20, paddingBottom: 8 },
   chatEmptyTitle: { fontSize: 18, fontWeight: '800', color: colors.text, marginBottom: 6 },
@@ -451,13 +578,4 @@ const styles = StyleSheet.create({
   chatInputRow: { flexDirection: 'row', alignItems: 'flex-end', padding: 12, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.background, gap: 10 },
   chatInput: { flex: 1, backgroundColor: colors.card, borderRadius: 22, paddingVertical: 10, paddingHorizontal: 16, fontSize: 14, color: colors.text, maxHeight: 100, borderWidth: 1, borderColor: colors.border },
   chatSendBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#2D2D8F', alignItems: 'center', justifyContent: 'center' },
-  whatIfImpact: { fontSize: 14, fontWeight: '800' },
-  whatIfEffect: { fontSize: 13, color: colors.textSecondary, lineHeight: 19 },
-  whatIfBtn: { borderRadius: 10, paddingVertical: 8, alignItems: 'center' },
-  whatIfBtnText: { fontSize: 13, fontWeight: '700', color: '#fff' },
-  customCard: { borderRadius: 16, marginTop: 8 },
-  customTitle: { fontSize: 15, fontWeight: '700', color: colors.text, marginBottom: 6 },
-  customDesc: { fontSize: 13, color: colors.textSecondary, lineHeight: 20, marginBottom: 14 },
-  customBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1.5, borderColor: colors.primary, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 16, alignSelf: 'flex-start' },
-  customBtnText: { fontSize: 13, fontWeight: '700', color: colors.primary },
 });

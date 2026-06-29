@@ -483,6 +483,7 @@ export interface ChatMessage {
   timestamp: string;
   isLoading?: boolean;
   suggestions?: string[];
+  pendingAction?: { type: string; payload: Record<string, unknown> };
 }
 
 export interface AIInsight {

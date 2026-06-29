@@ -76,7 +76,7 @@ export function WeeklyReportScreen({ navigation: navProp }: any) {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#0D1B2A', '#0F2952', '#1E4A8A']} style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <LinearGradient colors={['#0D1B2A', '#0F2952', '#1E4A8A']} style={[styles.header, { paddingTop: insets.top }]}>
         <View style={styles.headerRow}>
           <Pressable onPress={() => navigation.goBack()} style={styles.back}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -331,8 +331,8 @@ export function WeeklyReportScreen({ navigation: navProp }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { paddingHorizontal: 20, paddingBottom: 24, overflow: 'hidden' },
-  headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
+  header: { paddingHorizontal: 20, paddingBottom: 8, overflow: 'hidden' },
+  headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   back: { marginRight: 12 },
   headerTitle: { fontSize: 20, fontWeight: '800', color: '#fff' },
   headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 2 },

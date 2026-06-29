@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Modal, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Modal, Alert, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { differenceInDays } from 'date-fns';
 import * as Haptics from 'expo-haptics';
@@ -10,6 +10,7 @@ import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
 import { useOperationsStore } from '../../store/useOperationsStore';
+import { useShoppingStore } from '../../store/useShoppingStore';
 import type { PantryItem } from '../../types';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
@@ -37,8 +38,11 @@ export function PantryScreen({ navigation }: any) {
   const [newQuantity, setNewQuantity] = useState('1');
   const [newUnit, setNewUnit] = useState('pcs');
   const [newLocation, setNewLocation] = useState('Pantry');
+  const [newExpiryDate, setNewExpiryDate] = useState('');
+  const [newMinQuantity, setNewMinQuantity] = useState('');
 
   const { pantryItems, updatePantryItem, addPantryItem, deletePantryItem } = useOperationsStore();
+  const { addItem: addShoppingItem } = useShoppingStore();
 
   const handleAdd = () => {
     if (!newName.trim()) return;
@@ -50,13 +54,47 @@ export function PantryScreen({ navigation }: any) {
       quantity: parseInt(newQuantity, 10) || 1,
       unit: newUnit.trim() || 'pcs',
       location: newLocation.trim() || 'Pantry',
+      expiryDate: newExpiryDate.trim() || undefined,
+      minQuantity: newMinQuantity ? parseFloat(newMinQuantity) : undefined,
       updatedAt: new Date().toISOString(),
     };
     addPantryItem(item);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setNewName(''); setNewCategory('Produce'); setNewQuantity('1');
     setNewUnit('pcs'); setNewLocation('Pantry');
+    setNewExpiryDate(''); setNewMinQuantity('');
     setShowModal(false);
+  };
+
+  const handleAutoRestock = () => {
+    const lowItems = pantryItems.filter((i) => i.minQuantity !== undefined && i.quantity <= i.minQuantity);
+    if (lowItems.length === 0) {
+      Alert.alert('All Stocked', 'No items are below minimum quantity.');
+      return;
+    }
+    lowItems.forEach((item) => {
+      addShoppingItem({
+        name: item.name,
+        category: 'pantry',
+        quantity: 1,
+        unit: item.unit,
+      });
+    });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    Alert.alert('Auto-Restock', `Added ${lowItems.length} low-stock item(s) to your shopping list.`);
+  };
+
+  const handleQuantityUpdate = (item: PantryItem, newQty: number) => {
+    updatePantryItem(item.id, { quantity: newQty });
+    if (newQty === 0) {
+      addShoppingItem({
+        name: item.name,
+        category: 'pantry',
+        quantity: 1,
+        unit: item.unit,
+      });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    }
   };
 
   const handleDelete = (id: string, name: string) => {
@@ -97,7 +135,7 @@ export function PantryScreen({ navigation }: any) {
         onBack={() => navigation.goBack()}
         rightAction={
           <View style={s.headerActions}>
-            <Pressable style={s.actionBtn}><Ionicons name="cart-outline" size={22} color="#fff" /></Pressable>
+            <Pressable onPress={handleAutoRestock} style={s.actionBtn}><Ionicons name="cart-outline" size={22} color="#fff" /></Pressable>
             <Pressable onPress={() => setShowModal(true)} style={s.actionBtn}><Ionicons name="add" size={24} color="#fff" /></Pressable>
           </View>
         }
@@ -155,11 +193,11 @@ export function PantryScreen({ navigation }: any) {
                   </View>
                   <Text style={s.itemCategory}>{item.category} • {item.location || 'Pantry'}</Text>
                   <View style={s.itemQuantityRow}>
-                    <Pressable onPress={() => updatePantryItem(item.id, { quantity: Math.max(0, item.quantity - 1) })} style={s.qtyBtn}>
+                    <Pressable onPress={() => handleQuantityUpdate(item, Math.max(0, item.quantity - 1))} style={s.qtyBtn}>
                       <Ionicons name="remove" size={16} color={colors.primary} />
                     </Pressable>
                     <Text style={s.itemQuantity}>{item.quantity} {item.unit}</Text>
-                    <Pressable onPress={() => updatePantryItem(item.id, { quantity: item.quantity + 1 })} style={s.qtyBtn}>
+                    <Pressable onPress={() => handleQuantityUpdate(item, item.quantity + 1)} style={s.qtyBtn}>
                       <Ionicons name="add" size={16} color={colors.primary} />
                     </Pressable>
                     {isLowStock && <Badge label="Low" variant="warning" size="sm" style={{ marginLeft: 8 }} />}
@@ -210,7 +248,13 @@ export function PantryScreen({ navigation }: any) {
           </ScrollView>
 
           <Text style={s.modalLabel}>Storage Location</Text>
-          <TextInput style={[s.modalInput, { marginBottom: 24 }]} placeholder="e.g. Pantry, Fridge, Freezer" value={newLocation} onChangeText={setNewLocation} placeholderTextColor={colors.textMuted} />
+          <TextInput style={s.modalInput} placeholder="e.g. Pantry, Fridge, Freezer" value={newLocation} onChangeText={setNewLocation} placeholderTextColor={colors.textMuted} />
+
+          <Text style={s.modalLabel}>Expiry Date (YYYY-MM-DD)</Text>
+          <TextInput style={s.modalInput} placeholder="e.g. 2026-08-01" value={newExpiryDate} onChangeText={setNewExpiryDate} placeholderTextColor={colors.textMuted} />
+
+          <Text style={s.modalLabel}>Min Quantity (for restock alert)</Text>
+          <TextInput style={[s.modalInput, { marginBottom: 24 }]} placeholder="e.g. 1" value={newMinQuantity} onChangeText={setNewMinQuantity} keyboardType="numeric" placeholderTextColor={colors.textMuted} />
 
           <Button title="Add Item" onPress={handleAdd} fullWidth size="lg" disabled={!newName.trim()} />
           <Button title="Cancel" onPress={() => setShowModal(false)} variant="ghost" fullWidth style={{ marginTop: 8 }} />

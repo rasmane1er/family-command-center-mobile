@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -19,6 +19,7 @@ import { shadows } from '../../theme/spacing';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { useHomeInventoryStore } from '../../store/useHomeInventoryStore';
+import { getRetailPurchases, type RetailPurchase } from '../../services/autoFillService';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -146,6 +147,18 @@ export function HomeInventoryScreen({ navigation }: any) {
   const [newCurrentValue, setNewCurrentValue] = useState('');
   const [newWarrantyExpiry, setNewWarrantyExpiry] = useState('');
   const [newNotes, setNewNotes] = useState('');
+
+  const [retailPurchases, setRetailPurchases] = useState<RetailPurchase[]>([]);
+  const [retailBannerExpanded, setRetailBannerExpanded] = useState(true);
+  const [dismissedPurchases, setDismissedPurchases] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    getRetailPurchases(100, 30)
+      .then((res) => setRetailPurchases(res.purchases))
+      .catch(() => {
+        // Silently fail if Plaid not connected
+      });
+  }, []);
 
   const totalValue = getTotalValue();
   const roomsWithItems = ALL_ROOMS.filter((r) => getItemsByRoom(r).length > 0);
@@ -464,6 +477,44 @@ export function HomeInventoryScreen({ navigation }: any) {
         ))}
       </View>
 
+      {retailPurchases.filter((p) => !dismissedPurchases.has(p.merchantName + p.date)).length > 0 && (
+        <View style={styles.retailBanner}>
+          <Pressable onPress={() => setRetailBannerExpanded((v) => !v)} style={styles.retailBannerHeader}>
+            <Ionicons name="bag-handle-outline" size={16} color="#37474F" />
+            <Text style={styles.retailBannerTitle}>Recent purchases to add?</Text>
+            <Ionicons name={retailBannerExpanded ? 'chevron-up' : 'chevron-down'} size={16} color="#37474F" />
+          </Pressable>
+          {retailBannerExpanded && retailPurchases
+            .filter((p) => !dismissedPurchases.has(p.merchantName + p.date))
+            .slice(0, 5)
+            .map((purchase, i) => (
+              <View key={i} style={styles.retailPurchaseRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.retailMerchant}>{purchase.merchantName}</Text>
+                  <Text style={styles.retailDetail}>${purchase.amount} · {purchase.date}</Text>
+                </View>
+                <Pressable
+                  onPress={() => {
+                    setNewName(purchase.merchantName);
+                    setNewPurchaseDate(purchase.date);
+                    setNewPurchasePrice(purchase.amount.toString());
+                    setNewCurrentValue(purchase.amount.toString());
+                    setShowAddModal(true);
+                    setDismissedPurchases((prev) => new Set([...prev, purchase.merchantName + purchase.date]));
+                  }}
+                  style={styles.retailAddBtn}
+                >
+                  <Ionicons name="add" size={14} color="#fff" />
+                  <Text style={styles.retailAddBtnText}>Add</Text>
+                </Pressable>
+                <Pressable onPress={() => setDismissedPurchases((prev) => new Set([...prev, purchase.merchantName + purchase.date]))} style={styles.retailDismissBtn}>
+                  <Ionicons name="close" size={14} color={colors.textMuted} />
+                </Pressable>
+              </View>
+            ))}
+        </View>
+      )}
+
       {activeTab === 'By Room' && renderByRoomTab()}
       {activeTab === 'All Items' && renderAllItemsTab()}
       {activeTab === 'Value Report' && renderValueReportTab()}
@@ -635,6 +686,15 @@ export function HomeInventoryScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
+  retailBanner: { backgroundColor: '#ECEFF1', borderLeftWidth: 4, borderLeftColor: '#37474F', margin: 12, borderRadius: 12, padding: 12 },
+  retailBannerHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+  retailBannerTitle: { flex: 1, fontSize: 13, fontWeight: '700', color: '#37474F' },
+  retailPurchaseRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6, backgroundColor: '#fff', borderRadius: 10, padding: 8 },
+  retailMerchant: { fontSize: 13, fontWeight: '700', color: colors.text },
+  retailDetail: { fontSize: 11, color: colors.textSecondary },
+  retailAddBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8, backgroundColor: '#37474F' },
+  retailAddBtnText: { fontSize: 12, fontWeight: '700', color: '#fff' },
+  retailDismissBtn: { padding: 4 },
   container: { flex: 1, backgroundColor: colors.background },
   headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
   backBtn: { marginRight: 12 },

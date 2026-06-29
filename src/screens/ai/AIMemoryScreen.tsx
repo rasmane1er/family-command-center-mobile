@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Modal, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,6 +12,7 @@ import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
 import { useMemoryStore } from '../../store/useMemoryStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { useFinanceStore } from '../../store/useFinanceStore';
 import { chatWithMemoryAI, AIMessage } from '../../services/aiService';
 import type { MemoryType } from '../../types';
 
@@ -54,8 +55,65 @@ export function AIMemoryScreen({ navigation }: any) {
 
   const { memories, pinMemory, addMemory, seedDemoData } = useMemoryStore();
   const members = useFamilyStore((s) => s.members);
+  const financialGoals = useFinanceStore((s) => s.financialGoals);
 
   if (memories.length === 0) seedDemoData();
+
+  // Auto-generate memories from milestones
+  useEffect(() => {
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    let autoAdded = 0;
+
+    // Completed financial goals
+    financialGoals.forEach((goal) => {
+      if (!goal.isCompleted) return;
+      const prefix = `Goal achieved: ${goal.name}`;
+      const alreadyExists = memories.some((m) => m.title.startsWith(prefix));
+      if (!alreadyExists) {
+        addMemory({
+          familyId: 'demo-family',
+          type: 'milestone',
+          title: prefix,
+          content: `Family reached financial goal: ${goal.name} of $${goal.targetAmount}`,
+          tags: ['finance', 'milestone', 'goal'],
+          isPinned: false,
+          sentiment: 'positive',
+        });
+        autoAdded++;
+      }
+    });
+
+    // Birthdays today
+    members.forEach((m) => {
+      if (!m.dateOfBirth) return;
+      const dob = new Date(m.dateOfBirth);
+      if (dob.getMonth() === today.getMonth() && dob.getDate() === today.getDate()) {
+        const prefix = `${m.name}'s Birthday!`;
+        const alreadyExists = memories.some(
+          (mem) => mem.title === prefix && mem.createdAt.startsWith(todayStr),
+        );
+        if (!alreadyExists) {
+          addMemory({
+            familyId: 'demo-family',
+            memberId: m.id,
+            type: 'milestone',
+            title: prefix,
+            content: `Today is ${m.name}'s birthday!`,
+            tags: ['birthday', 'milestone', m.name.toLowerCase()],
+            isPinned: false,
+            sentiment: 'positive',
+          });
+          autoAdded++;
+        }
+      }
+    });
+
+    if (autoAdded > 0) {
+      Alert.alert('Auto-added memories', `${autoAdded} memory${autoAdded !== 1 ? 'ies' : ''} auto-generated from milestones.`);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const getMemberName = (id?: string) => members.find((m) => m.id === id)?.name;
 
@@ -119,7 +177,7 @@ export function AIMemoryScreen({ navigation }: any) {
   return (
     <View style={dynStyles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#2D1B69', '#6A1B9A']} style={[dynStyles.header, { paddingTop: insets.top + 12 }]}>
+      <LinearGradient colors={['#2D1B69', '#6A1B9A']} style={[dynStyles.header, { paddingTop: insets.top }]}>
         <View style={dynStyles.headerTop}>
           <Pressable onPress={() => navigation.goBack()} style={dynStyles.back}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -354,10 +412,10 @@ export function AIMemoryScreen({ navigation }: any) {
 function makeStyles(colors: import('../../theme/ThemeContext').ThemeColors) {
   return StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { paddingHorizontal: 20, paddingBottom: 16 },
+  header: { paddingHorizontal: 20, paddingBottom: 8 },
   headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
   back: { marginRight: 12 },
-  headerTitle: { fontSize: 22, fontWeight: '800', color: '#fff' },
+  headerTitle: { fontSize: 18, fontWeight: '800', color: '#fff' },
   headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
   addBtn: { width: 38, height: 38, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   aiBtn: { width: 38, height: 38, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center', marginRight: 8 },

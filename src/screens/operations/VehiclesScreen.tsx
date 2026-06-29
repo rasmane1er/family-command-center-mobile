@@ -17,6 +17,7 @@ import { Button } from '../../components/common/Button';
 import { Avatar } from '../../components/common/Avatar';
 import { useOperationsStore } from '../../store/useOperationsStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { useHomeMaintenanceStore } from '../../store/useHomeMaintenanceStore';
 import type { Vehicle } from '../../types';
 
 const FUEL_TYPES = ['Gasoline', 'Diesel', 'Hybrid', 'Electric', 'Plug-in Hybrid'];
@@ -53,9 +54,10 @@ export function VehiclesScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const s = makeStyles(colors);
 
-  const { vehicles, addVehicle, updateVehicle, deleteVehicle } = useOperationsStore();
+  const { vehicles, addVehicle, updateVehicle, deleteVehicle, documents } = useOperationsStore();
   const members = useFamilyStore((s) => s.members);
   const family  = useFamilyStore((s) => s.family);
+  const { addTask: addMaintenanceTask } = useHomeMaintenanceStore();
 
   // ── add vehicle modal ──────────────────────────────────────────────────────
   const [showAdd, setShowAdd]         = useState(false);
@@ -152,11 +154,47 @@ export function VehiclesScreen({ navigation }: any) {
     const existing = parseServiceLogs(serviceVehicle);
     const updated = [log, ...existing];
 
+    const newMileage = log.mileage ?? serviceVehicle.mileage;
+    const lastServiceMileage = serviceVehicle.lastServiceMileage ?? serviceVehicle.mileage ?? 0;
+
     updateVehicle(serviceVehicle.id, {
       lastService: svcDate,
-      mileage: log.mileage ?? serviceVehicle.mileage,
+      mileage: newMileage,
+      lastServiceMileage: log.mileage ?? lastServiceMileage,
       ...(({ serviceLogs: JSON.stringify(updated) }) as any),
     });
+
+    // Check if oil change is due
+    if (
+      log.mileage !== undefined &&
+      serviceVehicle.mileage !== undefined &&
+      log.mileage - lastServiceMileage >= 5000
+    ) {
+      Alert.alert(
+        'Oil Change Due',
+        `Mileage difference is ${(log.mileage - lastServiceMileage).toLocaleString()} miles. Add oil change to maintenance?`,
+        [
+          { text: 'No', style: 'cancel' },
+          {
+            text: 'Yes',
+            onPress: () => {
+              const vehicleName = `${serviceVehicle.year} ${serviceVehicle.make} ${serviceVehicle.model}`;
+              addMaintenanceTask({
+                familyId: family?.id ?? 'demo-family',
+                title: `Oil Change — ${vehicleName}`,
+                category: 'other',
+                priority: 'high',
+                status: 'pending',
+                estimatedCost: 80,
+                notes: `Mileage: ${log.mileage?.toLocaleString()} mi`,
+                isRecurring: false,
+              });
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            },
+          },
+        ],
+      );
+    }
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setServiceVehicle(null);
@@ -297,6 +335,38 @@ export function VehiclesScreen({ navigation }: any) {
                   )}
                 </View>
               )}
+
+              {/* Linked Documents */}
+              {(() => {
+                const vehicleName = `${vehicle.year} ${vehicle.make} ${vehicle.model}`.toLowerCase();
+                const linkedDocs = documents.filter((d) =>
+                  (d.title ?? '').toLowerCase().includes(vehicle.make.toLowerCase()) ||
+                  (d.title ?? '').toLowerCase().includes(vehicle.model.toLowerCase()) ||
+                  d.category === 'insurance' || d.category === 'vehicle'
+                );
+                if (linkedDocs.length === 0) return null;
+                return (
+                  <View style={s.linkedDocsSection}>
+                    <Text style={s.linkedDocsTitle}>Linked Documents</Text>
+                    {linkedDocs.map((doc) => {
+                      const expiryDays = doc.expiryDate
+                        ? differenceInDays(new Date(doc.expiryDate), new Date())
+                        : null;
+                      return (
+                        <View key={doc.id} style={[s.linkedDocItem, expiryDays !== null && expiryDays <= 60 && { backgroundColor: colors.warningLight }]}>
+                          <Ionicons name="document-text-outline" size={14} color={expiryDays !== null && expiryDays <= 60 ? colors.warning : colors.textSecondary} />
+                          <Text style={s.linkedDocName} numberOfLines={1}>{doc.title}</Text>
+                          {expiryDays !== null && (
+                            <Text style={[s.linkedDocExpiry, { color: expiryDays <= 60 ? colors.warning : colors.textMuted }]}>
+                              {expiryDays <= 0 ? 'Expired' : `${expiryDays}d`}
+                            </Text>
+                          )}
+                        </View>
+                      );
+                    })}
+                  </View>
+                );
+              })()}
 
               {/* Action buttons */}
               <View style={s.actionRow}>
@@ -562,6 +632,12 @@ function makeStyles(colors: any) {
     alerts: { gap: 6, marginBottom: 12 },
     alertItem: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 9, borderRadius: 10, backgroundColor: colors.background },
     alertText: { fontSize: 13, fontWeight: '600' },
+    // linked docs
+    linkedDocsSection: { marginBottom: 12, gap: 6 },
+    linkedDocsTitle: { fontSize: 11, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
+    linkedDocItem: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 8, borderRadius: 8, backgroundColor: colors.background },
+    linkedDocName: { flex: 1, fontSize: 12, color: colors.text, fontWeight: '600' },
+    linkedDocExpiry: { fontSize: 11, fontWeight: '700' },
     // actions
     actionRow: { flexDirection: 'row', gap: 8, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12 },
     actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 10, backgroundColor: colors.background, borderRadius: 10, borderWidth: 1, borderColor: colors.border },

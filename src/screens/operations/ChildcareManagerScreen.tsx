@@ -111,6 +111,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
   const [bkStartTime, setBkStartTime] = useState('');
   const [bkEndTime, setBkEndTime] = useState('');
   const [bkHours, setBkHours] = useState('');
+  const [bkAmountPaid, setBkAmountPaid] = useState('');
   const [bkNotes, setBkNotes] = useState('');
 
   if (caregivers.length === 0) seedDemoData();
@@ -230,6 +231,36 @@ export function ChildcareManagerScreen({ navigation }: any) {
     setShowAddCaregiverModal(false);
   };
 
+  const parseTimeToMinutes = (timeStr: string): number => {
+    const cleaned = timeStr.trim().toUpperCase();
+    const match = cleaned.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/);
+    if (!match) return 0;
+    let hours = parseInt(match[1], 10);
+    const minutes = parseInt(match[2], 10);
+    const meridiem = match[3];
+    if (meridiem === 'PM' && hours !== 12) hours += 12;
+    if (meridiem === 'AM' && hours === 12) hours = 0;
+    return hours * 60 + minutes;
+  };
+
+  const handleEndTimeChange = (val: string) => {
+    setBkEndTime(val);
+    if (bkStartTime && val) {
+      const startMins = parseTimeToMinutes(bkStartTime);
+      const endMins = parseTimeToMinutes(val);
+      let diff = endMins - startMins;
+      if (diff < 0) diff += 24 * 60;
+      const hoursDecimal = diff / 60;
+      if (hoursDecimal > 0) {
+        setBkHours(hoursDecimal.toFixed(2));
+        const caregiver = getCaregiverById(bkCaregiverId);
+        if (caregiver?.hourlyRate) {
+          setBkAmountPaid((hoursDecimal * caregiver.hourlyRate).toFixed(2));
+        }
+      }
+    }
+  };
+
   const handleAddBooking = () => {
     if (!bkCaregiverId || !bkDate || !bkStartTime || !bkEndTime) return;
     addBooking({
@@ -247,6 +278,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
     setBkStartTime('');
     setBkEndTime('');
     setBkHours('');
+    setBkAmountPaid('');
     setBkNotes('');
     setShowAddBookingModal(false);
   };
@@ -692,17 +724,27 @@ export function ChildcareManagerScreen({ navigation }: any) {
             style={styles.modalInput}
             placeholder='e.g. "10:00 PM"'
             value={bkEndTime}
-            onChangeText={setBkEndTime}
+            onChangeText={handleEndTimeChange}
             placeholderTextColor={colors.textMuted}
           />
 
-          <Text style={styles.modalLabel}>Hours Worked</Text>
+          <Text style={styles.modalLabel}>Hours Worked (auto-calculated)</Text>
           <TextInput
             style={styles.modalInput}
             placeholder="e.g. 4"
             value={bkHours}
             onChangeText={setBkHours}
             keyboardType="numeric"
+            placeholderTextColor={colors.textMuted}
+          />
+
+          <Text style={styles.modalLabel}>Amount to Pay ($, auto-calculated)</Text>
+          <TextInput
+            style={styles.modalInput}
+            placeholder="e.g. 60.00"
+            value={bkAmountPaid}
+            onChangeText={setBkAmountPaid}
+            keyboardType="decimal-pad"
             placeholderTextColor={colors.textMuted}
           />
 

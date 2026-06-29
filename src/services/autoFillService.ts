@@ -84,3 +84,50 @@ export async function getDetectedInsurance(): Promise<{ insurance: DetectedInsur
 export async function getInvestmentAccounts(): Promise<{ accounts: PlaidInvestmentAccount[] }> {
   return authFetch('/plaid/autofill/investment-accounts');
 }
+
+// ─── New autofill types and functions ─────────────────────────────────────────
+
+export interface TravelCharge {
+  merchantName: string;
+  amount: number;
+  date: string;
+  suggestedType: string;
+}
+
+export interface RetailPurchase {
+  merchantName: string;
+  amount: number;
+  date: string;
+  suggestedCategory: string;
+}
+
+export interface PetCharge {
+  merchantName: string;
+  amount: number;
+  date: string;
+  isVetVisit: boolean;
+}
+
+export interface CaregiverPayment {
+  merchantName: string;
+  amount: number;
+  date: string;
+  matchedName: string;
+}
+
+export async function getTravelCharges(startDate: string, endDate: string): Promise<{ charges: TravelCharge[] }> {
+  return authFetch(`/plaid/autofill/travel-charges?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`);
+}
+
+export async function getRetailPurchases(minAmount = 100, days = 30): Promise<{ purchases: RetailPurchase[] }> {
+  return authFetch(`/plaid/autofill/retail-purchases?minAmount=${minAmount}&days=${days}`);
+}
+
+export async function getPetCharges(): Promise<{ charges: PetCharge[] }> {
+  return authFetch('/plaid/autofill/pet-charges');
+}
+
+export async function getCaregiverPayments(caregiverNames: string[]): Promise<{ payments: CaregiverPayment[] }> {
+  const names = caregiverNames.join(',');
+  return authFetch(`/plaid/autofill/caregiver-payments?names=${encodeURIComponent(names)}`);
+}

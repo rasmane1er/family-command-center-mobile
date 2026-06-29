@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput, Dimensions,
+  View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput, Dimensions, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -243,12 +243,104 @@ function TripDetailModal({ trip, onClose }: { trip: Trip; onClose: () => void })
   );
 }
 
+const TRIP_EMOJIS = ['✈️', '🏖️', '🏔️', '🏙️', '🌍'];
+const TRIP_COLORS = ['#0E6655', '#2980B9', '#8E44AD', '#E67E22', '#E74C3C'];
+
+function AddTripModal({ visible, onClose, onAdd }: { visible: boolean; onClose: () => void; onAdd: (t: Omit<Trip, 'id' | 'itinerary' | 'packingList' | 'spent'>) => void }) {
+  const [name, setName] = useState('');
+  const [destination, setDestination] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [budget, setBudget] = useState('');
+  const [emoji, setEmoji] = useState('✈️');
+  const [color, setColor] = useState(TRIP_COLORS[0]);
+
+  const handleAdd = () => {
+    if (!name.trim() || !destination.trim() || !startDate.trim() || !endDate.trim()) return;
+    onAdd({
+      name: name.trim(),
+      destination: destination.trim(),
+      startDate: startDate.trim(),
+      endDate: endDate.trim(),
+      budget: parseFloat(budget) || 0,
+      emoji,
+      color,
+      attendeeIds: [],
+      status: 'planning',
+    });
+    setName(''); setDestination(''); setStartDate(''); setEndDate(''); setBudget('');
+    setEmoji('✈️'); setColor(TRIP_COLORS[0]);
+    onClose();
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <ScrollView style={styles.addTripModal} contentContainerStyle={{ paddingBottom: 48 }}>
+          <View style={styles.addTripHandle} />
+          <Text style={styles.addTripTitle}>Plan New Trip</Text>
+
+          <Text style={styles.addTripLabel}>Trip Name *</Text>
+          <TextInput style={styles.addTripInput} value={name} onChangeText={setName} placeholder="e.g. Summer Beach Vacation" placeholderTextColor={colors.textSecondary} autoFocus />
+
+          <Text style={styles.addTripLabel}>Destination *</Text>
+          <TextInput style={styles.addTripInput} value={destination} onChangeText={setDestination} placeholder="e.g. Miami, FL" placeholderTextColor={colors.textSecondary} />
+
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.addTripLabel}>Start Date (YYYY-MM-DD) *</Text>
+              <TextInput style={styles.addTripInput} value={startDate} onChangeText={setStartDate} placeholder="2026-07-01" placeholderTextColor={colors.textSecondary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.addTripLabel}>End Date (YYYY-MM-DD) *</Text>
+              <TextInput style={styles.addTripInput} value={endDate} onChangeText={setEndDate} placeholder="2026-07-10" placeholderTextColor={colors.textSecondary} />
+            </View>
+          </View>
+
+          <Text style={styles.addTripLabel}>Budget ($)</Text>
+          <TextInput style={styles.addTripInput} value={budget} onChangeText={setBudget} placeholder="e.g. 3000" keyboardType="numeric" placeholderTextColor={colors.textSecondary} />
+
+          <Text style={styles.addTripLabel}>Emoji</Text>
+          <View style={styles.addTripEmojiRow}>
+            {TRIP_EMOJIS.map((e) => (
+              <Pressable key={e} onPress={() => setEmoji(e)} style={[styles.addTripEmojiChip, emoji === e && styles.addTripEmojiChipActive]}>
+                <Text style={styles.addTripEmojiText}>{e}</Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <Text style={styles.addTripLabel}>Color</Text>
+          <View style={styles.addTripColorRow}>
+            {TRIP_COLORS.map((c) => (
+              <Pressable key={c} onPress={() => setColor(c)} style={[styles.addTripColorSwatch, { backgroundColor: c }, color === c && styles.addTripColorSwatchSelected]} />
+            ))}
+          </View>
+
+          <Pressable
+            onPress={handleAdd}
+            disabled={!name.trim() || !destination.trim() || !startDate.trim() || !endDate.trim()}
+            style={[styles.addTripSubmit, (!name.trim() || !destination.trim() || !startDate.trim() || !endDate.trim()) && { opacity: 0.4 }]}
+          >
+            <Ionicons name="airplane" size={18} color="#fff" />
+            <Text style={styles.addTripSubmitText}>Create Trip</Text>
+          </Pressable>
+
+          <Pressable onPress={onClose} style={{ paddingVertical: 14, alignItems: 'center' }}>
+            <Text style={{ fontSize: 14, color: colors.textSecondary }}>Cancel</Text>
+          </Pressable>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
 export function TravelPlanningScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
   const [filter, setFilter] = useState<Trip['status'] | 'all'>('all');
+  const [showAddTrip, setShowAddTrip] = useState(false);
 
-  const { trips, deleteTrip, seedDemoData } = useTravelStore();
+  const { trips, addTrip, deleteTrip, seedDemoData } = useTravelStore();
   const members = useFamilyStore((s) => s.members);
 
   if (trips.length === 0) seedDemoData();
@@ -275,7 +367,7 @@ export function TravelPlanningScreen({ navigation }: any) {
             <Text style={styles.headerTitle}>Travel Planning</Text>
             <Text style={styles.headerSub}>{upcomingCount} upcoming trips</Text>
           </View>
-          <Pressable style={styles.addBtn}>
+          <Pressable style={styles.addBtn} onPress={() => setShowAddTrip(true)}>
             <Ionicons name="add" size={22} color="#fff" />
           </Pressable>
         </View>
@@ -371,6 +463,15 @@ export function TravelPlanningScreen({ navigation }: any) {
           );
         })}
       </ScrollView>
+
+      <AddTripModal
+        visible={showAddTrip}
+        onClose={() => setShowAddTrip(false)}
+        onAdd={(t) => {
+          addTrip(t);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }}
+      />
     </View>
   );
 }
@@ -456,4 +557,19 @@ const styles = StyleSheet.create({
   txIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   txDesc: { flex: 1, fontSize: 13, color: colors.text, fontWeight: '600' },
   txAmount: { fontSize: 14, fontWeight: '700', color: colors.text },
+  // Add Trip Modal
+  addTripModal: { flex: 1, backgroundColor: colors.background, padding: 24 },
+  addTripHandle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 24 },
+  addTripTitle: { fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 20 },
+  addTripLabel: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, marginBottom: 8, marginTop: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  addTripInput: { backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 15, color: colors.text, borderWidth: 1.5, borderColor: colors.border, marginBottom: 4 },
+  addTripEmojiRow: { flexDirection: 'row', gap: 10, marginBottom: 4, flexWrap: 'wrap' },
+  addTripEmojiChip: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.border, backgroundColor: colors.card },
+  addTripEmojiChipActive: { borderColor: '#0E6655', backgroundColor: '#D5F5E3' },
+  addTripEmojiText: { fontSize: 22 },
+  addTripColorRow: { flexDirection: 'row', gap: 10, marginBottom: 20, flexWrap: 'wrap' },
+  addTripColorSwatch: { width: 36, height: 36, borderRadius: 18 },
+  addTripColorSwatchSelected: { borderWidth: 3, borderColor: colors.text },
+  addTripSubmit: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#0E6655', borderRadius: 14, paddingVertical: 16, marginTop: 8 },
+  addTripSubmitText: { fontSize: 16, fontWeight: '700', color: '#fff' },
 });

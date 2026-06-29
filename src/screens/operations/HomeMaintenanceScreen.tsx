@@ -102,6 +102,28 @@ function isOverdue(dateStr?: string): boolean {
 
 const PRIORITY_ORDER: Record<MaintenancePriority, number> = { urgent: 0, high: 1, medium: 2, low: 3 };
 
+const SEASONAL_SUGGESTIONS: Record<number, string[]> = {
+  0: ['HVAC Filter Change', 'Check smoke detectors', 'Weatherstripping inspection'],
+  1: ['HVAC Filter Change', 'Check smoke detectors', 'Weatherstripping inspection'],
+  2: ['HVAC Filter Change', 'Check smoke detectors', 'Weatherstripping inspection'],
+  3: ['Gutter cleaning', 'AC service', 'Exterior paint inspection'],
+  4: ['Gutter cleaning', 'AC service', 'Exterior paint inspection'],
+  5: ['Gutter cleaning', 'AC service', 'Exterior paint inspection'],
+  6: ['Deck/patio inspection', 'Irrigation check', 'Window cleaning'],
+  7: ['Deck/patio inspection', 'Irrigation check', 'Window cleaning'],
+  8: ['Deck/patio inspection', 'Irrigation check', 'Window cleaning'],
+  9: ['Furnace inspection', 'Chimney sweep', 'Leaf gutter cleaning'],
+  10: ['Furnace inspection', 'Chimney sweep', 'Leaf gutter cleaning'],
+  11: ['Furnace inspection', 'Chimney sweep', 'Leaf gutter cleaning'],
+};
+
+const SEASON_LABELS: Record<number, string> = {
+  0: 'Winter', 1: 'Winter', 2: 'Winter',
+  3: 'Spring', 4: 'Spring', 5: 'Spring',
+  6: 'Summer', 7: 'Summer', 8: 'Summer',
+  9: 'Fall', 10: 'Fall', 11: 'Fall',
+};
+
 export function HomeMaintenanceScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const { tasks, addTask, updateTask, deleteTask, completeTask, seedDemoData } = useHomeMaintenanceStore();
@@ -356,6 +378,31 @@ export function HomeMaintenanceScreen({ navigation }: any) {
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
         {activeTab === 'pending' && (
           <>
+            {(() => {
+              const month = new Date().getMonth();
+              const suggestions = SEASONAL_SUGGESTIONS[month] ?? [];
+              const season = SEASON_LABELS[month] ?? '';
+              return (
+                <View style={styles.seasonalSection}>
+                  <Text style={styles.seasonalTitle}>🍂 {season} Suggestions</Text>
+                  <View style={styles.seasonalChips}>
+                    {suggestions.map((s) => (
+                      <Pressable
+                        key={s}
+                        onPress={() => {
+                          setFormTitle(s);
+                          setShowAddModal(true);
+                        }}
+                        style={styles.seasonalChip}
+                      >
+                        <Ionicons name="add-circle-outline" size={14} color={colors.primary} />
+                        <Text style={styles.seasonalChipText}>{s}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </View>
+              );
+            })()}
             {pendingTasks.length === 0 && (
               <View style={styles.emptyState}>
                 <Ionicons name="home-outline" size={64} color={colors.textMuted} />
@@ -477,6 +524,11 @@ export function HomeMaintenanceScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
+  seasonalSection: { backgroundColor: colors.card, borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: colors.border },
+  seasonalTitle: { fontSize: 14, fontWeight: '700', color: colors.text, marginBottom: 10 },
+  seasonalChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  seasonalChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 7, paddingHorizontal: 12, borderRadius: 20, backgroundColor: colors.primary + '12', borderWidth: 1, borderColor: colors.primary + '40' },
+  seasonalChipText: { fontSize: 12, fontWeight: '600', color: colors.primary },
   container: {
     flex: 1,
     backgroundColor: colors.background,

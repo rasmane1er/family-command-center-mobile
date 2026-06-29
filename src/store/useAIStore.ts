@@ -62,11 +62,15 @@ export const useAIStore = create<AIState>()(
 
       let assistantContent = '';
       let suggestions: string[] = [];
+      let pendingAction: { type: string; payload: Record<string, unknown> } | undefined = undefined;
 
       if (response.ok) {
-        const data = (await response.json()) as { reply: string; suggestions?: string[] };
+        const data = (await response.json()) as { reply: string; suggestions?: string[]; action?: { type: string; payload: Record<string, unknown> } };
         assistantContent = data.reply || getDemoResponse(content);
         suggestions = data.suggestions ?? getContextSuggestions(content);
+        if (data.action) {
+          pendingAction = data.action;
+        }
       } else {
         assistantContent = getDemoResponse(content);
         suggestions = getContextSuggestions(content);
@@ -78,6 +82,7 @@ export const useAIStore = create<AIState>()(
         content: assistantContent,
         timestamp: new Date().toISOString(),
         suggestions,
+        ...(pendingAction ? { pendingAction } : {}),
       };
 
       set((s) => ({ messages: [...s.messages, assistantMessage], isTyping: false }));

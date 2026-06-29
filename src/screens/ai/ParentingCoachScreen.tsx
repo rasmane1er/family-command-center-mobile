@@ -8,7 +8,10 @@ import { colors } from '../../theme/colors';
 import { Card } from '../../components/common/Card';
 import { ProgressBar } from '../../components/common/ProgressBar';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { useGuardianStore } from '../../store/useGuardianStore';
+import { useMemoryStore } from '../../store/useMemoryStore';
 import { chatWithParentingCoach, AIMessage } from '../../services/aiService';
+import { computeAge } from '../../utils/buildFamilyContext';
 
 const COACHING_MODULES = [
   { id: 'm1', title: 'Positive Discipline', icon: 'heart', color: '#E74C3C', bg: '#FDEDEC', desc: 'Science-backed strategies that build connection while setting boundaries', sessions: 8, completed: 5, rating: 4.9 },
@@ -44,6 +47,8 @@ export function ParentingCoachScreen({ navigation }: any) {
   const chatScrollRef = useRef<ScrollView>(null);
   const members = useFamilyStore((s) => s.members);
   const children = members.filter((m) => m.role === 'child');
+  const screenTimeRules = useGuardianStore((s) => s.screenTimeRules);
+  const memories = useMemoryStore((s) => s.memories);
 
   const totalCompleted = COACHING_MODULES.reduce((s, m) => s + m.completed, 0);
   const totalSessions = COACHING_MODULES.reduce((s, m) => s + m.sessions, 0);
@@ -68,8 +73,23 @@ export function ParentingCoachScreen({ navigation }: any) {
     setLastReply('');
     setTimeout(() => chatScrollRef.current?.scrollToEnd({ animated: true }), 100);
 
+    const childContext = children.length
+      ? children.map((c) => {
+          const age = computeAge(c.dateOfBirth);
+          const rule = screenTimeRules.find((r) => r.memberId === c.id);
+          return `${c.name} (age ${age}${rule ? `, ${rule.dailyLimitMinutes}min screen limit` : ''})`;
+        }).join(', ')
+      : 'no children';
+
+    const childMembers = new Set(children.map((c) => c.id));
+    const recentMemories = memories
+      .filter((m) => m.memberId && childMembers.has(m.memberId))
+      .slice(0, 3)
+      .map((m) => m.title)
+      .join(', ');
+
     const context = children.length
-      ? `Family has ${children.length} child(ren): ${children.map((c) => c.name).join(', ')}`
+      ? `Children: ${childContext}${recentMemories ? `. Recent memories: ${recentMemories}` : ''}`
       : 'General parenting question';
 
     const result = await chatWithParentingCoach({ message: msg, context, history: chatHistory });
@@ -84,7 +104,7 @@ export function ParentingCoachScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#1A6B3C', '#27AE60']} style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <LinearGradient colors={['#1A6B3C', '#27AE60']} style={[styles.header, { paddingTop: insets.top }]}>
         <View style={styles.headerTop}>
           <Pressable onPress={() => navigation.goBack()} style={styles.back}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -254,10 +274,10 @@ export function ParentingCoachScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { paddingHorizontal: 20, paddingBottom: 20 },
-  headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
+  header: { paddingHorizontal: 20, paddingBottom: 10 },
+  headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   back: { marginRight: 12 },
-  headerTitle: { flex: 1, fontSize: 22, fontWeight: '800', color: '#fff' },
+  headerTitle: { flex: 1, fontSize: 18, fontWeight: '800', color: '#fff' },
   statsRow: { flexDirection: 'row', marginBottom: 14 },
   statBox: { flex: 1, alignItems: 'center' },
   statBoxMid: { borderLeftWidth: 1, borderRightWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },

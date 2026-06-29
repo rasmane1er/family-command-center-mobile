@@ -62,12 +62,104 @@ export function MealPlanningScreen({ navigation }: any) {
   const [newMealPrep, setNewMealPrep] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
-  const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+  const { mealPlans, setMealPlan } = useOperationsStore();
+  const { addItem } = useShoppingStore();
+
+  // Load from store on mount
+  useEffect(() => {
+    const weekStartDate = startOfWeek(new Date(), { weekStartsOn: 1 });
+    const weekKey = format(weekStartDate, 'yyyy-MM-dd');
+    const stored = mealPlans.find((p) => p.weekStart === weekKey);
+    if (stored) {
+      // Convert store MealPlan format to local format
+      const converted: Record<string, Record<string, PlannedMeal>> = {};
+      for (const day of DAYS) {
+        const dayKey = day.toLowerCase();
+        const dayMealsFromStore = (stored.meals as Record<string, Record<string, { name?: string; calories?: number; prepTime?: number; tags?: string[] }>>)[dayKey] ?? {};
+        converted[day] = {};
+        for (const [mealType, meal] of Object.entries(dayMealsFromStore)) {
+          if (meal && typeof meal === 'object' && 'name' in meal && meal.name) {
+            const mealTypeCap = mealType.charAt(0).toUpperCase() + mealType.slice(1);
+            converted[day][mealTypeCap] = {
+              name: String(meal.name ?? ''),
+              calories: Number(meal.calories ?? 0),
+              prep: Number(meal.prepTime ?? 0),
+              tags: Array.isArray(meal.tags) ? meal.tags : [],
+            };
+          }
+        }
+      }
+      setWeekMeals(converted);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Persist to store on change
+  useEffect(() => {
+    const weekStartDate = startOfWeek(new Date(), { weekStartsOn: 1 });
+    const weekKey = format(weekStartDate, 'yyyy-MM-dd');
+    const meals: Record<string, Record<string, { name: string; calories: number; prepTime: number; tags: string[] }>> = {};
+    for (const day of DAYS) {
+      meals[day.toLowerCase()] = {};
+      const dayMeals = weekMeals[day] ?? {};
+      for (const [mealType, meal] of Object.entries(dayMeals)) {
+        meals[day.toLowerCase()][mealType.toLowerCase()] = {
+          name: meal.name,
+          calories: meal.calories,
+          prepTime: meal.prep,
+          tags: meal.tags,
+        };
+      }
+    }
+    const existingPlan = mealPlans.find((p) => p.weekStart === weekKey);
+    setMealPlan({
+      id: existingPlan?.id ?? `mp-${weekKey}`,
+      familyId: 'demo-family',
+      weekStart: weekKey,
+      meals: meals as Record<string, { breakfast?: import('../../types').Meal; lunch?: import('../../types').Meal; dinner?: import('../../types').Meal; snack?: import('../../types').Meal }>,
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weekMeals]);
+
+  const handleGenerateShoppingList = () => {
+    const PANTRY_KEYWORDS = ['avocado', 'eggs', 'chicken', 'milk', 'rice', 'pasta', 'olive oil', 'tomato', 'spinach', 'cheese', 'bread', 'beef', 'salmon', 'yogurt', 'banana', 'berries', 'oats', 'butter', 'garlic', 'onion'];
+    const allMealNames: string[] = [];
+    for (const day of DAYS) {
+      for (const meal of Object.values(weekMeals[day] ?? {})) {
+        if (meal.name) allMealNames.push(meal.name.toLowerCase());
+      }
+    }
+    if (allMealNames.length === 0) {
+      Alert.alert('No Meals', 'Plan some meals first before generating a shopping list.');
+      return;
+    }
+    const needed: string[] = [];
+    for (const mealName of allMealNames) {
+      for (const keyword of PANTRY_KEYWORDS) {
+        if (mealName.includes(keyword) && !needed.includes(keyword)) {
+          needed.push(keyword);
+        }
+      }
+    }
+    const toAdd = needed.length > 0 ? needed : ['groceries for the week'];
+    for (const ingredient of toAdd) {
+      addItem({
+        name: ingredient.charAt(0).toUpperCase() + ingredient.slice(1),
+        category: 'pantry',
+        quantity: 1,
+        unit: 'ea',
+      });
+    }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    Alert.alert('Shopping List Updated', `Added ${toAdd.length} item(s) to your shopping list.`);
+  };
+
+  const weekStartDate = startOfWeek(new Date(), { weekStartsOn: 1 });
   const weekDays = DAYS.map((d, i) => ({
     name: d,
     short: d.slice(0, 3),
-    date: addDays(weekStart, i),
-    isToday: format(addDays(weekStart, i), 'EEEE') === format(new Date(), 'EEEE'),
+    date: addDays(weekStartDate, i),
+    isToday: format(addDays(weekStartDate, i), 'EEEE') === format(new Date(), 'EEEE'),
   }));
 
   const dayMeals = weekMeals[selectedDay] || {};
@@ -172,7 +264,7 @@ export function MealPlanningScreen({ navigation }: any) {
           </Pressable>
         </View>
 
-        <Text style={styles.weekLabel}>Week of {format(weekStart, 'MMMM d, yyyy')}</Text>
+        <Text style={styles.weekLabel}>Week of {format(weekStartDate, 'MMMM d, yyyy')}</Text>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.dayScroll}>
           {weekDays.map((day) => {
@@ -269,6 +361,10 @@ export function MealPlanningScreen({ navigation }: any) {
             <Ionicons name="flash" size={16} color="#fff" />
             <Text style={styles.aiGenerateText}>Generate Weekly Plan</Text>
           </Pressable>
+          <Pressable onPress={handleGenerateShoppingList} style={styles.shoppingListBtn}>
+            <Ionicons name="cart-outline" size={16} color={colors.secondary} />
+            <Text style={styles.shoppingListBtnText}>Generate Shopping List</Text>
+          </Pressable>
         </Card>
       </ScrollView>
 
@@ -362,6 +458,8 @@ const styles = StyleSheet.create({
   aiText: { fontSize: 13, color: colors.textSecondary, lineHeight: 20 },
   aiGenerateBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.secondary, borderRadius: 12, paddingVertical: 12 },
   aiGenerateText: { fontSize: 14, fontWeight: '700', color: '#fff' },
+  shoppingListBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, paddingVertical: 12, marginTop: 8, borderWidth: 1.5, borderColor: colors.secondary, backgroundColor: 'transparent' },
+  shoppingListBtnText: { fontSize: 14, fontWeight: '700', color: colors.secondary },
   modal: { flex: 1, padding: 24, backgroundColor: colors.background },
   modalHandle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 24 },
   modalTitle: { fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 2 },

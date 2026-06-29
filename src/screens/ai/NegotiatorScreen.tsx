@@ -8,7 +8,12 @@ import { colors } from '../../theme/colors';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { useAutomationStore } from '../../store/useAutomationStore';
+import { useFinanceStore } from '../../store/useFinanceStore';
+import { useOperationsStore } from '../../store/useOperationsStore';
+import { useFamilyStore } from '../../store/useFamilyStore';
+import { useGuardianStore } from '../../store/useGuardianStore';
 import { chatWithNegotiator, AIMessage } from '../../services/aiService';
+import { useFamilyContextString } from '../../utils/buildFamilyContext';
 
 const NEGOTIATION_SCENARIOS = [
   { id: 's1', title: 'Bill Negotiation Script', desc: 'Lower your cable, insurance or phone bill', icon: 'call', color: '#2980B9', savings: '$240/yr avg', category: 'bills' },
@@ -19,13 +24,113 @@ const NEGOTIATION_SCENARIOS = [
   { id: 's6', title: 'Subscription Audit', desc: 'Negotiate better rates or cancel smartly', icon: 'card', color: '#16A085', savings: '$127/mo avg', category: 'subscriptions' },
 ];
 
-const CHIEF_OF_STAFF_BRIEFINGS = [
-  { time: '08:00', priority: 'high', action: 'Mortgage payment due in 3 days — schedule payment', icon: 'home', color: '#E74C3C' },
-  { time: '10:30', priority: 'medium', action: 'Aiden\'s school conference tomorrow at 3pm — confirm attendance', icon: 'school', color: '#2980B9' },
-  { time: '14:00', priority: 'low', action: 'Oil change for Camry overdue by 3 months — book service', icon: 'car', color: '#F5A623' },
-  { time: '17:00', priority: 'high', action: 'Car insurance renewal in 14 days — compare quotes now', icon: 'shield', color: '#E74C3C' },
-  { time: '19:00', priority: 'low', action: 'Weekly family meeting — review goals and task assignments', icon: 'people', color: '#27AE60' },
-];
+type BriefingPriority = 'critical' | 'high' | 'medium' | 'low';
+
+interface BriefingItem {
+  time: string;
+  priority: BriefingPriority;
+  action: string;
+  icon: string;
+  color: string;
+}
+
+function useChiefOfStaffBriefings(): BriefingItem[] {
+  const bills = useFinanceStore((s) => s.bills);
+  const vehicles = useOperationsStore((s) => s.vehicles);
+  const tasks = useFamilyStore((s) => s.tasks);
+  const sosAlerts = useGuardianStore((s) => s.sosAlerts);
+
+  const today = new Date();
+  const in7Days = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+  const briefings: BriefingItem[] = [];
+
+  // SOS alerts — highest priority
+  const unresolvedSOS = sosAlerts.filter((a) => !a.isResolved);
+  unresolvedSOS.forEach((alert) => {
+    briefings.push({
+      time: new Date(alert.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+      priority: 'critical',
+      action: `SOS alert from ${alert.deviceId} — resolve immediately`,
+      icon: 'warning',
+      color: '#E74C3C',
+    });
+  });
+
+  // Bills due within 7 days
+  const billsDue = bills.filter((b) => {
+    if (b.status === 'paid') return false;
+    const due = new Date(b.dueDate);
+    return due >= today && due <= in7Days;
+  });
+  billsDue.forEach((bill) => {
+    const daysUntil = Math.ceil((new Date(bill.dueDate).getTime() - today.getTime()) / 86400000);
+    const priority: BriefingPriority = daysUntil <= 1 ? 'critical' : daysUntil <= 3 ? 'high' : 'medium';
+    briefings.push({
+      time: new Date(bill.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      priority,
+      action: `${bill.name} ($${bill.amount}) due in ${daysUntil} day${daysUntil !== 1 ? 's' : ''} — schedule payment`,
+      icon: 'cash',
+      color: priority === 'critical' ? '#E74C3C' : priority === 'high' ? '#E74C3C' : '#F5A623',
+    });
+  });
+
+  // Overdue bills
+  const overdueBills = bills.filter((b) => b.status !== 'paid' && new Date(b.dueDate) < today);
+  overdueBills.forEach((bill) => {
+    const days = Math.floor((today.getTime() - new Date(bill.dueDate).getTime()) / 86400000);
+    briefings.push({
+      time: 'Overdue',
+      priority: 'high',
+      action: `${bill.name} ($${bill.amount}) overdue by ${days} day${days !== 1 ? 's' : ''} — pay now`,
+      icon: 'alert-circle',
+      color: '#E74C3C',
+    });
+  });
+
+  // Vehicles
+  vehicles.forEach((v) => {
+    if (!v.nextService) return;
+    const next = new Date(v.nextService);
+    const daysUntil = Math.ceil((next.getTime() - today.getTime()) / 86400000);
+    if (next <= in7Days) {
+      briefings.push({
+        time: daysUntil <= 0 ? 'Overdue' : `${daysUntil}d`,
+        priority: daysUntil <= 0 ? 'high' : 'medium',
+        action: `${v.year} ${v.make} ${v.model} service ${daysUntil <= 0 ? 'overdue' : `due in ${daysUntil} days`} — book service`,
+        icon: 'car',
+        color: daysUntil <= 0 ? '#E74C3C' : '#F5A623',
+      });
+    }
+  });
+
+  // Overdue tasks (max 3)
+  const overdueTasks = tasks
+    .filter((t) => t.status !== 'completed' && t.dueDate && new Date(t.dueDate) < today)
+    .slice(0, 3);
+  overdueTasks.forEach((task) => {
+    const days = Math.floor((today.getTime() - new Date(task.dueDate!).getTime()) / 86400000);
+    briefings.push({
+      time: `${days}d ago`,
+      priority: task.priority === 'high' ? 'high' : 'medium',
+      action: `"${task.title}" overdue by ${days} day${days !== 1 ? 's' : ''} — complete now`,
+      icon: 'checkbox',
+      color: task.priority === 'high' ? '#E74C3C' : '#F5A623',
+    });
+  });
+
+  if (briefings.length === 0) {
+    briefings.push({
+      time: 'All clear',
+      priority: 'low',
+      action: 'No urgent items — your household is running smoothly!',
+      icon: 'checkmark-circle',
+      color: '#27AE60',
+    });
+  }
+
+  return briefings.slice(0, 8);
+}
 
 export function NegotiatorScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
@@ -37,7 +142,9 @@ export function NegotiatorScreen({ navigation }: any) {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const chatScrollRef = useRef<ScrollView>(null);
   const { conflicts } = useAutomationStore();
+  const familyContext = useFamilyContextString();
 
+  const CHIEF_OF_STAFF_BRIEFINGS = useChiefOfStaffBriefings();
   const openConflicts = conflicts.filter((c) => c.status !== 'resolved');
 
   const handleChatSend = async (text?: string) => {
@@ -49,7 +156,7 @@ export function NegotiatorScreen({ navigation }: any) {
     setChatLoading(true);
     setSuggestions([]);
     setTimeout(() => chatScrollRef.current?.scrollToEnd({ animated: true }), 100);
-    const result = await chatWithNegotiator({ message: msg, history: chatHistory });
+    const result = await chatWithNegotiator({ message: msg, history: chatHistory, context: familyContext });
     const modelHistory: AIMessage[] = [...newHistory, { role: 'model', content: result.reply }];
     setChatHistory(modelHistory);
     setSuggestions(result.suggestions);
@@ -71,7 +178,7 @@ export function NegotiatorScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#0D2137', '#0F2952']} style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <LinearGradient colors={['#0D2137', '#0F2952']} style={[styles.header, { paddingTop: insets.top }]}>
         <View style={styles.headerTop}>
           <Pressable onPress={() => navigation.goBack()} style={styles.back}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -90,7 +197,7 @@ export function NegotiatorScreen({ navigation }: any) {
           <Text style={styles.briefingTitle}>Today's Briefing</Text>
           <Text style={styles.briefingDate}>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</Text>
           <View style={styles.briefingStats}>
-            <View style={styles.bStat}><Text style={styles.bStatVal}>{CHIEF_OF_STAFF_BRIEFINGS.filter(b => b.priority === 'high').length}</Text><Text style={styles.bStatLabel}>Urgent</Text></View>
+            <View style={styles.bStat}><Text style={styles.bStatVal}>{CHIEF_OF_STAFF_BRIEFINGS.filter((b) => b.priority === 'high' || b.priority === 'critical').length}</Text><Text style={styles.bStatLabel}>Urgent</Text></View>
             <View style={styles.bStat}><Text style={styles.bStatVal}>{openConflicts.length}</Text><Text style={styles.bStatLabel}>Open Conflicts</Text></View>
             <View style={styles.bStat}><Text style={styles.bStatVal}>$367</Text><Text style={styles.bStatLabel}>Savings Found</Text></View>
           </View>
@@ -115,12 +222,12 @@ export function NegotiatorScreen({ navigation }: any) {
                 <Text style={styles.briefTimeText}>{item.time}</Text>
               </View>
               <View style={[styles.briefIconBg, { backgroundColor: item.color + '15' }]}>
-                <Ionicons name={item.icon as any} size={18} color={item.color} />
+                <Ionicons name={item.icon as keyof typeof Ionicons.glyphMap} size={18} color={item.color} />
               </View>
               <Text style={styles.briefAction}>{item.action}</Text>
               <Badge
                 label={item.priority}
-                variant={item.priority === 'high' ? 'danger' : item.priority === 'medium' ? 'warning' : 'neutral'}
+                variant={item.priority === 'critical' || item.priority === 'high' ? 'danger' : item.priority === 'medium' ? 'warning' : 'neutral'}
                 size="sm"
               />
             </View>
@@ -239,10 +346,10 @@ export function NegotiatorScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { paddingHorizontal: 20, paddingBottom: 20 },
-  headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
+  header: { paddingHorizontal: 20, paddingBottom: 8 },
+  headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   back: { marginRight: 12 },
-  headerTitle: { fontSize: 22, fontWeight: '800', color: '#fff' },
+  headerTitle: { fontSize: 18, fontWeight: '800', color: '#fff' },
   headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
   aiChip: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(245,166,35,0.2)', borderRadius: 12, paddingVertical: 5, paddingHorizontal: 10 },
   aiChipText: { fontSize: 11, fontWeight: '700', color: colors.secondary },

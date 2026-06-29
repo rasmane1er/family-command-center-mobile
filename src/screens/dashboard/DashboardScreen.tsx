@@ -391,7 +391,7 @@ export function DashboardScreen({ navigation }: any) {
           colors={['#0D1B2A', '#0F2952', '#1E4A8A']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={[dynStyles.header, { paddingTop: insets.top + 16 }]}
+          style={[dynStyles.header, { paddingTop: insets.top }]}
         >
           {/* decorative blobs — isolated so overflow:hidden doesn't clip icons */}
           <View style={StyleSheet.absoluteFill} pointerEvents="none">
@@ -863,7 +863,7 @@ function makeStyles(colors: import('../../theme/ThemeContext').ThemeColors) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
     scrollContent: {},
-    header: { paddingHorizontal: 20, paddingBottom: 28 },
+    header: { paddingHorizontal: 20, paddingBottom: 8 },
     headerCircle1: {
       position: 'absolute',
       width: 250,
@@ -888,12 +888,12 @@ function makeStyles(colors: import('../../theme/ThemeContext').ThemeColors) {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'flex-start',
-      marginBottom: 16,
+      marginBottom: 8,
       gap: 10,
     },
     headerTextBlock: { flex: 1, minWidth: 0, paddingRight: 4 },
     greeting: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: '500', letterSpacing: 0.3 },
-    familyName: { fontSize: 26, fontWeight: '900', color: '#fff', marginVertical: 2, flexShrink: 1, letterSpacing: -0.5 },
+    familyName: { fontSize: 20, fontWeight: '900', color: '#fff', marginVertical: 2, flexShrink: 1, letterSpacing: -0.5 },
     date: { fontSize: 12, color: 'rgba(255,255,255,0.45)', letterSpacing: 0.2 },
     activeProfileBadge: {
       marginTop: 10,

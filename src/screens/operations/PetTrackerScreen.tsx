@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -22,6 +22,7 @@ import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
 import { usePetStore, PetSpecies, PetEventType, Pet } from '../../store/usePetStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { getPetCharges, type PetCharge } from '../../services/autoFillService';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -137,6 +138,22 @@ export function PetTrackerScreen({ navigation }: any) {
   const [evNotes, setEvNotes] = useState('');
 
   const upcomingCount = events.filter((e) => !e.isDone).length;
+
+  const [vetCharges, setVetCharges] = useState<PetCharge[]>([]);
+  const [vetBannerExpanded, setVetBannerExpanded] = useState(true);
+  const [dismissedCharges, setDismissedCharges] = useState<Set<string>>(new Set());
+  const [selectedPetForCharge, setSelectedPetForCharge] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    getPetCharges()
+      .then((res) => {
+        const vetOnly = res.charges.filter((c) => c.isVetVisit);
+        setVetCharges(vetOnly);
+      })
+      .catch(() => {
+        // Silently fail if Plaid not connected
+      });
+  }, []);
 
   const resetPetForm = () => {
     setPetName(''); setPetSpecies('dog'); setPetBreed(''); setPetDob('');
@@ -425,6 +442,67 @@ export function PetTrackerScreen({ navigation }: any) {
         </View>
       </LinearGradient>
 
+      {vetCharges.length > 0 && (
+        <View style={styles.vetBanner}>
+          <Pressable onPress={() => setVetBannerExpanded((v) => !v)} style={styles.vetBannerHeader}>
+            <Ionicons name="medical" size={16} color="#1B5E20" />
+            <Text style={styles.vetBannerTitle}>Detected {vetCharges.length} vet charge(s)</Text>
+            <Ionicons name={vetBannerExpanded ? 'chevron-up' : 'chevron-down'} size={16} color="#1B5E20" />
+          </Pressable>
+          {vetBannerExpanded && vetCharges
+            .filter((c) => !dismissedCharges.has(c.merchantName + c.date))
+            .map((charge, i) => {
+              const chargeKey = charge.merchantName + charge.date;
+              return (
+                <View key={i} style={styles.vetChargeRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.vetChargeMerchant}>{charge.merchantName}</Text>
+                    <Text style={styles.vetChargeDetail}>${charge.amount} · {charge.date}</Text>
+                  </View>
+                  {pets.length > 0 && (
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ maxWidth: 120 }}>
+                      {pets.map((p) => (
+                        <Pressable
+                          key={p.id}
+                          onPress={() => setSelectedPetForCharge((prev) => ({ ...prev, [chargeKey]: p.id }))}
+                          style={[styles.vetPetChip, selectedPetForCharge[chargeKey] === p.id && styles.vetPetChipActive]}
+                        >
+                          <Text style={styles.vetPetChipText}>{p.emoji}</Text>
+                        </Pressable>
+                      ))}
+                    </ScrollView>
+                  )}
+                  <Pressable
+                    onPress={() => {
+                      const petId = selectedPetForCharge[chargeKey] ?? (pets[0]?.id ?? '');
+                      if (!petId) {
+                        Alert.alert('No Pet', 'Add a pet first.');
+                        return;
+                      }
+                      addEvent({
+                        petId,
+                        type: 'vet',
+                        title: charge.merchantName,
+                        date: charge.date,
+                        cost: charge.amount,
+                        isDone: true,
+                      });
+                      setDismissedCharges((prev) => new Set([...prev, chargeKey]));
+                      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                    }}
+                    style={styles.vetLogBtn}
+                  >
+                    <Text style={styles.vetLogBtnText}>Log</Text>
+                  </Pressable>
+                  <Pressable onPress={() => setDismissedCharges((prev) => new Set([...prev, chargeKey]))} style={styles.vetDismissBtn}>
+                    <Ionicons name="close" size={14} color={colors.textMuted} />
+                  </Pressable>
+                </View>
+              );
+            })}
+        </View>
+      )}
+
       <View style={styles.tabs}>
         {(['pets', 'events', 'health'] as const).map((tab) => (
           <Pressable
@@ -538,6 +616,18 @@ export function PetTrackerScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
+  vetBanner: { backgroundColor: '#E8F5E9', borderLeftWidth: 4, borderLeftColor: '#1B5E20', margin: 12, borderRadius: 12, padding: 12 },
+  vetBannerHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+  vetBannerTitle: { flex: 1, fontSize: 13, fontWeight: '700', color: '#1B5E20' },
+  vetChargeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8, backgroundColor: '#fff', borderRadius: 10, padding: 8 },
+  vetChargeMerchant: { fontSize: 13, fontWeight: '700', color: colors.text },
+  vetChargeDetail: { fontSize: 11, color: colors.textSecondary },
+  vetPetChip: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.border, marginRight: 4 },
+  vetPetChipActive: { backgroundColor: '#C8E6C9', borderWidth: 2, borderColor: '#1B5E20' },
+  vetPetChipText: { fontSize: 16 },
+  vetLogBtn: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 8, backgroundColor: '#1B5E20' },
+  vetLogBtnText: { fontSize: 12, fontWeight: '700', color: '#fff' },
+  vetDismissBtn: { padding: 4 },
   container: {
     flex: 1,
     backgroundColor: colors.background,

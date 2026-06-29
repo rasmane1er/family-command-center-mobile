@@ -16,6 +16,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useGuardianStore } from '../../store/useGuardianStore';
+import { useFamilyStore } from '../../store/useFamilyStore';
 import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
 import type { ChatMessage } from '../../types';
@@ -73,6 +74,8 @@ export function FamilySafetyAssistantScreen({ navigation }: any) {
   const sosAlerts = useGuardianStore((s) => s.sosAlerts);
   const approvalRequests = useGuardianStore((s) => s.approvalRequests);
   const screenTimeRules = useGuardianStore((s) => s.screenTimeRules);
+  const members = useFamilyStore((s) => s.members);
+  const childMembers = members.filter((m) => m.role === 'child');
 
   const [contextMode, setContextMode] = useState<ContextMode>('general');
   const [messages, setMessages] = useState<ChatMessage[]>([buildStarterMessage('general')]);
@@ -95,13 +98,33 @@ export function FamilySafetyAssistantScreen({ navigation }: any) {
   const buildContextString = () => {
     const unresolvedSOS = sosAlerts.filter((a) => !a.isResolved);
     const pendingApprovals = approvalRequests.filter((r) => r.status === 'pending');
+    const now = new Date();
+
+    const childNames = childMembers.map((c) => c.name).join(', ');
+
+    const deviceDetails = devices.map((d) => {
+      const child = childMembers.find((c) => c.id === d.memberId);
+      const lastSeenMins = d.lastSeen
+        ? Math.floor((now.getTime() - new Date(d.lastSeen).getTime()) / 60000)
+        : null;
+      return `${d.deviceName} (${child?.name ?? 'unknown'}, last seen ${lastSeenMins !== null ? `${lastSeenMins} min ago` : 'unknown'})`;
+    }).join('; ');
+
+    const ruleDetails = childMembers.map((c) => {
+      const rule = screenTimeRules.find((r) => r.memberId === c.id);
+      if (!rule) return null;
+      const blockedApps = rule.blockedApps?.length ?? 0;
+      return `${c.name}: ${rule.dailyLimitMinutes}min/day${blockedApps > 0 ? `, ${blockedApps} blocked apps` : ''}`;
+    }).filter((r): r is string => r !== null).join('; ');
+
     return [
-      `Monitored devices: ${devices.length}`,
+      childNames ? `Children: ${childNames}` : null,
+      `Monitored devices: ${devices.length}${deviceDetails ? ` (${deviceDetails})` : ''}`,
       `Unresolved SOS alerts: ${unresolvedSOS.length}`,
       `Pending approval requests: ${pendingApprovals.length}`,
-      `Active screen time rules: ${screenTimeRules.length}`,
+      `Active screen time rules: ${screenTimeRules.length}${ruleDetails ? ` (${ruleDetails})` : ''}`,
       `Current mode: ${contextMode}`,
-    ].join('. ');
+    ].filter((p): p is string => p !== null).join('. ');
   };
 
   const sendMessage = async (text: string) => {
@@ -213,7 +236,7 @@ export function FamilySafetyAssistantScreen({ navigation }: any) {
       <StatusBar style="light" />
 
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+      <View style={[styles.header, { paddingTop: insets.top }]}>
         <View style={styles.headerRow}>
           <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
             <Ionicons name="chevron-back" size={24} color="#fff" />
@@ -266,11 +289,12 @@ export function FamilySafetyAssistantScreen({ navigation }: any) {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
+            style={styles.quickPromptsScroll}
             contentContainerStyle={styles.quickPromptsRow}
           >
             {QUICK_PROMPTS.map((p) => (
               <Pressable key={p} style={styles.quickChip} onPress={() => sendMessage(p)}>
-                <Text style={styles.quickChipText}>{p}</Text>
+                <Text style={styles.quickChipText} numberOfLines={1}>{p}</Text>
               </Pressable>
             ))}
           </ScrollView>
@@ -354,7 +378,7 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: '#5B2C8D',
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: 8,
     ...shadows.md,
   },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
@@ -382,22 +406,28 @@ const styles = StyleSheet.create({
   tabText: { color: 'rgba(255,255,255,0.8)', fontSize: 13, fontWeight: '500' },
   tabTextActive: { color: PURPLE, fontWeight: '700' },
 
+  quickPromptsScroll: {
+    flexGrow: 0,
+    flexShrink: 0,
+  },
   quickPromptsRow: {
     flexDirection: 'row',
-    gap: 8,
+    alignItems: 'center',
+    gap: 6,
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 8,
   },
   quickChip: {
     backgroundColor: '#fff',
     borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderWidth: 1,
     borderColor: PURPLE_MID,
     ...shadows.sm,
+    flexShrink: 1,
   },
-  quickChipText: { color: PURPLE, fontSize: 13, fontWeight: '500' },
+  quickChipText: { color: PURPLE, fontSize: 12, fontWeight: '500' },
 
   messagesList: { padding: 16, gap: 12, flexGrow: 1 },
 
