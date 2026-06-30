@@ -19,6 +19,8 @@ import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
+import * as WebBrowser from 'expo-web-browser';
+import * as SecureStore from 'expo-secure-store';
 import { Formik, FormikProps } from 'formik';
 import * as Yup from 'yup';
 import { useAuthStore, SignUpData } from '../../store/useAuthStore';
@@ -80,7 +82,12 @@ const step2Schema = Yup.object({
 });
 
 const step3Schema = Yup.object({
-  password:  Yup.string().min(6, 'Minimum 6 characters').required('Password is required'),
+  password: Yup.string()
+    .min(8, 'Minimum 8 characters')
+    .test('strength', 'Must contain at least 1 number or special character', (v) =>
+      !v || /[0-9]/.test(v) || /[^a-zA-Z0-9]/.test(v)
+    )
+    .required('Password is required'),
   confirmPw: Yup.string()
     .oneOf([Yup.ref('password')], 'Passwords do not match')
     .required('Please confirm your password'),
@@ -109,12 +116,14 @@ const INITIAL: FormValues = {
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
 function pwStrength(pw: string) {
-  if (!pw)          return { label: '',       color: 'transparent', pct: 0    };
-  if (pw.length < 6) return { label: 'Weak',  color: '#E74C3C',     pct: 0.2  };
-  const score = [/[0-9]/.test(pw), /[^a-zA-Z0-9]/.test(pw), pw.length >= 10].filter(Boolean).length;
-  if (score === 0)  return { label: 'Fair',   color: '#F5A623',     pct: 0.45 };
-  if (score === 1)  return { label: 'Good',   color: '#3498DB',     pct: 0.70 };
-  return             { label: 'Strong', color: '#27AE60',     pct: 1.0  };
+  if (!pw) return { label: '', color: 'transparent', pct: 0 };
+  const hasNumber = /[0-9]/.test(pw);
+  const hasSpecial = /[^a-zA-Z0-9]/.test(pw);
+  const long = pw.length >= 10;
+  if (pw.length < 8 || (!hasNumber && !hasSpecial)) return { label: 'Weak', color: '#E74C3C', pct: 0.25 };
+  if (pw.length >= 8 && hasNumber && !long) return { label: 'Medium', color: '#F5A623', pct: 0.60 };
+  if (long && hasNumber && hasSpecial) return { label: 'Strong', color: '#27AE60', pct: 1.0 };
+  return { label: 'Medium', color: '#F5A623', pct: 0.60 };
 }
 
 // ─── makeStyles ───────────────────────────────────────────────────────────────
@@ -454,6 +463,14 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
       Alert.alert('Sign Up Failed', result.error ?? 'An unexpected error occurred.');
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      // Store biometric preference and credentials if enabled
+      if (biometric) {
+        await SecureStore.setItemAsync('biometric_enabled', 'true');
+        await SecureStore.setItemAsync(
+          'stored_credentials',
+          JSON.stringify({ email: values.email.trim().toLowerCase(), password: values.password })
+        );
+      }
       // wipe all previous data before populating fresh family data
       resetAllStores();
       const { user } = useAuthStore.getState();
@@ -569,7 +586,13 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
 
         <FormField label="Date of Birth" icon="calendar-outline" placeholder="MM/DD/YYYY"
           value={fk.values.dateOfBirth}
-          onChangeText={t => fk.setFieldValue('dateOfBirth', t)}
+          onChangeText={(raw) => {
+            const digits = raw.replace(/\D/g, '').slice(0, 8);
+            let formatted = digits;
+            if (digits.length > 2) formatted = digits.slice(0, 2) + '/' + digits.slice(2);
+            if (digits.length > 4) formatted = digits.slice(0, 2) + '/' + digits.slice(2, 4) + '/' + digits.slice(4);
+            fk.setFieldValue('dateOfBirth', formatted);
+          }}
           onBlur={() => fk.setFieldTouched('dateOfBirth', true)}
           error={fk.errors.dateOfBirth} touched={fk.touched.dateOfBirth}
           keyboardType="numeric" autoCapitalize="none" optional
@@ -750,7 +773,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
             <Ionicons name="lock-closed-outline" size={18} color={colors.textMuted} />
             <TextInput
               style={s.textInput}
-              placeholder="Minimum 6 characters"
+              placeholder="Minimum 8 characters"
               placeholderTextColor={colors.textMuted}
               value={fk.values.password}
               onChangeText={t => fk.setFieldValue('password', t)}
@@ -816,9 +839,9 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
           </View>
           <Text style={s.termsText}>
             I agree to the{' '}
-            <Text style={s.termsLink} onPress={() => Alert.alert('Terms of Service', 'Coming soon.')}>Terms of Service</Text>
+            <Text style={s.termsLink} onPress={() => WebBrowser.openBrowserAsync('https://familycommandcenter.app/terms')}>Terms of Service</Text>
             {' '}and{' '}
-            <Text style={s.termsLink} onPress={() => Alert.alert('Privacy Policy', 'Coming soon.')}>Privacy Policy</Text>
+            <Text style={s.termsLink} onPress={() => WebBrowser.openBrowserAsync('https://familycommandcenter.app/privacy')}>Privacy Policy</Text>
           </Text>
         </Pressable>
         {fk.touched.agreed && fk.errors.agreed && <Text style={s.errorText}>{String(fk.errors.agreed)}</Text>}

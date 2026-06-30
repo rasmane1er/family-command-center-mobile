@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -17,7 +17,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
+import * as SecureStore from 'expo-secure-store';
 import { useAuthStore } from '../../store/useAuthStore';
+
+interface LocalAuthModule {
+  authenticateAsync(options: { promptMessage: string }): Promise<{ success: boolean }>;
+}
+let LocalAuthentication: LocalAuthModule | null = null;
+try {
+  LocalAuthentication = require('expo-local-authentication') as LocalAuthModule;
+} catch {
+  // Not linked yet
+}
 import { useTheme } from '../../theme/ThemeContext';
 
 // Native social-auth modules are loaded lazily so the app works without a
@@ -142,8 +153,50 @@ export default function SignInScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(false);
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [showBiometric, setShowBiometric] = useState(false);
 
+  const passwordRef = useRef<TextInput>(null);
   const buttonScale = useRef(new Animated.Value(1)).current;
+
+  // Check biometric availability on mount
+  useEffect(() => {
+    (async () => {
+      const biometricEnabled = await SecureStore.getItemAsync('biometric_enabled');
+      const storedCredentials = await SecureStore.getItemAsync('stored_credentials');
+      if (biometricEnabled === 'true' && storedCredentials) {
+        setShowBiometric(true);
+      }
+    })();
+  }, []);
+
+  const handleBiometricSignIn = async () => {
+    if (!LocalAuthentication) return;
+    try {
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'Sign in to Family Command Center',
+      });
+      if (result.success) {
+        const storedCredentials = await SecureStore.getItemAsync('stored_credentials');
+        if (storedCredentials) {
+          const { email: storedEmail, password: storedPassword } = JSON.parse(storedCredentials);
+          setEmail(storedEmail);
+          setPassword(storedPassword);
+          setLoading(true);
+          const signInResult = await signIn(storedEmail, storedPassword);
+          setLoading(false);
+          if (!signInResult.success) {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            Alert.alert('Sign In Failed', signInResult.error ?? 'An unexpected error occurred.');
+          } else {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          }
+        }
+      }
+    } catch {
+      // biometric not available, ignore
+    }
+  };
 
   const handlePressIn = () => {
     Animated.spring(buttonScale, { toValue: 0.97, useNativeDriver: true, speed: 30 }).start();
@@ -154,10 +207,14 @@ export default function SignInScreen({ navigation }: Props) {
   };
 
   const handleSignIn = async () => {
-    if (!email.trim() || !password) {
-      Alert.alert('Missing Fields', 'Please enter your email and password.');
+    const newErrors: { email?: string; password?: string } = {};
+    if (!email.trim()) newErrors.email = 'Email is required.';
+    if (!password) newErrors.password = 'Password is required.';
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
+    setErrors({});
     setLoading(true);
     const result = await signIn(email.trim().toLowerCase(), password);
     setLoading(false);
@@ -217,6 +274,19 @@ export default function SignInScreen({ navigation }: Props) {
               Sign in to your family account
             </Text>
 
+            {/* Biometric sign in button */}
+            {showBiometric && (
+              <Pressable
+                style={[styles.biometricButton, { borderColor: colors.primary }]}
+                onPress={handleBiometricSignIn}
+              >
+                <Ionicons name="finger-print-outline" size={20} color={colors.primary} />
+                <Text style={[styles.biometricButtonText, { color: colors.primary }]}>
+                  Sign in with Face ID / Touch ID
+                </Text>
+              </Pressable>
+            )}
+
             {/* Email field */}
             <View style={styles.fieldGroup}>
               <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Email</Text>
@@ -225,7 +295,7 @@ export default function SignInScreen({ navigation }: Props) {
                   styles.inputRow,
                   {
                     backgroundColor: inputBg,
-                    borderColor: emailFocused ? colors.primary : colors.border,
+                    borderColor: errors.email ? '#E74C3C' : emailFocused ? colors.primary : colors.border,
                   },
                 ]}
               >
@@ -240,15 +310,20 @@ export default function SignInScreen({ navigation }: Props) {
                   placeholder="you@example.com"
                   placeholderTextColor={colors.textSecondary}
                   value={email}
-                  onChangeText={setEmail}
+                  onChangeText={(t) => {
+                    setEmail(t);
+                    if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }));
+                  }}
                   autoCapitalize="none"
                   keyboardType="email-address"
                   autoComplete="email"
                   onFocus={() => setEmailFocused(true)}
                   onBlur={() => setEmailFocused(false)}
                   returnKeyType="next"
+                  onSubmitEditing={() => passwordRef.current?.focus()}
                 />
               </View>
+              {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
             </View>
 
             {/* Password field */}
@@ -264,7 +339,7 @@ export default function SignInScreen({ navigation }: Props) {
                   styles.inputRow,
                   {
                     backgroundColor: inputBg,
-                    borderColor: passwordFocused ? colors.primary : colors.border,
+                    borderColor: errors.password ? '#E74C3C' : passwordFocused ? colors.primary : colors.border,
                   },
                 ]}
               >
@@ -275,11 +350,15 @@ export default function SignInScreen({ navigation }: Props) {
                   style={styles.inputIcon}
                 />
                 <TextInput
+                  ref={passwordRef}
                   style={[styles.textInput, { color: colors.text }]}
                   placeholder="••••••••"
                   placeholderTextColor={colors.textSecondary}
                   value={password}
-                  onChangeText={setPassword}
+                  onChangeText={(t) => {
+                    setPassword(t);
+                    if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }));
+                  }}
                   secureTextEntry={!showPassword}
                   autoComplete="password"
                   onFocus={() => setPasswordFocused(true)}
@@ -296,6 +375,7 @@ export default function SignInScreen({ navigation }: Props) {
                   />
                 </Pressable>
               </View>
+              {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
             </View>
 
             {/* Sign In button */}
@@ -454,6 +534,22 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
 
+  // Biometric button
+  biometricButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    height: 48,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    marginBottom: 20,
+  },
+  biometricButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+
   // Fields
   fieldGroup: {
     marginBottom: 16,
@@ -491,6 +587,12 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     height: '100%',
+  },
+  errorText: {
+    fontSize: 12,
+    color: '#E74C3C',
+    marginTop: 4,
+    marginLeft: 2,
   },
 
   // Primary button

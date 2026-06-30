@@ -113,7 +113,7 @@ export function MemberSetupScreen({ navigation }: any) {
               style={[styles.roleChip, role === r.value && styles.roleChipActive]}
             >
               <Ionicons name={r.icon as any} size={16} color={role === r.value ? '#fff' : colors.textSecondary} />
-              <Text style={[styles.roleText, role === r.value && styles.roleTextActive]}>{r.label}</Text>
+              <Text style={[styles.roleText, role === r.value && styles.roleTextActive]} numberOfLines={1} adjustsFontSizeToFit>{r.label}</Text>
             </Pressable>
           ))}
         </View>
@@ -189,9 +189,9 @@ const styles = StyleSheet.create({
   memberName: { fontSize: 16, fontWeight: '600', color: colors.text },
   memberRole: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
   roleSelector: { flexDirection: 'row', gap: 8, marginBottom: 20, flexWrap: 'wrap' },
-  roleChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 20, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.card },
+  roleChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.card, width: '48%' },
   roleChipActive: { borderColor: colors.primary, backgroundColor: colors.primary },
-  roleText: { fontSize: 13, color: colors.textSecondary, fontWeight: '600' },
+  roleText: { fontSize: 13, color: colors.textSecondary, fontWeight: '600', flexShrink: 1 },
   roleTextActive: { color: '#fff' },
   skipButton: { alignItems: 'center', paddingVertical: 16 },
   skipText: { color: colors.textMuted, fontSize: 14 },

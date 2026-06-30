@@ -13,7 +13,7 @@ const Stack = createNativeStackNavigator();
 
 export function OnboardingNavigator() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
+    <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', gestureEnabled: false }}>
       <Stack.Screen name="Splash" component={SplashScreen} />
       <Stack.Screen name="Welcome" component={WelcomeScreen} />
       <Stack.Screen name="FamilySetup" component={FamilySetupScreen} />

@@ -170,7 +170,7 @@ export function NegotiatorScreen({ navigation }: any) {
       `The AI Negotiator will analyze your situation and generate a personalized negotiation script.\n\nAverage result: ${scenario.savings}\n\nThis feature connects to the AI Assistant for a live session.`,
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Start Session', onPress: () => Alert.alert('Starting negotiation session...') },
+        { text: 'Start Session', onPress: () => { setActiveTab('chat'); handleChatSend(`Help me with: ${scenario.title}. ${scenario.desc}`); } },
       ]
     );
   };

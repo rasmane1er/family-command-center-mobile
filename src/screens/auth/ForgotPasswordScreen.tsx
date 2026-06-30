@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -33,8 +33,28 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(false);
   const [emailFocused, setEmailFocused] = useState(false);
   const [sent, setSent] = useState(false);
+  const [countdown, setCountdown] = useState(0);
 
   const buttonScale = useRef(new Animated.Value(1)).current;
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Countdown timer after successful send
+  useEffect(() => {
+    if (countdown > 0) {
+      intervalRef.current = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            if (intervalRef.current) clearInterval(intervalRef.current);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [sent]);
 
   const handlePressIn = () => {
     Animated.spring(buttonScale, { toValue: 0.97, useNativeDriver: true, speed: 30 }).start();
@@ -58,15 +78,21 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setSent(true);
-      Alert.alert(
-        'Check Your Email',
-        "If an account exists, you'll receive reset instructions. (Local auth: check your device's secure storage.)",
-        [{ text: 'OK' }]
-      );
+      setCountdown(60);
     }
   };
 
+  const handleResend = async () => {
+    setSent(false);
+    setCountdown(0);
+    await handleReset();
+  };
+
   const inputBg = isDark ? colors.surface : '#F8FAFD';
+
+  const countdownMins = Math.floor(countdown / 60);
+  const countdownSecs = countdown % 60;
+  const countdownLabel = `${countdownMins}:${countdownSecs.toString().padStart(2, '0')}`;
 
   return (
     <View style={styles.root}>
@@ -161,7 +187,24 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
             {sent && (
               <View style={styles.successBanner}>
                 <Ionicons name="checkmark-circle" size={18} color="#10B981" />
-                <Text style={styles.successText}>Reset link sent! Check your email.</Text>
+                <Text style={styles.successText}>
+                  Password reset email sent. Check your inbox.
+                </Text>
+              </View>
+            )}
+
+            {/* Resend countdown or button */}
+            {sent && (
+              <View style={styles.resendRow}>
+                {countdown > 0 ? (
+                  <Text style={[styles.resendCountdown, { color: colors.textSecondary }]}>
+                    Resend in {countdownLabel}…
+                  </Text>
+                ) : (
+                  <Pressable onPress={handleResend}>
+                    <Text style={[styles.resendLink, { color: colors.primary }]}>Resend email</Text>
+                  </Pressable>
+                )}
               </View>
             )}
 
@@ -331,7 +374,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 14,
-    marginBottom: 16,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: 'rgba(16, 185, 129, 0.25)',
   },
@@ -340,6 +383,18 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     flex: 1,
+  },
+
+  resendRow: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  resendCountdown: {
+    fontSize: 13,
+  },
+  resendLink: {
+    fontSize: 13,
+    fontWeight: '700',
   },
 
   primaryButton: {

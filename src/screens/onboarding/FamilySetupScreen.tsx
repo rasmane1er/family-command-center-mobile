@@ -17,7 +17,10 @@ export function FamilySetupScreen({ navigation }: any) {
   const [motto, setMotto] = useState('');
   const [address, setAddress] = useState('');
   const [currency, setCurrency] = useState('USD');
-  const [timezone, setTimezone] = useState('America/Chicago');
+  const [timezone, setTimezone] = useState(() => {
+    const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return timezones.includes(detected) ? detected : 'America/Chicago';
+  });
   const [militaryMode, setMilitaryMode] = useState(false);
   const setFamily = useFamilyStore((s) => s.setFamily);
 

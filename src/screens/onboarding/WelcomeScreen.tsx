@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Animated, Dimensions, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Animated, Dimensions, Pressable, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -42,11 +42,23 @@ export function WelcomeScreen({ navigation }: any) {
   const handleStartSetup = () => navigation.navigate('FamilySetup');
 
   const handleDemoMode = () => {
-    seedDemoFamily();
-    seedDemoFinance();
-    seedDemoOps();
-    seedDemoAI();
-    setOnboarded(true);
+    Alert.alert(
+      'Demo Mode',
+      'Demo data is temporary and will be lost when you create a real account. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Continue',
+          onPress: () => {
+            seedDemoFamily();
+            seedDemoFinance();
+            seedDemoOps();
+            seedDemoAI();
+            setOnboarded(true);
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -99,7 +111,7 @@ export function WelcomeScreen({ navigation }: any) {
         </View>
 
         <View style={styles.tierBadges}>
-          {['Free Tier', 'Premium $9.99/mo', 'Family Pro $19.99/mo'].map((t, i) => (
+          {['Free', 'Premium', 'Family Pro'].map((t, i) => (
             <View key={i} style={[styles.tierBadge, i === 1 && styles.tierBadgeHighlight]}>
               <Text style={[styles.tierText, i === 1 && styles.tierTextHighlight]}>{t}</Text>
               {i === 1 && <Text style={styles.popularTag}>Popular</Text>}
@@ -127,7 +139,7 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 20, fontWeight: '700', color: colors.text, marginBottom: 16 },
   featuresGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 32 },
   featureCard: {
-    width: (width - 52) / 2,
+    width: Math.min((width - 52) / 2, 180),
     backgroundColor: colors.card,
     borderRadius: 16,
     padding: 16,

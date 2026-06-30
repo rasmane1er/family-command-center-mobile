@@ -437,7 +437,7 @@ export function DigitalTwinScreen({ navigation }: { navigation: { goBack: () => 
               <Pressable
                 onPress={() => Alert.alert('Ask AI to Analyze', 'Describe a change you\'re planning — budget adjustment, routine shift, habit change — and the AI will project its impact.', [
                   { text: 'Later', style: 'cancel' },
-                  { text: 'Open AI Assistant', onPress: () => navigation.navigate('AI Assistant') },
+                  { text: 'Open AI Assistant', onPress: () => navigation.navigate('AIAssistant') },
                 ])}
                 style={styles.customBtn}
               >

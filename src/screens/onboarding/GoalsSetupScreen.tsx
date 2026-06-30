@@ -50,9 +50,14 @@ export function GoalsSetupScreen({ navigation }: any) {
     <View style={styles.container}>
       <StatusBar style="light" />
       <LinearGradient colors={['#0F2952', '#1E4A8A']} style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
-        </Pressable>
+        <View style={styles.headerTopRow}>
+          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+            <Ionicons name="arrow-back" size={24} color="#fff" />
+          </Pressable>
+          <Pressable onPress={handleFinish} style={styles.skipBtn}>
+            <Text style={styles.skipBtnText}>SKIP</Text>
+          </Pressable>
+        </View>
         <View style={styles.stepBadge}><Text style={styles.stepText}>Step 7 of 7</Text></View>
         <Text style={styles.headerTitle}>Family Goals</Text>
         <Text style={styles.headerSub}>What are you working toward?</Text>
@@ -119,7 +124,10 @@ export function GoalsSetupScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: { paddingTop: 56, paddingBottom: 28, paddingHorizontal: 24 },
-  back: { marginBottom: 8 },
+  headerTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  back: {},
+  skipBtn: { paddingVertical: 4, paddingHorizontal: 8 },
+  skipBtnText: { color: colors.secondary, fontSize: 12, fontWeight: '600', letterSpacing: 0.5 },
   stepBadge: { backgroundColor: 'rgba(245,166,35,0.3)', borderRadius: 20, paddingVertical: 4, paddingHorizontal: 12, alignSelf: 'flex-start', marginBottom: 6 },
   stepText: { color: colors.secondary, fontSize: 12, fontWeight: '700' },
   headerTitle: { fontSize: 20, fontWeight: '800', color: '#fff', marginBottom: 6 },

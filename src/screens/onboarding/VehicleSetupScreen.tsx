@@ -41,9 +41,14 @@ export function VehicleSetupScreen({ navigation }: any) {
     <View style={styles.container}>
       <StatusBar style="light" />
       <LinearGradient colors={['#0F2952', '#1E4A8A']} style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
-        </Pressable>
+        <View style={styles.headerTopRow}>
+          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+            <Ionicons name="arrow-back" size={24} color="#fff" />
+          </Pressable>
+          <Pressable onPress={handleNext} style={styles.skipBtn}>
+            <Text style={styles.skipBtnText}>SKIP</Text>
+          </Pressable>
+        </View>
         <View style={styles.stepBadge}><Text style={styles.stepText}>Step 4 of 7</Text></View>
         <Text style={styles.headerTitle}>Vehicles</Text>
         <Text style={styles.headerSub}>Track maintenance, insurance & more</Text>
@@ -108,7 +113,10 @@ export function VehicleSetupScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: { paddingTop: 56, paddingBottom: 28, paddingHorizontal: 24 },
-  back: { marginBottom: 16 },
+  headerTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  back: {},
+  skipBtn: { paddingVertical: 4, paddingHorizontal: 8 },
+  skipBtnText: { color: 'rgba(255,255,255,0.6)', fontSize: 12, fontWeight: '600', letterSpacing: 0.5 },
   stepBadge: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20, paddingVertical: 4, paddingHorizontal: 12, alignSelf: 'flex-start', marginBottom: 12 },
   stepText: { color: 'rgba(255,255,255,0.9)', fontSize: 12, fontWeight: '600' },
   headerTitle: { fontSize: 20, fontWeight: '800', color: '#fff', marginBottom: 6 },

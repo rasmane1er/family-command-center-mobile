@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
+import * as SecureStore from 'expo-secure-store';
 import { colors } from '../../theme/colors';
 import { FamilyIllustration } from '../../assets/illustrations/FamilyIllustration';
 
@@ -15,21 +16,39 @@ export function SplashScreen({ navigation }: any) {
   const illustrationOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.sequence([
-      Animated.parallel([
-        Animated.spring(logoScale, { toValue: 1, useNativeDriver: true, tension: 60, friction: 8, delay: 200 }),
-        Animated.timing(logoOpacity, { toValue: 1, duration: 600, useNativeDriver: true, delay: 200 }),
-      ]),
-      Animated.parallel([
-        Animated.timing(textOpacity, { toValue: 1, duration: 500, useNativeDriver: true }),
-        Animated.spring(illustrationY, { toValue: 0, useNativeDriver: true, tension: 50, friction: 9 }),
-        Animated.timing(illustrationOpacity, { toValue: 1, duration: 600, useNativeDriver: true }),
-      ]),
-    ]).start();
+    let timer: ReturnType<typeof setTimeout>;
 
-    const timer = setTimeout(() => {
-      navigation.replace('Welcome');
-    }, 3200);
+    SecureStore.getItemAsync('splash_seen').then((seen) => {
+      if (seen === 'true') {
+        // Repeat visit: quick fade-in then navigate
+        Animated.parallel([
+          Animated.timing(logoOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
+          Animated.spring(logoScale, { toValue: 1, useNativeDriver: true, tension: 80, friction: 8 }),
+          Animated.timing(textOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
+          Animated.timing(illustrationOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
+        ]).start();
+        timer = setTimeout(() => {
+          navigation.replace('Welcome');
+        }, 800);
+      } else {
+        // First visit: full animation sequence, then store flag
+        Animated.sequence([
+          Animated.parallel([
+            Animated.spring(logoScale, { toValue: 1, useNativeDriver: true, tension: 60, friction: 8, delay: 200 }),
+            Animated.timing(logoOpacity, { toValue: 1, duration: 600, useNativeDriver: true, delay: 200 }),
+          ]),
+          Animated.parallel([
+            Animated.timing(textOpacity, { toValue: 1, duration: 500, useNativeDriver: true }),
+            Animated.spring(illustrationY, { toValue: 0, useNativeDriver: true, tension: 50, friction: 9 }),
+            Animated.timing(illustrationOpacity, { toValue: 1, duration: 600, useNativeDriver: true }),
+          ]),
+        ]).start();
+        SecureStore.setItemAsync('splash_seen', 'true');
+        timer = setTimeout(() => {
+          navigation.replace('Welcome');
+        }, 3200);
+      }
+    });
 
     return () => clearTimeout(timer);
   }, []);

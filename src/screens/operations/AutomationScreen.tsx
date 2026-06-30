@@ -38,12 +38,34 @@ const TEMPLATES = [
 export function AutomationScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<'rules' | 'templates'>('rules');
-  const { rules, toggleRule, deleteRule, seedDemoData } = useAutomationStore();
+  const { rules, toggleRule, deleteRule, addRule, seedDemoData } = useAutomationStore();
 
   if (rules.length === 0) seedDemoData();
 
   const activeRules = rules.filter((r) => r.isActive);
   const totalRuns = rules.reduce((s, r) => s + r.runCount, 0);
+
+  const handleAddTemplate = (t: typeof TEMPLATES[0]) => {
+    Alert.alert('Add Automation', `Add "${t.name}" to your automation rules?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Add',
+        onPress: () => {
+          addRule({
+            familyId: 'demo-family',
+            name: t.name,
+            description: t.desc,
+            isActive: true,
+            trigger: { type: 'time', value: '08:00' },
+            action: { type: 'notify', value: t.desc, target: 'all' },
+            icon: t.icon,
+            color: t.color,
+          });
+          setActiveTab('rules');
+        },
+      },
+    ]);
+  };
 
   const handleDelete = (id: string, name: string) => {
     Alert.alert(`Delete "${name}"?`, 'This automation will be permanently removed.', [
@@ -139,7 +161,7 @@ export function AutomationScreen({ navigation }: any) {
         ))}
 
         {activeTab === 'templates' && TEMPLATES.map((t, i) => (
-          <Pressable key={i} onPress={() => Alert.alert('Add Automation', `Add "${t.name}" to your automation rules?`)}>
+          <Pressable key={i} onPress={() => handleAddTemplate(t)}>
             <Card style={styles.templateCard} variant="elevated">
               <View style={[styles.templateIcon, { backgroundColor: t.color + '15' }]}>
                 <Ionicons name={t.icon as any} size={24} color={t.color} />
