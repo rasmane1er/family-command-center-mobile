@@ -333,7 +333,7 @@ export function HomeMaintenanceScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#37474F', '#546E7A']} style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <LinearGradient colors={['#37474F', '#546E7A']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
         <View style={styles.headerTop}>
           <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -535,13 +535,13 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingBottom: 8,
   },
   headerTop: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 8,
   },
   backBtn: {
     width: 36,
@@ -552,7 +552,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 17,
     fontWeight: '700',
     color: '#fff',
   },
@@ -568,7 +568,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: 'rgba(255,255,255,0.15)',
     borderRadius: 12,
-    paddingVertical: 12,
+    paddingVertical: 6,
     paddingHorizontal: 8,
     alignItems: 'center',
     justifyContent: 'space-around',
@@ -578,7 +578,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerStatNum: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '800',
     color: '#fff',
   },
@@ -723,7 +723,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   modalTitle: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '800',
     color: colors.text,
     marginBottom: 24,

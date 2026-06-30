@@ -533,7 +533,7 @@ function makeStyles(colors: any) {
       marginHorizontal: 8,
     },
     headerTrendEmoji: {
-      fontSize: 22,
+      fontSize: 18,
     },
     memberScrollView: {
       backgroundColor: colors.card,
@@ -691,7 +691,7 @@ function makeStyles(colors: any) {
       flex: 1,
     },
     logEmoji: {
-      fontSize: 24,
+      fontSize: 20,
     },
     logDate: {
       fontSize: 14,

@@ -129,7 +129,7 @@ export function DebtDetailScreen({ navigation, route }: Props) {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={[color, color + 'CC']} style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <LinearGradient colors={[color, color + 'CC']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
         <View style={styles.headerTop}>
           <Pressable onPress={() => navigation.goBack()} hitSlop={12}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -264,8 +264,8 @@ const styles = StyleSheet.create({
   notFoundText: { fontSize: 16, color: TEXT },
   backLink: { fontSize: 14, color: ACCENT, marginTop: 12 },
 
-  header: { paddingBottom: 20, paddingHorizontal: 20 },
-  headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
+  header: { paddingBottom: 8, paddingHorizontal: 20 },
+  headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   headerMid: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   headerTitle: { fontSize: 18, fontWeight: '800', color: '#fff' },
   headerBalance: { fontSize: 36, fontWeight: '900', color: '#fff', textAlign: 'center' },

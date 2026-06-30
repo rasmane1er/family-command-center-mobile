@@ -61,7 +61,7 @@ export function SOSAlertsScreen({ navigation }: any) {
     <View style={styles.container}>
       <LinearGradient
         colors={['#0F2952', '#1E4A8A']}
-        style={[styles.header, { paddingTop: insets.top + 12 }]}
+        style={[styles.header, { paddingTop: insets.top + 6 }]}
       >
         <View style={styles.headerRow}>
           <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
@@ -175,7 +175,7 @@ export function SOSAlertsScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
 
-  header: { paddingHorizontal: 20, paddingBottom: 16 },
+  header: { paddingHorizontal: 20, paddingBottom: 8 },
 
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
 
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
 
   headerTextBlock: { flex: 1 },
 
-  headerTitle: { fontSize: 20, fontWeight: '800', color: '#fff' },
+  headerTitle: { fontSize: 17, fontWeight: '800', color: '#fff' },
 
   headerSubtitle: { fontSize: 12, color: '#FF6B6B', marginTop: 2, fontWeight: '600' },
 
@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
 
-  allClearTitle: { fontSize: 24, fontWeight: '800', color: colors.success },
+  allClearTitle: { fontSize: 20, fontWeight: '800', color: colors.success },
 
   allClearDesc: { fontSize: 14, color: colors.textSecondary, marginTop: 8, textAlign: 'center' },
 
@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
     ...shadows.sm,
   },
 
-  alertHeader: { flexDirection: 'row', gap: 14, marginBottom: 12 },
+  alertHeader: { flexDirection: 'row', gap: 14, marginBottom: 6 },
 
   alertAvatar: {
     width: 44, height: 44, borderRadius: 22,

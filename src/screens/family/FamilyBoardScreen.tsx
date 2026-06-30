@@ -416,7 +416,7 @@ export function FamilyBoardScreen({ navigation }: any) {
       <StatusBar style="light" />
       <LinearGradient
         colors={['#0D1B2A', '#1B2838', '#162447']}
-        style={[styles.header, { paddingTop: insets.top + 12 }]}
+        style={[styles.header, { paddingTop: insets.top + 6 }]}
       >
         <View style={styles.headerRow}>
           <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
@@ -518,14 +518,14 @@ export function FamilyBoardScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { paddingHorizontal: 20, paddingBottom: 20 },
+  header: { paddingHorizontal: 20, paddingBottom: 8 },
   headerRow: { flexDirection: 'row', alignItems: 'center' },
   backBtn: {
     width: 38, height: 38, borderRadius: 10,
     backgroundColor: 'rgba(255,255,255,0.15)',
     alignItems: 'center', justifyContent: 'center', marginRight: 12,
   },
-  headerTitle: { fontSize: 22, fontWeight: '800', color: '#fff' },
+  headerTitle: { fontSize: 18, fontWeight: '800', color: '#fff' },
   headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 2 },
   addBtn: {
     width: 38, height: 38, borderRadius: 10,
@@ -599,7 +599,7 @@ const styles = StyleSheet.create({
     width: 48, height: 48, borderRadius: 24,
     backgroundColor: colors.border, alignItems: 'center', justifyContent: 'center',
   },
-  emojiBtnText: { fontSize: 24 },
+  emojiBtnText: { fontSize: 20 },
   deletePostBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     paddingVertical: 14, paddingHorizontal: 16,

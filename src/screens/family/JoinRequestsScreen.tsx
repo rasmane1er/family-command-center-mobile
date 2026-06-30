@@ -235,10 +235,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  title: { fontSize: 26, fontWeight: '800', color: colors.text, marginTop: 12 },
+  title: { fontSize: 20, fontWeight: '800', color: colors.text, marginTop: 12 },
 
   subtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: colors.textSecondary,
     marginTop: 6,
     textAlign: 'center',

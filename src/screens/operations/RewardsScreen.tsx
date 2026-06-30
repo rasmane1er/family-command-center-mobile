@@ -81,7 +81,7 @@ const activeChild =
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#F5A623', '#E67E22']} style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <LinearGradient colors={['#F5A623', '#E67E22']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
         <View style={styles.headerTop}>
           <Pressable onPress={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()} style={styles.back}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -234,10 +234,10 @@ const activeChild =
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { paddingHorizontal: 20, paddingBottom: 16 },
+  header: { paddingHorizontal: 20, paddingBottom: 8 },
   headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
   back: { marginRight: 12 },
-  headerTitle: { flex: 1, fontSize: 22, fontWeight: '800', color: '#fff' },
+  headerTitle: { flex: 1, fontSize: 18, fontWeight: '800', color: '#fff' },
   settingsBtn: { width: 38, height: 38, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   childScroll: { marginBottom: 14 },
   childChip: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 24, paddingVertical: 8, paddingHorizontal: 14, marginRight: 10 },
@@ -248,11 +248,11 @@ const styles = StyleSheet.create({
   pointsCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 16, padding: 14, marginBottom: 12 },
   pointsLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   trophyBg: { width: 46, height: 46, borderRadius: 23, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
-  pointsValue: { fontSize: 26, fontWeight: '800', color: '#fff' },
+  pointsValue: { fontSize: 20, fontWeight: '800', color: '#fff' },
   pointsLabel: { fontSize: 12, color: 'rgba(255,255,255,0.7)' },
   levelBadge: { alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 8 },
   levelLabel: { fontSize: 10, color: 'rgba(255,255,255,0.7)', fontWeight: '700' },
-  levelValue: { fontSize: 22, fontWeight: '800', color: '#fff' },
+  levelValue: { fontSize: 18, fontWeight: '800', color: '#fff' },
   levelProgress: { gap: 6 },
   levelProgressText: { fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: '600' },
   tabs: { flexDirection: 'row', backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border },

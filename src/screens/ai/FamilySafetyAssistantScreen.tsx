@@ -381,7 +381,7 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     ...shadows.md,
   },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 },
   backBtn: { padding: 4 },
   headerIcon: {
     width: 38,

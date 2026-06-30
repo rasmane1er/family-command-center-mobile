@@ -195,7 +195,7 @@ export function InsuranceManagerScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#0D47A1', '#1565C0']} style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <LinearGradient colors={['#0D47A1', '#1565C0']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
         <View style={styles.headerTop}>
           <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -632,9 +632,9 @@ export function InsuranceManagerScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: { paddingHorizontal: 20, paddingBottom: 0 },
-  headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
+  headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   backBtn: { marginRight: 12 },
-  headerTitle: { flex: 1, fontSize: 22, fontWeight: '800', color: '#fff' },
+  headerTitle: { flex: 1, fontSize: 18, fontWeight: '800', color: '#fff' },
   addBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   summaryRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
   summaryCard: { flex: 1, backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 12, padding: 12, alignItems: 'center' },
@@ -665,7 +665,7 @@ const styles = StyleSheet.create({
   emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginTop: 14 },
   emptyDesc: { fontSize: 13, color: colors.textSecondary, marginTop: 6, textAlign: 'center' },
   policyCard: { marginBottom: 12 },
-  policyHeader: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 12 },
+  policyHeader: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 6 },
   typeIconCircle: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   policyTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 },
   policyProvider: { flex: 1, fontSize: 16, fontWeight: '700', color: colors.text },
@@ -691,7 +691,7 @@ const styles = StyleSheet.create({
   coverageRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   coverageAmount: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
   suggestionsCard: { marginBottom: 12 },
-  suggestionsHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
+  suggestionsHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
   suggestionsTitle: { fontSize: 15, fontWeight: '700', color: colors.text },
   suggestionRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border },
   suggestionType: { fontSize: 13, fontWeight: '700', color: colors.text },

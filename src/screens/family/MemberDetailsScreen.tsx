@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerContent: { alignItems: 'center', paddingHorizontal: 20 },
-  name: { fontSize: 26, fontWeight: '900', color: '#fff', marginTop: 10, textShadowColor: 'rgba(0,0,0,0.3)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 },
+  name: { fontSize: 20, fontWeight: '900', color: '#fff', marginTop: 10, textShadowColor: 'rgba(0,0,0,0.3)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 },
   rolePill: { marginTop: 6, backgroundColor: 'rgba(255,255,255,0.25)', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 4 },
   roleText: { fontSize: 13, fontWeight: '700', color: '#fff' },
   statsRow: { flexDirection: 'row', marginTop: 18, gap: 0 },

@@ -152,7 +152,7 @@ export function EmergencyModeScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#7B0000', '#B71C1C', '#D32F2F']} style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <LinearGradient colors={['#7B0000', '#B71C1C', '#D32F2F']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
         <View style={styles.headerRow}>
           <Pressable onPress={() => navigation.goBack()} style={styles.back}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -301,15 +301,15 @@ export function EmergencyModeScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: { paddingHorizontal: 20, paddingBottom: 24 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   back: { marginRight: 12 },
-  headerTitle: { flex: 1, fontSize: 22, fontWeight: '800', color: '#fff', textAlign: 'center' },
+  headerTitle: { flex: 1, fontSize: 18, fontWeight: '800', color: '#fff', textAlign: 'center' },
   sosCenter: { alignItems: 'center', gap: 12 },
   sosPulse: { borderRadius: 44, backgroundColor: 'rgba(255,255,255,0.1)', padding: 4 },
   sosBtn: { width: 88, height: 88, borderRadius: 44, backgroundColor: 'rgba(255,255,255,0.2)', borderWidth: 3, borderColor: '#fff', alignItems: 'center', justifyContent: 'center', gap: 4 },
   sosBtnActive: { backgroundColor: '#fff' },
   sosBtnText: { fontSize: 14, fontWeight: '800', color: '#fff', letterSpacing: 1 },
-  sosCountdown: { fontSize: 22, fontWeight: '800', color: '#E74C3C' },
+  sosCountdown: { fontSize: 18, fontWeight: '800', color: '#E74C3C' },
   sosHint: { fontSize: 12, color: 'rgba(255,255,255,0.7)', textAlign: 'center' },
   tabs: { flexDirection: 'row', backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border },
   tab: { flex: 1, paddingVertical: 12, alignItems: 'center' },
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
   contactType: { fontSize: 12, color: colors.textSecondary, textTransform: 'capitalize' },
   contactRight: { alignItems: 'flex-end', gap: 4 },
   contactNumber: { fontSize: 13, fontWeight: '700', color: colors.primary },
-  kitHeader: { backgroundColor: '#FDEDEC', borderRadius: 16, padding: 16, marginBottom: 16 },
+  kitHeader: { backgroundColor: '#FDEDEC', borderRadius: 16, padding: 16, marginBottom: 8 },
   kitProgress: { fontSize: 18, fontWeight: '800', color: '#E74C3C', marginBottom: 10 },
   kitBar: { height: 8, backgroundColor: 'rgba(231,76,60,0.2)', borderRadius: 4, marginBottom: 10 },
   kitFill: { height: 8, backgroundColor: '#E74C3C', borderRadius: 4 },

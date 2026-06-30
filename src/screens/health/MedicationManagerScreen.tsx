@@ -538,7 +538,7 @@ function makeStyles(colors: any) {
       flex: 1,
     },
     headerStatNum: {
-      fontSize: 22,
+      fontSize: 18,
       fontWeight: '800',
       color: '#fff',
     },
@@ -837,7 +837,7 @@ function makeStyles(colors: any) {
       marginBottom: 20,
     },
     modalTitle: {
-      fontSize: 22,
+      fontSize: 18,
       fontWeight: '800',
       color: colors.text,
       marginBottom: 24,

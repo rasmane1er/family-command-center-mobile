@@ -432,7 +432,7 @@ export function HomeInventoryScreen({ navigation }: any) {
       <StatusBar style="light" />
       <LinearGradient
         colors={['#212121', '#37474F', '#455A64']}
-        style={{ paddingTop: insets.top + 12, paddingBottom: 24, paddingHorizontal: 20 }}
+        style={{ paddingTop: insets.top + 6, paddingBottom: 8, paddingHorizontal: 20 }}
       >
         <View style={styles.headerTop}>
           <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
@@ -696,9 +696,9 @@ const styles = StyleSheet.create({
   retailAddBtnText: { fontSize: 12, fontWeight: '700', color: '#fff' },
   retailDismissBtn: { padding: 4 },
   container: { flex: 1, backgroundColor: colors.background },
-  headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
+  headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   backBtn: { marginRight: 12 },
-  headerTitle: { flex: 1, fontSize: 22, fontWeight: '800', color: '#fff' },
+  headerTitle: { flex: 1, fontSize: 18, fontWeight: '800', color: '#fff' },
   addBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   headerStats: { flexDirection: 'row', alignItems: 'center' },
   statBlock: { flex: 1, alignItems: 'center' },
@@ -711,7 +711,7 @@ const styles = StyleSheet.create({
   tabText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
   tabTextActive: { color: '#37474F' },
   tabContent: { padding: 16, paddingBottom: 100 },
-  roomHeader: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 4, borderBottomWidth: 1, borderBottomColor: colors.border, gap: 10 },
+  roomHeader: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, paddingHorizontal: 4, borderBottomWidth: 1, borderBottomColor: colors.border, gap: 10 },
   roomIconCircle: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#E8EEF9', alignItems: 'center', justifyContent: 'center' },
   roomHeaderInfo: { flex: 1 },
   roomName: { fontSize: 15, fontWeight: '700', color: colors.text },
@@ -751,7 +751,7 @@ const styles = StyleSheet.create({
   catValue: { fontSize: 13, fontWeight: '700', color: colors.text, width: 72, textAlign: 'right' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalSheet: { backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '92%' },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   modalTitle: { fontSize: 20, fontWeight: '800', color: colors.text },
   modalLabel: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
   modalInput: { borderWidth: 1.5, borderColor: colors.border, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, fontSize: 15, color: colors.text, marginBottom: 16 },

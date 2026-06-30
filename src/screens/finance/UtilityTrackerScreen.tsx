@@ -394,7 +394,7 @@ export function UtilityTrackerScreen({ navigation }: any) {
       <StatusBar style="light" />
       <LinearGradient
         colors={['#006064', '#00838F', '#0097A7']}
-        style={{ paddingTop: insets.top + 12, paddingBottom: 24, paddingHorizontal: 20 }}
+        style={{ paddingTop: insets.top + 6, paddingBottom: 8, paddingHorizontal: 20 }}
       >
         <View style={styles.headerTop}>
           <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
@@ -628,9 +628,9 @@ export function UtilityTrackerScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
+  headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   backBtn: { marginRight: 12 },
-  headerTitle: { flex: 1, fontSize: 22, fontWeight: '800', color: '#fff' },
+  headerTitle: { flex: 1, fontSize: 18, fontWeight: '800', color: '#fff' },
   importBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center', marginRight: 8 },
   addBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   headerStats: { flexDirection: 'row', alignItems: 'center' },

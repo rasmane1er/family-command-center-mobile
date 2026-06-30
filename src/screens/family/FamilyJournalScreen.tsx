@@ -46,7 +46,7 @@ function JournalDetailModal({ entry, onClose }: { entry: JournalEntry; onClose: 
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#B7410E', MOOD_COLORS[entry.mood]]} style={[styles.detailHeader, { paddingTop: insets.top + 12 }]}>
+      <LinearGradient colors={['#B7410E', MOOD_COLORS[entry.mood]]} style={[styles.detailHeader, { paddingTop: insets.top + 6 }]}>
         <Pressable onPress={onClose} style={styles.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
@@ -94,7 +94,7 @@ function JournalDetailModal({ entry, onClose }: { entry: JournalEntry; onClose: 
                 onPress={() => handleReaction(emoji)}
                 style={[styles.reactBtn, isMine && styles.reactBtnActive]}
               >
-                <Text style={{ fontSize: 22 }}>{emoji}</Text>
+                <Text style={{ fontSize: 18 }}>{emoji}</Text>
                 {count > 0 && <Text style={styles.reactCount}>{count}</Text>}
               </Pressable>
             );
@@ -174,7 +174,7 @@ export function FamilyJournalScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#7D3C98', '#B7410E']} style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <LinearGradient colors={['#7D3C98', '#B7410E']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
         <View style={styles.headerRow}>
           <Pressable onPress={() => navigation.goBack()} style={styles.back}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -276,7 +276,7 @@ export function FamilyJournalScreen({ navigation }: any) {
             <View style={styles.moodRow}>
               {([1, 2, 3, 4, 5] as const).map((m) => (
                 <Pressable key={m} onPress={() => setNewMood(m)} style={[styles.moodBtn, newMood === m && { borderColor: MOOD_COLORS[m], backgroundColor: MOOD_COLORS[m] + '15' }]}>
-                  <Text style={{ fontSize: 22 }}>{MOOD_EMOJIS[m]}</Text>
+                  <Text style={{ fontSize: 18 }}>{MOOD_EMOJIS[m]}</Text>
                   <Text style={[styles.moodLabel, newMood === m && { color: MOOD_COLORS[m] }]}>{MOOD_LABELS[m]}</Text>
                 </Pressable>
               ))}
@@ -286,7 +286,7 @@ export function FamilyJournalScreen({ navigation }: any) {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, marginBottom: 20 }}>
               {['✨', '🎉', '❤️', '😊', '💪', '🌟', '🏆', '🌺', '⚽', '🍿', '🌱', '📚', '🎹', '✈️', '🎂'].map((e) => (
                 <Pressable key={e} onPress={() => setNewEmoji(e)} style={[styles.emojiBtn, newEmoji === e && styles.emojiBtnActive]}>
-                  <Text style={{ fontSize: 22 }}>{e}</Text>
+                  <Text style={{ fontSize: 18 }}>{e}</Text>
                 </Pressable>
               ))}
             </ScrollView>
@@ -323,10 +323,10 @@ export function FamilyJournalScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { paddingHorizontal: 20, paddingBottom: 16 },
+  header: { paddingHorizontal: 20, paddingBottom: 8 },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 14 },
   back: { width: 38, height: 38, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { fontSize: 22, fontWeight: '800', color: '#fff' },
+  headerTitle: { fontSize: 18, fontWeight: '800', color: '#fff' },
   headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
   addBtn: { width: 38, height: 38, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   filterChip: { paddingVertical: 6, paddingHorizontal: 14, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.15)' },
@@ -354,9 +354,9 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', paddingTop: 60 },
   emptyTitle: { fontSize: 20, fontWeight: '700', color: colors.text, marginTop: 16, marginBottom: 8 },
   emptyDesc: { fontSize: 14, color: colors.textSecondary, textAlign: 'center', paddingHorizontal: 32, lineHeight: 22 },
-  detailHeader: { paddingHorizontal: 20, paddingBottom: 20 },
+  detailHeader: { paddingHorizontal: 20, paddingBottom: 8 },
   detailEmoji: { fontSize: 44, marginBottom: 8, marginTop: 4 },
-  detailTitle: { fontSize: 22, fontWeight: '800', color: '#fff', marginBottom: 8 },
+  detailTitle: { fontSize: 18, fontWeight: '800', color: '#fff', marginBottom: 8 },
   detailMeta: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
   moodPill: { borderRadius: 20, paddingVertical: 4, paddingHorizontal: 10 },
   moodPillText: { fontSize: 12, fontWeight: '700', color: '#fff' },

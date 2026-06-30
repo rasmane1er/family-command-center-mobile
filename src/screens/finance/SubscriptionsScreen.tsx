@@ -126,7 +126,7 @@ export function SubscriptionsScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#8E44AD', '#9B59B6']} style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <LinearGradient colors={['#8E44AD', '#9B59B6']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
         <View style={styles.headerTop}>
           <Pressable onPress={() => navigation.goBack()} style={styles.back}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -343,9 +343,9 @@ export function SubscriptionsScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: { paddingHorizontal: 20, paddingBottom: 24 },
-  headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
+  headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   back: { marginRight: 12 },
-  headerTitle: { flex: 1, fontSize: 22, fontWeight: '800', color: '#fff' },
+  headerTitle: { flex: 1, fontSize: 18, fontWeight: '800', color: '#fff' },
   addBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   summaryCard: { flexDirection: 'row', backgroundColor: 'rgba(0,0,0,0.15)', borderRadius: 16, padding: 16 },
   summaryItem: { flex: 1, alignItems: 'center' },
@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
   emptyDesc: { fontSize: 14, color: colors.textSecondary, marginTop: 8, textAlign: 'center' },
   modal: { flex: 1, padding: 24, backgroundColor: colors.background },
   modalHandle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 24 },
-  modalTitle: { fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 20 },
+  modalTitle: { fontSize: 20, fontWeight: '800', color: colors.text, marginBottom: 20 },
   modalLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
   modalInput: { backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 16, color: colors.text, borderWidth: 1.5, borderColor: colors.border, marginBottom: 16, ...shadows.sm },
   cycleRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
   memberChipName: { fontSize: 11, color: colors.textSecondary, fontWeight: '600' },
 
   detectedSection: { backgroundColor: '#F5F3FF', borderRadius: 16, padding: 14, marginBottom: 20, borderWidth: 1, borderColor: '#DDD6FE' },
-  detectedHeader: { marginBottom: 12 },
+  detectedHeader: { marginBottom: 6 },
   detectedTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
   detectedTitle: { fontSize: 15, fontWeight: '800', color: '#5B21B6' },
   detectedBadge: { backgroundColor: '#8B5CF6', borderRadius: 10, minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },

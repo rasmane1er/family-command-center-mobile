@@ -616,7 +616,7 @@ const styles = StyleSheet.create({
   statsRow: { flexDirection: 'row', justifyContent: 'space-around' },
   statItem: { flex: 1, alignItems: 'center', paddingVertical: 8 },
   statBorder: { borderRightWidth: 1, borderRightColor: 'rgba(255,255,255,0.2)' },
-  statVal: { fontSize: 28, fontWeight: '800', color: '#fff' },
+  statVal: { fontSize: 20, fontWeight: '800', color: '#fff' },
   statLabel: { fontSize: 10, color: 'rgba(255,255,255,0.6)', marginTop: 2, textAlign: 'center' },
   tabs: {
     flexDirection: 'row', backgroundColor: colors.card,
@@ -676,7 +676,7 @@ const styles = StyleSheet.create({
   },
   advanceBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   // Schedule tab
-  scheduleWeekHeader: { marginBottom: 12 },
+  scheduleWeekHeader: { marginBottom: 6 },
   scheduleWeekTitle: { fontSize: 18, fontWeight: '800', color: colors.text },
   scheduleWeekSub: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
   scheduleDayBlock: {

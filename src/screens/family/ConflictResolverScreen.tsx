@@ -83,7 +83,7 @@ export function ConflictResolverScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#922B21', '#E74C3C']} style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <LinearGradient colors={['#922B21', '#E74C3C']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
         <View style={styles.headerTop}>
           <Pressable onPress={() => navigation.goBack()} style={styles.back}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -243,14 +243,14 @@ export function ConflictResolverScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { paddingHorizontal: 20, paddingBottom: 20 },
-  headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
+  header: { paddingHorizontal: 20, paddingBottom: 8 },
+  headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   back: { marginRight: 12 },
-  headerTitle: { flex: 1, fontSize: 22, fontWeight: '800', color: '#fff' },
+  headerTitle: { flex: 1, fontSize: 18, fontWeight: '800', color: '#fff' },
   addBtn: { width: 38, height: 38, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-around' },
   sumCard: { alignItems: 'center' },
-  sumVal: { fontSize: 28, fontWeight: '800', color: '#fff' },
+  sumVal: { fontSize: 20, fontWeight: '800', color: '#fff' },
   sumLabel: { fontSize: 11, color: 'rgba(255,255,255,0.7)', marginTop: 2 },
   tabs: { flexDirection: 'row', backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border },
   tab: { flex: 1, paddingVertical: 14, alignItems: 'center' },
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
   stepDesc: { fontSize: 12, color: colors.textSecondary, lineHeight: 17 },
   modal: { flex: 1, padding: 24, backgroundColor: colors.background },
   modalHandle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 24 },
-  modalTitle: { fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 20 },
+  modalTitle: { fontSize: 20, fontWeight: '800', color: colors.text, marginBottom: 20 },
   modalLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
   modalInput: { backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 16, color: colors.text, borderWidth: 1.5, borderColor: colors.border, marginBottom: 16, ...shadows.sm },
   modalTextarea: { minHeight: 90, textAlignVertical: 'top' as const },

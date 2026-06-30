@@ -235,7 +235,7 @@ export function BucketListScreen({ navigation }: any) {
       <StatusBar style="light" />
       <LinearGradient
         colors={['#4A148C', '#6A1B9A', '#7B1FA2']}
-        style={{ paddingTop: insets.top + 12, paddingBottom: 8, paddingHorizontal: 20 }}
+        style={{ paddingTop: insets.top + 6, paddingBottom: 8, paddingHorizontal: 20 }}
       >
         <View style={styles.headerTop}>
           <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
@@ -554,7 +554,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 17,
     fontWeight: '700',
     color: '#fff',
   },
@@ -872,7 +872,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#7B1FA220',
   },
   emojiText: {
-    fontSize: 22,
+    fontSize: 18,
   },
   textInput: {
     backgroundColor: colors.card,

@@ -102,7 +102,7 @@ export function ProfileSwitcherScreen({ navigation, route }: any) {
     <View style={styles.container}>
       <LinearGradient
         colors={['#0F2952', '#1E4A8A']}
-        style={[styles.header, { paddingTop: insets.top + 12 }]}
+        style={[styles.header, { paddingTop: insets.top + 6 }]}
       >
         <Pressable onPress={goBackOrHome} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color="#fff" />
@@ -231,9 +231,9 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 18 },
   backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { flex: 1, fontSize: 20, fontWeight: '800', color: '#fff', textAlign: 'center' },
+  headerTitle: { flex: 1, fontSize: 17, fontWeight: '800', color: '#fff', textAlign: 'center' },
   content: { padding: 16, paddingBottom: 100 },
-  subtitle: { fontSize: 14, color: colors.textSecondary, marginBottom: 20, marginTop: 4 },
+  subtitle: { fontSize: 13, color: colors.textSecondary, marginBottom: 20, marginTop: 4 },
   card: { marginBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 14 },
   activeCard: { borderWidth: 2, borderColor: colors.primary, backgroundColor: '#EEF3FB' },
   cardText: { flex: 1 },
@@ -247,8 +247,8 @@ const styles = StyleSheet.create({
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center' },
   pinModal: { backgroundColor: '#fff', borderRadius: 24, padding: 32, width: 320, alignItems: 'center' },
-  pinTitle: { fontSize: 22, fontWeight: '800', color: colors.text, marginBottom: 6 },
-  pinSubtitle: { fontSize: 14, color: colors.textSecondary, marginBottom: 24 },
+  pinTitle: { fontSize: 18, fontWeight: '800', color: colors.text, marginBottom: 6 },
+  pinSubtitle: { fontSize: 13, color: colors.textSecondary, marginBottom: 24 },
   pinDots: { flexDirection: 'row', gap: 16, marginBottom: 12 },
   pinDot: { width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: colors.primary, backgroundColor: 'transparent' },
   pinDotFilled: { backgroundColor: colors.primary },
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
   numKey: { width: 80, height: 64, alignItems: 'center', justifyContent: 'center' },
   numKeyDigit: { borderRadius: 40, backgroundColor: '#F5F5F5' },
   numKeyPressed: { opacity: 0.6 },
-  numKeyText: { fontSize: 22, fontWeight: '600', color: colors.text },
+  numKeyText: { fontSize: 18, fontWeight: '600', color: colors.text },
   cancelBtn: { marginTop: 20, paddingVertical: 10, paddingHorizontal: 24 },
   cancelBtnText: { fontSize: 15, color: colors.primary, fontWeight: '600' },
 });

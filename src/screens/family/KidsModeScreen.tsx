@@ -110,7 +110,7 @@ export function KidsModeScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={GRADIENT_COLORS} style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <LinearGradient colors={GRADIENT_COLORS} style={[styles.header, { paddingTop: insets.top + 6 }]}>
         <View style={styles.headerRow}>
           <Pressable onPress={() => navigation.goBack()} style={styles.back}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -316,10 +316,10 @@ export function KidsModeScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { paddingHorizontal: 20, paddingBottom: 20 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
+  header: { paddingHorizontal: 20, paddingBottom: 8 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   back: { width: 38, height: 38, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  headerTitle: { flex: 1, fontSize: 22, fontWeight: '800', color: '#fff' },
+  headerTitle: { flex: 1, fontSize: 18, fontWeight: '800', color: '#fff' },
   kidChip: { alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
   kidChipActive: { backgroundColor: 'rgba(255,255,255,0.25)' },
   kidChipName: { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.9)' },
@@ -333,8 +333,8 @@ const styles = StyleSheet.create({
   xpFill: { height: 6, backgroundColor: '#FFD166', borderRadius: 3 },
   xpNext: { fontSize: 10, color: 'rgba(255,255,255,0.6)' },
   streakBadge: { alignItems: 'center' },
-  streakEmoji: { fontSize: 24 },
-  streakCount: { fontSize: 22, fontWeight: '800', color: '#fff' },
+  streakEmoji: { fontSize: 20 },
+  streakCount: { fontSize: 18, fontWeight: '800', color: '#fff' },
   streakLabel: { fontSize: 10, color: 'rgba(255,255,255,0.7)' },
   burst: { position: 'absolute', top: '40%', left: '30%', right: '30%', zIndex: 100, backgroundColor: '#FFD166', borderRadius: 16, padding: 12, alignItems: 'center' },
   burstText: { fontSize: 18, fontWeight: '800', color: '#333' },
@@ -349,7 +349,7 @@ const styles = StyleSheet.create({
   moodCheckedLabel: { fontSize: 14, fontWeight: '700', color: colors.text },
   moodCheckedValue: { fontSize: 16, fontWeight: '800', marginTop: 2 },
   moodXP: { marginLeft: 'auto', fontSize: 14, fontWeight: '800', color: '#27AE60', backgroundColor: '#D5F5E3', borderRadius: 10, paddingVertical: 4, paddingHorizontal: 10 },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, marginBottom: 12 },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, marginBottom: 6 },
   sectionTitle: { fontSize: 17, fontWeight: '800', color: colors.text },
   sectionSub: { fontSize: 12, color: colors.textSecondary, fontWeight: '600' },
   seeAll: { fontSize: 13, color: colors.primary, fontWeight: '600' },

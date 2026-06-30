@@ -170,7 +170,7 @@ export function OperationsDashboardScreen({ navigation }: any) {
         colors={['#102F59', '#0D4268', '#0A4A72']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={[styles.header, { paddingTop: insets.top + 18 }]}
+        style={[styles.header, { paddingTop: insets.top + 6 }]}
       >
         <View style={styles.headerTop}>
           <View style={{ flex: 1 }}>
@@ -180,10 +180,6 @@ export function OperationsDashboardScreen({ navigation }: any) {
             </Text>
           </View>
 
-          <Pressable style={styles.bellButton}>
-            <Ionicons name="notifications" size={20} color="#FFFFFF" />
-            {totalAlerts > 0 && <View style={styles.bellDot} />}
-          </Pressable>
         </View>
 
         <View style={styles.alertRow}>
@@ -198,7 +194,7 @@ export function OperationsDashboardScreen({ navigation }: any) {
             >
               <Ionicons
                 name={item.icon as any}
-                size={27}
+                size={15}
                 color={item.count > 0 ? item.color : 'rgba(255,255,255,0.42)'}
               />
 
@@ -427,49 +423,28 @@ const styles = StyleSheet.create({
   },
 
   headerTitle: {
-    fontSize: 34,
+    fontSize: 20,
     fontWeight: '900',
     color: '#FFFFFF',
     letterSpacing: -0.9,
   },
 
   headerSubtitle: {
-    fontSize: 17,
+    fontSize: 12,
     fontWeight: '500',
     color: 'rgba(255,255,255,0.7)',
-    marginTop: 8,
-  },
-
-  bellButton: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: 'rgba(255,255,255,0.13)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 12,
-    marginTop: 3,
-  },
-
-  bellDot: {
-    position: 'absolute',
-    top: 9,
-    right: 10,
-    width: 9,
-    height: 9,
-    borderRadius: 5,
-    backgroundColor: '#FF5A4F',
+    marginTop: 4,
   },
 
   alertRow: {
     flexDirection: 'row',
     gap: 10,
-    marginTop: 25,
+    marginTop: 20,
   },
 
   alertCard: {
     flex: 1,
-    height: 112,
+    height: 60,
     borderRadius: 22,
     backgroundColor: 'rgba(255,255,255,0.14)',
     alignItems: 'center',
@@ -479,13 +454,13 @@ const styles = StyleSheet.create({
   },
 
   alertNumber: {
-    fontSize: 31,
+    fontSize: 20,
     fontWeight: '900',
-    marginTop: 6,
+    marginTop: 1,
   },
 
   alertLabel: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '800',
     color: 'rgba(255,255,255,0.76)',
     marginTop: 4,
@@ -514,8 +489,8 @@ const styles = StyleSheet.create({
   },
 
   priorityIcon: {
-    width: 58,
-    height: 58,
+    width: 18,
+    height: 18,
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
@@ -566,7 +541,7 @@ const styles = StyleSheet.create({
   },
 
   sectionTitle: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '900',
     color: '#0F1E36',
     letterSpacing: -0.5,
@@ -709,7 +684,7 @@ const styles = StyleSheet.create({
   },
 
   snapshotHeader: {
-    marginBottom: 16,
+    marginBottom: 8,
   },
 
   snapshotTitle: {

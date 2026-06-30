@@ -253,7 +253,7 @@ export function MealPlanningScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#F5A623', '#FF8C42']} style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <LinearGradient colors={['#F5A623', '#FF8C42']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
         <View style={styles.headerTop}>
           <Pressable onPress={() => navigation.goBack()} style={styles.back}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -414,10 +414,10 @@ export function MealPlanningScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { paddingHorizontal: 20, paddingBottom: 16 },
-  headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  header: { paddingHorizontal: 20, paddingBottom: 8 },
+  headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
   back: { marginRight: 12 },
-  headerTitle: { flex: 1, fontSize: 22, fontWeight: '800', color: '#fff' },
+  headerTitle: { flex: 1, fontSize: 18, fontWeight: '800', color: '#fff' },
   addBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   weekLabel: { fontSize: 13, color: 'rgba(255,255,255,0.8)', marginBottom: 12 },
   dayScroll: {},
@@ -432,7 +432,7 @@ const styles = StyleSheet.create({
   mealDotActive: { backgroundColor: colors.success },
   content: { padding: 16 },
   daySummary: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  daySummaryDay: { fontSize: 22, fontWeight: '800', color: colors.text },
+  daySummaryDay: { fontSize: 18, fontWeight: '800', color: colors.text },
   dayCalories: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FEF3E2', borderRadius: 20, paddingVertical: 6, paddingHorizontal: 12 },
   dayCaloriesText: { fontSize: 14, fontWeight: '700', color: colors.secondary },
   mealSection: { marginBottom: 16 },
@@ -462,8 +462,8 @@ const styles = StyleSheet.create({
   shoppingListBtnText: { fontSize: 14, fontWeight: '700', color: colors.secondary },
   modal: { flex: 1, padding: 24, backgroundColor: colors.background },
   modalHandle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 24 },
-  modalTitle: { fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 2 },
-  modalSubtitle: { fontSize: 14, color: colors.textSecondary, marginBottom: 20 },
+  modalTitle: { fontSize: 20, fontWeight: '800', color: colors.text, marginBottom: 2 },
+  modalSubtitle: { fontSize: 13, color: colors.textSecondary, marginBottom: 20 },
   modalLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
   modalInput: { backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 16, color: colors.text, borderWidth: 1.5, borderColor: colors.border, marginBottom: 16, ...shadows.sm },
   rowInputs: { flexDirection: 'row' },

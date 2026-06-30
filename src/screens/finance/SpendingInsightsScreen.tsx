@@ -213,7 +213,7 @@ export function SpendingInsightsScreen({ navigation }: { navigation: any }) {
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F5F7FA' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 56, paddingBottom: 12, backgroundColor: '#FFFFFF' },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 56, paddingBottom: 8, backgroundColor: '#FFFFFF' },
   backBtn: { width: 36, height: 36, borderRadius: 12, backgroundColor: '#F0F3F9', alignItems: 'center', justifyContent: 'center' },
   headerTitle: { fontSize: 18, fontWeight: '800', color: '#1A1A2E' },
   monthRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 16, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#F0F3F9' },

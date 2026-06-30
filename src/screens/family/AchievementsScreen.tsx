@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
   statsRow: { flexDirection: 'row', marginBottom: 14 },
   statItem: { flex: 1, alignItems: 'center' },
   statBorder: { borderLeftWidth: 1, borderRightWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
-  statValue: { fontSize: 26, fontWeight: '800', color: '#fff' },
+  statValue: { fontSize: 20, fontWeight: '800', color: '#fff' },
   statLabel: { fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
   leaderboard: { borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.card, maxHeight: 90 },
   leaderCard: { alignItems: 'center', gap: 4, paddingVertical: 4 },

@@ -101,7 +101,7 @@ export function GuardianDashboardScreen({ navigation }: any) {
     <View style={styles.container}>
       <LinearGradient
         colors={['#0F2952', '#1E4A8A']}
-        style={[styles.header, { paddingTop: insets.top + 12 }]}
+        style={[styles.header, { paddingTop: insets.top + 6 }]}
       >
         <View style={styles.headerRow}>
           <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
 
   header: {
     paddingHorizontal: 20,
-    paddingBottom: 16,
+    paddingBottom: 8,
   },
 
   headerRow: {
@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
   headerTextBlock: { flex: 1 },
 
   headerTitle: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '800',
     color: '#fff',
   },

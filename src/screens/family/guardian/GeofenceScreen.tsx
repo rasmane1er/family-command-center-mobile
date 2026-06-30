@@ -119,7 +119,7 @@ export function GeofenceScreen({ navigation }: any) {
     <View style={styles.container}>
       <LinearGradient
         colors={['#0F2952', '#1E4A8A']}
-        style={[styles.header, { paddingTop: insets.top + 12 }]}
+        style={[styles.header, { paddingTop: insets.top + 6 }]}
       >
         <View style={styles.headerRow}>
           <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
@@ -327,7 +327,7 @@ export function GeofenceScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
 
-  header: { paddingHorizontal: 20, paddingBottom: 16 },
+  header: { paddingHorizontal: 20, paddingBottom: 8 },
 
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
 
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
 
-  headerTitle: { flex: 1, fontSize: 20, fontWeight: '800', color: '#fff' },
+  headerTitle: { flex: 1, fontSize: 17, fontWeight: '800', color: '#fff' },
 
   addBtn: {
     width: 36, height: 36, borderRadius: 10,
@@ -392,7 +392,7 @@ const styles = StyleSheet.create({
     borderRadius: 2, alignSelf: 'center', marginBottom: 24,
   },
 
-  modalTitle: { fontSize: 22, fontWeight: '800', color: colors.text, marginBottom: 20 },
+  modalTitle: { fontSize: 18, fontWeight: '800', color: colors.text, marginBottom: 20 },
 
   fieldLabel: {
     fontSize: 12, fontWeight: '700', color: colors.textSecondary,

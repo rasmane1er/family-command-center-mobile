@@ -358,7 +358,7 @@ const styles = StyleSheet.create({
   briefingDate: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginBottom: 14 },
   briefingStats: { flexDirection: 'row', justifyContent: 'space-around' },
   bStat: { alignItems: 'center' },
-  bStatVal: { fontSize: 22, fontWeight: '800', color: '#fff' },
+  bStatVal: { fontSize: 18, fontWeight: '800', color: '#fff' },
   bStatLabel: { fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
   tabs: { flexDirection: 'row', backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border },
   tab: { flex: 1, paddingVertical: 14, alignItems: 'center' },

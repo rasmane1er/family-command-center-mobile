@@ -420,14 +420,14 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.2)',
   },
   logoTitle: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '900',
     color: '#FFFFFF',
     letterSpacing: 0.3,
     textAlign: 'center',
   },
   logoSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: 'rgba(255,255,255,0.65)',
     marginTop: 6,
     letterSpacing: 0.5,
@@ -445,12 +445,12 @@ const styles = StyleSheet.create({
     elevation: 16,
   },
   cardTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '800',
     marginBottom: 4,
   },
   cardSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     marginBottom: 24,
   },
 

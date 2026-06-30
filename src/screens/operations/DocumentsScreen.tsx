@@ -240,7 +240,7 @@ export function DocumentsScreen({ navigation, route }: any) {
   return (
     <View style={s.root}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#2980B9', '#1A5276']} style={[s.header, { paddingTop: insets.top + 12 }]}>
+      <LinearGradient colors={['#2980B9', '#1A5276']} style={[s.header, { paddingTop: insets.top + 6 }]}>
         <View style={s.headerRow}>
           <Pressable onPress={() => navigation.goBack()} style={s.back}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -533,10 +533,10 @@ export function DocumentsScreen({ navigation, route }: any) {
 function makeStyles(colors: any) {
   return StyleSheet.create({
     root: { flex: 1, backgroundColor: colors.background },
-    header: { paddingHorizontal: 20, paddingBottom: 20 },
+    header: { paddingHorizontal: 20, paddingBottom: 8 },
     headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
     back: { marginRight: 12 },
-    headerTitle: { fontSize: 22, fontWeight: '800', color: '#fff' },
+    headerTitle: { fontSize: 18, fontWeight: '800', color: '#fff' },
     headerBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
     headerMeta: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     headerMetaText: { fontSize: 13, color: 'rgba(255,255,255,0.75)' },
@@ -570,7 +570,7 @@ function makeStyles(colors: any) {
     // view modal
     modal: { flex: 1, backgroundColor: colors.background },
     modalHandle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginVertical: 12 },
-    modalTitle: { fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 20, paddingHorizontal: 24 },
+    modalTitle: { fontSize: 20, fontWeight: '800', color: colors.text, marginBottom: 20, paddingHorizontal: 24 },
     modalLabel: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, marginBottom: 7, textTransform: 'uppercase', letterSpacing: 0.5, paddingHorizontal: 24 },
     modalInput: { backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 16, color: colors.text, borderWidth: 1.5, borderColor: colors.border, marginBottom: 16, marginHorizontal: 24, ...shadows.sm },
     catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16, paddingHorizontal: 24 },
@@ -590,7 +590,7 @@ function makeStyles(colors: any) {
     uploadFileName: { fontSize: 14, fontWeight: '600', color: colors.text, textAlign: 'center', paddingHorizontal: 8 },
     uploadFileMeta: { fontSize: 12, color: colors.textMuted },
     // view modal content
-    viewHeader: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingBottom: 16 },
+    viewHeader: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingBottom: 8 },
     viewIcon: { width: 56, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
     viewTitle: { fontSize: 20, fontWeight: '800', color: colors.text },
     viewCat: { fontSize: 13, color: colors.textSecondary, textTransform: 'capitalize', marginTop: 2 },

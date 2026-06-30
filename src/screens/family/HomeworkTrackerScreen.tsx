@@ -268,7 +268,7 @@ const visibleChildren =
       <StatusBar style="light" />
       <LinearGradient
         colors={['#1A237E', '#283593', '#3949AB']}
-        style={[styles.header, { paddingTop: insets.top + 12 }]}
+        style={[styles.header, { paddingTop: insets.top + 6 }]}
       >
         <View style={styles.headerRow}>
           <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
@@ -530,15 +530,15 @@ const visibleChildren =
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { paddingHorizontal: 20, paddingBottom: 20 },
+  header: { paddingHorizontal: 20, paddingBottom: 8 },
   headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 18 },
   backBtn: { marginRight: 12 },
-  headerTitle: { flex: 1, fontSize: 22, fontWeight: '800', color: '#fff' },
+  headerTitle: { flex: 1, fontSize: 18, fontWeight: '800', color: '#fff' },
   addBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   statsRow: { flexDirection: 'row' },
   statItem: { flex: 1, alignItems: 'center' },
   statBorder: { borderLeftWidth: 1, borderRightWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
-  statValue: { fontSize: 26, fontWeight: '800', color: '#fff' },
+  statValue: { fontSize: 20, fontWeight: '800', color: '#fff' },
   overdueValue: { color: '#FF6B6B' },
   statLabel: { fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
   memberScroll: { backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border },
@@ -582,7 +582,7 @@ const styles = StyleSheet.create({
   gradeCircleText: { fontSize: 16, fontWeight: '800' },
   modal: { flex: 1, padding: 24, backgroundColor: colors.background },
   modalHandle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 24 },
-  modalTitle: { fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 20 },
+  modalTitle: { fontSize: 20, fontWeight: '800', color: colors.text, marginBottom: 20 },
   modalLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
   modalInput: { backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 16, color: colors.text, borderWidth: 1.5, borderColor: colors.border, marginBottom: 16, ...shadows.sm },
   colorRow: { flexDirection: 'row', gap: 10, marginBottom: 20, flexWrap: 'wrap' },

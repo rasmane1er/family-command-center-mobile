@@ -108,7 +108,7 @@ export function FamilyMeetingScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#1565C0', '#0D47A1']} style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <LinearGradient colors={['#1565C0', '#0D47A1']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
         <View style={styles.headerRow}>
           <Pressable onPress={() => navigation.goBack()} style={styles.back}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -256,16 +256,16 @@ export function FamilyMeetingScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { paddingHorizontal: 20, paddingBottom: 20 },
+  header: { paddingHorizontal: 20, paddingBottom: 8 },
   headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 18 },
   back: { marginRight: 12 },
-  headerTitle: { fontSize: 22, fontWeight: '800', color: '#fff' },
+  headerTitle: { fontSize: 18, fontWeight: '800', color: '#fff' },
   headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
   addBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   statsRow: { flexDirection: 'row' },
   statItem: { flex: 1, alignItems: 'center' },
   statBorder: { borderLeftWidth: 1, borderRightWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
-  statValue: { fontSize: 24, fontWeight: '800', color: '#fff' },
+  statValue: { fontSize: 20, fontWeight: '800', color: '#fff' },
   statLabel: { fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
   content: { padding: 16 },
   tipCard: { borderRadius: 14, backgroundColor: '#FEF3E2', marginBottom: 4 },
@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
   meetingCard: { borderRadius: 16, marginBottom: 12 },
   meetingHeader: { flexDirection: 'row', alignItems: 'center' },
   dateBadge: { width: 46, height: 54, backgroundColor: '#EBF5FB', borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  dateDay: { fontSize: 22, fontWeight: '800', color: '#1565C0' },
+  dateDay: { fontSize: 18, fontWeight: '800', color: '#1565C0' },
   dateMonth: { fontSize: 11, color: '#1565C0', fontWeight: '600', textTransform: 'uppercase' },
   meetingTitle: { fontSize: 15, fontWeight: '700', color: colors.text, marginBottom: 3 },
   meetingMeta: { flexDirection: 'row', alignItems: 'center' },

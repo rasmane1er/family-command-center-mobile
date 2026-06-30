@@ -288,12 +288,12 @@ const styles = StyleSheet.create({
     elevation: 16,
   },
   cardTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '800',
     marginBottom: 8,
   },
   cardSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     lineHeight: 21,
     marginBottom: 24,
   },

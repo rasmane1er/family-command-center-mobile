@@ -105,7 +105,7 @@ export function FamilyTimelineScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#4A0072', '#7B2D8B']} style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <LinearGradient colors={['#4A0072', '#7B2D8B']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
         <View style={styles.headerRow}>
           <Pressable onPress={() => navigation.goBack()} style={styles.back}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -278,10 +278,10 @@ export function FamilyTimelineScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { paddingHorizontal: 20, paddingBottom: 16 },
+  header: { paddingHorizontal: 20, paddingBottom: 8 },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 14 },
   back: { width: 38, height: 38, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { fontSize: 22, fontWeight: '800', color: '#fff' },
+  headerTitle: { fontSize: 18, fontWeight: '800', color: '#fff' },
   headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
   addBtn: { width: 38, height: 38, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   filterChip: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 20, paddingVertical: 7, paddingHorizontal: 12 },
@@ -318,14 +318,14 @@ const styles = StyleSheet.create({
   emptyDesc: { fontSize: 14, color: colors.textSecondary, textAlign: 'center', paddingHorizontal: 32, lineHeight: 22 },
   modal: { flex: 1, padding: 24, backgroundColor: colors.background },
   modalHandle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 24 },
-  modalTitle: { fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 20 },
+  modalTitle: { fontSize: 20, fontWeight: '800', color: colors.text, marginBottom: 20 },
   modalLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
   modalInput: { backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 16, color: colors.text, borderWidth: 1.5, borderColor: colors.border, marginBottom: 16, ...shadows.sm },
   modalTextarea: { minHeight: 80, textAlignVertical: 'top' as const },
   emojiGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
   emojiBtn: { width: 48, height: 48, borderRadius: 12, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: colors.border },
   emojiBtnActive: { borderColor: '#4A0072', backgroundColor: '#F3E5F5' },
-  emojiText: { fontSize: 22 },
+  emojiText: { fontSize: 18 },
   typeChip: { paddingVertical: 7, paddingHorizontal: 14, borderRadius: 20, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.card, marginRight: 8 },
   typeChipActive: { backgroundColor: '#4A0072', borderColor: '#4A0072' },
   typeChipText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },

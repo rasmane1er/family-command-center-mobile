@@ -45,7 +45,7 @@ export function RelationshipHealthScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#880E4F', '#E91E63']} style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <LinearGradient colors={['#880E4F', '#E91E63']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
         <View style={styles.headerTop}>
           <Pressable onPress={() => navigation.goBack()} style={styles.back}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -152,10 +152,10 @@ export function RelationshipHealthScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { paddingHorizontal: 20, paddingBottom: 20 },
-  headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
+  header: { paddingHorizontal: 20, paddingBottom: 8 },
+  headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   back: { marginRight: 12 },
-  headerTitle: { flex: 1, fontSize: 22, fontWeight: '800', color: '#fff' },
+  headerTitle: { flex: 1, fontSize: 18, fontWeight: '800', color: '#fff' },
   scoreCircle: { alignItems: 'center', marginBottom: 10 },
   scoreValue: { fontSize: 64, fontWeight: '900', color: '#fff', lineHeight: 72 },
   scoreLabel: { fontSize: 14, color: 'rgba(255,255,255,0.7)', fontWeight: '600' },
@@ -173,10 +173,10 @@ const styles = StyleSheet.create({
   relLabel: { fontSize: 14, fontWeight: '700', color: colors.text },
   relActivity: { fontSize: 11, color: colors.textSecondary, marginTop: 2 },
   relScoreBlock: { alignItems: 'center' },
-  relScore: { fontSize: 22, fontWeight: '800' },
+  relScore: { fontSize: 18, fontWeight: '800' },
   checkInText: { fontSize: 11, color: colors.textMuted, marginTop: 6 },
   llCard: { marginBottom: 10, borderRadius: 14 },
-  llHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
+  llHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 6 },
   llIcon: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   llName: { fontSize: 16, fontWeight: '700', color: colors.text },
   llBadges: { flexDirection: 'row', gap: 8 },
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
   llSecondaryBadge: { backgroundColor: colors.background, borderRadius: 12, paddingVertical: 5, paddingHorizontal: 10 },
   llSecondaryText: { fontSize: 12, color: colors.textSecondary, fontWeight: '600' },
   actCard: { marginBottom: 10, borderRadius: 14 },
-  actHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  actHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
   actIcon: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   actTitle: { fontSize: 14, fontWeight: '700', color: colors.text },
   actMeta: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },

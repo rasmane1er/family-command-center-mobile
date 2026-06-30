@@ -290,7 +290,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
       <StatusBar style="light" />
       <LinearGradient
         colors={['#E65100', '#EF6C00', '#F57C00']}
-        style={[styles.header, { paddingTop: insets.top + 12 }]}
+        style={[styles.header, { paddingTop: insets.top + 6 }]}
       >
         <View style={styles.headerRow}>
           <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
@@ -780,15 +780,15 @@ export function ChildcareManagerScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { paddingHorizontal: 20, paddingBottom: 20 },
+  header: { paddingHorizontal: 20, paddingBottom: 8 },
   headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 18 },
   backBtn: { marginRight: 12 },
-  headerTitle: { flex: 1, fontSize: 22, fontWeight: '800', color: '#fff' },
+  headerTitle: { flex: 1, fontSize: 18, fontWeight: '800', color: '#fff' },
   addBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   statsRow: { flexDirection: 'row' },
   statItem: { flex: 1, alignItems: 'center' },
   statBorder: { borderLeftWidth: 1, borderRightWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
-  statValue: { fontSize: 22, fontWeight: '800', color: '#fff' },
+  statValue: { fontSize: 18, fontWeight: '800', color: '#fff' },
   statLabel: { fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
   tabs: { flexDirection: 'row', backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border },
   tab: { flex: 1, paddingVertical: 13, alignItems: 'center' },
@@ -804,7 +804,7 @@ const styles = StyleSheet.create({
   caregiverCard: { marginBottom: 16, borderRadius: 16 },
   caregiverTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   avatarCircle: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
-  avatarInitial: { fontSize: 22, fontWeight: '800', color: '#fff' },
+  avatarInitial: { fontSize: 18, fontWeight: '800', color: '#fff' },
   caregiverNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
   caregiverName: { fontSize: 16, fontWeight: '700', color: colors.text },
   deleteBtn: { padding: 4 },
@@ -857,7 +857,7 @@ const styles = StyleSheet.create({
   recentPayAmount: { fontSize: 16, fontWeight: '700', color: '#EF6C00' },
   modal: { flex: 1, padding: 24, backgroundColor: colors.background },
   modalHandle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 24 },
-  modalTitle: { fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 20 },
+  modalTitle: { fontSize: 20, fontWeight: '800', color: colors.text, marginBottom: 20 },
   modalLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
   modalInput: { backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 16, color: colors.text, borderWidth: 1.5, borderColor: colors.border, marginBottom: 16, ...shadows.sm },
   typeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 },

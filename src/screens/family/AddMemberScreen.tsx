@@ -115,7 +115,7 @@ export function AddMemberScreen({ navigation }: any) {
     <View style={dynStyles.container}>
       <LinearGradient
         colors={['#0F2952', '#1E4A8A']}
-        style={[dynStyles.header, { paddingTop: insets.top + 12 }]}
+        style={[dynStyles.header, { paddingTop: insets.top + 6 }]}
       >
         <Pressable onPress={() => (step === 2 ? setStep(1) : navigation.goBack())} style={dynStyles.backBtn}>
           <Ionicons name="arrow-back" size={22} color="#fff" />
@@ -299,7 +299,7 @@ function makeStyles(colors: ThemeColors) {
     container: { flex: 1, backgroundColor: colors.background },
     header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 8 },
     backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' },
-    headerTitle: { flex: 1, fontSize: 20, fontWeight: '800', color: '#fff', textAlign: 'center' },
+    headerTitle: { flex: 1, fontSize: 17, fontWeight: '800', color: '#fff', textAlign: 'center' },
     content: { padding: 20, paddingBottom: 120 },
     sectionTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 20 },
     typeCard: {

@@ -323,7 +323,7 @@ function makeStyles(colors: any) {
     clearBtn: { width: 38, height: 38, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
     budgetRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     budgetLabel: { fontSize: 9, fontWeight: '800', color: 'rgba(255,255,255,0.6)', letterSpacing: 1, marginBottom: 3 },
-    budgetValue: { fontSize: 22, fontWeight: '800', color: '#fff' },
+    budgetValue: { fontSize: 18, fontWeight: '800', color: '#fff' },
     budgetCenter: { flex: 1 },
     budgetHint: { fontSize: 10, color: 'rgba(255,255,255,0.6)', marginTop: 5 },
     budgetRight: { alignItems: 'flex-end' },

@@ -42,7 +42,7 @@ export function FamilyInviteQRScreen({ navigation }: any) {
 
       <LinearGradient
         colors={['#0F2952', '#16476E']}
-        style={[styles.header, { paddingTop: insets.top + 12 }]}
+        style={[styles.header, { paddingTop: insets.top + 6 }]}
       >
         <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color="#fff" />
@@ -78,18 +78,18 @@ export function FamilyInviteQRScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 20 },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 8 },
   backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { flex: 1, fontSize: 20, fontWeight: '800', color: '#fff', textAlign: 'center' },
+  headerTitle: { flex: 1, fontSize: 17, fontWeight: '800', color: '#fff', textAlign: 'center' },
   body: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   instruction: { fontSize: 15, color: colors.textSecondary, textAlign: 'center', marginBottom: 28, lineHeight: 22 },
   qrCard: { backgroundColor: '#fff', padding: 20, borderRadius: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.12, shadowRadius: 24, elevation: 8 },
-  familyName: { marginTop: 24, fontSize: 22, fontWeight: '800', color: colors.text, textAlign: 'center' },
+  familyName: { marginTop: 24, fontSize: 18, fontWeight: '800', color: colors.text, textAlign: 'center' },
   motto: { marginTop: 6, fontSize: 14, fontStyle: 'italic', color: colors.textSecondary, textAlign: 'center' },
   infoRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: 28, backgroundColor: colors.primary + '10', borderRadius: 12, padding: 14 },
   infoText: { flex: 1, fontSize: 13, color: colors.primary, lineHeight: 18, fontWeight: '500' },
   emptyContainer: { flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', padding: 24 },
   backBtnLight: { position: 'absolute', top: 56, left: 20, width: 40, height: 40, borderRadius: 20, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
-  emptyTitle: { fontSize: 22, fontWeight: '800', color: colors.text, marginTop: 16, marginBottom: 8 },
-  emptySubtitle: { fontSize: 14, color: colors.textSecondary, textAlign: 'center', lineHeight: 22 },
+  emptyTitle: { fontSize: 18, fontWeight: '800', color: colors.text, marginTop: 16, marginBottom: 8 },
+  emptySubtitle: { fontSize: 13, color: colors.textSecondary, textAlign: 'center', lineHeight: 22 },
 });

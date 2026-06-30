@@ -118,7 +118,7 @@ export function ChoreRotationScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#1A3C34', '#16A085']} style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <LinearGradient colors={['#1A3C34', '#16A085']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
         <View style={styles.headerRow}>
           <Pressable onPress={() => navigation.goBack()} style={styles.back}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -260,7 +260,7 @@ export function ChoreRotationScreen({ navigation }: any) {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, marginBottom: 20 }}>
               {['🧹', '🍽️', '🚿', '🛏️', '🗑️', '👕', '🌿', '✨', '🍳', '🚰'].map((e) => (
                 <Pressable key={e} onPress={() => setNewEmoji(e)} style={[styles.emojiBtn, newEmoji === e && styles.emojiBtnActive]}>
-                  <Text style={{ fontSize: 24 }}>{e}</Text>
+                  <Text style={{ fontSize: 20 }}>{e}</Text>
                 </Pressable>
               ))}
             </ScrollView>
@@ -297,15 +297,15 @@ export function ChoreRotationScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { paddingHorizontal: 20, paddingBottom: 16 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
+  header: { paddingHorizontal: 20, paddingBottom: 8 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 8 },
   back: { width: 38, height: 38, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { fontSize: 22, fontWeight: '800', color: '#fff' },
+  headerTitle: { fontSize: 18, fontWeight: '800', color: '#fff' },
   headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
   addBtn: { width: 38, height: 38, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   statsRow: { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 14, padding: 14, marginBottom: 14, justifyContent: 'space-around' },
   stat: { alignItems: 'center', gap: 2 },
-  statVal: { fontSize: 22, fontWeight: '800', color: '#fff' },
+  statVal: { fontSize: 18, fontWeight: '800', color: '#fff' },
   statLabel: { fontSize: 10, color: 'rgba(255,255,255,0.6)', fontWeight: '600' },
   statDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.2)' },
   filterChip: { paddingVertical: 6, paddingHorizontal: 14, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.12)' },

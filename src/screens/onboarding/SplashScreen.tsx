@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
     color: colors.secondary,
   },
   appName: {
-    fontSize: 28,
+    fontSize: 20,
     fontWeight: '800',
     color: '#FFFFFF',
     textAlign: 'center',

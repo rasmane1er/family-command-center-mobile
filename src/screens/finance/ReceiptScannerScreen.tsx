@@ -177,7 +177,7 @@ export function ReceiptScannerScreen({ navigation }: { navigation: { goBack: () 
     <View style={styles.root}>
       <StatusBar style="light" />
 
-      <View style={[styles.topBar, { paddingTop: insets.top + 12 }]}>
+      <View style={[styles.topBar, { paddingTop: insets.top + 6 }]}>
         <Pressable onPress={() => { if (step === 1) navigation.goBack(); else setStep(1); }} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </Pressable>
@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
 
   topBar: {
     flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20,
-    paddingBottom: 16, backgroundColor: '#0A1628',
+    paddingBottom: 8, backgroundColor: '#0A1628',
   },
   backBtn: {
     width: 38, height: 38, borderRadius: 12,
@@ -479,5 +479,5 @@ const styles = StyleSheet.create({
 
   successContainer: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#F0FFF4' },
   successCircle: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#27AE60', alignItems: 'center', justifyContent: 'center', ...shadows.lg },
-  successText: { fontSize: 24, fontWeight: '800', color: '#27AE60', marginTop: 20 },
+  successText: { fontSize: 20, fontWeight: '800', color: '#27AE60', marginTop: 20 },
 });

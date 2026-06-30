@@ -757,7 +757,7 @@ export function DebtPayoffScreen({ navigation }: { navigation: { goBack: () => v
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={[PRIMARY, '#2A4D7F', ACCENT]} style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <LinearGradient colors={[PRIMARY, '#2A4D7F', ACCENT]} style={[styles.header, { paddingTop: insets.top + 6 }]}>
         <View style={styles.headerTop}>
           <Pressable onPress={() => navigation.goBack()} hitSlop={10}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -810,9 +810,9 @@ export function DebtPayoffScreen({ navigation }: { navigation: { goBack: () => v
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: BG },
-  header: { paddingBottom: 20, paddingHorizontal: 20 },
-  headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
-  headerTitle: { flex: 1, fontSize: 20, fontWeight: '800', color: '#fff', textAlign: 'center' },
+  header: { paddingBottom: 8, paddingHorizontal: 20 },
+  headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  headerTitle: { flex: 1, fontSize: 17, fontWeight: '800', color: '#fff', textAlign: 'center' },
   totalDebt: { fontSize: 36, fontWeight: '900', color: '#fff', textAlign: 'center' },
   totalDebtLabel: { fontSize: 12, color: 'rgba(255,255,255,0.7)', textAlign: 'center', marginTop: 2 },
   debtFreeDate: { fontSize: 13, color: 'rgba(255,255,255,0.85)', textAlign: 'center', marginTop: 6 },
@@ -883,7 +883,7 @@ const styles = StyleSheet.create({
   strategyRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
   strategyCard: { flex: 1, backgroundColor: CARD, borderRadius: 14, padding: 16, alignItems: 'center', borderWidth: 2, borderColor: BORDER, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
   strategyCardActive: { borderColor: PRIMARY },
-  strategyEmoji: { fontSize: 28, marginBottom: 6 },
+  strategyEmoji: { fontSize: 20, marginBottom: 6 },
   strategyLabel: { fontSize: 15, fontWeight: '700', color: SUBTEXT },
   tooltip: { backgroundColor: TEXT, borderRadius: 12, padding: 14, marginBottom: 16 },
   tooltipText: { fontSize: 13, color: '#fff', lineHeight: 20 },
@@ -921,7 +921,7 @@ const modalStyles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   sheet: { backgroundColor: CARD, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '92%' },
   sheetContent: { padding: 24, paddingBottom: 48 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   title: { fontSize: 20, fontWeight: '800', color: TEXT },
   label: { fontSize: 12, fontWeight: '700', color: SUBTEXT, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
   input: { borderWidth: 1.5, borderColor: BORDER, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, fontSize: 15, color: TEXT, marginBottom: 16 },

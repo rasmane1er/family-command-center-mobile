@@ -98,7 +98,7 @@ export function SchoolCenterScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#1E4A8A', '#45B7D1']} style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <LinearGradient colors={['#1E4A8A', '#45B7D1']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
         <View style={styles.headerTop}>
           <Pressable onPress={() => navigation.goBack()} style={styles.back}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -405,10 +405,10 @@ export function SchoolCenterScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { paddingHorizontal: 20, paddingBottom: 14 },
+  header: { paddingHorizontal: 20, paddingBottom: 8 },
   headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
   back: { marginRight: 12 },
-  headerTitle: { flex: 1, fontSize: 22, fontWeight: '800', color: '#fff' },
+  headerTitle: { flex: 1, fontSize: 18, fontWeight: '800', color: '#fff' },
   addBtn: { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   childChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 7, paddingHorizontal: 14, borderRadius: 20, marginRight: 8, backgroundColor: 'rgba(255,255,255,0.15)' },
   childChipActive: { backgroundColor: '#fff' },
@@ -424,7 +424,7 @@ const styles = StyleSheet.create({
   gpaValue: { fontSize: 44, fontWeight: '900', color: '#fff', marginBottom: 6 },
   gpaStats: { flex: 1, flexDirection: 'row', justifyContent: 'space-around' },
   gpaStat: { alignItems: 'center' },
-  gpaStatVal: { fontSize: 22, fontWeight: '800', color: '#fff', marginBottom: 2 },
+  gpaStatVal: { fontSize: 18, fontWeight: '800', color: '#fff', marginBottom: 2 },
   gpaStatLabel: { fontSize: 10, color: 'rgba(255,255,255,0.6)', textAlign: 'center' },
   tabs: { flexDirection: 'row', backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border },
   tab: { flex: 1, paddingVertical: 13, alignItems: 'center' },
@@ -439,14 +439,14 @@ const styles = StyleSheet.create({
   subjectIcon: { width: 38, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   subjectName: { fontSize: 14, fontWeight: '700', color: colors.text },
   subjectTeacher: { fontSize: 11, color: colors.textSecondary, marginTop: 1 },
-  subjectGrade: { fontSize: 22, fontWeight: '900' },
+  subjectGrade: { fontSize: 18, fontWeight: '900' },
   subjectScore: { fontSize: 11, color: colors.textMuted, textAlign: 'right', marginTop: 2 },
   gradeCard: { marginBottom: 12, borderRadius: 14 },
   gradeHeader: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 },
   gradeColorBar: { width: 4, borderRadius: 2, alignSelf: 'stretch', marginRight: 10, minHeight: 50 },
   gradeTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 },
   gradeName: { fontSize: 15, fontWeight: '700', color: colors.text },
-  gradeLetter: { fontSize: 22, fontWeight: '900' },
+  gradeLetter: { fontSize: 18, fontWeight: '900' },
   gradeTeacher: { fontSize: 11, color: colors.textSecondary, marginBottom: 2 },
   gradeAvg: { fontSize: 11, color: colors.textMuted, marginTop: 6 },
   gradeEntries: { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 8, gap: 6 },
@@ -467,7 +467,7 @@ const styles = StyleSheet.create({
   emptyDesc: { fontSize: 13, color: colors.textSecondary, marginTop: 4, textAlign: 'center' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalSheet: { backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   modalTitle: { fontSize: 20, fontWeight: '800', color: colors.text },
   modalLabel: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
   modalInput: { borderWidth: 1.5, borderColor: colors.border, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, fontSize: 15, color: colors.text, marginBottom: 16 },

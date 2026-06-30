@@ -41,7 +41,7 @@ export function ReputationScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#0D47A1', '#1565C0']} style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <LinearGradient colors={['#0D47A1', '#1565C0']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
         <View style={styles.headerTop}>
           <Pressable onPress={() => navigation.goBack()} style={styles.back}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -150,10 +150,10 @@ export function ReputationScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { paddingHorizontal: 20, paddingBottom: 20 },
+  header: { paddingHorizontal: 20, paddingBottom: 8 },
   headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   back: { marginRight: 12 },
-  headerTitle: { flex: 1, fontSize: 20, fontWeight: '800', color: '#fff' },
+  headerTitle: { flex: 1, fontSize: 17, fontWeight: '800', color: '#fff' },
   headerSub: { fontSize: 13, color: 'rgba(255,255,255,0.7)' },
   memberChip: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 16, paddingVertical: 8, paddingHorizontal: 12, marginRight: 10 },
   memberChipActive: { backgroundColor: 'rgba(255,255,255,0.25)' },
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
   profileCard: { marginBottom: 20, borderRadius: 16 },
   profileHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
   profileAvatar: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
-  profileInitial: { fontSize: 22, fontWeight: '800' },
+  profileInitial: { fontSize: 18, fontWeight: '800' },
   profileName: { fontSize: 18, fontWeight: '800', color: colors.text },
   trendRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
   trendText: { fontSize: 12, color: colors.textSecondary },
@@ -183,10 +183,10 @@ const styles = StyleSheet.create({
   metricVal: { width: 30, fontSize: 13, fontWeight: '800', textAlign: 'right' },
   sectionTitle: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
   leaderRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, borderRadius: 12 },
-  leaderRankIcon: { fontSize: 22, marginRight: 8 },
+  leaderRankIcon: { fontSize: 18, marginRight: 8 },
   leaderAvatar: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   leaderInitial: { fontSize: 16, fontWeight: '800' },
   leaderName: { fontSize: 14, fontWeight: '700', color: colors.text },
   leaderReward: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
-  leaderScore: { fontSize: 22, fontWeight: '800', color: colors.primary },
+  leaderScore: { fontSize: 18, fontWeight: '800', color: colors.primary },
 });

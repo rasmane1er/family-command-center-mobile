@@ -295,7 +295,7 @@ function makeStyles(colors: any) {
     deleteBtn: { marginLeft: 4, padding: 4 },
     modal: { flex: 1, padding: 24, backgroundColor: colors.background },
     modalHandle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 24 },
-    modalTitle: { fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 20 },
+    modalTitle: { fontSize: 20, fontWeight: '800', color: colors.text, marginBottom: 20 },
     modalLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
     modalInput: { backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 16, color: colors.text, borderWidth: 1.5, borderColor: colors.border, marginBottom: 16, ...shadows.sm },
     rowInputs: { flexDirection: 'row' },

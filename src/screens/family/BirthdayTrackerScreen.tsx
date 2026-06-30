@@ -475,7 +475,7 @@ export function BirthdayTrackerScreen({ navigation }: any) {
       <StatusBar style="light" />
       <LinearGradient
         colors={['#880E4F', '#AD1457', '#E91E63']}
-        style={[styles.header, { paddingTop: insets.top + 12 }]}
+        style={[styles.header, { paddingTop: insets.top + 6 }]}
       >
         <View style={styles.headerRow}>
           <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
@@ -625,7 +625,7 @@ const styles = StyleSheet.create({
   statsRow: { flexDirection: 'row', justifyContent: 'space-around' },
   statItem: { flex: 1, alignItems: 'center', paddingVertical: 8 },
   statBorder: { borderRightWidth: 1, borderRightColor: 'rgba(255,255,255,0.2)' },
-  statVal: { fontSize: 28, fontWeight: '800', color: '#fff' },
+  statVal: { fontSize: 20, fontWeight: '800', color: '#fff' },
   statLabel: { fontSize: 10, color: 'rgba(255,255,255,0.6)', marginTop: 2, textAlign: 'center' },
   celebrationBanner: {
     paddingVertical: 12, paddingHorizontal: 16, alignItems: 'center',
@@ -645,7 +645,7 @@ const styles = StyleSheet.create({
     width: 52, height: 52, borderRadius: 26,
     alignItems: 'center', justifyContent: 'center',
   },
-  avatarInitial: { fontSize: 22, fontWeight: '800', color: '#fff' },
+  avatarInitial: { fontSize: 18, fontWeight: '800', color: '#fff' },
   bCardNameRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
   bCardName: { fontSize: 16, fontWeight: '700', color: colors.text, flex: 1, marginRight: 8 },
   bCardMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },

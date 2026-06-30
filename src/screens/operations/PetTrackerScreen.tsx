@@ -419,7 +419,7 @@ export function PetTrackerScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#1B5E20', '#388E3C']} style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <LinearGradient colors={['#1B5E20', '#388E3C']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
         <View style={styles.headerTop}>
           <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -634,13 +634,13 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingBottom: 8,
   },
   headerTop: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 8,
   },
   backBtn: {
     width: 36,
@@ -651,7 +651,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 17,
     fontWeight: '700',
     color: '#fff',
   },
@@ -667,7 +667,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: 'rgba(255,255,255,0.15)',
     borderRadius: 12,
-    paddingVertical: 12,
+    paddingVertical: 6,
     paddingHorizontal: 20,
     alignItems: 'center',
     justifyContent: 'center',
@@ -677,7 +677,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerStatNum: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '800',
     color: '#fff',
   },
@@ -807,7 +807,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: 6,
   },
   sectionTitle: {
     fontSize: 16,
@@ -911,7 +911,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   healthStatNum: {
-    fontSize: 28,
+    fontSize: 20,
     fontWeight: '800',
     color: '#388E3C',
   },
@@ -927,10 +927,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 12,
+    marginBottom: 6,
   },
   healthTipsEmoji: {
-    fontSize: 24,
+    fontSize: 20,
   },
   healthTipsTitle: {
     fontSize: 16,
@@ -976,7 +976,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   vaccineEmoji: {
-    fontSize: 22,
+    fontSize: 18,
   },
   vaccinePetName: {
     fontSize: 14,
@@ -1008,7 +1008,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   modalTitle: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '800',
     color: colors.text,
     marginBottom: 24,
@@ -1053,7 +1053,7 @@ const styles = StyleSheet.create({
     minWidth: 72,
   },
   speciesEmoji: {
-    fontSize: 22,
+    fontSize: 18,
     marginBottom: 4,
   },
   speciesLabel: {

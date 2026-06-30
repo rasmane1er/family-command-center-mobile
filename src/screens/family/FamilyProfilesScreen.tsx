@@ -285,7 +285,7 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
       {/* ── HEADER ── */}
       <LinearGradient
         colors={['#0F2952', '#1E4A8A']}
-        style={[dynStyles.header, { paddingTop: insets.top + 16 }]}
+        style={[dynStyles.header, { paddingTop: insets.top + 6 }]}
       >
         {/* Top row */}
         <View style={dynStyles.headerTop}>
@@ -703,14 +703,14 @@ function makeStyles(colors: import('../../theme/ThemeContext').ThemeColors) {
   // ── HEADER ──
   header: {
     paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingBottom: 8,
   },
 
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 20,
+    marginBottom: 8,
   },
 
   backBtn: {
@@ -723,7 +723,7 @@ function makeStyles(colors: import('../../theme/ThemeContext').ThemeColors) {
   headerLeft: { flex: 1, minWidth: 0 },
 
   headerTitle: {
-    fontSize: 28,
+    fontSize: 17,
     fontWeight: '800',
     color: '#fff',
     letterSpacing: -0.5,
@@ -1010,7 +1010,7 @@ function makeStyles(colors: import('../../theme/ThemeContext').ThemeColors) {
   },
 
   healthScore: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '800',
     color: '#0F2952',
   },
@@ -1156,7 +1156,7 @@ function makeStyles(colors: import('../../theme/ThemeContext').ThemeColors) {
   },
 
   modalTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '800',
     color: colors.text,
     marginBottom: 6,

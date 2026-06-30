@@ -124,7 +124,7 @@ export function WealthBuilderScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#1B5E20', '#2E7D32']} style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <LinearGradient colors={['#1B5E20', '#2E7D32']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
         <View style={styles.headerTop}>
           <Pressable onPress={() => navigation.goBack()} style={styles.back}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -342,9 +342,9 @@ export function WealthBuilderScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: { paddingHorizontal: 20, paddingBottom: 24 },
-  headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
+  headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   back: { marginRight: 12 },
-  headerTitle: { flex: 1, fontSize: 22, fontWeight: '800', color: '#fff' },
+  headerTitle: { flex: 1, fontSize: 18, fontWeight: '800', color: '#fff' },
   addBtn: { width: 38, height: 38, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   nwBlock: { alignItems: 'center' },
   nwLabel: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: '600', marginBottom: 6 },
@@ -386,7 +386,7 @@ const styles = StyleSheet.create({
   forecastConnector: { height: 2, backgroundColor: colors.primary + '30', borderRadius: 1, marginTop: -20 },
   milestones: { gap: 10 },
   milestoneCard: { flexDirection: 'row', alignItems: 'center', gap: 14, borderRadius: 14 },
-  milestoneIcon: { fontSize: 28 },
+  milestoneIcon: { fontSize: 20 },
   milestoneLabel: { fontSize: 14, fontWeight: '700', color: colors.text },
   milestoneTarget: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
   insightCard: { marginBottom: 10, borderRadius: 14 },
@@ -396,7 +396,7 @@ const styles = StyleSheet.create({
   insightText: { fontSize: 13, color: colors.text, lineHeight: 19 },
   modal: { flex: 1, padding: 24, backgroundColor: colors.background },
   modalHandle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 24 },
-  modalTitle: { fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 20 },
+  modalTitle: { fontSize: 20, fontWeight: '800', color: colors.text, marginBottom: 20 },
   // Plaid import button in modal
   plaidImportBtn: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#E8F5E9', borderRadius: 12, padding: 14, marginBottom: 20, borderLeftWidth: 3, borderLeftColor: '#2E7D32' },
   plaidImportBtnText: { flex: 1, fontSize: 14, fontWeight: '700', color: '#2E7D32' },
@@ -408,7 +408,7 @@ const styles = StyleSheet.create({
   // Plaid sub-sheet
   subSheetOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   subSheet: { backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '60%' },
-  subSheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  subSheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   subSheetTitle: { fontSize: 18, fontWeight: '800', color: colors.text },
   subSheetLoading: { textAlign: 'center', color: colors.textSecondary, paddingVertical: 24 },
   subSheetEmpty: { textAlign: 'center', color: colors.textSecondary, paddingVertical: 24 },

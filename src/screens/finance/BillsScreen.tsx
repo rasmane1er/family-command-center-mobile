@@ -415,7 +415,7 @@ function makeStyles(colors: any) {
     emptyDesc: { fontSize: 13, color: colors.textSecondary, marginTop: 6 },
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
     modalSheet: { backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '90%' },
-    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
     modalTitle: { fontSize: 20, fontWeight: '800', color: colors.text },
     // Import section
     importSection: { backgroundColor: '#EBF3FD', borderRadius: 12, padding: 12, marginBottom: 16, borderLeftWidth: 3, borderLeftColor: '#4A90D9' },

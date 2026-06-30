@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
   noEventsDesc: { fontSize: 14, color: colors.textSecondary, marginTop: 8 },
   modal: { flex: 1, padding: 24, backgroundColor: colors.background },
   modalHandle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 24 },
-  modalTitle: { fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 4 },
+  modalTitle: { fontSize: 20, fontWeight: '800', color: colors.text, marginBottom: 4 },
   modalDate: { fontSize: 14, color: colors.textSecondary, marginBottom: 20 },
   modalInput: { backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 16, color: colors.text, borderWidth: 1.5, borderColor: colors.border, marginBottom: 14, ...shadows.sm },
   modalLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },

@@ -133,7 +133,7 @@ function makeStyles(colors: any) {
     // Header
     header: {
       paddingHorizontal: 20,
-      paddingBottom: 20,
+      paddingBottom: 8,
     },
     headerTopRow: {
       flexDirection: 'row',
@@ -154,13 +154,13 @@ function makeStyles(colors: any) {
     },
     headerTitle: {
       color: '#FFFFFF',
-      fontSize: 22,
+      fontSize: 18,
       fontWeight: '700',
       letterSpacing: 0.3,
     },
     headerSubtitle: {
       color: 'rgba(255,255,255,0.70)',
-      fontSize: 14,
+      fontSize: 13,
       marginTop: 2,
     },
     searchBar: {

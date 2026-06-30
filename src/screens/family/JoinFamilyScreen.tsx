@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
   },
 
   permissionTitle: {
-    fontSize: 26,
+    fontSize: 20,
     fontWeight: '800',
     color: colors.text,
     textAlign: 'center',
@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
   },
 
   permissionSubtitle: {
-    fontSize: 15,
+    fontSize: 13,
     color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: 24,
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    fontSize: 26,
+    fontSize: 20,
     fontWeight: '800',
     color: '#fff',
     textAlign: 'center',
@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
   },
 
   subtitle: {
-    fontSize: 15,
+    fontSize: 13,
     color: 'rgba(255,255,255,0.8)',
     textAlign: 'center',
     marginBottom: 30,
@@ -325,14 +325,14 @@ const styles = StyleSheet.create({
   },
 
   modalTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '800',
     color: colors.text,
     marginTop: 10,
   },
 
   modalSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: colors.textSecondary,
     marginTop: 6,
     marginBottom: 18,

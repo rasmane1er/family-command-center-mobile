@@ -150,7 +150,7 @@ export function FinanceDashboardScreen({ navigation }: any) {
       <LinearGradient
         colors={['#040D1A', '#0A1E3D', '#0F2952']}
         start={{ x: 0, y: 0 }} end={{ x: 0.6, y: 1 }}
-        style={[s.header, { paddingTop: insets.top + 20 }]}
+        style={[s.header, { paddingTop: insets.top + 6 }]}
       >
         {/* Decorative glows */}
         <View style={s.glow1} />
@@ -635,12 +635,12 @@ const s = StyleSheet.create({
   },
   headerTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 22 },
   netWorthLabel: { fontSize: 11, color: 'rgba(255,255,255,0.45)', fontWeight: '700', letterSpacing: 1.5, marginBottom: 6 },
-  netWorthValue: { fontSize: 40, fontWeight: '900', color: '#fff', letterSpacing: -1.5 },
+  netWorthValue: { fontSize: 25, fontWeight: '900', color: '#fff', letterSpacing: -1.5 },
   trendRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
   trendPill: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
     backgroundColor: '#34D39920', borderRadius: 20,
-    paddingVertical: 3, paddingHorizontal: 8,
+    paddingVertical: 1, paddingHorizontal: 2,
   },
   trendPillText: { fontSize: 12, color: '#34D399', fontWeight: '700' },
   trendAmount: { fontSize: 13, color: 'rgba(255,255,255,0.5)', fontWeight: '500' },
@@ -658,13 +658,13 @@ const s = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
-    paddingVertical: 16,
-    marginBottom: 18,
+    paddingVertical: 10,
+    marginBottom: 15,
   },
   statItem: { flex: 1, alignItems: 'center', gap: 4 },
   statBorder: { borderRightWidth: 1, borderRightColor: 'rgba(255,255,255,0.1)' },
-  statIconBg: { width: 30, height: 30, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  statValue: { fontSize: 16, fontWeight: '800' },
+  statIconBg: { width: 15, height: 15, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  statValue: { fontSize: 12, fontWeight: '800' },
   statLabel: { fontSize: 10, color: 'rgba(255,255,255,0.45)', fontWeight: '600', letterSpacing: 0.3 },
 
   /* Tab pills */
@@ -736,7 +736,7 @@ const s = StyleSheet.create({
   cardBank: { fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 2 },
   cardBottomRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
   cardBalLabel: { fontSize: 9, color: 'rgba(255,255,255,0.45)', letterSpacing: 1, marginBottom: 2 },
-  cardBalance: { fontSize: 22, fontWeight: '900', color: '#fff', letterSpacing: -0.5 },
+  cardBalance: { fontSize: 18, fontWeight: '900', color: '#fff', letterSpacing: -0.5 },
   contactless: { alignItems: 'center', justifyContent: 'center', width: 30, height: 30 },
   contactlessArc: { position: 'absolute', borderWidth: 2, borderColor: 'rgba(255,255,255,0.4)' },
   cardDots: { fontSize: 11, color: 'rgba(255,255,255,0.35)', letterSpacing: 2, marginTop: 2 },
@@ -811,7 +811,7 @@ const s = StyleSheet.create({
   /* ── Modals ── */
   modal: { flex: 1, padding: 24, backgroundColor: colors.background },
   modalHandle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 24 },
-  modalTitle: { fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 20 },
+  modalTitle: { fontSize: 20, fontWeight: '800', color: colors.text, marginBottom: 20 },
   modalLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
   modalInput: {
     backgroundColor: colors.card, borderRadius: 12, padding: 14,
@@ -841,7 +841,7 @@ const s = StyleSheet.create({
   healthLeft: { alignItems: 'center', gap: 6, width: 80 },
   healthRingWrap: { position: 'relative', width: 80, height: 80, alignItems: 'center', justifyContent: 'center' },
   healthRingCenter: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
-  healthRingScore: { fontSize: 22, fontWeight: '900' },
+  healthRingScore: { fontSize: 18, fontWeight: '900' },
   healthScoreLabel: { fontSize: 11, fontWeight: '700', color: colors.textMuted, textAlign: 'center' },
   healthRight: { flex: 1, gap: 8 },
   healthSubRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },

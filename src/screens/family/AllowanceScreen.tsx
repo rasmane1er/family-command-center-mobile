@@ -81,7 +81,7 @@ export function AllowanceScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#1A5276', '#2980B9']} style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <LinearGradient colors={['#1A5276', '#2980B9']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
         <View style={styles.headerRow}>
           <Pressable onPress={() => navigation.goBack()} style={styles.back}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
   payBtnText: { fontSize: 13, fontWeight: '700', color: '#fff' },
   heroCard: { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 16, padding: 16, justifyContent: 'space-around' },
   heroItem: { alignItems: 'center', gap: 4 },
-  heroVal: { fontSize: 22, fontWeight: '800', color: '#fff' },
+  heroVal: { fontSize: 18, fontWeight: '800', color: '#fff' },
   heroLabel: { fontSize: 10, color: 'rgba(255,255,255,0.6)', fontWeight: '600' },
   heroDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.2)' },
   content: { padding: 16 },

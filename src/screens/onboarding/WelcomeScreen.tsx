@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
   header: { paddingTop: 60, paddingBottom: 32, paddingHorizontal: 24 },
   headerGreeting: { fontSize: 16, color: 'rgba(255,255,255,0.7)', fontWeight: '500', marginBottom: 4 },
   headerTitle: { fontSize: 34, fontWeight: '800', color: '#fff', lineHeight: 42, letterSpacing: -0.5, marginBottom: 8 },
-  headerSub: { fontSize: 15, color: 'rgba(255,255,255,0.65)', lineHeight: 22 },
+  headerSub: { fontSize: 13, color: 'rgba(255,255,255,0.65)', lineHeight: 22 },
   scroll: { flex: 1 },
   scrollContent: { padding: 20, paddingBottom: 48 },
   sectionTitle: { fontSize: 20, fontWeight: '700', color: colors.text, marginBottom: 16 },

@@ -59,7 +59,7 @@ function TripDetailModal({ trip, onClose }: { trip: Trip; onClose: () => void })
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={[trip.color, trip.color + 'BB']} style={[styles.detailHeader, { paddingTop: insets.top + 12 }]}>
+      <LinearGradient colors={[trip.color, trip.color + 'BB']} style={[styles.detailHeader, { paddingTop: insets.top + 6 }]}>
         <View style={styles.detailHeaderRow}>
           <Pressable onPress={onClose} style={styles.back}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -358,7 +358,7 @@ export function TravelPlanningScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#0E6655', '#1ABC9C']} style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <LinearGradient colors={['#0E6655', '#1ABC9C']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
         <View style={styles.headerRow}>
           <Pressable onPress={() => navigation.goBack()} style={styles.back}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -478,10 +478,10 @@ export function TravelPlanningScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { paddingHorizontal: 20, paddingBottom: 16 },
+  header: { paddingHorizontal: 20, paddingBottom: 8 },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 14 },
   back: { width: 38, height: 38, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { fontSize: 22, fontWeight: '800', color: '#fff' },
+  headerTitle: { fontSize: 18, fontWeight: '800', color: '#fff' },
   headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
   addBtn: { width: 38, height: 38, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   filterChip: { paddingVertical: 6, paddingHorizontal: 14, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.12)' },
@@ -510,8 +510,8 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', paddingTop: 60 },
   emptyTitle: { fontSize: 20, fontWeight: '700', color: colors.text, marginTop: 16, marginBottom: 8 },
   emptyDesc: { fontSize: 14, color: colors.textSecondary, textAlign: 'center', paddingHorizontal: 32, lineHeight: 22 },
-  detailHeader: { paddingHorizontal: 20, paddingBottom: 20 },
-  detailHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
+  detailHeader: { paddingHorizontal: 20, paddingBottom: 8 },
+  detailHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 8 },
   detailTitle: { fontSize: 20, fontWeight: '800', color: '#fff' },
   detailSub: { fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 2 },
   detailStats: { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 14, padding: 14, justifyContent: 'space-around' },
@@ -560,13 +560,13 @@ const styles = StyleSheet.create({
   // Add Trip Modal
   addTripModal: { flex: 1, backgroundColor: colors.background, padding: 24 },
   addTripHandle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 24 },
-  addTripTitle: { fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 20 },
+  addTripTitle: { fontSize: 20, fontWeight: '800', color: colors.text, marginBottom: 20 },
   addTripLabel: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, marginBottom: 8, marginTop: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
   addTripInput: { backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 15, color: colors.text, borderWidth: 1.5, borderColor: colors.border, marginBottom: 4 },
   addTripEmojiRow: { flexDirection: 'row', gap: 10, marginBottom: 4, flexWrap: 'wrap' },
   addTripEmojiChip: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.border, backgroundColor: colors.card },
   addTripEmojiChipActive: { borderColor: '#0E6655', backgroundColor: '#D5F5E3' },
-  addTripEmojiText: { fontSize: 22 },
+  addTripEmojiText: { fontSize: 18 },
   addTripColorRow: { flexDirection: 'row', gap: 10, marginBottom: 20, flexWrap: 'wrap' },
   addTripColorSwatch: { width: 36, height: 36, borderRadius: 18 },
   addTripColorSwatchSelected: { borderWidth: 3, borderColor: colors.text },

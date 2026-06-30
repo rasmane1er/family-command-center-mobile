@@ -81,7 +81,7 @@ export function EmergencyScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#C0392B', '#96281B']} style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <LinearGradient colors={['#C0392B', '#96281B']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
         <View style={styles.headerTop}>
           <Pressable onPress={() => navigation.goBack()} style={styles.back}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -220,10 +220,10 @@ export function EmergencyScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { paddingHorizontal: 20, paddingBottom: 20 },
-  headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
+  header: { paddingHorizontal: 20, paddingBottom: 8 },
+  headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   back: { marginRight: 12 },
-  headerTitle: { flex: 1, fontSize: 22, fontWeight: '800', color: '#fff' },
+  headerTitle: { flex: 1, fontSize: 18, fontWeight: '800', color: '#fff' },
   headerPlaceholder: { width: 40 },
   safetyScore: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 16, padding: 14 },
   safetyScoreValue: { fontSize: 20, fontWeight: '800', color: '#fff' },

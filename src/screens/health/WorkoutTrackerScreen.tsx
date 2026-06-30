@@ -509,7 +509,7 @@ function makeStyles(colors: any) {
       alignItems: 'center',
     },
     headerStatValue: {
-      fontSize: 22,
+      fontSize: 18,
       fontWeight: '700',
       color: '#fff',
     },

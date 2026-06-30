@@ -164,7 +164,7 @@ export function FamilyPollsScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#1565C0', '#2980B9']} style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <LinearGradient colors={['#1565C0', '#2980B9']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
         <View style={styles.headerRow}>
           <Pressable onPress={() => navigation.goBack()} style={styles.back}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -280,16 +280,16 @@ export function FamilyPollsScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { paddingHorizontal: 20, paddingBottom: 20 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
+  header: { paddingHorizontal: 20, paddingBottom: 8 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   back: { width: 38, height: 38, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  headerTitle: { fontSize: 22, fontWeight: '800', color: '#fff' },
+  headerTitle: { fontSize: 18, fontWeight: '800', color: '#fff' },
   headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
   addBtn: { width: 38, height: 38, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   statsRow: { flexDirection: 'row', justifyContent: 'space-around' },
   statItem: { flex: 1, alignItems: 'center', paddingVertical: 8 },
   statBorder: { borderRightWidth: 1, borderRightColor: 'rgba(255,255,255,0.2)' },
-  statVal: { fontSize: 28, fontWeight: '800', color: '#fff' },
+  statVal: { fontSize: 20, fontWeight: '800', color: '#fff' },
   statLabel: { fontSize: 10, color: 'rgba(255,255,255,0.6)', marginTop: 2, textAlign: 'center' },
   tabs: { flexDirection: 'row', backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border },
   tab: { flex: 1, paddingVertical: 14, alignItems: 'center' },
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
   content: { padding: 16 },
   pollCard: { borderRadius: 18, marginBottom: 14 },
   pollHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 14 },
-  pollEmoji: { fontSize: 28 },
+  pollEmoji: { fontSize: 20 },
   pollQuestion: { fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 6, lineHeight: 22 },
   pollMeta: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   catBadge: { borderRadius: 8, paddingVertical: 3, paddingHorizontal: 8 },
@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
   deleteBtn: { padding: 6 },
   votingSection: { gap: 8 },
   voteBtn: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.background, borderRadius: 14, padding: 14, borderWidth: 1.5, borderColor: colors.border },
-  voteBtnEmoji: { fontSize: 22 },
+  voteBtnEmoji: { fontSize: 18 },
   voteBtnText: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.text },
   voteBtnCount: { fontSize: 12, color: colors.textMuted, fontWeight: '600' },
   resultsSection: { gap: 6 },

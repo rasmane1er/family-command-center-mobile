@@ -986,7 +986,7 @@ function makeStyles(colors: import('../../theme/ThemeContext').ThemeColors) {
       letterSpacing: 1.3,
       marginTop: 6,
     },
-    healthScoreValue: { fontSize: 26, fontWeight: '900', lineHeight: 30 },
+    healthScoreValue: { fontSize: 20, fontWeight: '900', lineHeight: 30 },
     healthScoreMax: { fontSize: 14, fontWeight: '400', color: 'rgba(255,255,255,0.5)' },
     healthScoreTrend: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 4 },
     healthScoreTrendText: { fontSize: 10, color: colors.success, fontWeight: '700' },

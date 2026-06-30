@@ -215,7 +215,7 @@ export function VehiclesScreen({ navigation }: any) {
   return (
     <View style={s.root}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#E74C3C', '#C0392B']} style={[s.header, { paddingTop: insets.top + 12 }]}>
+      <LinearGradient colors={['#E74C3C', '#C0392B']} style={[s.header, { paddingTop: insets.top + 6 }]}>
         <View style={s.headerRow}>
           <Pressable onPress={() => navigation.goBack()} style={s.back}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -605,10 +605,10 @@ export function VehiclesScreen({ navigation }: any) {
 function makeStyles(colors: any) {
   return StyleSheet.create({
     root: { flex: 1, backgroundColor: colors.background },
-    header: { paddingHorizontal: 20, paddingBottom: 20 },
+    header: { paddingHorizontal: 20, paddingBottom: 8 },
     headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
     back: { marginRight: 12 },
-    headerTitle: { flex: 1, fontSize: 22, fontWeight: '800', color: '#fff' },
+    headerTitle: { flex: 1, fontSize: 18, fontWeight: '800', color: '#fff' },
     headerBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
     headerSub: { fontSize: 13, color: 'rgba(255,255,255,0.75)' },
     list: { padding: 16 },
@@ -652,8 +652,8 @@ function makeStyles(colors: any) {
     // modal
     modal: { flex: 1, backgroundColor: colors.background, padding: 24 },
     modalHandle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 20 },
-    modalTitle: { fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 4 },
-    modalSubtitle: { fontSize: 14, color: colors.textSecondary, marginBottom: 20 },
+    modalTitle: { fontSize: 20, fontWeight: '800', color: colors.text, marginBottom: 4 },
+    modalSubtitle: { fontSize: 13, color: colors.textSecondary, marginBottom: 20 },
     modalLabel: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, marginBottom: 7, textTransform: 'uppercase', letterSpacing: 0.5 },
     modalInput: { backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 15, color: colors.text, borderWidth: 1.5, borderColor: colors.border, marginBottom: 16, ...shadows.sm },
     halfRow: { flexDirection: 'row', gap: 12 },
