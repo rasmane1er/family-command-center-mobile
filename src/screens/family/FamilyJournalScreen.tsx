@@ -10,6 +10,7 @@ import * as Haptics from 'expo-haptics';
 import { format, formatDistanceToNow } from 'date-fns';
 import { colors } from '../../theme/colors';
 import { Card } from '../../components/common/Card';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useJournalStore, JournalEntry, MOOD_LABELS, MOOD_EMOJIS } from '../../store/useJournalStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 
@@ -46,29 +47,29 @@ function JournalDetailModal({ entry, onClose }: { entry: JournalEntry; onClose: 
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#B7410E', MOOD_COLORS[entry.mood]]} style={[styles.detailHeader, { paddingTop: insets.top + 6 }]}>
-        <Pressable onPress={onClose} style={styles.back}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
-        </Pressable>
-        <Text style={styles.detailEmoji}>{entry.emoji}</Text>
-        <Text style={styles.detailTitle}>{entry.title}</Text>
-        <View style={styles.detailMeta}>
-          <View style={[styles.moodPill, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-            <Text style={styles.moodPillText}>{MOOD_EMOJIS[entry.mood]} {MOOD_LABELS[entry.mood]}</Text>
-          </View>
-          <Text style={styles.detailDate}>{format(new Date(entry.date), 'EEEE, MMMM d, yyyy')}</Text>
-        </View>
-        {author && (
-          <View style={styles.authorRow}>
-            <View style={[styles.authorAvatar, { backgroundColor: author.avatarColor + '30' }]}>
-              <Text style={[styles.authorInitial, { color: author.avatarColor }]}>{author.name.charAt(0)}</Text>
-            </View>
-            <Text style={styles.authorName}>{author.name}</Text>
-          </View>
-        )}
-      </LinearGradient>
 
       <ScrollView contentContainerStyle={[styles.detailContent, { paddingBottom: 100 }]}>
+        <LinearGradient colors={['#B7410E', MOOD_COLORS[entry.mood]]} style={[styles.detailHeader, { paddingTop: insets.top + 6 }]}>
+          <Pressable onPress={onClose} style={styles.back}>
+            <Ionicons name="arrow-back" size={24} color="#fff" />
+          </Pressable>
+          <Text style={styles.detailEmoji}>{entry.emoji}</Text>
+          <Text style={styles.detailTitle}>{entry.title}</Text>
+          <View style={styles.detailMeta}>
+            <View style={[styles.moodPill, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+              <Text style={styles.moodPillText}>{MOOD_EMOJIS[entry.mood]} {MOOD_LABELS[entry.mood]}</Text>
+            </View>
+            <Text style={styles.detailDate}>{format(new Date(entry.date), 'EEEE, MMMM d, yyyy')}</Text>
+          </View>
+          {author && (
+            <View style={styles.authorRow}>
+              <View style={[styles.authorAvatar, { backgroundColor: author.avatarColor + '30' }]}>
+                <Text style={[styles.authorInitial, { color: author.avatarColor }]}>{author.name.charAt(0)}</Text>
+              </View>
+              <Text style={styles.authorName}>{author.name}</Text>
+            </View>
+          )}
+        </LinearGradient>
         <Card style={styles.contentCard} variant="elevated">
           <Text style={styles.entryContent}>{entry.content}</Text>
         </Card>
@@ -171,33 +172,57 @@ export function FamilyJournalScreen({ navigation }: any) {
     return <JournalDetailModal entry={liveEntry} onClose={() => setSelectedEntry(null)} />;
   }
 
+  const screenHeader = (
+    <LinearGradient colors={['#7D3C98', '#B7410E']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
+      <View style={styles.headerRow}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.headerTitle}>Family Journal</Text>
+          <Text style={styles.headerSub}>{entries.length} entries · our story</Text>
+        </View>
+        <Pressable onPress={() => setShowAdd(true)} style={styles.addBtn}>
+          <Ionicons name="create" size={20} color="#fff" />
+        </Pressable>
+      </View>
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+        {filters.map((f) => (
+          <Pressable key={f.key} onPress={() => setFilter(f.key)} style={[styles.filterChip, filter === f.key && styles.filterChipActive]}>
+            <Text style={[styles.filterText, filter === f.key && styles.filterTextActive]}>{f.label}</Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+    </LinearGradient>
+  );
+
+  const screenCompact = (
+    <LinearGradient colors={['#7D3C98', '#B7410E']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </Pressable>
+      <Text style={styles.headerTitle}>Family Journal</Text>
+      <Pressable onPress={() => setShowAdd(true)} style={styles.addBtn}>
+        <Ionicons name="create" size={20} color="#fff" />
+      </Pressable>
+    </LinearGradient>
+  );
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#7D3C98', '#B7410E']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
-        <View style={styles.headerRow}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.headerTitle}>Family Journal</Text>
-            <Text style={styles.headerSub}>{entries.length} entries · our story</Text>
-          </View>
-          <Pressable onPress={() => setShowAdd(true)} style={styles.addBtn}>
-            <Ionicons name="create" size={20} color="#fff" />
-          </Pressable>
-        </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-          {filters.map((f) => (
-            <Pressable key={f.key} onPress={() => setFilter(f.key)} style={[styles.filterChip, filter === f.key && styles.filterChipActive]}>
-              <Text style={[styles.filterText, filter === f.key && styles.filterTextActive]}>{f.label}</Text>
-            </Pressable>
-          ))}
-        </ScrollView>
-      </LinearGradient>
-
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]} showsVerticalScrollIndicator={false}>
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+      <ScrollView
+        onScroll={onScroll}
+        onScrollEndDrag={onScrollEndDrag}
+        onMomentumScrollEnd={onMomentumScrollEnd}
+        scrollEventThrottle={scrollEventThrottle}
+        contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+        showsVerticalScrollIndicator={false}
+      >
         {filtered.length === 0 && (
           <View style={styles.empty}>
             <Text style={{ fontSize: 56 }}>📖</Text>
@@ -262,6 +287,8 @@ export function FamilyJournalScreen({ navigation }: any) {
           );
         })}
       </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       <Modal visible={showAdd} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowAdd(false)}>
         <View style={styles.modal}>

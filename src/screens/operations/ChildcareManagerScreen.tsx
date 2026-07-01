@@ -20,6 +20,7 @@ import { shadows } from '../../theme/spacing';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import {
   useChildcareStore,
   type Caregiver,
@@ -285,51 +286,77 @@ export function ChildcareManagerScreen({ navigation }: any) {
 
   const isEmpty = caregivers.length === 0;
 
+  const screenHeader = (
+    <LinearGradient
+      colors={['#E65100', '#EF6C00', '#F57C00']}
+      style={[styles.header, { paddingTop: insets.top + 6 }]}
+    >
+      <View style={styles.headerRow}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <Text style={styles.headerTitle}>Childcare Manager</Text>
+        <Pressable onPress={() => setShowAddCaregiverModal(true)} style={styles.addBtn}>
+          <Ionicons name="add" size={22} color="#fff" />
+        </Pressable>
+      </View>
+
+      <View style={styles.statsRow}>
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>{caregivers.length}</Text>
+          <Text style={styles.statLabel}>Caregivers</Text>
+        </View>
+        <View style={[styles.statItem, styles.statBorder]}>
+          <Text style={styles.statValue}>{upcomingBookings.length}</Text>
+          <Text style={styles.statLabel}>Upcoming</Text>
+        </View>
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>${totalPaidThisMonth}</Text>
+          <Text style={styles.statLabel}>Paid This Month</Text>
+        </View>
+      </View>
+    
+    <View style={styles.tabs}>
+            {(['caregivers', 'schedule', 'payments'] as const).map((t) => (
+              <Pressable key={t} onPress={() => setActiveTab(t)} style={[styles.tab, activeTab === t && styles.tabActive]}>
+                <Text style={[styles.tabText, activeTab === t && styles.tabTextActive]}>
+                  {t.charAt(0).toUpperCase() + t.slice(1)}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+</LinearGradient>
+  );
+
+  const screenCompact = (
+    <LinearGradient
+      colors={['#E65100', '#EF6C00', '#F57C00']}
+      style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+    >
+      <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </Pressable>
+      <Text style={styles.headerTitle}>Childcare Manager</Text>
+      <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: '600' }}>{caregivers.length} caregivers</Text>
+    </LinearGradient>
+  );
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient
-        colors={['#E65100', '#EF6C00', '#F57C00']}
-        style={[styles.header, { paddingTop: insets.top + 6 }]}
-      >
-        <View style={styles.headerRow}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <Text style={styles.headerTitle}>Childcare Manager</Text>
-          <Pressable onPress={() => setShowAddCaregiverModal(true)} style={styles.addBtn}>
-            <Ionicons name="add" size={22} color="#fff" />
-          </Pressable>
-        </View>
-
-        <View style={styles.statsRow}>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{caregivers.length}</Text>
-            <Text style={styles.statLabel}>Caregivers</Text>
-          </View>
-          <View style={[styles.statItem, styles.statBorder]}>
-            <Text style={styles.statValue}>{upcomingBookings.length}</Text>
-            <Text style={styles.statLabel}>Upcoming</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>${totalPaidThisMonth}</Text>
-            <Text style={styles.statLabel}>Paid This Month</Text>
-          </View>
-        </View>
-      </LinearGradient>
 
       {/* Tabs */}
-      <View style={styles.tabs}>
-        {(['caregivers', 'schedule', 'payments'] as const).map((t) => (
-          <Pressable key={t} onPress={() => setActiveTab(t)} style={[styles.tab, activeTab === t && styles.tabActive]}>
-            <Text style={[styles.tabText, activeTab === t && styles.tabTextActive]}>
-              {t.charAt(0).toUpperCase() + t.slice(1)}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      
 
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+        onScroll={onScroll}
+        onScrollEndDrag={onScrollEndDrag}
+        onMomentumScrollEnd={onMomentumScrollEnd}
+        scrollEventThrottle={scrollEventThrottle}
+      >
         {isEmpty && (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyEmoji}>👶</Text>
@@ -556,6 +583,8 @@ export function ChildcareManagerScreen({ navigation }: any) {
           </>
         )}
       </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       {/* Add Caregiver Modal */}
       <Modal

@@ -14,6 +14,7 @@ interface AIState {
   setTyping: (v: boolean) => void;
   clearMessages: () => void;
   addInsight: (i: AIInsight) => void;
+  clearInsights: () => void;
   markInsightRead: (id: string) => void;
   setApiKey: (key: string) => void;
   sendMessage: (content: string, familyContext: string) => Promise<void>;
@@ -34,6 +35,7 @@ export const useAIStore = create<AIState>()(
   setTyping: (v) => set({ isTyping: v }),
   clearMessages: () => set({ messages: [] }),
   addInsight: (i) => set((s) => ({ insights: [i, ...s.insights] })),
+  clearInsights: () => set({ insights: [] }),
   markInsightRead: (id) =>
     set((s) => ({ insights: s.insights.map((i) => (i.id === id ? { ...i, isRead: true } : i)) })),
   setApiKey: (key) => set({ apiKey: key }),

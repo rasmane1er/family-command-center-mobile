@@ -20,6 +20,7 @@ import { useGuardianStore } from '../../../store/useGuardianStore';
 import { useFamilyStore } from '../../../store/useFamilyStore';
 import { colors } from '../../../theme/colors';
 import { shadows } from '../../../theme/spacing';
+import { CollapsibleHeader } from '../../../components/common/CollapsibleHeader';
 import type { DayOfWeek, ScheduledDowntime, ScreenTimeRule } from '../../../types';
 
 const ALL_DAYS: DayOfWeek[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
@@ -196,37 +197,6 @@ export function ScreenTimeScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={['#0F2952', '#1E4A8A']}
-        style={[styles.header, { paddingTop: insets.top + 6 }]}
-      >
-        <View style={styles.headerRow}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={22} color="#fff" />
-          </Pressable>
-          <Text style={styles.headerTitle}>Screen Time</Text>
-        </View>
-
-        {/* Member picker */}
-        {childMembers.length > 1 && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.memberScroll}>
-            {childMembers.map((m) => (
-              <Pressable
-                key={m.id}
-                onPress={() => setSelectedMemberId(m.id)}
-                style={[
-                  styles.memberTab,
-                  activeMemberId === m.id && styles.memberTabActive,
-                ]}
-              >
-                <Text style={[styles.memberTabText, activeMemberId === m.id && styles.memberTabTextActive]}>
-                  {m.name}
-                </Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-        )}
-      </LinearGradient>
 
       {childMembers.length === 0 ? (
         <View style={styles.emptyState}>
@@ -236,6 +206,37 @@ export function ScreenTimeScreen({ navigation }: any) {
         </View>
       ) : (
         <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
+        <LinearGradient
+          colors={['#0F2952', '#1E4A8A']}
+          style={[styles.header, { paddingTop: insets.top + 6 }]}
+        >
+          <View style={styles.headerRow}>
+            <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+              <Ionicons name="arrow-back" size={22} color="#fff" />
+            </Pressable>
+            <Text style={styles.headerTitle}>Screen Time</Text>
+          </View>
+
+          {/* Member picker */}
+          {childMembers.length > 1 && (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.memberScroll}>
+              {childMembers.map((m) => (
+                <Pressable
+                  key={m.id}
+                  onPress={() => setSelectedMemberId(m.id)}
+                  style={[
+                    styles.memberTab,
+                    activeMemberId === m.id && styles.memberTabActive,
+                  ]}
+                >
+                  <Text style={[styles.memberTabText, activeMemberId === m.id && styles.memberTabTextActive]}>
+                    {m.name}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          )}
+        </LinearGradient>
           {/* Active toggle */}
           {memberRule && (
             <View style={[styles.card, shadows.card]}>

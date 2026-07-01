@@ -19,6 +19,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../theme/ThemeContext';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -486,45 +487,61 @@ export default function HelpSupportScreen({ navigation }: { navigation: any }) {
     Linking.openURL('https://community.familycommandcenter.app');
   }
 
+  const screenHeader = (
+    <LinearGradient colors={['#0F2952', '#1E4A8A']} style={[s.header, { paddingTop: insets.top + 16 }]}>
+      <View style={s.headerTopRow}>
+        <TouchableOpacity activeOpacity={0.7} style={s.backButton} onPress={() => navigation.goBack()}>
+          <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
+        </TouchableOpacity>
+        <View style={s.headerTitleBlock}>
+          <Text style={s.headerTitle}>Help & Support</Text>
+          <Text style={s.headerSubtitle}>We're here to help</Text>
+        </View>
+      </View>
+
+      {/* Search bar */}
+      <View style={s.searchBar}>
+        <Ionicons name="search" size={18} color="#94A3B8" />
+        <TextInput
+          style={s.searchInput}
+          placeholder="Search FAQs…"
+          placeholderTextColor="#94A3B8"
+          value={searchText}
+          onChangeText={setSearchText}
+          returnKeyType="search"
+          clearButtonMode="never"
+        />
+        {searchText.length > 0 && (
+          <TouchableOpacity style={s.clearBtn} onPress={() => setSearchText('')}>
+            <Ionicons name="close-circle" size={18} color="#94A3B8" />
+          </TouchableOpacity>
+        )}
+      </View>
+    </LinearGradient>
+  );
+
+  const screenCompact = (
+    <View style={{ backgroundColor: '#0F2952', paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <TouchableOpacity activeOpacity={0.7} style={s.backButton} onPress={() => navigation.goBack()}>
+        <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
+      </TouchableOpacity>
+      <Text style={[s.headerTitle, { flex: 1, marginLeft: 8 }]}>Help & Support</Text>
+    </View>
+  );
+
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <View style={s.container}>
       <StatusBar style="light" />
 
-      {/* ── Header ── */}
-      <LinearGradient colors={['#0F2952', '#1E4A8A']} style={[s.header, { paddingTop: insets.top + 16 }]}>
-        <View style={s.headerTopRow}>
-          <TouchableOpacity activeOpacity={0.7} style={s.backButton} onPress={() => navigation.goBack()}>
-            <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
-          <View style={s.headerTitleBlock}>
-            <Text style={s.headerTitle}>Help & Support</Text>
-            <Text style={s.headerSubtitle}>We're here to help</Text>
-          </View>
-        </View>
-
-        {/* Search bar */}
-        <View style={s.searchBar}>
-          <Ionicons name="search" size={18} color="#94A3B8" />
-          <TextInput
-            style={s.searchInput}
-            placeholder="Search FAQs…"
-            placeholderTextColor="#94A3B8"
-            value={searchText}
-            onChangeText={setSearchText}
-            returnKeyType="search"
-            clearButtonMode="never"
-          />
-          {searchText.length > 0 && (
-            <TouchableOpacity style={s.clearBtn} onPress={() => setSearchText('')}>
-              <Ionicons name="close-circle" size={18} color="#94A3B8" />
-            </TouchableOpacity>
-          )}
-        </View>
-      </LinearGradient>
-
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
       <ScrollView
-        contentContainerStyle={s.scrollContent}
+        onScroll={onScroll}
+        onScrollEndDrag={onScrollEndDrag}
+        onMomentumScrollEnd={onMomentumScrollEnd}
+        scrollEventThrottle={scrollEventThrottle}
+        contentContainerStyle={[s.scrollContent, { paddingTop: contentPaddingTop }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
@@ -645,6 +662,8 @@ export default function HelpSupportScreen({ navigation }: { navigation: any }) {
           <Text style={s.footerText}>📱 Available on iOS & Android</Text>
         </View>
       </ScrollView>
+        )}
+      </CollapsibleHeader>
     </View>
   );
 }

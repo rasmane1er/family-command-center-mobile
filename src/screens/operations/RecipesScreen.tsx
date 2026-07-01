@@ -9,6 +9,9 @@ import { colors } from '../../theme/colors';
 import { Card } from '../../components/common/Card';
 import { useRecipesStore, Recipe, RecipeCategory } from '../../store/useRecipesStore';
 import { useOperationsStore } from '../../store/useOperationsStore';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const DIFF_CONFIG = {
   easy:   { label: 'Easy',   color: '#27AE60', bg: '#D5F5E3' },
@@ -107,6 +110,7 @@ function RecipeDetailModal({ recipe, onClose, onFavorite }: { recipe: Recipe; on
 }
 
 export function RecipesScreen({ navigation }: any) {
+  const insets = useSafeAreaInsets();
   const { recipes, toggleFavorite, seedDemoData } = useRecipesStore();
   const { pantryItems } = useOperationsStore();
   const [filter, setFilter] = useState<RecipeCategory | 'all' | 'favorites'>('all');
@@ -140,29 +144,27 @@ export function RecipesScreen({ navigation }: any) {
     return list;
   }, [recipes, filter, search]);
 
-  return (
-    <View style={styles.container}>
-      <PremiumHeader
-        title="Recipe Book"
-        colors={['#C0392B', '#E74C3C']}
-        onBack={() => navigation.goBack()}
-      >
-        <View style={styles.searchBar}>
-          <Ionicons name="search" size={16} color="rgba(255,255,255,0.6)" />
-          <TextInput
-            style={styles.searchInput}
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Search recipes..."
-            placeholderTextColor="rgba(255,255,255,0.5)"
-          />
-          {search.length > 0 && (
-            <Pressable onPress={() => setSearch('')}>
-              <Ionicons name="close-circle" size={16} color="rgba(255,255,255,0.6)" />
-            </Pressable>
-          )}
-        </View>
-      </PremiumHeader>
+  const screenHeader = (
+        <PremiumHeader
+          title="Recipe Book"
+          colors={['#C0392B', '#E74C3C']}
+          onBack={() => navigation.goBack()}
+        >
+          <View style={styles.searchBar}>
+            <Ionicons name="search" size={16} color="rgba(255,255,255,0.6)" />
+            <TextInput
+              style={styles.searchInput}
+              value={search}
+              onChangeText={setSearch}
+              placeholder="Search recipes..."
+              placeholderTextColor="rgba(255,255,255,0.5)"
+            />
+            {search.length > 0 && (
+              <Pressable onPress={() => setSearch('')}>
+                <Ionicons name="close-circle" size={16} color="rgba(255,255,255,0.6)" />
+              </Pressable>
+            )}
+          </View>
 
       {/* Category filters */}
       <View style={styles.filtersBar}>
@@ -178,7 +180,28 @@ export function RecipesScreen({ navigation }: any) {
         ))}
       </View>
 
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]} showsVerticalScrollIndicator={false}>
+        </PremiumHeader>
+  );
+  const screenCompact = (
+    <LinearGradient
+      colors={['#C0392B', '#E74C3C']}
+      start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+      style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+    >
+      <Pressable onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
+        <Ionicons name="arrow-back" size={22} color="#fff" />
+      </Pressable>
+      <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>Recipes</Text>
+      <View />
+    </LinearGradient>
+  );
+
+  return (
+    <View style={styles.container}>
+
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+          <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]} showsVerticalScrollIndicator={false} onScroll={onScroll} onScrollEndDrag={onScrollEndDrag} onMomentumScrollEnd={onMomentumScrollEnd} scrollEventThrottle={scrollEventThrottle}>
         {/* Cook Tonight */}
         {cookTonightRecipes.length > 0 && filter === 'all' && !search && (
           <View style={styles.cookSection}>
@@ -243,7 +266,9 @@ export function RecipesScreen({ navigation }: any) {
             <Text style={styles.emptyDesc}>Try a different filter or search term.</Text>
           </View>
         )}
-      </ScrollView>
+          </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       {selected && (
         <RecipeDetailModal

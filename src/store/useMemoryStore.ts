@@ -8,6 +8,7 @@ interface MemoryState {
   addMemory: (m: Omit<FamilyMemory, 'id' | 'createdAt' | 'lastAccessed'>) => void;
   pinMemory: (id: string) => void;
   deleteMemory: (id: string) => void;
+  clearMemories: () => void;
   getMemoriesByMember: (memberId: string) => FamilyMemory[];
   getMemoriesByType: (type: MemoryType) => FamilyMemory[];
   seedDemoData: () => void;
@@ -30,6 +31,8 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
 
   deleteMemory: (id) =>
     set((s) => ({ memories: s.memories.filter((m) => m.id !== id) })),
+
+  clearMemories: () => set({ memories: [] }),
 
   getMemoriesByMember: (memberId) => get().memories.filter((m) => m.memberId === memberId),
 

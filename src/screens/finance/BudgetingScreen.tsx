@@ -13,6 +13,9 @@ import { useAIStore } from '../../store/useAIStore';
 import { getSpendingByCategory } from '../../services/plaidService';
 import { getBudgetSuggestions } from '../../services/autoFillService';
 import type { BudgetSuggestion } from '../../services/autoFillService';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const PLAID_TO_BUDGET: Record<string, string> = {
   FOOD_AND_DRINK: 'Food',
@@ -55,6 +58,7 @@ const PRESET_ICONS = [
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
 export function BudgetingScreen({ navigation, route }: any) {
+  const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const { budgets, monthlyIncome, monthlyExpenses, addBudget, deleteBudget } = useFinanceStore();
   const { insights } = useAIStore();
@@ -150,44 +154,64 @@ export function BudgetingScreen({ navigation, route }: any) {
 
   const s = makeStyles(colors);
 
+  const screenHeader = (
+        <PremiumHeader
+          title="Budget Tracker"
+          onBack={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()}
+          colors={['#27AE60', '#1ABC9C']}
+          rightAction={
+            <Pressable onPress={() => setShowAddModal(true)} style={s.addBtn}>
+              <Ionicons name="add" size={26} color="#fff" />
+            </Pressable>
+          }
+        >
+          <View style={s.totalCard}>
+            <View style={s.totalItem}>
+              <Text style={s.totalLabel}>Budgeted</Text>
+              <Text style={s.totalValue}>${totalBudgeted.toLocaleString()}</Text>
+            </View>
+            <View style={s.totalDivider} />
+            <View style={s.totalItem}>
+              <Text style={s.totalLabel}>Spent</Text>
+              <Text style={s.totalValue}>${totalSpent.toLocaleString()}</Text>
+            </View>
+            <View style={s.totalDivider} />
+            <View style={s.totalItem}>
+              <Text style={s.totalLabel}>Remaining</Text>
+              <Text style={[s.totalValue, { color: totalBudgeted - totalSpent < 0 ? '#FF8080' : '#9FFFDE' }]}>
+                ${(totalBudgeted - totalSpent).toLocaleString()}
+              </Text>
+            </View>
+          </View>
+        </PremiumHeader>
+  );
+  const screenCompact = (
+    <LinearGradient
+      colors={['#27AE60', '#1ABC9C']}
+      start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+      style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+    >
+      <Pressable onPress={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
+        <Ionicons name="arrow-back" size={22} color="#fff" />
+      </Pressable>
+      <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>Budget</Text>
+      <View />
+    </LinearGradient>
+  );
+
   return (
     <View style={s.container}>
-      <PremiumHeader
-        title="Budget Tracker"
-        onBack={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()}
-        colors={['#27AE60', '#1ABC9C']}
-        rightAction={
-          <Pressable onPress={() => setShowAddModal(true)} style={s.addBtn}>
-            <Ionicons name="add" size={26} color="#fff" />
-          </Pressable>
-        }
-      >
-        <View style={s.totalCard}>
-          <View style={s.totalItem}>
-            <Text style={s.totalLabel}>Budgeted</Text>
-            <Text style={s.totalValue}>${totalBudgeted.toLocaleString()}</Text>
-          </View>
-          <View style={s.totalDivider} />
-          <View style={s.totalItem}>
-            <Text style={s.totalLabel}>Spent</Text>
-            <Text style={s.totalValue}>${totalSpent.toLocaleString()}</Text>
-          </View>
-          <View style={s.totalDivider} />
-          <View style={s.totalItem}>
-            <Text style={s.totalLabel}>Remaining</Text>
-            <Text style={[s.totalValue, { color: totalBudgeted - totalSpent < 0 ? '#FF8080' : '#9FFFDE' }]}>
-              ${(totalBudgeted - totalSpent).toLocaleString()}
-            </Text>
-          </View>
-        </View>
-      </PremiumHeader>
 
-      <ScrollView
-        contentContainerStyle={[s.content, { paddingBottom: 100 }]}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadActuals(); }} />
-        }
-      >
+
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+          <ScrollView
+            contentContainerStyle={[s.content, { paddingTop: contentPaddingTop, paddingBottom: 100 }]}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={loadActuals} />}
+            onScroll={onScroll}
+            onScrollEndDrag={onScrollEndDrag}
+            onMomentumScrollEnd={onMomentumScrollEnd}
+            scrollEventThrottle={scrollEventThrottle}>
         <View style={s.sectionHeader}>
           <Text style={s.sectionTitle}>Budget by Category</Text>
           <Text style={s.budgetCount}>{budgets.length} categories</Text>
@@ -271,7 +295,9 @@ export function BudgetingScreen({ navigation, route }: any) {
             </View>
           </View>
         </Card>
-      </ScrollView>
+          </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       {/* Add Budget Modal */}
       <Modal visible={showAddModal} transparent animationType="slide">

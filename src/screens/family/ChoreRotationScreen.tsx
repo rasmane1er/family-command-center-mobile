@@ -11,6 +11,7 @@ import { colors } from '../../theme/colors';
 import { Card } from '../../components/common/Card';
 import { useChoreStore, Chore, ChoreFrequency, ChoreCategory } from '../../store/useChoreStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 
 const FREQ_LABELS: Record<ChoreFrequency, string> = {
   daily: 'Daily', weekly: 'Weekly', biweekly: 'Every 2 Weeks', monthly: 'Monthly',
@@ -115,54 +116,76 @@ export function ChoreRotationScreen({ navigation }: any) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
+  const screenHeader = (
+    <LinearGradient colors={['#1A3C34', '#16A085']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
+      <View style={styles.headerRow}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.headerTitle}>Chore Rotation</Text>
+          <Text style={styles.headerSub}>{doneToday} done today · {overdueCount} overdue</Text>
+        </View>
+        <Pressable onPress={() => setShowAdd(true)} style={styles.addBtn}>
+          <Ionicons name="add" size={22} color="#fff" />
+        </Pressable>
+      </View>
+
+      <View style={styles.statsRow}>
+        <View style={styles.stat}>
+          <Text style={styles.statVal}>{chores.length}</Text>
+          <Text style={styles.statLabel}>Total Chores</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.stat}>
+          <Text style={[styles.statVal, { color: overdueCount > 0 ? '#FFD166' : '#4EECD0' }]}>{overdueCount}</Text>
+          <Text style={styles.statLabel}>Overdue</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.stat}>
+          <Text style={[styles.statVal, { color: '#4EECD0' }]}>{doneToday}</Text>
+          <Text style={styles.statLabel}>Done Today</Text>
+        </View>
+      </View>
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+        {FREQ_FILTERS.map((f) => (
+          <Pressable
+            key={f.key}
+            onPress={() => setFilter(f.key)}
+            style={[styles.filterChip, filter === f.key && styles.filterChipActive]}
+          >
+            <Text style={[styles.filterText, filter === f.key && styles.filterTextActive]}>{f.label}</Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+    </LinearGradient>
+  );
+
+  const screenCompact = (
+    <LinearGradient colors={['#1A3C34', '#16A085']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </Pressable>
+      <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>Chore Rotation</Text>
+      <Text style={{ fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.8)' }}>{overdueCount} overdue</Text>
+    </LinearGradient>
+  );
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#1A3C34', '#16A085']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
-        <View style={styles.headerRow}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.headerTitle}>Chore Rotation</Text>
-            <Text style={styles.headerSub}>{doneToday} done today · {overdueCount} overdue</Text>
-          </View>
-          <Pressable onPress={() => setShowAdd(true)} style={styles.addBtn}>
-            <Ionicons name="add" size={22} color="#fff" />
-          </Pressable>
-        </View>
 
-        <View style={styles.statsRow}>
-          <View style={styles.stat}>
-            <Text style={styles.statVal}>{chores.length}</Text>
-            <Text style={styles.statLabel}>Total Chores</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.stat}>
-            <Text style={[styles.statVal, { color: overdueCount > 0 ? '#FFD166' : '#4EECD0' }]}>{overdueCount}</Text>
-            <Text style={styles.statLabel}>Overdue</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.stat}>
-            <Text style={[styles.statVal, { color: '#4EECD0' }]}>{doneToday}</Text>
-            <Text style={styles.statLabel}>Done Today</Text>
-          </View>
-        </View>
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-          {FREQ_FILTERS.map((f) => (
-            <Pressable
-              key={f.key}
-              onPress={() => setFilter(f.key)}
-              style={[styles.filterChip, filter === f.key && styles.filterChipActive]}
-            >
-              <Text style={[styles.filterText, filter === f.key && styles.filterTextActive]}>{f.label}</Text>
-            </Pressable>
-          ))}
-        </ScrollView>
-      </LinearGradient>
-
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]} showsVerticalScrollIndicator={false}>
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+      <ScrollView
+        onScroll={onScroll}
+        onScrollEndDrag={onScrollEndDrag}
+        onMomentumScrollEnd={onMomentumScrollEnd}
+        scrollEventThrottle={scrollEventThrottle}
+        contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+        showsVerticalScrollIndicator={false}
+      >
         {filtered.length === 0 && (
           <View style={styles.empty}>
             <Text style={{ fontSize: 56 }}>🧹</Text>
@@ -245,6 +268,9 @@ export function ChoreRotationScreen({ navigation }: any) {
           );
         })}
       </ScrollView>
+
+        )}
+      </CollapsibleHeader>
 
       <Modal visible={showAdd} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowAdd(false)}>
         <View style={styles.modal}>

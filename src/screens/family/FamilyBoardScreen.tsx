@@ -14,6 +14,7 @@ import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { useFamilyBoardStore, BoardPost, PostPriority, PostCategory } from '../../store/useFamilyBoardStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 
 type FilterType = 'all' | 'pinned' | 'announcement' | 'reminder' | 'rule';
 
@@ -411,48 +412,65 @@ export function FamilyBoardScreen({ navigation }: any) {
     { key: 'rule', label: 'Rules' },
   ];
 
+  const screenHeader = (
+        <LinearGradient
+          colors={['#0D1B2A', '#1B2838', '#162447']}
+          style={[styles.header, { paddingTop: insets.top + 6 }]}
+        >
+          <View style={styles.headerRow}>
+            <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+              <Ionicons name="arrow-back" size={24} color="#fff" />
+            </Pressable>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.headerTitle}>Family Board</Text>
+              <Text style={styles.headerSub}>Announcements & Updates</Text>
+            </View>
+            <Pressable
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setShowAdd(true); }}
+              style={styles.addBtn}
+            >
+              <Ionicons name="add" size={22} color="#fff" />
+            </Pressable>
+          </View>
+    
+  <View style={styles.filtersBar}>
+          {FILTERS.map((f) => (
+            <Pressable
+              key={f.key}
+              onPress={() => setFilter(f.key)}
+              style={[styles.filterChip, filter === f.key && styles.filterChipActive]}
+            >
+              <Text style={[styles.filterChipText, filter === f.key && styles.filterChipTextActive]}>
+                {f.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+    </LinearGradient>
+  );
+  const screenCompact = (
+    <LinearGradient
+      colors={['#0D1B2A', '#162447']}
+      start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+      style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+    >
+      <Pressable onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
+        <Ionicons name="arrow-back" size={22} color="#fff" />
+      </Pressable>
+      <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>Family Board</Text>
+      <View />
+    </LinearGradient>
+  );
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient
-        colors={['#0D1B2A', '#1B2838', '#162447']}
-        style={[styles.header, { paddingTop: insets.top + 6 }]}
-      >
-        <View style={styles.headerRow}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.headerTitle}>Family Board</Text>
-            <Text style={styles.headerSub}>Announcements & Updates</Text>
-          </View>
-          <Pressable
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setShowAdd(true); }}
-            style={styles.addBtn}
-          >
-            <Ionicons name="add" size={22} color="#fff" />
-          </Pressable>
-        </View>
-      </LinearGradient>
 
-      <View style={styles.filtersBar}>
-        {FILTERS.map((f) => (
-          <Pressable
-            key={f.key}
-            onPress={() => setFilter(f.key)}
-            style={[styles.filterChip, filter === f.key && styles.filterChipActive]}
-          >
-            <Text style={[styles.filterChipText, filter === f.key && styles.filterChipTextActive]}>
-              {f.label}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      
 
-      <ScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: 100 }]}
-        showsVerticalScrollIndicator={false}
-      >
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+          <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]} showsVerticalScrollIndicator={false} onScroll={onScroll} onScrollEndDrag={onScrollEndDrag} onMomentumScrollEnd={onMomentumScrollEnd} scrollEventThrottle={scrollEventThrottle}>
         {activePosts.length === 0 && (
           <View style={styles.emptyState}>
             <Text style={{ fontSize: 60 }}>📋</Text>
@@ -484,7 +502,9 @@ export function FamilyBoardScreen({ navigation }: any) {
             <Text style={styles.emptyTitle}>No posts match this filter</Text>
           </View>
         )}
-      </ScrollView>
+          </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       <PostDetailModal
         post={selectedPost}

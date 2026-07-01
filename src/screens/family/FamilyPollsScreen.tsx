@@ -11,6 +11,7 @@ import { formatDistanceToNow } from 'date-fns';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
 import { Card } from '../../components/common/Card';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { usePollsStore, Poll, PollOption } from '../../store/usePollsStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 
@@ -161,48 +162,74 @@ export function FamilyPollsScreen({ navigation }: any) {
     setShowCreate(false);
   };
 
+  const screenHeader = (
+    <LinearGradient colors={['#1565C0', '#2980B9']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
+      <View style={styles.headerRow}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.headerTitle}>Family Polls</Text>
+          <Text style={styles.headerSub}>{activePolls.length} active · {closedPolls.length} closed</Text>
+        </View>
+        <Pressable onPress={() => setShowCreate(true)} style={styles.addBtn}>
+          <Ionicons name="add" size={22} color="#fff" />
+        </Pressable>
+      </View>
+
+      <View style={styles.statsRow}>
+        {[
+          { label: 'Active Polls', value: activePolls.length, icon: 'radio-button-on' },
+          { label: 'Total Votes', value: polls.reduce((s, p) => s + p.options.reduce((os, o) => os + o.votes.length, 0), 0), icon: 'hand-left' },
+          { label: 'Decisions Made', value: closedPolls.length, icon: 'checkmark-circle' },
+        ].map((s, i) => (
+          <View key={i} style={[styles.statItem, i < 2 && styles.statBorder]}>
+            <Text style={styles.statVal}>{s.value}</Text>
+            <Text style={styles.statLabel}>{s.label}</Text>
+          </View>
+        ))}
+      </View>
+    
+    <View style={styles.tabs}>
+            {(['active', 'closed'] as const).map((tab) => (
+              <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
+                <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
+                  {tab === 'active' ? `Active (${activePolls.length})` : `Closed (${closedPolls.length})`}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+</LinearGradient>
+  );
+
+  const screenCompact = (
+    <LinearGradient colors={['#1565C0', '#2980B9']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </Pressable>
+      <Text style={styles.headerTitle}>Family Polls</Text>
+      <Pressable onPress={() => setShowCreate(true)} style={styles.addBtn}>
+        <Ionicons name="add" size={22} color="#fff" />
+      </Pressable>
+    </LinearGradient>
+  );
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#1565C0', '#2980B9']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
-        <View style={styles.headerRow}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.headerTitle}>Family Polls</Text>
-            <Text style={styles.headerSub}>{activePolls.length} active · {closedPolls.length} closed</Text>
-          </View>
-          <Pressable onPress={() => setShowCreate(true)} style={styles.addBtn}>
-            <Ionicons name="add" size={22} color="#fff" />
-          </Pressable>
-        </View>
 
-        <View style={styles.statsRow}>
-          {[
-            { label: 'Active Polls', value: activePolls.length, icon: 'radio-button-on' },
-            { label: 'Total Votes', value: polls.reduce((s, p) => s + p.options.reduce((os, o) => os + o.votes.length, 0), 0), icon: 'hand-left' },
-            { label: 'Decisions Made', value: closedPolls.length, icon: 'checkmark-circle' },
-          ].map((s, i) => (
-            <View key={i} style={[styles.statItem, i < 2 && styles.statBorder]}>
-              <Text style={styles.statVal}>{s.value}</Text>
-              <Text style={styles.statLabel}>{s.label}</Text>
-            </View>
-          ))}
-        </View>
-      </LinearGradient>
+      
 
-      <View style={styles.tabs}>
-        {(['active', 'closed'] as const).map((tab) => (
-          <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
-            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-              {tab === 'active' ? `Active (${activePolls.length})` : `Closed (${closedPolls.length})`}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]} showsVerticalScrollIndicator={false}>
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+      <ScrollView
+        onScroll={onScroll}
+        onScrollEndDrag={onScrollEndDrag}
+        onMomentumScrollEnd={onMomentumScrollEnd}
+        scrollEventThrottle={scrollEventThrottle}
+        contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+        showsVerticalScrollIndicator={false}
+      >
         {displayed.map((poll) => (
           <PollCard
             key={poll.id}
@@ -221,6 +248,8 @@ export function FamilyPollsScreen({ navigation }: any) {
           </View>
         )}
       </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       {/* Create Poll Modal */}
       <Modal visible={showCreate} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowCreate(false)}>

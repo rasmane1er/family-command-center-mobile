@@ -64,15 +64,15 @@ export function WelcomeScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#0F2952', '#1E4A8A']} style={styles.header}>
-        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-          <Text style={styles.headerGreeting}>Welcome to</Text>
-          <Text style={styles.headerTitle}>Family Command{'\n'}Center™</Text>
-          <Text style={styles.headerSub}>The all-in-one household operating system</Text>
-        </Animated.View>
-      </LinearGradient>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <LinearGradient colors={['#0F2952', '#1E4A8A']} style={styles.header}>
+          <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+            <Text style={styles.headerGreeting}>Welcome to</Text>
+            <Text style={styles.headerTitle}>Family Command{'\n'}Center™</Text>
+            <Text style={styles.headerSub}>The all-in-one household operating system</Text>
+          </Animated.View>
+        </LinearGradient>
         <Text style={styles.sectionTitle}>Everything your family needs</Text>
 
         <View style={styles.featuresGrid}>

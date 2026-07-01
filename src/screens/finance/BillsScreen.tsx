@@ -15,6 +15,9 @@ import { useFinanceStore } from '../../store/useFinanceStore';
 import { getDetectedBills } from '../../services/autoFillService';
 import type { DetectedBill } from '../../services/autoFillService';
 import type { Bill } from '../../types';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const statusBadge = { upcoming: 'neutral', due_soon: 'warning', overdue: 'danger', paid: 'success' } as const;
 const statusLabels = { upcoming: 'Upcoming', due_soon: 'Due Soon', overdue: 'OVERDUE', paid: 'Paid' };
@@ -28,6 +31,7 @@ const CATEGORY_ICONS: Record<string, string> = {
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
 export function BillsScreen({ navigation, route }: any) {
+  const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const [filter, setFilter] = useState('All');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -133,8 +137,7 @@ export function BillsScreen({ navigation, route }: any) {
 
   const s = makeStyles(colors);
 
-  return (
-    <View style={s.container}>
+  const screenHeader = (
       <PremiumHeader
         title="Bills"
         onBack={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()}
@@ -168,8 +171,28 @@ export function BillsScreen({ navigation, route }: any) {
           ))}
         </ScrollView>
       </PremiumHeader>
+  );
+  const screenCompact = (
+    <LinearGradient
+      colors={['#0F2952', '#1E4A8A']}
+      start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+      style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+    >
+      <Pressable onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
+        <Ionicons name="arrow-back" size={22} color="#fff" />
+      </Pressable>
+      <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>Bills</Text>
+      <View />
+    </LinearGradient>
+  );
 
-      <ScrollView contentContainerStyle={[s.content, { paddingBottom: 100 }]}>
+  return (
+    <View style={s.container}>
+
+
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+          <ScrollView contentContainerStyle={[s.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]} onScroll={onScroll} onScrollEndDrag={onScrollEndDrag} onMomentumScrollEnd={onMomentumScrollEnd} scrollEventThrottle={scrollEventThrottle}>
         {/* Smart Detection Banner */}
         {(detectedLoading || detectedBills.length > 0) && (
           <View style={s.smartBanner}>
@@ -269,7 +292,9 @@ export function BillsScreen({ navigation, route }: any) {
             <Text style={s.emptyDesc}>Tap + to add a new bill.</Text>
           </View>
         )}
-      </ScrollView>
+          </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       {/* Add Bill Modal */}
       <Modal visible={showAddModal} transparent animationType="slide">

@@ -13,6 +13,7 @@ import { Button } from '../../components/common/Button';
 import { useAutomationStore } from '../../store/useAutomationStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import type { ListingCategory } from '../../types';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 const LISTING_CATEGORIES: ListingCategory[] = ['chores', 'skills', 'items', 'favors', 'lessons'];
@@ -86,61 +87,84 @@ export function MarketplaceScreen({ navigation }: any) {
     setNewTitle(''); setNewDesc(''); setNewCategory('chores'); setNewPoints('50');
   };
 
-  return (
-    <View style={styles.container}>
-      <StatusBar style="light" />
-      <LinearGradient colors={['#E65100', '#F57C00']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
-        <View style={styles.headerTop}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <Text style={styles.headerTitle}>Family Marketplace</Text>
-          <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowModal(true); }} style={styles.addBtn}>
-            <Ionicons name="add" size={24} color="#fff" />
-          </Pressable>
+  const screenHeader = (
+    <LinearGradient colors={['#E65100', '#F57C00']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
+      <View style={styles.headerTop}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <Text style={styles.headerTitle}>Family Marketplace</Text>
+        <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowModal(true); }} style={styles.addBtn}>
+          <Ionicons name="add" size={24} color="#fff" />
+        </Pressable>
+      </View>
+
+      <View style={styles.marketStats}>
+        <View style={styles.mStat}>
+          <Text style={styles.mStatVal}>{available.length}</Text>
+          <Text style={styles.mStatLabel}>Available</Text>
         </View>
-
-        <View style={styles.marketStats}>
-          <View style={styles.mStat}>
-            <Text style={styles.mStatVal}>{available.length}</Text>
-            <Text style={styles.mStatLabel}>Available</Text>
-          </View>
-          <View style={styles.mStat}>
-            <Text style={styles.mStatVal}>{totalPoints}</Text>
-            <Text style={styles.mStatLabel}>Points Available</Text>
-          </View>
-          <View style={styles.mStat}>
-            <Text style={styles.mStatVal}>{completed.length}</Text>
-            <Text style={styles.mStatLabel}>Completed</Text>
-          </View>
+        <View style={styles.mStat}>
+          <Text style={styles.mStatVal}>{totalPoints}</Text>
+          <Text style={styles.mStatLabel}>Points Available</Text>
         </View>
+        <View style={styles.mStat}>
+          <Text style={styles.mStatVal}>{completed.length}</Text>
+          <Text style={styles.mStatLabel}>Completed</Text>
+        </View>
+      </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 12 }}>
-          {['all', 'chores', 'skills', 'lessons', 'favors'].map((cat) => (
-            <Pressable
-              key={cat}
-              onPress={() => setFilter(cat)}
-              style={[styles.filterChip, filter === cat && styles.filterChipActive]}
-            >
-              <Text style={[styles.filterText, filter === cat && styles.filterTextActive]}>
-                {cat.charAt(0).toUpperCase() + cat.slice(1)}
-              </Text>
-            </Pressable>
-          ))}
-        </ScrollView>
-      </LinearGradient>
-
-      <View style={styles.tabs}>
-        {(['available', 'claimed', 'history'] as const).map((tab) => (
-          <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
-            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-              {tab === 'available' ? `Available (${available.length})` : tab === 'claimed' ? `In Progress (${claimed.length})` : `Done (${completed.length})`}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 12 }}>
+        {['all', 'chores', 'skills', 'lessons', 'favors'].map((cat) => (
+          <Pressable
+            key={cat}
+            onPress={() => setFilter(cat)}
+            style={[styles.filterChip, filter === cat && styles.filterChipActive]}
+          >
+            <Text style={[styles.filterText, filter === cat && styles.filterTextActive]}>
+              {cat.charAt(0).toUpperCase() + cat.slice(1)}
             </Text>
           </Pressable>
         ))}
-      </View>
+      </ScrollView>
+    
+    <View style={styles.tabs}>
+            {(['available', 'claimed', 'history'] as const).map((tab) => (
+              <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
+                <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
+                  {tab === 'available' ? `Available (${available.length})` : tab === 'claimed' ? `In Progress (${claimed.length})` : `Done (${completed.length})`}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+</LinearGradient>
+  );
 
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
+  const screenCompact = (
+    <LinearGradient colors={['#E65100', '#F57C00']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </Pressable>
+      <Text style={styles.headerTitle}>Family Marketplace</Text>
+      <Text style={{ fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.9)' }}>{totalPoints} pts</Text>
+    </LinearGradient>
+  );
+
+  return (
+    <View style={styles.container}>
+      <StatusBar style="light" />
+
+      
+
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+          <ScrollView
+            contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+            onScroll={onScroll}
+            onScrollEndDrag={onScrollEndDrag}
+            onMomentumScrollEnd={onMomentumScrollEnd}
+            scrollEventThrottle={scrollEventThrottle}
+          >
         {displayList
           .filter((l) => filter === 'all' || l.category === filter)
           .map((listing) => {
@@ -209,7 +233,9 @@ export function MarketplaceScreen({ navigation }: any) {
             <Text style={styles.emptyDesc}>Post tasks, skills, or favors to earn points as a family.</Text>
           </View>
         )}
-      </ScrollView>
+          </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet">
         <ScrollView style={styles.modal} contentContainerStyle={{ paddingBottom: 40 }}>

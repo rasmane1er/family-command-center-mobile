@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Switch } from 'react-native';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { colors } from '../../theme/colors';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
@@ -74,52 +75,75 @@ export function AutomationScreen({ navigation }: any) {
     ]);
   };
 
+  const screenHeader = (
+    <LinearGradient colors={['#1A1A2E', '#16213E']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
+      <View style={styles.headerTop}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <Text style={styles.headerTitle}>Automation Engine</Text>
+        <Pressable
+          onPress={() => Alert.alert('Add Automation', 'Switch to the Templates tab to quickly add pre-built automations to your family rules.', [{ text: 'Got It' }])}
+          style={styles.addBtn}
+        >
+          <Ionicons name="add" size={24} color="#fff" />
+        </Pressable>
+      </View>
+
+      <View style={styles.statsRow}>
+        <View style={styles.stat}>
+          <Text style={styles.statVal}>{activeRules.length}</Text>
+          <Text style={styles.statLabel}>Active Rules</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.stat}>
+          <Text style={styles.statVal}>{totalRuns}</Text>
+          <Text style={styles.statLabel}>Total Runs</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.stat}>
+          <Text style={styles.statVal}>{Math.round(totalRuns * 4.2)}m</Text>
+          <Text style={styles.statLabel}>Time Saved</Text>
+        </View>
+      </View>
+    
+    <View style={styles.tabs}>
+            {(['rules', 'templates'] as const).map((tab) => (
+              <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
+                <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
+                  {tab === 'rules' ? `My Rules (${rules.length})` : 'Templates'}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+</LinearGradient>
+  );
+
+  const screenCompact = (
+    <LinearGradient colors={['#1A1A2E', '#16213E']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </Pressable>
+      <Text style={styles.headerTitle}>Automation Engine</Text>
+      <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, fontWeight: '700' }}>{activeRules.length} active</Text>
+    </LinearGradient>
+  );
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#1A1A2E', '#16213E']} style={[styles.header, { paddingTop: insets.top }]}>
-        <View style={styles.headerTop}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <Text style={styles.headerTitle}>Automation Engine</Text>
-          <Pressable
-            onPress={() => Alert.alert('Add Automation', 'Switch to the Templates tab to quickly add pre-built automations to your family rules.', [{ text: 'Got It' }])}
-            style={styles.addBtn}
-          >
-            <Ionicons name="add" size={24} color="#fff" />
-          </Pressable>
-        </View>
 
-        <View style={styles.statsRow}>
-          <View style={styles.stat}>
-            <Text style={styles.statVal}>{activeRules.length}</Text>
-            <Text style={styles.statLabel}>Active Rules</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.stat}>
-            <Text style={styles.statVal}>{totalRuns}</Text>
-            <Text style={styles.statLabel}>Total Runs</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.stat}>
-            <Text style={styles.statVal}>{Math.round(totalRuns * 4.2)}m</Text>
-            <Text style={styles.statLabel}>Time Saved</Text>
-          </View>
-        </View>
-      </LinearGradient>
+      
 
-      <View style={styles.tabs}>
-        {(['rules', 'templates'] as const).map((tab) => (
-          <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
-            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-              {tab === 'rules' ? `My Rules (${rules.length})` : 'Templates'}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+        <ScrollView
+          contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+          onScroll={onScroll}
+          onScrollEndDrag={onScrollEndDrag}
+          onMomentumScrollEnd={onMomentumScrollEnd}
+          scrollEventThrottle={scrollEventThrottle}
+        >
         {activeTab === 'rules' && rules.map((rule) => (
           <Card key={rule.id} style={styles.ruleCard} variant="elevated">
             <View style={styles.ruleHeader}>
@@ -176,7 +200,9 @@ export function AutomationScreen({ navigation }: any) {
             </Card>
           </Pressable>
         ))}
-      </ScrollView>
+        </ScrollView>
+        )}
+      </CollapsibleHeader>
     </View>
   );
 }

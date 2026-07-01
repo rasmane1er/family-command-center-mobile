@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOperationsStore } from '../../store/useOperationsStore';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 
 const { width } = Dimensions.get('window');
 
@@ -162,66 +163,82 @@ export function OperationsDashboardScreen({ navigation }: any) {
     };
   }, [vehicleAlerts.length, lowStockItems.length, expiringDocs.length]);
 
+
+  const screenHeader = (
+        <LinearGradient
+          colors={['#102F59', '#0D4268', '#0A4A72']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.header, { paddingTop: insets.top + 6 }]}
+        >
+          <View style={styles.headerTop}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.headerTitle}>Operations Center</Text>
+              <Text style={styles.headerSubtitle}>
+                Home, Vehicles, Documents & More
+              </Text>
+            </View>
+
+          </View>
+
+          <View style={styles.alertRow}>
+            {alertCards.map((item) => (
+              <Pressable
+                key={item.label}
+                onPress={() => navigation.navigate(item.screen)}
+                style={({ pressed }) => [
+                  styles.alertCard,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Ionicons
+                  name={item.icon as any}
+                  size={15}
+                  color={item.count > 0 ? item.color : 'rgba(255,255,255,0.42)'}
+                />
+
+                <Text
+                  style={[
+                    styles.alertNumber,
+                    {
+                      color:
+                        item.count > 0
+                          ? item.color
+                          : 'rgba(255,255,255,0.42)',
+                    },
+                  ]}
+                >
+                  {item.count}
+                </Text>
+
+                <Text style={styles.alertLabel}>{item.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </LinearGradient>
+  );
+  const screenCompact = (
+    <LinearGradient
+      colors={['#102F59', '#0A4A72']}
+      start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+      style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+    >
+
+      <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>Operations</Text>
+      <View />
+    </LinearGradient>
+  );
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
 
-      <LinearGradient
-        colors={['#102F59', '#0D4268', '#0A4A72']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={[styles.header, { paddingTop: insets.top + 6 }]}
-      >
-        <View style={styles.headerTop}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.headerTitle}>Operations Center</Text>
-            <Text style={styles.headerSubtitle}>
-              Home, Vehicles, Documents & More
-            </Text>
-          </View>
-
-        </View>
-
-        <View style={styles.alertRow}>
-          {alertCards.map((item) => (
-            <Pressable
-              key={item.label}
-              onPress={() => navigation.navigate(item.screen)}
-              style={({ pressed }) => [
-                styles.alertCard,
-                pressed && styles.pressed,
-              ]}
-            >
-              <Ionicons
-                name={item.icon as any}
-                size={15}
-                color={item.count > 0 ? item.color : 'rgba(255,255,255,0.42)'}
-              />
-
-              <Text
-                style={[
-                  styles.alertNumber,
-                  {
-                    color:
-                      item.count > 0
-                        ? item.color
-                        : 'rgba(255,255,255,0.42)',
-                  },
-                ]}
-              >
-                {item.count}
-              </Text>
-
-              <Text style={styles.alertLabel}>{item.label}</Text>
-            </Pressable>
-          ))}
-        </View>
-      </LinearGradient>
-
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.content}
-      >
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={[styles.content, { paddingTop: contentPaddingTop }]}
+            onScroll={onScroll} onScrollEndDrag={onScrollEndDrag} onMomentumScrollEnd={onMomentumScrollEnd} scrollEventThrottle={scrollEventThrottle}
+          >
         <Pressable
           disabled={!priorityAlert.screen}
           onPress={() =>
@@ -372,7 +389,9 @@ export function OperationsDashboardScreen({ navigation }: any) {
             <SnapshotItem icon="shield" label="Expiring" value={expiringDocs.length} color="#F5A623" />
           </View>
         </LinearGradient>
-      </ScrollView>
+          </ScrollView>
+        )}
+      </CollapsibleHeader>
     </View>
   );
 }

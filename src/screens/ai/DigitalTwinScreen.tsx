@@ -1,5 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions, Alert, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { ChatInputBar } from '../../components/ai/ChatInputBar';
+import { useVoiceInput } from '../../hooks/useVoiceInput';
+import { AIResetMenu } from '../../components/ai/AIResetMenu';
+import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -13,6 +16,7 @@ import { useFinanceStore } from '../../store/useFinanceStore';
 import { useOperationsStore } from '../../store/useOperationsStore';
 import { useGuardianStore } from '../../store/useGuardianStore';
 import { chatWithDigitalTwin, AIMessage } from '../../services/aiService';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 
 const { width } = Dimensions.get('window');
 
@@ -186,6 +190,7 @@ export function DigitalTwinScreen({ navigation }: { navigation: { goBack: () => 
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<'twin' | 'predict' | 'whatif' | 'chat'>('twin');
   const [chatInput, setChatInput] = useState('');
+  const voice = useVoiceInput({ onResult: (text) => handleChatSend(text) });
   const [chatHistory, setChatHistory] = useState<AIMessage[]>([]);
   const [chatLoading, setChatLoading] = useState(false);
   const [chatSuggestions, setChatSuggestions] = useState<string[]>([]);
@@ -225,10 +230,8 @@ export function DigitalTwinScreen({ navigation }: { navigation: { goBack: () => 
     };
   });
 
-  return (
-    <View style={styles.container}>
-      <StatusBar style="light" />
-      <LinearGradient colors={['#0D0D2B', '#1A1A4E', '#2D2D8F']} style={[styles.header, { paddingTop: insets.top }]}>
+  const screenHeader = (
+      <LinearGradient colors={['#0D0D2B', '#1A1A4E', '#2D2D8F']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
         <View style={styles.headerRow}>
           <Pressable onPress={() => navigation.goBack()} style={styles.back}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -240,6 +243,9 @@ export function DigitalTwinScreen({ navigation }: { navigation: { goBack: () => 
           <View style={styles.scoreBadge}>
             <Text style={styles.scoreBadgeText}>{overallScore}</Text>
           </View>
+          <AIResetMenu actions={[
+            { label: 'Clear Chat', description: 'Delete all chat messages', icon: 'chatbubble-outline', danger: true, onPress: () => setChatHistory([]) },
+          ]} />
         </View>
 
         <View style={styles.twinStats}>
@@ -258,19 +264,60 @@ export function DigitalTwinScreen({ navigation }: { navigation: { goBack: () => 
             <Text style={styles.twinStatLabel}>Members modeled</Text>
           </View>
         </View>
-      </LinearGradient>
+      
+    <View style={styles.tabs}>
+            {(['twin', 'predict', 'whatif', 'chat'] as const).map((t) => (
+              <Pressable key={t} onPress={() => setTab(t)} style={[styles.tab, tab === t && styles.tabActive]}>
+                <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
+                  {t === 'twin' ? '🧬 DNA' : t === 'predict' ? '🔮 Predict' : t === 'whatif' ? '💡 What-If' : '✨ Ask AI'}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+</LinearGradient>
 
-      <View style={styles.tabs}>
-        {(['twin', 'predict', 'whatif', 'chat'] as const).map((t) => (
-          <Pressable key={t} onPress={() => setTab(t)} style={[styles.tab, tab === t && styles.tabActive]}>
-            <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
-              {t === 'twin' ? '🧬 DNA' : t === 'predict' ? '🔮 Predict' : t === 'whatif' ? '💡 What-If' : '✨ Ask AI'}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+  );
+  const screenCompact = (
+    <LinearGradient
+      colors={['#0D0D2B', '#2D2D8F']}
+      start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+      style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+    >
+      <Pressable onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
+        <Ionicons name="arrow-back" size={22} color="#fff" />
+      </Pressable>
+      <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>Digital Twin</Text>
+      <View />
+    </LinearGradient>
+  );
 
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
+  return (
+    <View style={styles.container}>
+      <StatusBar style="light" />
+
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
+      >
+        <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+          {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+            <ScrollView
+              ref={tab === 'chat' ? chatScrollRef : undefined}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={[
+                styles.content,
+                {
+                  paddingTop: contentPaddingTop,
+                  paddingBottom:
+                    tab === 'chat' ? Math.max(insets.bottom, 16) + 170 : 100,
+                },
+              ]}
+              onScroll={onScroll}
+              onScrollEndDrag={onScrollEndDrag}
+              onMomentumScrollEnd={onMomentumScrollEnd}
+              scrollEventThrottle={scrollEventThrottle}
+            >
         {tab === 'twin' && (
           <>
             <Text style={styles.sectionTitle}>Family Behavioral DNA</Text>
@@ -447,16 +494,20 @@ export function DigitalTwinScreen({ navigation }: { navigation: { goBack: () => 
             </Card>
           </>
         )}
-      </ScrollView>
 
-      {tab === 'chat' && (
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.chatPanel}>
-          <ScrollView ref={chatScrollRef} style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 20 }}>
+        {tab === 'chat' && (
+          <View style={styles.chatPanel}>
             {chatHistory.length === 0 && (
               <View style={styles.chatEmpty}>
                 <Text style={styles.chatEmptyTitle}>Ask Your Digital Twin</Text>
-                <Text style={styles.chatEmptyDesc}>AI-powered insights about your family's patterns and future</Text>
-                {['What should we improve to raise our score?', 'Predict our finances for the next 6 months', 'What habits are hurting our family wellbeing?'].map((q) => (
+                <Text style={styles.chatEmptyDesc}>
+                  AI-powered insights about your family's patterns and future
+                </Text>
+                {[
+                  'What should we improve to raise our score?',
+                  'Predict our finances for the next 6 months',
+                  'What habits are hurting our family wellbeing?',
+                ].map((q) => (
                   <Pressable key={q} style={styles.chatStarter} onPress={() => handleChatSend(q)}>
                     <Text style={styles.chatStarterText}>{q}</Text>
                     <Ionicons name="arrow-forward" size={14} color="#2D2D8F" />
@@ -464,31 +515,71 @@ export function DigitalTwinScreen({ navigation }: { navigation: { goBack: () => 
                 ))}
               </View>
             )}
+
             {chatHistory.map((m, i) => (
-              <View key={i} style={[styles.chatBubble, m.role === 'user' ? styles.chatBubbleUser : styles.chatBubbleAI]}>
-                <Text style={m.role === 'user' ? styles.chatBubbleUserText : styles.chatBubbleAIText}>{m.content}</Text>
+              <View
+                key={i}
+                style={[
+                  styles.chatBubble,
+                  m.role === 'user' ? styles.chatBubbleUser : styles.chatBubbleAI,
+                ]}
+              >
+                <Text style={m.role === 'user' ? styles.chatBubbleUserText : styles.chatBubbleAIText}>
+                  {m.content}
+                </Text>
               </View>
             ))}
-            {chatLoading && <View style={styles.chatBubbleAI}><ActivityIndicator size="small" color="#2D2D8F" /></View>}
-            {chatSuggestions.length > 0 && !chatLoading && chatSuggestions.map((s) => (
-              <Pressable key={s} style={styles.chatSuggestion} onPress={() => handleChatSend(s)}>
-                <Text style={styles.chatSuggestionText}>{s}</Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-          <View style={styles.chatInputRow}>
-            <TextInput style={styles.chatInput} value={chatInput} onChangeText={setChatInput} placeholder="Ask about your family patterns..." placeholderTextColor={colors.textMuted} onSubmitEditing={() => handleChatSend()} returnKeyType="send" multiline />
-            <Pressable style={[styles.chatSendBtn, !chatInput.trim() && { opacity: 0.4 }]} onPress={() => handleChatSend()} disabled={!chatInput.trim()}>
-              <Ionicons name="send" size={18} color="#fff" />
-            </Pressable>
+
+            {chatLoading && (
+              <View style={[styles.chatBubble, styles.chatBubbleAI]}>
+                <ActivityIndicator size="small" color="#2D2D8F" />
+              </View>
+            )}
+
+            {chatSuggestions.length > 0 &&
+              !chatLoading &&
+              chatSuggestions.map((s) => (
+                <Pressable key={s} style={styles.chatSuggestion} onPress={() => handleChatSend(s)}>
+                  <Text style={styles.chatSuggestionText}>{s}</Text>
+                </Pressable>
+              ))}
           </View>
-        </KeyboardAvoidingView>
-      )}
+        )}
+            </ScrollView>
+          )}
+        </CollapsibleHeader>
+
+        {tab === 'chat' && (
+          <View
+            style={[
+              styles.chatInputDock,
+              {
+                paddingBottom: Math.max(insets.bottom, 12) + 72,
+              },
+            ]}
+          >
+            <ChatInputBar
+              value={chatInput}
+              onChangeText={setChatInput}
+              onSend={() => handleChatSend()}
+              onMicPressIn={voice.start}
+              onMicPressOut={voice.stop}
+              onMicCancel={voice.cancel}
+              isListening={voice.isListening}
+              partialTranscript={voice.partial}
+              placeholder="Ask about your family patterns..."
+              bottomPadding={8}
+              accentColor="#2D2D8F"
+            />
+          </View>
+        )}
+      </KeyboardAvoidingView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  flex: { flex: 1 },
   container: { flex: 1, backgroundColor: colors.background },
   header: { paddingHorizontal: 20, paddingBottom: 8 },
   headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
@@ -562,7 +653,7 @@ const styles = StyleSheet.create({
   customDesc: { fontSize: 13, color: colors.textSecondary, lineHeight: 20, marginBottom: 14 },
   customBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1.5, borderColor: colors.primary, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 16, alignSelf: 'flex-start' },
   customBtnText: { fontSize: 13, fontWeight: '700', color: colors.primary },
-  chatPanel: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: colors.background },
+  chatPanel: { flex: 1, minHeight: 420 },
   chatEmpty: { alignItems: 'center', paddingTop: 20, paddingBottom: 8 },
   chatEmptyTitle: { fontSize: 18, fontWeight: '800', color: colors.text, marginBottom: 6 },
   chatEmptyDesc: { fontSize: 13, color: colors.textSecondary, textAlign: 'center', marginBottom: 20 },
@@ -575,6 +666,15 @@ const styles = StyleSheet.create({
   chatBubbleAIText: { fontSize: 14, color: colors.text, lineHeight: 20 },
   chatSuggestion: { backgroundColor: '#EEEEF8', borderRadius: 20, paddingVertical: 8, paddingHorizontal: 14, marginBottom: 6, alignSelf: 'flex-start' },
   chatSuggestionText: { fontSize: 13, color: '#2D2D8F', fontWeight: '500' },
+  chatInputDock: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: colors.background,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
   chatInputRow: { flexDirection: 'row', alignItems: 'flex-end', padding: 12, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.background, gap: 10 },
   chatInput: { flex: 1, backgroundColor: colors.card, borderRadius: 22, paddingVertical: 10, paddingHorizontal: 16, fontSize: 14, color: colors.text, maxHeight: 100, borderWidth: 1, borderColor: colors.border },
   chatSendBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#2D2D8F', alignItems: 'center', justifyContent: 'center' },

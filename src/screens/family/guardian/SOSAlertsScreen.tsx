@@ -15,6 +15,7 @@ import { useGuardianStore } from '../../../store/useGuardianStore';
 import { useFamilyStore } from '../../../store/useFamilyStore';
 import { colors } from '../../../theme/colors';
 import { shadows } from '../../../theme/spacing';
+import { CollapsibleHeader } from '../../../components/common/CollapsibleHeader';
 
 function formatTime(iso: string): string {
   const d = new Date(iso);
@@ -59,27 +60,27 @@ export function SOSAlertsScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={['#0F2952', '#1E4A8A']}
-        style={[styles.header, { paddingTop: insets.top + 6 }]}
-      >
-        <View style={styles.headerRow}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={22} color="#fff" />
-          </Pressable>
-          <View style={styles.headerTextBlock}>
-            <Text style={styles.headerTitle}>SOS Alerts</Text>
-            {unresolvedCount > 0 && (
-              <Text style={styles.headerSubtitle}>{unresolvedCount} unresolved</Text>
-            )}
-          </View>
-          <View style={styles.sosIcon}>
-            <Ionicons name="warning" size={22} color={unresolvedCount > 0 ? '#FF6B6B' : 'rgba(255,255,255,0.5)'} />
-          </View>
-        </View>
-      </LinearGradient>
 
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
+        <LinearGradient
+          colors={['#0F2952', '#1E4A8A']}
+          style={[styles.header, { paddingTop: insets.top + 6 }]}
+        >
+          <View style={styles.headerRow}>
+            <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+              <Ionicons name="arrow-back" size={22} color="#fff" />
+            </Pressable>
+            <View style={styles.headerTextBlock}>
+              <Text style={styles.headerTitle}>SOS Alerts</Text>
+              {unresolvedCount > 0 && (
+                <Text style={styles.headerSubtitle}>{unresolvedCount} unresolved</Text>
+              )}
+            </View>
+            <View style={styles.sosIcon}>
+              <Ionicons name="warning" size={22} color={unresolvedCount > 0 ? '#FF6B6B' : 'rgba(255,255,255,0.5)'} />
+            </View>
+          </View>
+        </LinearGradient>
         {sorted.length === 0 && (
           <View style={styles.allClear}>
             <View style={styles.allClearIcon}>

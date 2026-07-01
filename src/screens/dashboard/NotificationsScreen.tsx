@@ -11,6 +11,7 @@ import { colors } from '../../theme/colors';
 import { Card } from '../../components/common/Card';
 import { useNotificationsStore, NotificationType } from '../../store/useNotificationsStore';
 import { getAllowedNotificationTypes } from '../../utils/roleFilters';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 
 const TYPE_CONFIG: Record<NotificationType, { icon: string; color: string; bg: string }> = {
   task: { icon: 'checkbox', color: '#2980B9', bg: '#EBF5FB' },
@@ -73,68 +74,104 @@ export function NotificationsScreen({ navigation }: any) {
     ]);
   };
 
+  const screenHeader = (
+    <LinearGradient
+      colors={['#0F2952', '#1E4A8A']}
+      style={[styles.header, { paddingTop: insets.top + 6 }]}
+    >
+      <View style={styles.headerRow}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+
+        <View style={{ flex: 1 }}>
+          <Text style={styles.headerTitle}>Notifications</Text>
+          {unreadCount > 0 && <Text style={styles.headerSub}>{unreadCount} unread</Text>}
+        </View>
+
+        <View style={styles.headerActions}>
+          {unreadCount > 0 && (
+            <Pressable onPress={markAllRead} style={styles.headerActionBtn}>
+              <Ionicons name="checkmark-done" size={16} color="#fff" />
+              <Text style={styles.headerActionText}>Mark all read</Text>
+            </Pressable>
+          )}
+          {roleNotifications.length > 0 && (
+            <Pressable
+              onPress={() =>
+                Alert.alert(
+                  'Clear All Notifications',
+                  'This will permanently remove all notifications. This cannot be undone.',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Clear All', style: 'destructive', onPress: clearAll },
+                  ]
+                )
+              }
+              style={[styles.headerActionBtn, styles.clearBtn]}
+            >
+              <Ionicons name="trash-outline" size={16} color="#FF6B6B" />
+              <Text style={[styles.headerActionText, { color: '#FF6B6B' }]}>Clear all</Text>
+            </Pressable>
+          )}
+        </View>
+      </View>
+
+      <View style={styles.filterRow}>
+        {(['all', 'unread'] as const).map((f) => (
+          <Pressable
+            key={f}
+            onPress={() => setFilter(f)}
+            style={[styles.filterChip, filter === f && styles.filterChipActive]}
+          >
+            <Text style={[styles.filterChipText, filter === f && styles.filterChipTextActive]}>
+              {f === 'all' ? 'All' : `Unread (${unreadCount})`}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+    </LinearGradient>
+  );
+
+  const screenCompact = (
+    <LinearGradient
+      colors={['#0F2952', '#1E4A8A']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 0 }}
+      style={{
+        paddingTop: insets.top,
+        paddingBottom: 10,
+        paddingHorizontal: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+      }}
+    >
+      <Pressable onPress={() => navigation.goBack()} style={{ marginRight: 12 }}>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </Pressable>
+      <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800', flex: 1 }}>Notifications</Text>
+      {unreadCount > 0 && (
+        <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 }}>
+          <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>{unreadCount}</Text>
+        </View>
+      )}
+    </LinearGradient>
+  );
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
 
-      <LinearGradient
-        colors={['#0F2952', '#1E4A8A']}
-        style={[styles.header, { paddingTop: insets.top }]}
-      >
-        <View style={styles.headerRow}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-
-          <View style={{ flex: 1 }}>
-            <Text style={styles.headerTitle}>Notifications</Text>
-            {unreadCount > 0 && <Text style={styles.headerSub}>{unreadCount} unread</Text>}
-          </View>
-
-          <View style={styles.headerActions}>
-            {unreadCount > 0 && (
-              <Pressable onPress={markAllRead} style={styles.headerActionBtn}>
-                <Ionicons name="checkmark-done" size={16} color="#fff" />
-                <Text style={styles.headerActionText}>Mark all read</Text>
-              </Pressable>
-            )}
-            {roleNotifications.length > 0 && (
-              <Pressable
-                onPress={() =>
-                  Alert.alert(
-                    'Clear All Notifications',
-                    'This will permanently remove all notifications. This cannot be undone.',
-                    [
-                      { text: 'Cancel', style: 'cancel' },
-                      { text: 'Clear All', style: 'destructive', onPress: clearAll },
-                    ]
-                  )
-                }
-                style={[styles.headerActionBtn, styles.clearBtn]}
-              >
-                <Ionicons name="trash-outline" size={16} color="#FF6B6B" />
-                <Text style={[styles.headerActionText, { color: '#FF6B6B' }]}>Clear all</Text>
-              </Pressable>
-            )}
-          </View>
-        </View>
-
-        <View style={styles.filterRow}>
-          {(['all', 'unread'] as const).map((f) => (
-            <Pressable
-              key={f}
-              onPress={() => setFilter(f)}
-              style={[styles.filterChip, filter === f && styles.filterChipActive]}
-            >
-              <Text style={[styles.filterChipText, filter === f && styles.filterChipTextActive]}>
-                {f === 'all' ? 'All' : `Unread (${unreadCount})`}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-      </LinearGradient>
-
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+          <ScrollView
+            contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+            onScroll={onScroll}
+            onScrollEndDrag={onScrollEndDrag}
+            onMomentumScrollEnd={onMomentumScrollEnd}
+            scrollEventThrottle={scrollEventThrottle}
+          >
         {displayed.length === 0 ? (
           <View style={styles.empty}>
             <Ionicons name="notifications-off-outline" size={64} color={colors.textMuted} />
@@ -199,7 +236,9 @@ export function NotificationsScreen({ navigation }: any) {
         {displayed.length > 0 && (
           <Text style={styles.hint}>Long press a notification to delete it</Text>
         )}
-      </ScrollView>
+          </ScrollView>
+        )}
+      </CollapsibleHeader>
     </View>
   );
 }

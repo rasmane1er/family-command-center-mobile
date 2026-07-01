@@ -11,6 +11,9 @@ import { useOperationsStore } from '../../store/useOperationsStore';
 import { getInvestmentAccounts } from '../../services/autoFillService';
 import type { PlaidInvestmentAccount } from '../../services/autoFillService';
 import type { Asset } from '../../types';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const CATEGORIES = ['Real Estate', 'Vehicle', 'Electronics', 'Furniture', 'Jewelry', 'Investments', 'Collectibles', 'Other'];
 
@@ -39,6 +42,7 @@ const categoryColors: Record<string, string> = {
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
 export function AssetsScreen({ navigation }: any) {
+  const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const { assets, vehicles, addAsset, deleteAsset } = useOperationsStore();
 
@@ -135,8 +139,7 @@ export function AssetsScreen({ navigation }: any) {
 
   const s = makeStyles(colors);
 
-  return (
-    <View style={s.container}>
+  const screenHeader = (
       <PremiumHeader
         title="Asset Tracker"
         onBack={() => navigation.goBack()}
@@ -155,8 +158,28 @@ export function AssetsScreen({ navigation }: any) {
           <Text style={s.totalSub}>{Object.keys(grouped).length} categories</Text>
         </View>
       </PremiumHeader>
+  );
+  const screenCompact = (
+    <LinearGradient
+      colors={['#1A1A2E', '#16213E']}
+      start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+      style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+    >
+      <Pressable onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
+        <Ionicons name="arrow-back" size={22} color="#fff" />
+      </Pressable>
+      <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>Assets</Text>
+      <View />
+    </LinearGradient>
+  );
 
-      <ScrollView contentContainerStyle={[s.content, { paddingBottom: 100 }]}>
+  return (
+    <View style={s.container}>
+
+
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+          <ScrollView contentContainerStyle={[s.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]} onScroll={onScroll} onScrollEndDrag={onScrollEndDrag} onMomentumScrollEnd={onMomentumScrollEnd} scrollEventThrottle={scrollEventThrottle}>
         {/* Plaid Investment Accounts Card */}
         {showPlaidCard && availableAccounts.length > 0 && (
           <View style={s.plaidCard}>
@@ -273,7 +296,9 @@ export function AssetsScreen({ navigation }: any) {
             <Text style={s.emptyDesc}>Tap + to add your first asset.</Text>
           </View>
         )}
-      </ScrollView>
+          </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       {/* Add Asset Modal */}
       <Modal visible={showAddModal} transparent animationType="slide">

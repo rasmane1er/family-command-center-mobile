@@ -11,13 +11,14 @@ import { format, differenceInDays } from 'date-fns';
 import * as Haptics from 'expo-haptics';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Sharing from 'expo-sharing';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { useTheme } from '../../theme/ThemeContext';
 import { shadows } from '../../theme/spacing';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
 import { Avatar } from '../../components/common/Avatar';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useOperationsStore } from '../../store/useOperationsStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import type { DocumentCategory, Document } from '../../types';
@@ -237,28 +238,24 @@ export function DocumentsScreen({ navigation, route }: any) {
 
   // ── render ─────────────────────────────────────────────────────────────────
 
-  return (
-    <View style={s.root}>
-      <StatusBar style="light" />
-      <LinearGradient colors={['#2980B9', '#1A5276']} style={[s.header, { paddingTop: insets.top + 6 }]}>
-        <View style={s.headerRow}>
-          <Pressable onPress={() => navigation.goBack()} style={s.back}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <View style={{ flex: 1 }}>
-            <Text style={s.headerTitle}>{vehicleLabel ? `${vehicleLabel} Docs` : 'Document Vault'}</Text>
-          </View>
-          <Pressable onPress={() => setShowModal(true)} style={s.headerBtn}>
-            <Ionicons name="add" size={26} color="#fff" />
-          </Pressable>
+  const screenHeader = (
+    <LinearGradient colors={['#2980B9', '#1A5276']} style={[s.header, { paddingTop: insets.top + 6 }]}>
+      <View style={s.headerRow}>
+        <Pressable onPress={() => navigation.goBack()} style={s.back}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <View style={{ flex: 1 }}>
+          <Text style={s.headerTitle}>{vehicleLabel ? `${vehicleLabel} Docs` : 'Document Vault'}</Text>
         </View>
-        <View style={s.headerMeta}>
-          <Ionicons name="lock-closed" size={16} color="rgba(255,255,255,0.7)" />
-          <Text style={s.headerMetaText}>{documents.length} document{documents.length !== 1 ? 's' : ''} • End-to-end encrypted</Text>
-        </View>
-      </LinearGradient>
+        <Pressable onPress={() => setShowModal(true)} style={s.headerBtn}>
+          <Ionicons name="add" size={26} color="#fff" />
+        </Pressable>
+      </View>
+      <View style={s.headerMeta}>
+        <Ionicons name="lock-closed" size={16} color="rgba(255,255,255,0.7)" />
+        <Text style={s.headerMetaText}>{documents.length} document{documents.length !== 1 ? 's' : ''} • End-to-end encrypted</Text>
+      </View>
 
-      {/* Category bar */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.catBar} contentContainerStyle={s.catBarContent}>
         {CATEGORIES_CONFIG.map((cat) => (
           <Pressable key={cat.key} onPress={() => setActiveCategory(cat.key)}
@@ -268,8 +265,35 @@ export function DocumentsScreen({ navigation, route }: any) {
           </Pressable>
         ))}
       </ScrollView>
+    </LinearGradient>
+  );
 
-      <ScrollView contentContainerStyle={[s.list, { paddingBottom: 100 }]}>
+  const screenCompact = (
+    <LinearGradient
+      colors={['#2980B9', '#1A5276']}
+      style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+    >
+      <Pressable onPress={() => navigation.goBack()} style={s.back}>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </Pressable>
+      <Text style={s.headerTitle}>{vehicleLabel ? `${vehicleLabel} Docs` : 'Documents'}</Text>
+      <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: '600' }}>{documents.length} docs</Text>
+    </LinearGradient>
+  );
+
+  return (
+    <View style={s.root}>
+      <StatusBar style="light" />
+
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+      <ScrollView
+        contentContainerStyle={[s.list, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+        onScroll={onScroll}
+        onScrollEndDrag={onScrollEndDrag}
+        onMomentumScrollEnd={onMomentumScrollEnd}
+        scrollEventThrottle={scrollEventThrottle}
+      >
         {filtered.map((doc) => {
           const catInfo = getCatInfo(doc.category);
           return (
@@ -344,6 +368,8 @@ export function DocumentsScreen({ navigation, route }: any) {
           <Text style={s.secText}>Documents are stored securely on-device. Only you and authorized family members can access them.</Text>
         </View>
       </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       {/* ── Document View Modal ──────────────────────────────────────────── */}
       <Modal visible={!!viewDoc} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setViewDoc(null)}>

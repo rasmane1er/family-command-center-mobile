@@ -34,7 +34,6 @@ import { BirthdayTrackerScreen } from '../screens/family/BirthdayTrackerScreen';
 import { FamilyBoardScreen } from '../screens/family/FamilyBoardScreen';
 import { GuardianDashboardScreen } from '../screens/family/guardian/GuardianDashboardScreen';
 import { ChildDeviceDetailScreen } from '../screens/family/guardian/ChildDeviceDetailScreen';
-import { GeofenceScreen } from '../screens/family/guardian/GeofenceScreen';
 import { ScreenTimeScreen } from '../screens/family/guardian/ScreenTimeScreen';
 import { SOSAlertsScreen } from '../screens/family/guardian/SOSAlertsScreen';
 import { ApprovalRequestsScreen } from '../screens/family/guardian/ApprovalRequestsScreen';
@@ -227,7 +226,6 @@ export function FamilyNavigator() {
       {/* Guardian / parental controls */}
       <Stack.Screen name="GuardianDashboard" component={GuardianDashboardScreen} />
       <Stack.Screen name="ChildDeviceDetail" component={ChildDeviceDetailScreen} />
-      <Stack.Screen name="Geofence" component={GeofenceScreen} />
       <Stack.Screen name="ScreenTime" component={ScreenTimeScreen} />
       <Stack.Screen name="SOSAlerts" component={SOSAlertsScreen} />
       <Stack.Screen name="ApprovalRequests" component={ApprovalRequestsScreen} />

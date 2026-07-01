@@ -27,6 +27,7 @@ import {
   type DayOfWeek,
 } from '../../store/useActivitiesStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 
 const ALL_DAYS: DayOfWeek[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -268,80 +269,100 @@ export function ActivitiesTrackerScreen({ navigation }: any) {
 
   const isEmpty = activities.length === 0;
 
+  const screenHeader = (
+    <LinearGradient
+      colors={['#00695C', '#00897B', '#26A69A']}
+      style={[styles.header, { paddingTop: insets.top + 6 }]}
+    >
+      <View style={styles.headerRow}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <Text style={styles.headerTitle}>Activities</Text>
+        <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
+          <Ionicons name="add" size={22} color="#fff" />
+        </Pressable>
+      </View>
+
+      <View style={styles.statsRow}>
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>{activities.length}</Text>
+          <Text style={styles.statLabel}>Total</Text>
+        </View>
+        <View style={[styles.statItem, styles.statBorder]}>
+          <Text style={styles.statValue}>${totalCost}/mo</Text>
+          <Text style={styles.statLabel}>Monthly Cost</Text>
+        </View>
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>{activeCount}</Text>
+          <Text style={styles.statLabel}>Active</Text>
+        </View>
+      </View>
+    </LinearGradient>
+  );
+
+  const screenCompact = (
+    <LinearGradient colors={['#00695C', '#00897B', '#26A69A']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </Pressable>
+      <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>Activities</Text>
+      <Text style={{ fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.8)' }}>${totalCost}/mo</Text>
+    </LinearGradient>
+  );
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient
-        colors={['#00695C', '#00897B', '#26A69A']}
-        style={[styles.header, { paddingTop: insets.top }]}
-      >
-        <View style={styles.headerRow}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <Text style={styles.headerTitle}>Activities</Text>
-          <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
-            <Ionicons name="add" size={22} color="#fff" />
-          </Pressable>
-        </View>
 
-        <View style={styles.statsRow}>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{activities.length}</Text>
-            <Text style={styles.statLabel}>Total</Text>
-          </View>
-          <View style={[styles.statItem, styles.statBorder]}>
-            <Text style={styles.statValue}>${totalCost}/mo</Text>
-            <Text style={styles.statLabel}>Monthly Cost</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{activeCount}</Text>
-            <Text style={styles.statLabel}>Active</Text>
-          </View>
-        </View>
-      </LinearGradient>
-
-      {/* Member tabs */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.memberScroll}
-        contentContainerStyle={styles.memberScrollContent}
-      >
-        <Pressable
-          onPress={() => { setSelectedMemberId('all'); Haptics.selectionAsync(); }}
-          style={[styles.memberTab, selectedMemberId === 'all' && styles.memberTabActive]}
-        >
-          <Text style={[styles.memberTabText, selectedMemberId === 'all' && styles.memberTabTextActive]}>
-            All
-          </Text>
-        </Pressable>
-        {members.map((m) => (
-          <Pressable
-            key={m.id}
-            onPress={() => { setSelectedMemberId(m.id); Haptics.selectionAsync(); }}
-            style={[styles.memberTab, selectedMemberId === m.id && styles.memberTabActive]}
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+          <ScrollView
+            onScroll={onScroll}
+            onScrollEndDrag={onScrollEndDrag}
+            onMomentumScrollEnd={onMomentumScrollEnd}
+            scrollEventThrottle={scrollEventThrottle}
+            contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
           >
-            <Avatar name={m.name} color={m.avatarColor} size={26} />
-            <Text style={[styles.memberTabText, selectedMemberId === m.id && styles.memberTabTextActive]}>
-              {m.name.split(' ')[0]}
-            </Text>
-          </Pressable>
-        ))}
-      </ScrollView>
+            {/* Member tabs */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.memberScroll}
+              contentContainerStyle={styles.memberScrollContent}
+            >
+              <Pressable
+                onPress={() => { setSelectedMemberId('all'); Haptics.selectionAsync(); }}
+                style={[styles.memberTab, selectedMemberId === 'all' && styles.memberTabActive]}
+              >
+                <Text style={[styles.memberTabText, selectedMemberId === 'all' && styles.memberTabTextActive]}>
+                  All
+                </Text>
+              </Pressable>
+              {members.map((m) => (
+                <Pressable
+                  key={m.id}
+                  onPress={() => { setSelectedMemberId(m.id); Haptics.selectionAsync(); }}
+                  style={[styles.memberTab, selectedMemberId === m.id && styles.memberTabActive]}
+                >
+                  <Avatar name={m.name} color={m.avatarColor} size={26} />
+                  <Text style={[styles.memberTabText, selectedMemberId === m.id && styles.memberTabTextActive]}>
+                    {m.name.split(' ')[0]}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
 
-      {/* Tabs */}
-      <View style={styles.tabs}>
-        {(['schedule', 'activities', 'costs'] as const).map((t) => (
-          <Pressable key={t} onPress={() => setActiveTab(t)} style={[styles.tab, activeTab === t && styles.tabActive]}>
-            <Text style={[styles.tabText, activeTab === t && styles.tabTextActive]}>
-              {t.charAt(0).toUpperCase() + t.slice(1)}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
+            {/* Tabs */}
+            <View style={styles.tabs}>
+              {(['schedule', 'activities', 'costs'] as const).map((t) => (
+                <Pressable key={t} onPress={() => setActiveTab(t)} style={[styles.tab, activeTab === t && styles.tabActive]}>
+                  <Text style={[styles.tabText, activeTab === t && styles.tabTextActive]}>
+                    {t.charAt(0).toUpperCase() + t.slice(1)}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
         {isEmpty && (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyEmoji}>🎯</Text>
@@ -437,8 +458,10 @@ export function ActivitiesTrackerScreen({ navigation }: any) {
               </Card>
             ))}
           </>
+          )}
+          </ScrollView>
         )}
-      </ScrollView>
+      </CollapsibleHeader>
 
       {/* Add Activity Modal */}
       <Modal

@@ -15,6 +15,7 @@ import { useFinanceStore } from '../../store/useFinanceStore';
 import { useAppStore } from '../../store/useAppStore';
 import { useAIStore } from '../../store/useAIStore';
 import { useHabitsStore } from '../../store/useHabitsStore';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 
 const { width } = Dimensions.get('window');
 
@@ -73,57 +74,92 @@ export function WeeklyReportScreen({ navigation: navProp }: any) {
     .sort((a, b) => b.pct - a.pct)
     .slice(0, 5);
 
+  const screenHeader = (
+    <LinearGradient colors={['#0D1B2A', '#0F2952', '#1E4A8A']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
+      <View style={styles.headerRow}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.headerTitle}>Weekly Family Report</Text>
+          <Text style={styles.headerSub}>
+            {format(weekStart, 'MMM d')} – {format(weekEnd, 'MMM d, yyyy')}
+          </Text>
+        </View>
+        <View style={styles.weekNav}>
+          <Pressable onPress={() => setWeekOffset(weekOffset + 1)} style={styles.weekBtn}>
+            <Ionicons name="chevron-back" size={18} color="rgba(255,255,255,0.7)" />
+          </Pressable>
+          <Pressable onPress={() => setWeekOffset(Math.max(0, weekOffset - 1))} style={styles.weekBtn}>
+            <Ionicons name="chevron-forward" size={18} color={weekOffset === 0 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.7)'} />
+          </Pressable>
+        </View>
+      </View>
+
+      <View style={styles.scoreHero}>
+        <View style={styles.scoreCenter}>
+          <Text style={styles.scoreLabel}>FAMILY HEALTH SCORE</Text>
+          <Text style={styles.scoreValue}>{healthScore.overall}</Text>
+          <View style={styles.scoreTrend}>
+            <Ionicons name="arrow-up" size={14} color="#4EECD0" />
+            <Text style={styles.scoreTrendText}>+{Math.max(1, Math.round(healthScore.overall * 0.05))} pts</Text>
+          </View>
+        </View>
+        <View style={styles.scoreStats}>
+          {[
+            { label: 'Tasks Done', value: `${completedTasks}`, icon: 'checkmark-circle' },
+            { label: 'Pending', value: `${pendingTasks}`, icon: 'time' },
+            { label: 'Savings', value: `${Math.round(savingsRate * 100)}%`, icon: 'wallet' },
+            { label: 'Members', value: `${members.length}`, icon: 'people' },
+          ].map((s) => (
+            <View key={s.label} style={styles.scoreStat}>
+              <Ionicons name={s.icon as any} size={14} color="rgba(255,255,255,0.6)" />
+              <Text style={styles.scoreStatValue}>{s.value}</Text>
+              <Text style={styles.scoreStatLabel}>{s.label}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+    </LinearGradient>
+  );
+
+  const screenCompact = (
+    <LinearGradient
+      colors={['#0D1B2A', '#1E4A8A']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 0 }}
+      style={{
+        paddingTop: insets.top,
+        paddingBottom: 10,
+        paddingHorizontal: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+      }}
+    >
+      <Pressable onPress={() => navigation.goBack()} style={{ marginRight: 12 }}>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </Pressable>
+      <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800', flex: 1 }}>Weekly Report</Text>
+      <View style={{ backgroundColor: '#4EECD0', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 }}>
+        <Text style={{ color: '#0D1B2A', fontSize: 12, fontWeight: '800' }}>{healthScore.overall}</Text>
+      </View>
+    </LinearGradient>
+  );
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#0D1B2A', '#0F2952', '#1E4A8A']} style={[styles.header, { paddingTop: insets.top }]}>
-        <View style={styles.headerRow}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.headerTitle}>Weekly Family Report</Text>
-            <Text style={styles.headerSub}>
-              {format(weekStart, 'MMM d')} – {format(weekEnd, 'MMM d, yyyy')}
-            </Text>
-          </View>
-          <View style={styles.weekNav}>
-            <Pressable onPress={() => setWeekOffset(weekOffset + 1)} style={styles.weekBtn}>
-              <Ionicons name="chevron-back" size={18} color="rgba(255,255,255,0.7)" />
-            </Pressable>
-            <Pressable onPress={() => setWeekOffset(Math.max(0, weekOffset - 1))} style={styles.weekBtn}>
-              <Ionicons name="chevron-forward" size={18} color={weekOffset === 0 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.7)'} />
-            </Pressable>
-          </View>
-        </View>
 
-        <View style={styles.scoreHero}>
-          <View style={styles.scoreCenter}>
-            <Text style={styles.scoreLabel}>FAMILY HEALTH SCORE</Text>
-            <Text style={styles.scoreValue}>{healthScore.overall}</Text>
-            <View style={styles.scoreTrend}>
-              <Ionicons name="arrow-up" size={14} color="#4EECD0" />
-              <Text style={styles.scoreTrendText}>+{Math.max(1, Math.round(healthScore.overall * 0.05))} pts</Text>
-            </View>
-          </View>
-          <View style={styles.scoreStats}>
-            {[
-              { label: 'Tasks Done', value: `${completedTasks}`, icon: 'checkmark-circle' },
-              { label: 'Pending', value: `${pendingTasks}`, icon: 'time' },
-              { label: 'Savings', value: `${Math.round(savingsRate * 100)}%`, icon: 'wallet' },
-              { label: 'Members', value: `${members.length}`, icon: 'people' },
-            ].map((s) => (
-              <View key={s.label} style={styles.scoreStat}>
-                <Ionicons name={s.icon as any} size={14} color="rgba(255,255,255,0.6)" />
-                <Text style={styles.scoreStatValue}>{s.value}</Text>
-                <Text style={styles.scoreStatLabel}>{s.label}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-      </LinearGradient>
-
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+          <ScrollView
+            contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+            onScroll={onScroll}
+            onScrollEndDrag={onScrollEndDrag}
+            onMomentumScrollEnd={onMomentumScrollEnd}
+            scrollEventThrottle={scrollEventThrottle}
+          >
         {/* Score Trend Chart */}
         <Text style={styles.sectionTitle}>Health Score Trend</Text>
         <Card variant="elevated" style={styles.chartCard}>
@@ -324,7 +360,9 @@ export function WeeklyReportScreen({ navigation: navProp }: any) {
           <Ionicons name="share-outline" size={18} color="#fff" />
           <Text style={styles.shareBtnText}>Share Weekly Report</Text>
         </Pressable>
-      </ScrollView>
+          </ScrollView>
+        )}
+      </CollapsibleHeader>
     </View>
   );
 }

@@ -7,6 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useNavigation } from '@react-navigation/native';
 import { Avatar } from '../../components/common/Avatar';
 import { Card } from '../../components/common/Card';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { colors } from '../../theme/colors';
 
@@ -40,46 +41,65 @@ export function MemberDetailsScreen({ route, navigation: navProp }: any) {
   const pendingTasks = tasks.filter((t) => t.status === 'pending').length;
   const overdueTasks = tasks.filter((t) => t.status === 'overdue').length;
 
-  return (
-    <View style={styles.container}>
-      <StatusBar style="light" />
+  const screenHeader = (
+    <LinearGradient
+      colors={[member.avatarColor + 'DD', member.avatarColor + '99', colors.background]}
+      style={[styles.header, { paddingTop: insets.top + 6 }]}
+    >
+      <Pressable onPress={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()} style={styles.backBtn}>
+        <Ionicons name="arrow-back" size={22} color="#fff" />
+      </Pressable>
 
-      <LinearGradient
-        colors={[member.avatarColor + 'DD', member.avatarColor + '99', colors.background]}
-        style={[styles.header, { paddingTop: insets.top + 8 }]}
-      >
-        <Pressable onPress={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={22} color="#fff" />
-        </Pressable>
-
-        <View style={styles.headerContent}>
-          <Avatar name={member.name} color={member.avatarColor} size={80} />
-          <Text style={styles.name}>{member.name}</Text>
-          <View style={styles.rolePill}>
-            <Text style={styles.roleText}>{roleLabel}</Text>
+      <View style={styles.headerContent}>
+        <Avatar name={member.name} color={member.avatarColor} size={80} />
+        <Text style={styles.name}>{member.name}</Text>
+        <View style={styles.rolePill}>
+          <Text style={styles.roleText}>{roleLabel}</Text>
+        </View>
+        <View style={styles.statsRow}>
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{member.points.toLocaleString()}</Text>
+            <Text style={styles.statLabel}>Points</Text>
           </View>
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{member.points.toLocaleString()}</Text>
-              <Text style={styles.statLabel}>Points</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>Lv {member.level ?? 1}</Text>
-              <Text style={styles.statLabel}>Level</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: member.status === 'active' ? colors.success : colors.warning }]}>
-                {member.status ?? 'active'}
-              </Text>
-              <Text style={styles.statLabel}>Status</Text>
-            </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>Lv {member.level ?? 1}</Text>
+            <Text style={styles.statLabel}>Level</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={[styles.statValue, { color: member.status === 'active' ? colors.success : colors.warning }]}>
+              {member.status ?? 'active'}
+            </Text>
+            <Text style={styles.statLabel}>Status</Text>
           </View>
         </View>
-      </LinearGradient>
+      </View>
+    </LinearGradient>
+  );
 
-      <ScrollView contentContainerStyle={styles.content}>
+  const screenCompact = (
+    <View style={{ backgroundColor: member.avatarColor + 'DD', paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Pressable onPress={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()} style={styles.backBtn}>
+        <Ionicons name="arrow-back" size={22} color="#fff" />
+      </Pressable>
+      <Text style={styles.name}>{member.name}</Text>
+      <View style={{ width: 40 }} />
+    </View>
+  );
+
+  return (
+    <>
+      <StatusBar style="light" />
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+        <ScrollView
+          contentContainerStyle={[styles.content, { paddingTop: contentPaddingTop }]}
+          onScroll={onScroll}
+          onScrollEndDrag={onScrollEndDrag}
+          onMomentumScrollEnd={onMomentumScrollEnd}
+          scrollEventThrottle={scrollEventThrottle}
+        >
         <Card style={styles.card}>
           <Text style={styles.cardTitle}>Overview</Text>
           <View style={styles.overviewGrid}>
@@ -147,7 +167,9 @@ export function MemberDetailsScreen({ route, navigation: navProp }: any) {
           )}
         </Card>
       </ScrollView>
-    </View>
+        )}
+      </CollapsibleHeader>
+    </>
   );
 }
 

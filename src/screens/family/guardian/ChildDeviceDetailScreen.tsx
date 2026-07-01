@@ -15,6 +15,7 @@ import { useGuardianStore } from '../../../store/useGuardianStore';
 import { useFamilyStore } from '../../../store/useFamilyStore';
 import { colors } from '../../../theme/colors';
 import { shadows } from '../../../theme/spacing';
+import { CollapsibleHeader } from '../../../components/common/CollapsibleHeader';
 import type { ChildDeviceStatus } from '../../../types';
 import { GuardianNative, type NativeAppUsage } from '../../../native/GuardianNative';
 
@@ -124,44 +125,44 @@ export function ChildDeviceDetailScreen({ navigation, route }: any) {
 
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={['#0F2952', '#1E4A8A']}
-        style={[styles.header, { paddingTop: insets.top + 6 }]}
-      >
-        <View style={styles.headerRow}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={22} color="#fff" />
-          </Pressable>
-          <View style={styles.headerTextBlock}>
-            <Text style={styles.headerTitle}>{member?.name ?? 'Unknown'}</Text>
-            <Text style={styles.headerSubtitle}>{device.deviceName}</Text>
-          </View>
-          <View style={[styles.statusBadge, { backgroundColor: statusColors[device.status] + '33' }]}>
-            <View style={[styles.statusDot, { backgroundColor: statusColors[device.status] }]} />
-            <Text style={[styles.statusLabel, { color: '#fff' }]}>
-              {statusLabels[device.status]}
-            </Text>
-          </View>
-        </View>
-
-        {/* Device meta row */}
-        <View style={styles.headerMeta}>
-          <View style={styles.metaItem}>
-            <Ionicons name={device.platform === 'ios' ? 'logo-apple' : 'logo-android'} size={14} color="rgba(255,255,255,0.7)" />
-            <Text style={styles.metaText}>{device.platform === 'ios' ? 'iOS' : 'Android'}</Text>
-          </View>
-          <View style={styles.metaItem}>
-            <Ionicons name="battery-half" size={14} color="rgba(255,255,255,0.7)" />
-            <Text style={styles.metaText}>{device.batteryLevel}%</Text>
-          </View>
-          <View style={styles.metaItem}>
-            <Ionicons name="time-outline" size={14} color="rgba(255,255,255,0.7)" />
-            <Text style={styles.metaText}>{formatLastSeen(device.lastSeen)}</Text>
-          </View>
-        </View>
-      </LinearGradient>
 
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
+        <LinearGradient
+          colors={['#0F2952', '#1E4A8A']}
+          style={[styles.header, { paddingTop: insets.top + 6 }]}
+        >
+          <View style={styles.headerRow}>
+            <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+              <Ionicons name="arrow-back" size={22} color="#fff" />
+            </Pressable>
+            <View style={styles.headerTextBlock}>
+              <Text style={styles.headerTitle}>{member?.name ?? 'Unknown'}</Text>
+              <Text style={styles.headerSubtitle}>{device.deviceName}</Text>
+            </View>
+            <View style={[styles.statusBadge, { backgroundColor: statusColors[device.status] + '33' }]}>
+              <View style={[styles.statusDot, { backgroundColor: statusColors[device.status] }]} />
+              <Text style={[styles.statusLabel, { color: '#fff' }]}>
+                {statusLabels[device.status]}
+              </Text>
+            </View>
+          </View>
+
+          {/* Device meta row */}
+          <View style={styles.headerMeta}>
+            <View style={styles.metaItem}>
+              <Ionicons name={device.platform === 'ios' ? 'logo-apple' : 'logo-android'} size={14} color="rgba(255,255,255,0.7)" />
+              <Text style={styles.metaText}>{device.platform === 'ios' ? 'iOS' : 'Android'}</Text>
+            </View>
+            <View style={styles.metaItem}>
+              <Ionicons name="battery-half" size={14} color="rgba(255,255,255,0.7)" />
+              <Text style={styles.metaText}>{device.batteryLevel}%</Text>
+            </View>
+            <View style={styles.metaItem}>
+              <Ionicons name="time-outline" size={14} color="rgba(255,255,255,0.7)" />
+              <Text style={styles.metaText}>{formatLastSeen(device.lastSeen)}</Text>
+            </View>
+          </View>
+        </LinearGradient>
         {/* Quick commands */}
         <View style={styles.commandsRow}>
           {[

@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
 import { Card } from '../../components/common/Card';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 
 const EMERGENCY_NUMBERS = [
   { label: 'Emergency', number: '911', icon: 'warning', color: '#E74C3C', bg: '#FDEDEC' },
@@ -78,31 +79,53 @@ export function EmergencyScreen({ navigation }: any) {
 
   const completedChecks = SAFETY_CHECKLIST.filter((c) => c.done).length;
 
+  const screenHeader = (
+    <LinearGradient colors={['#C0392B', '#96281B']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
+      <View style={styles.headerTop}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <Text style={styles.headerTitle}>Emergency Center</Text>
+        <View style={styles.headerPlaceholder} />
+      </View>
+
+      <View style={styles.safetyScore}>
+        <Ionicons name="shield-checkmark" size={28} color="#fff" />
+        <View style={{ marginLeft: 12 }}>
+          <Text style={styles.safetyScoreValue}>{completedChecks}/{SAFETY_CHECKLIST.length}</Text>
+          <Text style={styles.safetyScoreLabel}>Safety checks complete</Text>
+        </View>
+        <View style={styles.safetyRing}>
+          <Text style={styles.safetyPct}>{Math.round((completedChecks / SAFETY_CHECKLIST.length) * 100)}%</Text>
+        </View>
+      </View>
+    </LinearGradient>
+  );
+
+  const screenCompact = (
+    <LinearGradient
+      colors={['#C0392B', '#96281B']}
+      style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+    >
+      <View style={styles.headerPlaceholder} />
+      <Text style={styles.headerTitle}>Emergency</Text>
+      <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: '600' }}>{Math.round((completedChecks / SAFETY_CHECKLIST.length) * 100)}% safe</Text>
+    </LinearGradient>
+  );
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#C0392B', '#96281B']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
-        <View style={styles.headerTop}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <Text style={styles.headerTitle}>Emergency Center</Text>
-          <View style={styles.headerPlaceholder} />
-        </View>
 
-        <View style={styles.safetyScore}>
-          <Ionicons name="shield-checkmark" size={28} color="#fff" />
-          <View style={{ marginLeft: 12 }}>
-            <Text style={styles.safetyScoreValue}>{completedChecks}/{SAFETY_CHECKLIST.length}</Text>
-            <Text style={styles.safetyScoreLabel}>Safety checks complete</Text>
-          </View>
-          <View style={styles.safetyRing}>
-            <Text style={styles.safetyPct}>{Math.round((completedChecks / SAFETY_CHECKLIST.length) * 100)}%</Text>
-          </View>
-        </View>
-      </LinearGradient>
-
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+        onScroll={onScroll}
+        onScrollEndDrag={onScrollEndDrag}
+        onMomentumScrollEnd={onMomentumScrollEnd}
+        scrollEventThrottle={scrollEventThrottle}
+      >
         {/* Emergency Numbers */}
         <Text style={styles.sectionTitle}>Emergency Numbers</Text>
         <View style={styles.emergencyGrid}>
@@ -214,6 +237,8 @@ export function EmergencyScreen({ navigation }: any) {
           </View>
         </LinearGradient>
       </ScrollView>
+        )}
+      </CollapsibleHeader>
     </View>
   );
 }

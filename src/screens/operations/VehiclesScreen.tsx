@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format, differenceInDays } from 'date-fns';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../theme/ThemeContext';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { shadows } from '../../theme/spacing';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
@@ -212,23 +213,44 @@ export function VehiclesScreen({ navigation }: any) {
 
   // ── render ─────────────────────────────────────────────────────────────────
 
+  const screenHeader = (
+    <LinearGradient colors={['#E74C3C', '#C0392B']} style={[s.header, { paddingTop: insets.top + 6 }]}>
+      <View style={s.headerRow}>
+        <Pressable onPress={() => navigation.goBack()} style={s.back}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <Text style={s.headerTitle}>Vehicles</Text>
+        <Pressable onPress={() => setShowAdd(true)} style={s.headerBtn}>
+          <Ionicons name="add" size={26} color="#fff" />
+        </Pressable>
+      </View>
+      <Text style={s.headerSub}>{vehicles.length} vehicle{vehicles.length !== 1 ? 's' : ''} in your garage</Text>
+    </LinearGradient>
+  );
+
+  const screenCompact = (
+    <LinearGradient colors={['#E74C3C', '#C0392B']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Pressable onPress={() => navigation.goBack()} style={s.back}>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </Pressable>
+      <Text style={s.headerTitle}>Vehicles</Text>
+      <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', fontWeight: '600' }}>{vehicles.length} vehicles</Text>
+    </LinearGradient>
+  );
+
   return (
     <View style={s.root}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#E74C3C', '#C0392B']} style={[s.header, { paddingTop: insets.top + 6 }]}>
-        <View style={s.headerRow}>
-          <Pressable onPress={() => navigation.goBack()} style={s.back}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <Text style={s.headerTitle}>Vehicles</Text>
-          <Pressable onPress={() => setShowAdd(true)} style={s.headerBtn}>
-            <Ionicons name="add" size={26} color="#fff" />
-          </Pressable>
-        </View>
-        <Text style={s.headerSub}>{vehicles.length} vehicle{vehicles.length !== 1 ? 's' : ''} in your garage</Text>
-      </LinearGradient>
 
-      <ScrollView contentContainerStyle={[s.list, { paddingBottom: 100 }]}>
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+        <ScrollView
+          contentContainerStyle={[s.list, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+          onScroll={onScroll}
+          onScrollEndDrag={onScrollEndDrag}
+          onMomentumScrollEnd={onMomentumScrollEnd}
+          scrollEventThrottle={scrollEventThrottle}
+        >
         {vehicles.map((vehicle) => {
           const driver = members.find((m) => m.id === vehicle.primaryDriver);
           const insuranceDays    = vehicle.insuranceExpiry ? differenceInDays(new Date(vehicle.insuranceExpiry), new Date()) : null;
@@ -403,6 +425,8 @@ export function VehiclesScreen({ navigation }: any) {
           </View>
         )}
       </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       {/* ── Add Vehicle Modal ──────────────────────────────────────────────── */}
       <Modal visible={showAdd} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowAdd(false)}>

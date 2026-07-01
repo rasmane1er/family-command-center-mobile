@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
@@ -498,61 +499,82 @@ export function CarpoolManagerScreen({ navigation }: any) {
     );
   };
 
+  const screenHeader = (
+    <LinearGradient
+      colors={['#0D47A1', '#1565C0', '#1976D2']}
+      style={[styles.header, { paddingTop: insets.top + 6 }]}
+    >
+      <View style={styles.headerRow}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.headerTitle}>Carpool Manager 🚗</Text>
+          <Text style={styles.headerSub}>School & activity rides</Text>
+        </View>
+        <Pressable
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setShowAddRoute(true); }}
+          style={styles.addBtn}
+        >
+          <Ionicons name="add" size={22} color="#fff" />
+        </Pressable>
+      </View>
+
+      <View style={styles.statsRow}>
+        {[
+          { label: 'Active Routes', value: activeRoutes.length },
+          { label: 'Total Riders', value: totalParticipants },
+          { label: 'Next Carpool', value: nextCarpool, small: true },
+        ].map((s, i) => (
+          <View key={i} style={[styles.statItem, i < 2 && styles.statBorder]}>
+            <Text style={[styles.statVal, s.small && { fontSize: 14 }]}>{s.value}</Text>
+            <Text style={styles.statLabel}>{s.label}</Text>
+          </View>
+        ))}
+      </View>
+    
+    <View style={styles.tabs}>
+            {(['routes', 'schedule', 'history'] as Tab[]).map((tab) => (
+              <Pressable
+                key={tab}
+                onPress={() => setActiveTab(tab)}
+                style={[styles.tab, activeTab === tab && styles.tabActive]}
+              >
+                <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
+                  {tab === 'routes' ? 'Routes' : tab === 'schedule' ? 'Schedule' : 'History'}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+</LinearGradient>
+  );
+
+  const screenCompact = (
+    <LinearGradient colors={['#0D47A1', '#1565C0']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </Pressable>
+      <Text style={styles.headerTitle}>Carpool Manager</Text>
+      <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, fontWeight: '700' }}>{activeRoutes.length} routes</Text>
+    </LinearGradient>
+  );
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient
-        colors={['#0D47A1', '#1565C0', '#1976D2']}
-        style={[styles.header, { paddingTop: insets.top }]}
-      >
-        <View style={styles.headerRow}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.headerTitle}>Carpool Manager 🚗</Text>
-            <Text style={styles.headerSub}>School & activity rides</Text>
-          </View>
-          <Pressable
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setShowAddRoute(true); }}
-            style={styles.addBtn}
-          >
-            <Ionicons name="add" size={22} color="#fff" />
-          </Pressable>
-        </View>
 
-        <View style={styles.statsRow}>
-          {[
-            { label: 'Active Routes', value: activeRoutes.length },
-            { label: 'Total Riders', value: totalParticipants },
-            { label: 'Next Carpool', value: nextCarpool, small: true },
-          ].map((s, i) => (
-            <View key={i} style={[styles.statItem, i < 2 && styles.statBorder]}>
-              <Text style={[styles.statVal, s.small && { fontSize: 14 }]}>{s.value}</Text>
-              <Text style={styles.statLabel}>{s.label}</Text>
-            </View>
-          ))}
-        </View>
-      </LinearGradient>
+      
 
-      <View style={styles.tabs}>
-        {(['routes', 'schedule', 'history'] as Tab[]).map((tab) => (
-          <Pressable
-            key={tab}
-            onPress={() => setActiveTab(tab)}
-            style={[styles.tab, activeTab === tab && styles.tabActive]}
-          >
-            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-              {tab === 'routes' ? 'Routes' : tab === 'schedule' ? 'Schedule' : 'History'}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      <ScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: 100 }]}
-        showsVerticalScrollIndicator={false}
-      >
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+        <ScrollView
+          contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+          showsVerticalScrollIndicator={false}
+          onScroll={onScroll}
+          onScrollEndDrag={onScrollEndDrag}
+          onMomentumScrollEnd={onMomentumScrollEnd}
+          scrollEventThrottle={scrollEventThrottle}
+        >
         {routes.length === 0 && (
           <View style={styles.emptyState}>
             <Text style={{ fontSize: 60 }}>🚗</Text>
@@ -583,7 +605,9 @@ export function CarpoolManagerScreen({ navigation }: any) {
         {activeTab === 'history' && routes.length > 0 && (
           <HistoryTab routes={routes} />
         )}
-      </ScrollView>
+        </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       <AddRouteModal
         visible={showAddRoute}

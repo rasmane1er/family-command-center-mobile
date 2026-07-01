@@ -16,6 +16,7 @@ import {
   SHOP_CAT_CONFIG, CAT_ORDER,
 } from '../../store/useShoppingStore';
 import { useOperationsStore } from '../../store/useOperationsStore';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 
 const UNITS = ['ea', 'lbs', 'oz', 'g', 'kg', 'cup', 'tbsp', 'tsp', 'bag', 'box', 'bottle', 'can', 'pack', 'bunch', 'carton', 'gallon', 'loaf', 'jar', 'pint', 'block'];
 
@@ -100,42 +101,61 @@ export function ShoppingListScreen({ navigation }: any) {
 
   const s = makeStyles(colors);
 
+  const screenHeader = (
+        <PremiumHeader
+          title="Shopping List"
+          colors={['#1A6B3C', '#27AE60']}
+          onBack={() => navigation.goBack()}
+          rightAction={
+            <Pressable onPress={() => clearChecked()} style={s.clearBtn}>
+              <Ionicons name="checkmark-done" size={20} color="rgba(255,255,255,0.8)" />
+            </Pressable>
+          }
+        >
+          <View style={s.budgetRow}>
+            <View>
+              <Text style={s.budgetLabel}>BUDGET</Text>
+              <Text style={s.budgetValue}>${budget.toFixed(0)}</Text>
+            </View>
+            <View style={s.budgetCenter}>
+              <ProgressBar
+                progress={Math.min(totalCost / budget, 1)}
+                color={totalCost > budget ? '#FF6B6B' : '#fff'}
+                backgroundColor="rgba(255,255,255,0.2)"
+                height={8}
+              />
+              <Text style={s.budgetHint}>
+                ${totalCost.toFixed(2)} estimated · ${(budget - totalCost).toFixed(2)} left
+              </Text>
+            </View>
+            <View style={s.budgetRight}>
+              <Text style={s.budgetLabel}>IN CART</Text>
+              <Text style={s.budgetValue}>{checked.length}/{items.length}</Text>
+            </View>
+          </View>
+        </PremiumHeader>
+  );
+  const screenCompact = (
+    <LinearGradient
+      colors={['#1A6B3C', '#27AE60']}
+      start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+      style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+    >
+      <Pressable onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
+        <Ionicons name="arrow-back" size={22} color="#fff" />
+      </Pressable>
+      <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>Shopping List</Text>
+      <View />
+    </LinearGradient>
+  );
+
   return (
     <View style={s.container}>
-      <PremiumHeader
-        title="Shopping List"
-        colors={['#1A6B3C', '#27AE60']}
-        onBack={() => navigation.goBack()}
-        rightAction={
-          <Pressable onPress={() => clearChecked()} style={s.clearBtn}>
-            <Ionicons name="checkmark-done" size={20} color="rgba(255,255,255,0.8)" />
-          </Pressable>
-        }
-      >
-        <View style={s.budgetRow}>
-          <View>
-            <Text style={s.budgetLabel}>BUDGET</Text>
-            <Text style={s.budgetValue}>${budget.toFixed(0)}</Text>
-          </View>
-          <View style={s.budgetCenter}>
-            <ProgressBar
-              progress={Math.min(totalCost / budget, 1)}
-              color={totalCost > budget ? '#FF6B6B' : '#fff'}
-              backgroundColor="rgba(255,255,255,0.2)"
-              height={8}
-            />
-            <Text style={s.budgetHint}>
-              ${totalCost.toFixed(2)} estimated · ${(budget - totalCost).toFixed(2)} left
-            </Text>
-          </View>
-          <View style={s.budgetRight}>
-            <Text style={s.budgetLabel}>IN CART</Text>
-            <Text style={s.budgetValue}>{checked.length}/{items.length}</Text>
-          </View>
-        </View>
-      </PremiumHeader>
 
-      <ScrollView contentContainerStyle={[s.content, { paddingBottom: 100 }]} showsVerticalScrollIndicator={false}>
+
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+          <ScrollView contentContainerStyle={[s.content, { paddingBottom: 100 }]} showsVerticalScrollIndicator={false} onScroll={onScroll} onScrollEndDrag={onScrollEndDrag} onMomentumScrollEnd={onMomentumScrollEnd} scrollEventThrottle={scrollEventThrottle}>
         {/* Pantry low-stock suggestions */}
         {lowStockSuggestions.length > 0 && (
           <View style={s.suggestSection}>
@@ -225,7 +245,9 @@ export function ShoppingListScreen({ navigation }: any) {
             <Text style={s.emptyDesc}>Tap + to add items or let us suggest from your pantry.</Text>
           </View>
         )}
-      </ScrollView>
+          </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       {/* FAB */}
       <Pressable onPress={() => setShowAdd(true)} style={[s.fab, { bottom: insets.bottom + 24 }]}>

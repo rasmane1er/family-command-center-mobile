@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { shadows } from '../../theme/spacing';
 import { Card } from '../../components/common/Card';
 import { ProgressBar } from '../../components/common/ProgressBar';
@@ -89,38 +90,61 @@ export function TimeEconomyScreen({ navigation }: any) {
 
   const totalHours = Object.values(categoryTotals).reduce((s, v) => s + v, 0);
 
+  const screenHeader = (
+    <LinearGradient colors={['#004D40', '#00796B']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
+      <View style={styles.headerTop}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <Text style={styles.headerTitle}>Time Economy</Text>
+        <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setNewMemberIdModal(activeMemberId); setShowModal(true); }} style={styles.addBtn}>
+          <Ionicons name="add" size={24} color="#fff" />
+        </Pressable>
+      </View>
+
+      <View style={styles.timeCircle}>
+        <Text style={styles.timeVal}>168</Text>
+        <Text style={styles.timeLabel}>Hours per week</Text>
+        <Text style={styles.timeSub}>How is your family spending them?</Text>
+      </View>
+    
+    <View style={styles.tabs}>
+            {(['overview', 'schedule', 'insights'] as const).map((tab) => (
+              <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
+                <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
+                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+</LinearGradient>
+  );
+
+  const screenCompact = (
+    <LinearGradient colors={['#004D40', '#00796B']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </Pressable>
+      <Text style={styles.headerTitle}>Time Economy</Text>
+      <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', fontWeight: '600' }}>168h</Text>
+    </LinearGradient>
+  );
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#004D40', '#00796B']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
-        <View style={styles.headerTop}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <Text style={styles.headerTitle}>Time Economy</Text>
-          <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setNewMemberIdModal(activeMemberId); setShowModal(true); }} style={styles.addBtn}>
-            <Ionicons name="add" size={24} color="#fff" />
-          </Pressable>
-        </View>
 
-        <View style={styles.timeCircle}>
-          <Text style={styles.timeVal}>168</Text>
-          <Text style={styles.timeLabel}>Hours per week</Text>
-          <Text style={styles.timeSub}>How is your family spending them?</Text>
-        </View>
-      </LinearGradient>
+      
 
-      <View style={styles.tabs}>
-        {(['overview', 'schedule', 'insights'] as const).map((tab) => (
-          <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
-            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+        <ScrollView
+          contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+          onScroll={onScroll}
+          onScrollEndDrag={onScrollEndDrag}
+          onMomentumScrollEnd={onMomentumScrollEnd}
+          scrollEventThrottle={scrollEventThrottle}
+        >
         {activeTab === 'overview' && (
           <>
             <Text style={styles.sectionTitle}>Family Time Allocation</Text>
@@ -233,6 +257,8 @@ export function TimeEconomyScreen({ navigation }: any) {
           </Card>
         ))}
       </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet">
         <ScrollView style={styles.modal} contentContainerStyle={{ paddingBottom: 40 }}>

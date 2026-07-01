@@ -14,6 +14,7 @@ import { useWealthStore } from '../../store/useWealthStore';
 import { getAccounts } from '../../services/plaidService';
 import type { PlaidAccount } from '../../types';
 import type { WealthCategory } from '../../types';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 
 const WEALTH_CATEGORIES: WealthCategory[] = ['stocks', 'bonds', 'real_estate', 'crypto', 'savings', 'retirement', 'business', 'other'];
 
@@ -121,43 +122,63 @@ export function WealthBuilderScreen({ navigation }: any) {
     { icon: 'school', color: '#2980B9', text: "Aiden's college fund is on track for 64% of 4-year tuition at current growth rate", label: 'Education' },
   ];
 
+  const screenHeader = (
+        <LinearGradient colors={['#1B5E20', '#2E7D32']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
+          <View style={styles.headerTop}>
+            <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+              <Ionicons name="arrow-back" size={24} color="#fff" />
+            </Pressable>
+            <Text style={styles.headerTitle}>Wealth Builder</Text>
+            <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowModal(true); }} style={styles.addBtn}>
+              <Ionicons name="add" size={24} color="#fff" />
+            </Pressable>
+          </View>
+
+          <View style={styles.nwBlock}>
+            <Text style={styles.nwLabel}>Total Net Worth</Text>
+            <Text style={styles.nwValue}>${totalNetWorth.toLocaleString('en-US', { maximumFractionDigits: 0 })}</Text>
+            <View style={styles.gainRow}>
+              <Ionicons name="trending-up" size={16} color="#A5D6A7" />
+              <Text style={styles.gainText}>
+                +${totalGain.toLocaleString('en-US', { maximumFractionDigits: 0 })} ({gainPct.toFixed(1)}%) all-time gain
+              </Text>
+            </View>
+          </View>
+    
+  <View style={styles.tabs}>
+          {(['portfolio', 'forecast', 'insights'] as const).map((tab) => (
+            <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
+              <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
+                {tab === 'portfolio' ? 'Portfolio' : tab === 'forecast' ? 'Forecast' : 'AI Insights'}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+    </LinearGradient>
+  );
+  const screenCompact = (
+    <LinearGradient
+      colors={['#1B5E20', '#2E7D32']}
+      start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+      style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+    >
+      <Pressable onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
+        <Ionicons name="arrow-back" size={22} color="#fff" />
+      </Pressable>
+      <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>Wealth Builder</Text>
+      <View />
+    </LinearGradient>
+  );
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#1B5E20', '#2E7D32']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
-        <View style={styles.headerTop}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <Text style={styles.headerTitle}>Wealth Builder</Text>
-          <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowModal(true); }} style={styles.addBtn}>
-            <Ionicons name="add" size={24} color="#fff" />
-          </Pressable>
-        </View>
 
-        <View style={styles.nwBlock}>
-          <Text style={styles.nwLabel}>Total Net Worth</Text>
-          <Text style={styles.nwValue}>${totalNetWorth.toLocaleString('en-US', { maximumFractionDigits: 0 })}</Text>
-          <View style={styles.gainRow}>
-            <Ionicons name="trending-up" size={16} color="#A5D6A7" />
-            <Text style={styles.gainText}>
-              +${totalGain.toLocaleString('en-US', { maximumFractionDigits: 0 })} ({gainPct.toFixed(1)}%) all-time gain
-            </Text>
-          </View>
-        </View>
-      </LinearGradient>
+      
 
-      <View style={styles.tabs}>
-        {(['portfolio', 'forecast', 'insights'] as const).map((tab) => (
-          <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
-            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-              {tab === 'portfolio' ? 'Portfolio' : tab === 'forecast' ? 'Forecast' : 'AI Insights'}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+          <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]} onScroll={onScroll} onScrollEndDrag={onScrollEndDrag} onMomentumScrollEnd={onMomentumScrollEnd} scrollEventThrottle={scrollEventThrottle}>
         {activeTab === 'portfolio' && (
           <>
             <Text style={styles.sectionTitle}>Allocation</Text>
@@ -259,7 +280,9 @@ export function WealthBuilderScreen({ navigation }: any) {
             <Text style={styles.insightText}>{ins.text}</Text>
           </Card>
         ))}
-      </ScrollView>
+          </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       {/* Add Holding Modal */}
       <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet">

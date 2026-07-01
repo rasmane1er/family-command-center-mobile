@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions, Modal, TextI
 import { Ionicons } from '@expo/vector-icons';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, isToday } from 'date-fns';
 import * as Haptics from 'expo-haptics';
+import { LinearGradient } from 'expo-linear-gradient';
 import { PremiumHeader } from '../../components/common/PremiumHeader';
 import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
@@ -10,6 +11,8 @@ import { Avatar } from '../../components/common/Avatar';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import type { CalendarEvent } from '../../types';
 
 const EVENT_CATEGORIES = ['Family', 'School', 'Medical', 'Sports', 'Work', 'Social', 'Holiday', 'Other'];
@@ -20,6 +23,7 @@ const { width } = Dimensions.get('window');
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export function CalendarScreen({ navigation, route }: any) {
+  const insets = useSafeAreaInsets();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showModal, setShowModal] = useState(false);
@@ -90,61 +94,87 @@ export function CalendarScreen({ navigation, route }: any) {
   const prevMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
   const nextMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1));
 
+  const screenHeader = (
+    <PremiumHeader
+      title="Family Calendar"
+      onBack={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()}
+      rightAction={
+        <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
+          <Ionicons name="add" size={26} color="#fff" />
+        </Pressable>
+      }
+    >
+      {/* Month navigator */}
+      <View style={styles.monthNav}>
+        <Pressable onPress={prevMonth} style={styles.monthBtn}>
+          <Ionicons name="chevron-back" size={22} color="rgba(255,255,255,0.8)" />
+        </Pressable>
+        <Text style={styles.monthTitle}>{format(currentMonth, 'MMMM yyyy')}</Text>
+        <Pressable onPress={nextMonth} style={styles.monthBtn}>
+          <Ionicons name="chevron-forward" size={22} color="rgba(255,255,255,0.8)" />
+        </Pressable>
+      </View>
+
+      {/* Day labels */}
+      <View style={styles.dayLabels}>
+        {DAY_LABELS.map((d) => (
+          <Text key={d} style={styles.dayLabel}>{d}</Text>
+        ))}
+      </View>
+
+      {/* Calendar grid */}
+      <View style={styles.calGrid}>
+        {emptyDays.map((_, i) => <View key={`empty-${i}`} style={styles.dayCell} />)}
+        {days.map((day) => {
+          const dayEvents = getDayEvents(day);
+          const selected = isSameDay(day, selectedDate);
+          const today = isToday(day);
+          return (
+            <Pressable key={day.toISOString()} onPress={() => setSelectedDate(day)} style={[styles.dayCell, selected && styles.dayCellSelected, today && !selected && styles.dayCellToday]}>
+              <Text style={[styles.dayNum, selected && styles.dayNumSelected, today && !selected && styles.dayNumToday]}>
+                {format(day, 'd')}
+              </Text>
+              {dayEvents.length > 0 && (
+                <View style={styles.eventDots}>
+                  {dayEvents.slice(0, 3).map((e, i) => (
+                    <View key={i} style={[styles.eventDot, { backgroundColor: selected ? 'rgba(255,255,255,0.8)' : e.color }]} />
+                  ))}
+                </View>
+              )}
+            </Pressable>
+          );
+        })}
+      </View>
+    </PremiumHeader>
+  );
+
+  const screenCompact = (
+    <LinearGradient colors={['#0F2952', '#1E4A8A']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Pressable
+        onPress={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()}
+        style={styles.addBtn}
+      >
+        <Ionicons name="arrow-back" size={22} color="#fff" />
+      </Pressable>
+      <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>Family Calendar</Text>
+      <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
+        <Ionicons name="add" size={26} color="#fff" />
+      </Pressable>
+    </LinearGradient>
+  );
+
   return (
     <View style={styles.container}>
-      <PremiumHeader
-        title="Family Calendar"
-        onBack={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()}
-        rightAction={
-          <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
-            <Ionicons name="add" size={26} color="#fff" />
-          </Pressable>
-        }
+
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+      <ScrollView
+        onScroll={onScroll}
+        onScrollEndDrag={onScrollEndDrag}
+        onMomentumScrollEnd={onMomentumScrollEnd}
+        scrollEventThrottle={scrollEventThrottle}
+        contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
       >
-        {/* Month navigator */}
-        <View style={styles.monthNav}>
-          <Pressable onPress={prevMonth} style={styles.monthBtn}>
-            <Ionicons name="chevron-back" size={22} color="rgba(255,255,255,0.8)" />
-          </Pressable>
-          <Text style={styles.monthTitle}>{format(currentMonth, 'MMMM yyyy')}</Text>
-          <Pressable onPress={nextMonth} style={styles.monthBtn}>
-            <Ionicons name="chevron-forward" size={22} color="rgba(255,255,255,0.8)" />
-          </Pressable>
-        </View>
-
-        {/* Day labels */}
-        <View style={styles.dayLabels}>
-          {DAY_LABELS.map((d) => (
-            <Text key={d} style={styles.dayLabel}>{d}</Text>
-          ))}
-        </View>
-
-        {/* Calendar grid */}
-        <View style={styles.calGrid}>
-          {emptyDays.map((_, i) => <View key={`empty-${i}`} style={styles.dayCell} />)}
-          {days.map((day) => {
-            const dayEvents = getDayEvents(day);
-            const selected = isSameDay(day, selectedDate);
-            const today = isToday(day);
-            return (
-              <Pressable key={day.toISOString()} onPress={() => setSelectedDate(day)} style={[styles.dayCell, selected && styles.dayCellSelected, today && !selected && styles.dayCellToday]}>
-                <Text style={[styles.dayNum, selected && styles.dayNumSelected, today && !selected && styles.dayNumToday]}>
-                  {format(day, 'd')}
-                </Text>
-                {dayEvents.length > 0 && (
-                  <View style={styles.eventDots}>
-                    {dayEvents.slice(0, 3).map((e, i) => (
-                      <View key={i} style={[styles.eventDot, { backgroundColor: selected ? 'rgba(255,255,255,0.8)' : e.color }]} />
-                    ))}
-                  </View>
-                )}
-              </Pressable>
-            );
-          })}
-        </View>
-      </PremiumHeader>
-
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
         <View style={styles.selectedDateRow}>
           <Text style={styles.selectedDateText}>{format(selectedDate, 'EEEE, MMMM d')}</Text>
           {isToday(selectedDate) && (
@@ -204,6 +234,8 @@ export function CalendarScreen({ navigation, route }: any) {
           </View>
         )}
       </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowModal(false)}>
         <View style={styles.modal}>

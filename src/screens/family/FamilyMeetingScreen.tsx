@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format, formatDistanceToNow } from 'date-fns';
 import { colors } from '../../theme/colors';
 import { Card } from '../../components/common/Card';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { Badge } from '../../components/common/Badge';
 
 interface AgendaItem {
@@ -105,40 +106,63 @@ export function FamilyMeetingScreen({ navigation }: any) {
     ]);
   };
 
+  const screenHeader = (
+    <LinearGradient colors={['#1565C0', '#0D47A1']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
+      <View style={styles.headerRow}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.headerTitle}>Family Meetings</Text>
+          <Text style={styles.headerSub}>Building connection through regular check-ins</Text>
+        </View>
+        <Pressable onPress={handleNewMeeting} style={styles.addBtn}>
+          <Ionicons name="add" size={22} color="#fff" />
+        </Pressable>
+      </View>
+
+      <View style={styles.statsRow}>
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>{totalMeetings}</Text>
+          <Text style={styles.statLabel}>Meetings Held</Text>
+        </View>
+        <View style={[styles.statItem, styles.statBorder]}>
+          <Text style={styles.statValue}>{completedActions}/{totalActions}</Text>
+          <Text style={styles.statLabel}>Actions Done</Text>
+        </View>
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>35m</Text>
+          <Text style={styles.statLabel}>Avg Duration</Text>
+        </View>
+      </View>
+    </LinearGradient>
+  );
+
+  const screenCompact = (
+    <LinearGradient colors={['#1565C0', '#0D47A1']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </Pressable>
+      <Text style={styles.headerTitle}>Family Meetings</Text>
+      <Pressable onPress={handleNewMeeting} style={styles.addBtn}>
+        <Ionicons name="add" size={22} color="#fff" />
+      </Pressable>
+    </LinearGradient>
+  );
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#1565C0', '#0D47A1']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
-        <View style={styles.headerRow}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.headerTitle}>Family Meetings</Text>
-            <Text style={styles.headerSub}>Building connection through regular check-ins</Text>
-          </View>
-          <Pressable onPress={handleNewMeeting} style={styles.addBtn}>
-            <Ionicons name="add" size={22} color="#fff" />
-          </Pressable>
-        </View>
 
-        <View style={styles.statsRow}>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{totalMeetings}</Text>
-            <Text style={styles.statLabel}>Meetings Held</Text>
-          </View>
-          <View style={[styles.statItem, styles.statBorder]}>
-            <Text style={styles.statValue}>{completedActions}/{totalActions}</Text>
-            <Text style={styles.statLabel}>Actions Done</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>35m</Text>
-            <Text style={styles.statLabel}>Avg Duration</Text>
-          </View>
-        </View>
-      </LinearGradient>
-
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+      <ScrollView
+        onScroll={onScroll}
+        onScrollEndDrag={onScrollEndDrag}
+        onMomentumScrollEnd={onMomentumScrollEnd}
+        scrollEventThrottle={scrollEventThrottle}
+        contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+      >
         {/* Meeting cadence tip */}
         <Card variant="elevated" style={styles.tipCard}>
           <View style={styles.tipRow}>
@@ -250,6 +274,8 @@ export function FamilyMeetingScreen({ navigation }: any) {
           ))}
         </Card>
       </ScrollView>
+        )}
+      </CollapsibleHeader>
     </View>
   );
 }

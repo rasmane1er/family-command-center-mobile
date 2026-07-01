@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/ThemeContext';
 import type { ThemeColors } from '../../theme/ThemeContext';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { defaultPermissionsForRole } from '../../types';
 import type { FamilyMember, MemberRole } from '../../types';
 
@@ -113,21 +114,39 @@ export function AddMemberScreen({ navigation }: any) {
 
   return (
     <View style={dynStyles.container}>
-      <LinearGradient
-        colors={['#0F2952', '#1E4A8A']}
-        style={[dynStyles.header, { paddingTop: insets.top + 6 }]}
-      >
-        <Pressable onPress={() => (step === 2 ? setStep(1) : navigation.goBack())} style={dynStyles.backBtn}>
-          <Ionicons name="arrow-back" size={22} color="#fff" />
-        </Pressable>
-        <Text style={dynStyles.headerTitle}>
-          {step === 1 ? 'Add Member' : memberType === 'local' ? 'Local Profile' : 'Invite Member'}
-        </Text>
-        <View style={{ width: 40 }} />
-      </LinearGradient>
 
-      {step === 1 && (
-        <ScrollView contentContainerStyle={dynStyles.content}>
+      {step === 1 && (() => {
+        const step1Header = (
+          <LinearGradient
+            colors={['#0F2952', '#1E4A8A']}
+            style={[dynStyles.header, { paddingTop: insets.top + 6 }]}
+          >
+            <Pressable onPress={() => navigation.goBack()} style={dynStyles.backBtn}>
+              <Ionicons name="arrow-back" size={22} color="#fff" />
+            </Pressable>
+            <Text style={dynStyles.headerTitle}>Add Member</Text>
+            <View style={{ width: 40 }} />
+          </LinearGradient>
+        );
+        const step1Compact = (
+          <LinearGradient colors={['#0F2952', '#1E4A8A']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Pressable onPress={() => navigation.goBack()} style={dynStyles.backBtn}>
+              <Ionicons name="arrow-back" size={22} color="#fff" />
+            </Pressable>
+            <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>Add Member</Text>
+            <View style={{ width: 40 }} />
+          </LinearGradient>
+        );
+        return (
+        <CollapsibleHeader fullHeader={step1Header} compactHeader={step1Compact}>
+          {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+        <ScrollView
+          onScroll={onScroll}
+          onScrollEndDrag={onScrollEndDrag}
+          onMomentumScrollEnd={onMomentumScrollEnd}
+          scrollEventThrottle={scrollEventThrottle}
+          contentContainerStyle={[dynStyles.content, { paddingTop: contentPaddingTop }]}
+        >
           <Text style={dynStyles.sectionTitle}>How will this person use the app?</Text>
 
           <Pressable style={dynStyles.typeCard} onPress={() => handleSelectType('local')}>
@@ -156,7 +175,10 @@ export function AddMemberScreen({ navigation }: any) {
             <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
           </Pressable>
         </ScrollView>
-      )}
+          )}
+        </CollapsibleHeader>
+        );
+      })()}
 
       {step === 2 && (
         <ScrollView contentContainerStyle={dynStyles.content} keyboardShouldPersistTaps="handled">

@@ -22,6 +22,7 @@ import { Badge } from '../../components/common/Badge';
 import { useUtilityStore } from '../../store/useUtilityStore';
 import { getDetectedUtilities } from '../../services/autoFillService';
 import type { DetectedUtility } from '../../services/autoFillService';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -389,9 +390,7 @@ export function UtilityTrackerScreen({ navigation }: any) {
     </ScrollView>
   );
 
-  return (
-    <View style={styles.container}>
-      <StatusBar style="light" />
+  const screenHeader = (
       <LinearGradient
         colors={['#006064', '#00838F', '#0097A7']}
         style={{ paddingTop: insets.top + 6, paddingBottom: 8, paddingHorizontal: 20 }}
@@ -439,8 +438,30 @@ export function UtilityTrackerScreen({ navigation }: any) {
           </View>
         </View>
       </LinearGradient>
+  );
+  const screenCompact = (
+    <LinearGradient
+      colors={['#006064', '#0097A7']}
+      start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+      style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+    >
+      <Pressable onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
+        <Ionicons name="arrow-back" size={22} color="#fff" />
+      </Pressable>
+      <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>Utilities</Text>
+      <View />
+    </LinearGradient>
+  );
 
-      <View style={styles.tabBar}>
+  return (
+    <View style={styles.container}>
+      <StatusBar style="light" />
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+          <View style={{ flex: 1, paddingTop: contentPaddingTop }}>
+
+
+          <View style={styles.tabBar}>
         {(['This Month', 'Trends', 'By Type'] as const).map((tab) => (
           <Pressable
             key={tab}
@@ -454,9 +475,9 @@ export function UtilityTrackerScreen({ navigation }: any) {
         ))}
       </View>
 
-      {activeTab === 'This Month' && renderThisMonthTab()}
-      {activeTab === 'Trends' && renderTrendsTab()}
-      {activeTab === 'By Type' && renderByTypeTab()}
+          {activeTab === 'This Month' && renderThisMonthTab()}
+          {activeTab === 'Trends' && renderTrendsTab()}
+          {activeTab === 'By Type' && renderByTypeTab()}
 
       {/* Import from Bank Modal */}
       <Modal visible={showImportModal} transparent animationType="slide">
@@ -622,6 +643,9 @@ export function UtilityTrackerScreen({ navigation }: any) {
           </ScrollView>
         </View>
       </Modal>
+          </View>
+        )}
+      </CollapsibleHeader>
     </View>
   );
 }

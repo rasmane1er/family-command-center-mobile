@@ -11,6 +11,7 @@ import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
 import { Card } from '../../components/common/Card';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { Badge } from '../../components/common/Badge';
 import { ProgressBar } from '../../components/common/ProgressBar';
 import { useFamilyGoalsStore, FamilyGoal, GoalCategory, GoalMilestone } from '../../store/useFamilyGoalsStore';
@@ -262,45 +263,68 @@ export function FamilyGoalsScreen({ navigation }: any) {
     );
   };
 
+  const screenHeader = (
+    <LinearGradient colors={['#1A237E', '#283593']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
+      <View style={styles.headerTop}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <Text style={styles.headerTitle}>Family Goals</Text>
+        <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
+          <Ionicons name="add" size={26} color="#fff" />
+        </Pressable>
+      </View>
+
+      <View style={styles.summaryRow}>
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryValue}>{activeGoals.length}</Text>
+          <Text style={styles.summaryLabel}>Active</Text>
+        </View>
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryValue}>{avgProgress}%</Text>
+          <Text style={styles.summaryLabel}>Avg Progress</Text>
+        </View>
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryValue}>{completedGoals.length}</Text>
+          <Text style={styles.summaryLabel}>Completed</Text>
+        </View>
+      </View>
+
+      <View style={styles.tabRow}>
+        {tabs.map((tab) => (
+          <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
+            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>{tab}</Text>
+          </Pressable>
+        ))}
+      </View>
+    </LinearGradient>
+  );
+
+  const screenCompact = (
+    <LinearGradient colors={['#1A237E', '#283593']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Pressable onPress={() => navigation.goBack()}>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </Pressable>
+      <Text style={styles.headerTitle}>Family Goals</Text>
+      <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
+        <Ionicons name="add" size={26} color="#fff" />
+      </Pressable>
+    </LinearGradient>
+  );
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#1A237E', '#283593']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
-        <View style={styles.headerTop}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <Text style={styles.headerTitle}>Family Goals</Text>
-          <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
-            <Ionicons name="add" size={26} color="#fff" />
-          </Pressable>
-        </View>
 
-        <View style={styles.summaryRow}>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryValue}>{activeGoals.length}</Text>
-            <Text style={styles.summaryLabel}>Active</Text>
-          </View>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryValue}>{avgProgress}%</Text>
-            <Text style={styles.summaryLabel}>Avg Progress</Text>
-          </View>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryValue}>{completedGoals.length}</Text>
-            <Text style={styles.summaryLabel}>Completed</Text>
-          </View>
-        </View>
-
-        <View style={styles.tabRow}>
-          {tabs.map((tab) => (
-            <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
-              <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>{tab}</Text>
-            </Pressable>
-          ))}
-        </View>
-      </LinearGradient>
-
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+      <ScrollView
+        onScroll={onScroll}
+        onScrollEndDrag={onScrollEndDrag}
+        onMomentumScrollEnd={onMomentumScrollEnd}
+        scrollEventThrottle={scrollEventThrottle}
+        contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+      >
         {goals.length === 0 && (
           <Pressable onPress={seedDemoData} style={styles.seedBtn}>
             <Ionicons name="flask" size={18} color="#283593" />
@@ -389,6 +413,8 @@ export function FamilyGoalsScreen({ navigation }: any) {
           </>
         )}
       </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       {/* Add Goal Modal */}
       <Modal visible={showAddModal} animationType="slide" presentationStyle="pageSheet">

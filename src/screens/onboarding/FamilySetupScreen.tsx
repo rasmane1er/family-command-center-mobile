@@ -45,16 +45,16 @@ export function FamilySetupScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#0F2952', '#1E4A8A']} style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
-        </Pressable>
-        <View style={styles.stepBadge}><Text style={styles.stepText}>Step 1 of 7</Text></View>
-        <Text style={styles.headerTitle}>Your Family</Text>
-        <Text style={styles.headerSub}>Tell us about your household</Text>
-      </LinearGradient>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+        <LinearGradient colors={['#0F2952', '#1E4A8A']} style={styles.header}>
+          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+            <Ionicons name="arrow-back" size={24} color="#fff" />
+          </Pressable>
+          <View style={styles.stepBadge}><Text style={styles.stepText}>Step 1 of 7</Text></View>
+          <Text style={styles.headerTitle}>Your Family</Text>
+          <Text style={styles.headerSub}>Tell us about your household</Text>
+        </LinearGradient>
         <View style={styles.progressBar}>
           <View style={[styles.progressFill, { width: '14%' }]} />
         </View>

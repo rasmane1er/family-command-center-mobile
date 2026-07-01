@@ -7,7 +7,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { format } from 'date-fns';
+import { ChatInputBar } from '../../components/ai/ChatInputBar';
+import { useVoiceInput } from '../../hooks/useVoiceInput';
 import { useTheme } from '../../theme/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { Card } from '../../components/common/Card';
@@ -60,6 +63,7 @@ export function AIAssistantScreen({ navigation }: { navigation: { navigate: (scr
   const { t } = useTranslation();
   const tabBarHeight = Math.max(insets.bottom, 34) + 72;
   const [input, setInput] = useState('');
+  const voice = useVoiceInput({ onResult: (text) => handleSend(text) });
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [confirmedActions, setConfirmedActions] = useState<Set<string>>(new Set());
   const scrollRef = useRef<ScrollView>(null);
@@ -111,7 +115,7 @@ export function AIAssistantScreen({ navigation }: { navigation: { navigate: (scr
   const quickChips = chips.slice(0, 4);
 
   useEffect(() => {
-    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+    // scroll handled by onContentSizeChange to fire after layout
   }, [messages, isTyping]);
 
   const handleSend = async (text?: string) => {
@@ -196,51 +200,47 @@ export function AIAssistantScreen({ navigation }: { navigation: { navigate: (scr
   const unreadInsights = insights.filter((i) => !i.isRead);
   const dynStyles = makeStyles(colors);
 
-  return (
-    <View style={[dynStyles.container, { paddingBottom: tabBarHeight }]}>
-      <StatusBar style="light" />
-      <LinearGradient colors={['#0F2952', '#1a3a70']} style={[dynStyles.header, { paddingTop: insets.top }]}>
-        <View style={dynStyles.headerRow}>
-          <View style={dynStyles.aiAvatar}>
-            <Ionicons name="sparkles" size={22} color={colors.secondary} />
+  const screenHeader = (
+    <LinearGradient colors={['#0F2952', '#1a3a70']} style={[dynStyles.header, { paddingTop: insets.top + 6 }]}>
+      <View style={dynStyles.headerRow}>
+        <View style={dynStyles.aiAvatar}>
+          <Ionicons name="sparkles" size={22} color={colors.secondary} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={dynStyles.headerTitle}>{t('ai.title')}</Text>
+          <View style={dynStyles.statusRow}>
+            <View style={dynStyles.statusDot} />
+            <Text style={dynStyles.statusText}>Online • Powered by Gemini</Text>
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={dynStyles.headerTitle}>{t('ai.title')}</Text>
-            <View style={dynStyles.statusRow}>
-              <View style={dynStyles.statusDot} />
-              <Text style={dynStyles.statusText}>Online • Powered by Gemini</Text>
-            </View>
-          </View>
-          <Pressable onPress={clearMessages} style={dynStyles.clearBtn}>
-            <Ionicons name="refresh-outline" size={20} color="rgba(255,255,255,0.6)" />
+        </View>
+        <Pressable onPress={clearMessages} style={dynStyles.clearBtn}>
+          <Ionicons name="refresh-outline" size={20} color="rgba(255,255,255,0.6)" />
+        </Pressable>
+      </View>
+
+      <View style={dynStyles.contextRow}>
+        <View style={dynStyles.contextChip}>
+          <Ionicons name="people-outline" size={12} color="rgba(255,255,255,0.7)" />
+          <Text style={dynStyles.contextChipText}>{members.length} members</Text>
+        </View>
+        <View style={dynStyles.contextChip}>
+          <Ionicons name="wallet-outline" size={12} color="rgba(255,255,255,0.7)" />
+          <Text style={dynStyles.contextChipText}>${(netWorth / 1000).toFixed(0)}k net worth</Text>
+        </View>
+        <View style={dynStyles.contextChip}>
+          <Ionicons name="nutrition-outline" size={12} color="rgba(255,255,255,0.7)" />
+          <Text style={dynStyles.contextChipText}>{pantryItems.length} pantry items</Text>
+        </View>
+      </View>
+
+      <View style={dynStyles.featuresRow}>
+        {AI_FEATURES.map((f) => (
+          <Pressable key={f.screen} onPress={() => navigation.navigate(f.screen)} style={[dynStyles.featureBtn, { backgroundColor: f.color + '30', borderColor: f.color + '60' }]}>
+            <Ionicons name={f.icon as keyof typeof Ionicons.glyphMap} size={14} color={f.color === '#0F2952' ? '#7FAAFF' : f.color === '#2D2D8F' ? '#8888FF' : '#fff'} />
+            <Text style={dynStyles.featureBtnText}>{f.label}</Text>
           </Pressable>
-        </View>
-
-        <View style={dynStyles.contextRow}>
-          <View style={dynStyles.contextChip}>
-            <Ionicons name="people-outline" size={12} color="rgba(255,255,255,0.7)" />
-            <Text style={dynStyles.contextChipText}>{members.length} members</Text>
-          </View>
-          <View style={dynStyles.contextChip}>
-            <Ionicons name="wallet-outline" size={12} color="rgba(255,255,255,0.7)" />
-            <Text style={dynStyles.contextChipText}>${(netWorth / 1000).toFixed(0)}k net worth</Text>
-          </View>
-          <View style={dynStyles.contextChip}>
-            <Ionicons name="nutrition-outline" size={12} color="rgba(255,255,255,0.7)" />
-            <Text style={dynStyles.contextChipText}>{pantryItems.length} pantry items</Text>
-          </View>
-        </View>
-
-        <View style={dynStyles.featuresRow}>
-          {AI_FEATURES.map((f) => (
-            <Pressable key={f.screen} onPress={() => navigation.navigate(f.screen)} style={[dynStyles.featureBtn, { backgroundColor: f.color + '30', borderColor: f.color + '60' }]}>
-              <Ionicons name={f.icon as keyof typeof Ionicons.glyphMap} size={14} color={f.color === '#0F2952' ? '#7FAAFF' : f.color === '#2D2D8F' ? '#8888FF' : '#fff'} />
-              <Text style={dynStyles.featureBtnText}>{f.label}</Text>
-            </Pressable>
-          ))}
-        </View>
-      </LinearGradient>
-
+        ))}
+      </View>
       {unreadInsights.length > 0 && (
         <View style={dynStyles.insightsBar}>
           <Ionicons name="bulb-outline" size={16} color={colors.secondary} />
@@ -250,15 +250,41 @@ export function AIAssistantScreen({ navigation }: { navigation: { navigate: (scr
           <Text style={dynStyles.insightsCount}>{unreadInsights.length}</Text>
         </View>
       )}
+    </LinearGradient>
+  );
+
+  const screenCompact = (
+    <View style={{ backgroundColor: '#0F2952', paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <View style={dynStyles.aiAvatar}>
+        <Ionicons name="sparkles" size={18} color={colors.secondary} />
+      </View>
+      <Text style={[dynStyles.headerTitle, { flex: 1, marginLeft: 10 }]}>{t('ai.title')}</Text>
+      <Pressable onPress={clearMessages} style={dynStyles.clearBtn}>
+        <Ionicons name="refresh-outline" size={20} color="rgba(255,255,255,0.6)" />
+      </Pressable>
+    </View>
+  );
+
+  return (
+    <View style={[dynStyles.container, { paddingBottom: tabBarHeight }]}>
+      <StatusBar style="light" />
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={0}
       >
+        <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+          {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
         <ScrollView
           ref={scrollRef}
-          contentContainerStyle={[dynStyles.messages, { paddingBottom: 16 }]}
+          style={{ flex: 1 }}
+          onScroll={onScroll}
+          onScrollEndDrag={onScrollEndDrag}
+          onMomentumScrollEnd={onMomentumScrollEnd}
+          scrollEventThrottle={scrollEventThrottle}
+          contentContainerStyle={[dynStyles.messages, { paddingBottom: 16, paddingTop: contentPaddingTop }]}
+          onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: false })}
           showsVerticalScrollIndicator={false}
         >
           {messages.length === 0 && (
@@ -350,6 +376,8 @@ export function AIAssistantScreen({ navigation }: { navigation: { navigate: (scr
             </View>
           )}
         </ScrollView>
+          )}
+        </CollapsibleHeader>
 
         {messages.length > 0 && !isTyping && (
           <View style={dynStyles.quickSuggestions}>
@@ -361,30 +389,19 @@ export function AIAssistantScreen({ navigation }: { navigation: { navigate: (scr
           </View>
         )}
 
-        <View style={dynStyles.inputBar}>
-          <TextInput
-            style={dynStyles.input}
-            placeholder={t('ai.placeholder')}
-            placeholderTextColor={colors.textMuted}
-            value={input}
-            onChangeText={setInput}
-            multiline
-            maxLength={500}
-            returnKeyType="send"
-            onSubmitEditing={() => handleSend()}
-          />
-          <Pressable
-            onPress={() => handleSend()}
-            style={[dynStyles.sendBtn, (!input.trim() || isTyping) && dynStyles.sendBtnDisabled]}
-            disabled={!input.trim() || isTyping}
-          >
-            {isTyping ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Ionicons name="send" size={18} color="#fff" />
-            )}
-          </Pressable>
-        </View>
+        <ChatInputBar
+          value={input}
+          onChangeText={setInput}
+          onSend={() => handleSend()}
+          onMicPressIn={voice.start}
+          onMicPressOut={voice.stop}
+          onMicCancel={voice.cancel}
+          isListening={voice.isListening}
+          partialTranscript={voice.partial}
+          placeholder={t('ai.placeholder')}
+          disabled={isTyping}
+          bottomPadding={8}
+        />
       </KeyboardAvoidingView>
 
       <UpgradePrompt

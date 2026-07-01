@@ -11,6 +11,7 @@ import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
 import { ProgressBar } from '../../components/common/ProgressBar';
 import { Button } from '../../components/common/Button';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { useFinancialHealth } from '../../hooks/useFinancialHealth';
 import { getAccounts } from '../../services/plaidService';
@@ -47,6 +48,7 @@ const NAV_TABS = [
 
 const FINANCE_TOOLS = [
   { key: 'WealthBuilder',    icon: 'trending-up',      label: 'Wealth',       color: '#059669', bg: '#ECFDF5' },
+  { key: 'TaxCenter',        icon: 'document-text',    label: 'Tax Center',   color: '#0F2952', bg: '#EEF2F9' },
   { key: 'InsuranceManager', icon: 'shield-checkmark', label: 'Insurance',    color: '#2563EB', bg: '#EFF6FF' },
   { key: 'Subscriptions',    icon: 'reload',           label: 'Subscriptions', color: '#7C3AED', bg: '#F5F3FF' },
   { key: 'Assets',           icon: 'briefcase',        label: 'Assets',       color: '#D97706', bg: '#FFFBEB' },
@@ -142,79 +144,105 @@ export function FinanceDashboardScreen({ navigation }: any) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
+  const financeHeader = (
+    <LinearGradient
+      colors={['#040D1A', '#0A1E3D', '#0F2952']}
+      start={{ x: 0, y: 0 }} end={{ x: 0.6, y: 1 }}
+      style={[s.header, { paddingTop: insets.top + 6 }]}
+    >
+          {/* Decorative glows */}
+          <View style={s.glow1} />
+          <View style={s.glow2} />
+
+          {/* Top row */}
+          <View style={s.headerTopRow}>
+            <View>
+              <Text style={s.netWorthLabel}>TOTAL NET WORTH</Text>
+              <Text style={s.netWorthValue}>
+                ${totalNetWorth.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </Text>
+              <View style={s.trendRow}>
+                <View style={s.trendPill}>
+                  <Ionicons name="arrow-up" size={11} color="#34D399" />
+                  <Text style={s.trendPillText}>+2.4% this month</Text>
+                </View>
+                <Text style={s.trendAmount}>+$1,240</Text>
+              </View>
+            </View>
+            {overdueBills.length > 0 && (
+              <Pressable onPress={() => navigation.navigate('Bills')} style={s.urgentPill}>
+                <Ionicons name="warning" size={12} color="#fff" />
+                <Text style={s.urgentPillText}>{overdueBills.length} overdue</Text>
+              </Pressable>
+            )}
+          </View>
+
+          {/* Stats strip */}
+          <View style={s.statsStrip}>
+            {[
+              { label: 'Income',   value: `$${monthlyIncome.toLocaleString()}`,   color: '#34D399', icon: 'arrow-down-circle' },
+              { label: 'Expenses', value: `$${monthlyExpenses.toLocaleString()}`,  color: '#F87171', icon: 'arrow-up-circle' },
+              { label: 'Saved',    value: `${savingsRate}%`,                       color: '#A78BFA', icon: 'shield-checkmark' },
+            ].map((item, i) => (
+              <View key={i} style={[s.statItem, i < 2 && s.statBorder]}>
+                <View style={[s.statIconBg, { backgroundColor: item.color + '20' }]}>
+                  <Ionicons name={item.icon as any} size={14} color={item.color} />
+                </View>
+                <Text style={[s.statValue, { color: item.color }]}>{item.value}</Text>
+                <Text style={s.statLabel}>{item.label}</Text>
+              </View>
+            ))}
+          </View>
+
+          {/* Tab pill row */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.tabPills}
+            contentContainerStyle={{ gap: 6, paddingRight: 16 }}>
+            {NAV_TABS.map((tab) => {
+              const active = activeTab === tab.key;
+              return (
+                <Pressable key={tab.key} onPress={() => handleTabPress(tab.key)}
+                  style={[s.tabPill, active && s.tabPillActive]}>
+                  <Ionicons name={tab.icon as any} size={13}
+                    color={active ? colors.primary : 'rgba(255,255,255,0.5)'} />
+                  <Text style={[s.tabPillText, active && s.tabPillTextActive]}>{tab.label}</Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+    </LinearGradient>
+  );
+
+
+  const financeCompact = (
+    <LinearGradient
+      colors={['#040D1A', '#0A1E3D']}
+      start={{ x: 0, y: 0 }} end={{ x: 0.6, y: 1 }}
+      style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+    >
+      <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>Finance</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontWeight: '600' }}>NET WORTH</Text>
+        <Text style={{ color: '#fff', fontSize: 15, fontWeight: '900', letterSpacing: -0.5 }}>
+          ${totalNetWorth.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+        </Text>
+      </View>
+    </LinearGradient>
+  );
+
   return (
     <View style={s.root}>
       <StatusBar style="light" />
 
-      {/* ══════════ HEADER ══════════ */}
-      <LinearGradient
-        colors={['#040D1A', '#0A1E3D', '#0F2952']}
-        start={{ x: 0, y: 0 }} end={{ x: 0.6, y: 1 }}
-        style={[s.header, { paddingTop: insets.top + 6 }]}
-      >
-        {/* Decorative glows */}
-        <View style={s.glow1} />
-        <View style={s.glow2} />
-
-        {/* Top row */}
-        <View style={s.headerTopRow}>
-          <View>
-            <Text style={s.netWorthLabel}>TOTAL NET WORTH</Text>
-            <Text style={s.netWorthValue}>
-              ${totalNetWorth.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </Text>
-            <View style={s.trendRow}>
-              <View style={s.trendPill}>
-                <Ionicons name="arrow-up" size={11} color="#34D399" />
-                <Text style={s.trendPillText}>+2.4% this month</Text>
-              </View>
-              <Text style={s.trendAmount}>+$1,240</Text>
-            </View>
-          </View>
-          {overdueBills.length > 0 && (
-            <Pressable onPress={() => navigation.navigate('Bills')} style={s.urgentPill}>
-              <Ionicons name="warning" size={12} color="#fff" />
-              <Text style={s.urgentPillText}>{overdueBills.length} overdue</Text>
-            </Pressable>
-          )}
-        </View>
-
-        {/* Stats strip */}
-        <View style={s.statsStrip}>
-          {[
-            { label: 'Income',   value: `$${monthlyIncome.toLocaleString()}`,   color: '#34D399', icon: 'arrow-down-circle' },
-            { label: 'Expenses', value: `$${monthlyExpenses.toLocaleString()}`,  color: '#F87171', icon: 'arrow-up-circle' },
-            { label: 'Saved',    value: `${savingsRate}%`,                       color: '#A78BFA', icon: 'shield-checkmark' },
-          ].map((item, i) => (
-            <View key={i} style={[s.statItem, i < 2 && s.statBorder]}>
-              <View style={[s.statIconBg, { backgroundColor: item.color + '20' }]}>
-                <Ionicons name={item.icon as any} size={14} color={item.color} />
-              </View>
-              <Text style={[s.statValue, { color: item.color }]}>{item.value}</Text>
-              <Text style={s.statLabel}>{item.label}</Text>
-            </View>
-          ))}
-        </View>
-
-        {/* Tab pill row */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.tabPills}
-          contentContainerStyle={{ gap: 6, paddingRight: 16 }}>
-          {NAV_TABS.map((tab) => {
-            const active = activeTab === tab.key;
-            return (
-              <Pressable key={tab.key} onPress={() => handleTabPress(tab.key)}
-                style={[s.tabPill, active && s.tabPillActive]}>
-                <Ionicons name={tab.icon as any} size={13}
-                  color={active ? colors.primary : 'rgba(255,255,255,0.5)'} />
-                <Text style={[s.tabPillText, active && s.tabPillTextActive]}>{tab.label}</Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-      </LinearGradient>
-
-      {/* ══════════ SCROLL BODY ══════════ */}
-      <ScrollView contentContainerStyle={s.body} showsVerticalScrollIndicator={false}>
+      <CollapsibleHeader fullHeader={financeHeader} compactHeader={financeCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+          <ScrollView
+            contentContainerStyle={[s.body, { paddingTop: contentPaddingTop }]}
+            showsVerticalScrollIndicator={false}
+            onScroll={onScroll}
+            scrollEventThrottle={scrollEventThrottle}
+            onScrollEndDrag={onScrollEndDrag}
+            onMomentumScrollEnd={onMomentumScrollEnd}
+          >
 
         {/* ── PLAID BANK ACCOUNTS ── */}
         {plaidAccounts.length > 0 && (
@@ -543,7 +571,9 @@ export function FinanceDashboardScreen({ navigation }: any) {
           ))}
         </View>
 
-      </ScrollView>
+          </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       {/* ── RECEIPT SCANNER FAB ── */}
       <Pressable

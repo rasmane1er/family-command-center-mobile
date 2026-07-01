@@ -30,6 +30,7 @@ import { useTheme } from '../../theme/ThemeContext';
 import { shadows } from '../../theme/spacing';
 import { getVisibleTasks, getVisibleEvents } from '../../utils/roleVisibility';
 import { getAllowedNotificationTypes } from '../../utils/roleFilters';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 
 const { width } = Dimensions.get('window');
 
@@ -379,482 +380,525 @@ export function DashboardScreen({ navigation }: any) {
 
   const dynStyles = makeStyles(colors);
 
+  const screenHeader = (
+    <LinearGradient
+      colors={['#0D1B2A', '#0F2952', '#1E4A8A']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={[dynStyles.header, { paddingTop: insets.top + 6 }]}
+    >
+      {/* decorative blobs — isolated so overflow:hidden doesn't clip icons */}
+      <View style={StyleSheet.absoluteFill} pointerEvents="none">
+        <View style={dynStyles.headerCircle1} />
+        <View style={dynStyles.headerCircle2} />
+      </View>
+
+      <Animated.View style={{ opacity: fadeAnim }}>
+        <View style={dynStyles.headerTop}>
+          <View style={dynStyles.headerTextBlock}>
+            <Text style={dynStyles.greeting}>{greeting()},</Text>
+            <Text style={dynStyles.familyName} numberOfLines={1} ellipsizeMode="tail">
+              {family?.name ?? 'My Family'} 👋
+            </Text>
+            <Text style={dynStyles.date}>{format(new Date(), 'EEEE, MMMM d, yyyy')}</Text>
+
+            {activeMember && (
+              <Pressable
+                style={dynStyles.activeProfileBadge}
+                onPress={() =>
+                  navigation.navigate('Family', {
+                    screen: 'ProfileSwitcher',
+                    params: { source: 'dashboard' },
+                  })
+                }
+              >
+                <Avatar name={activeMember.name} color={activeMember.avatarColor} size={24} />
+                <Text style={dynStyles.activeProfileName}>
+                  {activeMember.name} • {roleLabel}
+                </Text>
+                <Ionicons name="chevron-down" size={13} color="#fff" />
+              </Pressable>
+            )}
+          </View>
+
+          <View style={dynStyles.headerActions}>
+            <Pressable style={dynStyles.headerIconBtn} onPress={() => navigation.navigate('Search')}>
+              <Ionicons name="search" size={20} color="rgba(255,255,255,0.9)" />
+            </Pressable>
+
+            <Pressable
+              style={dynStyles.headerIconBtn}
+              onPress={() => navigation.navigate('Notifications')}
+            >
+              <Ionicons name="notifications" size={21} color="#fff" />
+              {unreadNotifications > 0 && (
+                <View style={dynStyles.notifDot}>
+                  <Text style={dynStyles.notifCount}>
+                    {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                  </Text>
+                </View>
+              )}
+            </Pressable>
+
+            <Pressable style={dynStyles.headerIconBtn} onPress={() => navigation.navigate('Settings')}>
+              <Ionicons name="settings-outline" size={21} color="rgba(255,255,255,0.9)" />
+            </Pressable>
+          </View>
+        </View>
+
+        <View style={dynStyles.roleBanner}>
+          <Ionicons
+            name={
+              isChild
+                ? 'school-outline'
+                : isGrandparent
+                  ? 'heart-outline'
+                  : 'shield-checkmark-outline'
+            }
+            size={16}
+            color={colors.secondary}
+          />
+          <Text style={dynStyles.roleBannerText}>
+            {isChild
+              ? 'Child dashboard: chores, homework, rewards, and events.'
+              : isGrandparent
+                ? 'Grandparent dashboard: family moments, birthdays, and updates.'
+                : 'Parent dashboard: bills, tasks, calendar, approvals, and household health.'}
+          </Text>
+        </View>
+
+        <View style={dynStyles.healthScoreCard}>
+          <View style={dynStyles.healthScoreLeft}>
+            <View style={{ position: 'relative', alignItems: 'center', justifyContent: 'center' }}>
+              <HealthRing score={healthScore.overall} color={SCORE_COLOR(healthScore.overall)} size={96} />
+              <View style={dynStyles.healthRingInner}>
+                <Text style={[dynStyles.healthScoreValue, { color: SCORE_COLOR(healthScore.overall) }]}>
+                  {healthScore.overall}
+                </Text>
+              </View>
+            </View>
+            <Text style={dynStyles.healthScoreLabel}>HEALTH SCORE</Text>
+            <View style={dynStyles.healthScoreTrend}>
+              <Text style={[dynStyles.healthScoreTrendText, {
+                color: healthScore.grade === 'A' ? colors.success :
+                       healthScore.grade === 'B' ? '#27AE60' :
+                       healthScore.grade === 'C' ? '#F5A623' :
+                       healthScore.grade === 'D' ? '#E67E22' : '#E74C3C',
+              }]}>Grade {healthScore.grade}</Text>
+            </View>
+          </View>
+
+          <View style={dynStyles.healthScoreRight}>
+            {[
+              { label: 'Finance', value: healthScore.financial, icon: 'wallet' },
+              { label: 'Tasks', value: healthScore.tasks, icon: 'checkmark-circle' },
+              { label: 'Goals', value: healthScore.goals, icon: 'flag' },
+              { label: 'Wellness', value: healthScore.health, icon: 'heart' },
+            ].map((item) => (
+              <View key={item.label} style={dynStyles.healthSubItem}>
+                <View style={dynStyles.healthSubRow}>
+                  <Ionicons name={item.icon as any} size={12} color="rgba(255,255,255,0.7)" />
+                  <Text style={dynStyles.healthSubLabel}>{item.label}</Text>
+                  <Text style={[dynStyles.healthSubPct, { color: SCORE_COLOR(item.value) }]}>{item.value}</Text>
+                </View>
+                <View style={dynStyles.healthSubBar}>
+                  <View
+                    style={[
+                      dynStyles.healthSubFill,
+                      { width: `${item.value}%`, backgroundColor: SCORE_COLOR(item.value) },
+                    ]}
+                  />
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        <View style={dynStyles.membersRow}>
+          <Text style={dynStyles.membersLabel}>Family Members</Text>
+          <Pressable onPress={openFamilyMembers}>
+            <Text style={dynStyles.membersViewAll}>Manage</Text>
+          </Pressable>
+        </View>
+
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={dynStyles.membersScroll}>
+          {members.map((member) => (
+            <Pressable
+              key={member.id}
+              style={dynStyles.memberChip}
+              onPress={() => openMemberDetails(member.id)}
+            >
+              <Avatar
+                name={member.name}
+                color={member.avatarColor}
+                size={44}
+                showBadge
+                badgeColor={member.status === 'active' ? colors.success : colors.warning}
+              />
+              <Text style={dynStyles.memberChipName}>{member.name.split(' ')[0]}</Text>
+              <Text style={dynStyles.memberChipPoints}>{member.points.toLocaleString()} pts</Text>
+            </Pressable>
+          ))}
+
+          {isParent && (
+            <Pressable style={dynStyles.addMemberChip} onPress={openInviteMember}>
+              <View style={dynStyles.addMemberIcon}>
+                <Ionicons name="add" size={22} color={colors.primary} />
+              </View>
+              <Text style={dynStyles.addMemberText}>Invite</Text>
+            </Pressable>
+          )}
+        </ScrollView>
+      </Animated.View>
+    </LinearGradient>
+  );
+
+  const screenCompact = (
+    <LinearGradient
+      colors={['#0D1B2A', '#1E4A8A']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 0 }}
+      style={{
+        paddingTop: insets.top,
+        paddingBottom: 10,
+        paddingHorizontal: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+      }}
+    >
+      <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800' }} numberOfLines={1}>
+        {family?.name ?? 'My Family'}
+      </Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <View style={{ backgroundColor: SCORE_COLOR(healthScore.overall), borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 }}>
+          <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>{healthScore.overall}</Text>
+        </View>
+        <Pressable onPress={() => navigation.navigate('Notifications')}>
+          <Ionicons name="notifications" size={20} color="#fff" />
+          {unreadNotifications > 0 && (
+            <View style={dynStyles.notifDot}>
+              <Text style={dynStyles.notifCount}>{unreadNotifications > 9 ? '9+' : unreadNotifications}</Text>
+            </View>
+          )}
+        </Pressable>
+      </View>
+    </LinearGradient>
+  );
+
   return (
     <View style={dynStyles.container}>
       <StatusBar style="light" />
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={[dynStyles.scrollContent, { paddingBottom: 100 }]}
-      >
-        <LinearGradient
-          colors={['#0D1B2A', '#0F2952', '#1E4A8A']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[dynStyles.header, { paddingTop: insets.top }]}
-        >
-          {/* decorative blobs — isolated so overflow:hidden doesn't clip icons */}
-          <View style={StyleSheet.absoluteFill} pointerEvents="none">
-            <View style={dynStyles.headerCircle1} />
-            <View style={dynStyles.headerCircle2} />
-          </View>
-
-          <Animated.View style={{ opacity: fadeAnim }}>
-            <View style={dynStyles.headerTop}>
-              <View style={dynStyles.headerTextBlock}>
-                <Text style={dynStyles.greeting}>{greeting()},</Text>
-                <Text style={dynStyles.familyName} numberOfLines={1} ellipsizeMode="tail">
-                  {family?.name ?? 'My Family'} 👋
-                </Text>
-                <Text style={dynStyles.date}>{format(new Date(), 'EEEE, MMMM d, yyyy')}</Text>
-
-                {activeMember && (
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            onScroll={onScroll}
+            onScrollEndDrag={onScrollEndDrag}
+            onMomentumScrollEnd={onMomentumScrollEnd}
+            scrollEventThrottle={scrollEventThrottle}
+            contentContainerStyle={[dynStyles.scrollContent, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+          >
+            <Animated.View style={{ opacity: fadeAnim, paddingHorizontal: 16, marginTop: 4 }}>
+              <View style={dynStyles.quickStats}>
+                {quickStats.map((stat) => (
                   <Pressable
-                    style={dynStyles.activeProfileBadge}
-                    onPress={() =>
-                      navigation.navigate('Family', {
-                        screen: 'ProfileSwitcher',
-                        params: { source: 'dashboard' },
-                      })
-                    }
+                    key={stat.label}
+                    style={[dynStyles.statCard, shadows.sm]}
+                    onPress={() => stat.route && handleRoleActionPress(stat.route)}
+                    android_ripple={{ color: stat.color + '22' }}
                   >
-                    <Avatar name={activeMember.name} color={activeMember.avatarColor} size={24} />
-                    <Text style={dynStyles.activeProfileName}>
-                      {activeMember.name} • {roleLabel}
+                    <View style={[dynStyles.statIconCircle, { backgroundColor: stat.bg }]}>
+                      <Ionicons name={stat.icon as any} size={18} color={stat.color} />
+                    </View>
+                    <Text style={[dynStyles.statValue, { color: stat.urgent ? colors.danger : colors.text }]}>
+                      {stat.value}
                     </Text>
-                    <Ionicons name="chevron-down" size={13} color="#fff" />
-                  </Pressable>
-                )}
-              </View>
-
-              <View style={dynStyles.headerActions}>
-                <Pressable style={dynStyles.headerIconBtn} onPress={() => navigation.navigate('Search')}>
-                  <Ionicons name="search" size={20} color="rgba(255,255,255,0.9)" />
-                </Pressable>
-
-                <Pressable
-                  style={dynStyles.headerIconBtn}
-                  onPress={() => navigation.navigate('Notifications')}
-                >
-                  <Ionicons name="notifications" size={21} color="#fff" />
-                  {unreadNotifications > 0 && (
-                    <View style={dynStyles.notifDot}>
-                      <Text style={dynStyles.notifCount}>
-                        {unreadNotifications > 9 ? '9+' : unreadNotifications}
-                      </Text>
-                    </View>
-                  )}
-                </Pressable>
-
-                <Pressable style={dynStyles.headerIconBtn} onPress={() => navigation.navigate('Settings')}>
-                  <Ionicons name="settings-outline" size={21} color="rgba(255,255,255,0.9)" />
-                </Pressable>
-              </View>
-            </View>
-
-            <View style={dynStyles.roleBanner}>
-              <Ionicons
-                name={
-                  isChild
-                    ? 'school-outline'
-                    : isGrandparent
-                      ? 'heart-outline'
-                      : 'shield-checkmark-outline'
-                }
-                size={16}
-                color={colors.secondary}
-              />
-              <Text style={dynStyles.roleBannerText}>
-                {isChild
-                  ? 'Child dashboard: chores, homework, rewards, and events.'
-                  : isGrandparent
-                    ? 'Grandparent dashboard: family moments, birthdays, and updates.'
-                    : 'Parent dashboard: bills, tasks, calendar, approvals, and household health.'}
-              </Text>
-            </View>
-
-            <View style={dynStyles.healthScoreCard}>
-              <View style={dynStyles.healthScoreLeft}>
-                <View style={{ position: 'relative', alignItems: 'center', justifyContent: 'center' }}>
-                  <HealthRing score={healthScore.overall} color={SCORE_COLOR(healthScore.overall)} size={96} />
-                  <View style={dynStyles.healthRingInner}>
-                    <Text style={[dynStyles.healthScoreValue, { color: SCORE_COLOR(healthScore.overall) }]}>
-                      {healthScore.overall}
-                    </Text>
-                  </View>
-                </View>
-                <Text style={dynStyles.healthScoreLabel}>HEALTH SCORE</Text>
-                <View style={dynStyles.healthScoreTrend}>
-                  <Text style={[dynStyles.healthScoreTrendText, {
-                    color: healthScore.grade === 'A' ? colors.success :
-                           healthScore.grade === 'B' ? '#27AE60' :
-                           healthScore.grade === 'C' ? '#F5A623' :
-                           healthScore.grade === 'D' ? '#E67E22' : '#E74C3C',
-                  }]}>Grade {healthScore.grade}</Text>
-                </View>
-              </View>
-
-              <View style={dynStyles.healthScoreRight}>
-                {[
-                  { label: 'Finance', value: healthScore.financial, icon: 'wallet' },
-                  { label: 'Tasks', value: healthScore.tasks, icon: 'checkmark-circle' },
-                  { label: 'Goals', value: healthScore.goals, icon: 'flag' },
-                  { label: 'Wellness', value: healthScore.health, icon: 'heart' },
-                ].map((item) => (
-                  <View key={item.label} style={dynStyles.healthSubItem}>
-                    <View style={dynStyles.healthSubRow}>
-                      <Ionicons name={item.icon as any} size={12} color="rgba(255,255,255,0.7)" />
-                      <Text style={dynStyles.healthSubLabel}>{item.label}</Text>
-                      <Text style={[dynStyles.healthSubPct, { color: SCORE_COLOR(item.value) }]}>{item.value}</Text>
-                    </View>
-                    <View style={dynStyles.healthSubBar}>
-                      <View
-                        style={[
-                          dynStyles.healthSubFill,
-                          { width: `${item.value}%`, backgroundColor: SCORE_COLOR(item.value) },
-                        ]}
-                      />
-                    </View>
-                  </View>
-                ))}
-              </View>
-            </View>
-
-            <View style={dynStyles.membersRow}>
-              <Text style={dynStyles.membersLabel}>Family Members</Text>
-              <Pressable onPress={openFamilyMembers}>
-                <Text style={dynStyles.membersViewAll}>Manage</Text>
-              </Pressable>
-            </View>
-
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={dynStyles.membersScroll}>
-              {members.map((member) => (
-                <Pressable
-                  key={member.id}
-                  style={dynStyles.memberChip}
-                  onPress={() => openMemberDetails(member.id)}
-                >
-                  <Avatar
-                    name={member.name}
-                    color={member.avatarColor}
-                    size={44}
-                    showBadge
-                    badgeColor={member.status === 'active' ? colors.success : colors.warning}
-                  />
-                  <Text style={dynStyles.memberChipName}>{member.name.split(' ')[0]}</Text>
-                  <Text style={dynStyles.memberChipPoints}>{member.points.toLocaleString()} pts</Text>
-                </Pressable>
-              ))}
-
-              {isParent && (
-                <Pressable style={dynStyles.addMemberChip} onPress={openInviteMember}>
-                  <View style={dynStyles.addMemberIcon}>
-                    <Ionicons name="add" size={22} color={colors.primary} />
-                  </View>
-                  <Text style={dynStyles.addMemberText}>Invite</Text>
-                </Pressable>
-              )}
-            </ScrollView>
-          </Animated.View>
-        </LinearGradient>
-
-        <Animated.View style={{ opacity: fadeAnim, paddingHorizontal: 16, marginTop: 4 }}>
-          <View style={dynStyles.quickStats}>
-            {quickStats.map((stat) => (
-              <Pressable
-                key={stat.label}
-                style={[dynStyles.statCard, shadows.sm]}
-                onPress={() => stat.route && handleRoleActionPress(stat.route)}
-                android_ripple={{ color: stat.color + '22' }}
-              >
-                <View style={[dynStyles.statIconCircle, { backgroundColor: stat.bg }]}>
-                  <Ionicons name={stat.icon as any} size={18} color={stat.color} />
-                </View>
-                <Text style={[dynStyles.statValue, { color: stat.urgent ? colors.danger : colors.text }]}>
-                  {stat.value}
-                </Text>
-                <Text style={dynStyles.statLabel}>{stat.label}</Text>
-                {stat.urgent && (
-                  <View style={dynStyles.urgentPill}>
-                    <Text style={dynStyles.urgentPillText}>!</Text>
-                  </View>
-                )}
-                <View style={dynStyles.statChevron}>
-                  <Ionicons name="chevron-forward" size={12} color={stat.color} />
-                </View>
-              </Pressable>
-            ))}
-          </View>
-
-          <View style={dynStyles.roleActions}>
-            {roleActions.map((action, idx) => (
-              <Pressable
-                key={action.label}
-                style={[dynStyles.roleActionBtn, shadows.sm]}
-                onPress={() => handleRoleActionPress(action.route)}
-              >
-                {idx === 0 ? (
-                  <LinearGradient colors={['#0F2952', '#1E4A8A']} style={dynStyles.roleActionGrad}>
-                    <Ionicons name={action.icon as any} size={19} color="#fff" />
-                    <Text style={[dynStyles.roleActionText, { color: '#fff' }]} numberOfLines={1}>{action.label}</Text>
-                  </LinearGradient>
-                ) : (
-                  <View style={dynStyles.roleActionInner}>
-                    <Ionicons name={action.icon as any} size={19} color={colors.primary} />
-                    <Text style={dynStyles.roleActionText} numberOfLines={1}>{action.label}</Text>
-                  </View>
-                )}
-              </Pressable>
-            ))}
-          </View>
-
-          {insights
-            .filter((insight) => !insight.isRead)
-            .slice(0, 2)
-            .map((insight) => (
-              <Card key={insight.id} style={dynStyles.insightCard} onPress={() => navigation.navigate('AI Assistant', { screen: 'AIAssistant' } as any)} variant="elevated">
-                <View style={dynStyles.insightRow}>
-                  <View
-                    style={[
-                      dynStyles.insightIcon,
-                      {
-                        backgroundColor:
-                          insight.priority === 'high'
-                            ? colors.dangerLight
-                            : insight.priority === 'medium'
-                              ? colors.warningLight
-                              : '#E8EEF9',
-                      },
-                    ]}
-                  >
-                    <Ionicons
-                      name={
-                        insight.type === 'financial'
-                          ? 'wallet'
-                          : insight.type === 'alert'
-                            ? 'warning'
-                            : insight.type === 'task'
-                              ? 'list'
-                              : 'bulb'
-                      }
-                      size={18}
-                      color={
-                        insight.priority === 'high'
-                          ? colors.danger
-                          : insight.priority === 'medium'
-                            ? colors.warning
-                            : colors.primary
-                      }
-                    />
-                  </View>
-
-                  <View style={{ flex: 1, marginLeft: 12 }}>
-                    <Text style={dynStyles.insightTitle}>{insight.title}</Text>
-                    <Text style={dynStyles.insightSummary} numberOfLines={2}>
-                      {insight.summary}
-                    </Text>
-                  </View>
-
-                  <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-                </View>
-              </Card>
-            ))}
-
-          {isParent && (
-            <>
-              <View style={dynStyles.sectionHeader}>
-                <Text style={dynStyles.sectionTitle}>Finance Overview</Text>
-                <Pressable onPress={() => navigation.navigate('Finance')}>
-                  <Text style={dynStyles.seeAll}>See All</Text>
-                </Pressable>
-              </View>
-
-              <Card variant="elevated" style={dynStyles.financeCard} padding={0} onPress={() => navigation.navigate('Finance')}>
-                <LinearGradient colors={['#0F2952', '#1E4A8A']} style={dynStyles.financeGradient}>
-                  <View style={dynStyles.financeRow}>
-                    {[
-                      {
-                        label: 'Monthly Income',
-                        value: `$${monthlyIncome.toLocaleString()}`,
-                        icon: 'arrow-down-circle',
-                        color: '#4EECD0',
-                      },
-                      {
-                        label: 'Expenses',
-                        value: `$${monthlyExpenses.toLocaleString()}`,
-                        icon: 'arrow-up-circle',
-                        color: '#FF8080',
-                      },
-                      {
-                        label: 'Saved',
-                        value: `$${Math.max(0, monthlySavings).toLocaleString()}`,
-                        icon: 'save',
-                        color: '#FFD166',
-                      },
-                    ].map((item, index) => (
-                      <View
-                        key={item.label}
-                        style={[dynStyles.financeItem, index < 2 && dynStyles.financeItemBorder]}
-                      >
-                        <Ionicons name={item.icon as any} size={20} color={item.color} />
-                        <Text style={dynStyles.financeValue}>{item.value}</Text>
-                        <Text style={dynStyles.financeLabel}>{item.label}</Text>
-                      </View>
-                    ))}
-                  </View>
-
-                  <View style={dynStyles.savingsRateRow}>
-                    <Text style={dynStyles.savingsRateLabel}>Savings Rate</Text>
-                    <Text style={dynStyles.savingsRateValue}>
-                      {monthlyIncome > 0 ? Math.round((monthlySavings / monthlyIncome) * 100) : 0}%
-                    </Text>
-                  </View>
-
-                  <ProgressBar
-                    progress={monthlyIncome > 0 ? monthlySavings / monthlyIncome : 0}
-                    color={colors.accentLight}
-                    backgroundColor="rgba(255,255,255,0.1)"
-                    height={6}
-                    style={{ marginHorizontal: 16, marginBottom: 16 }}
-                  />
-                </LinearGradient>
-              </Card>
-            </>
-          )}
-
-          <View style={dynStyles.sectionHeader}>
-            <Text style={dynStyles.sectionTitle}>{isChild ? 'My Schedule' : "Today's Schedule"}</Text>
-            <Pressable onPress={() => navigation.navigate('Family', { screen: 'Calendar', params: { source: 'dashboard' } })}>
-              <Text style={dynStyles.seeAll}>Calendar</Text>
-            </Pressable>
-          </View>
-
-          {todayEvents.length > 0 ? (
-            todayEvents.slice(0, 3).map((event) => (
-              <Card key={event.id} style={dynStyles.eventCard} onPress={() => navigation.navigate('Family', { screen: 'Calendar', params: { source: 'dashboard' } })} variant="elevated" padding={0}>
-                <View style={dynStyles.eventRow}>
-                  <View style={[dynStyles.eventColorStrip, { backgroundColor: event.color ?? colors.primary }]} />
-                  <View style={{ flex: 1, paddingVertical: 14, paddingLeft: 14 }}>
-                    <Text style={dynStyles.eventTitle}>{event.title}</Text>
-                    <View style={dynStyles.eventMeta}>
-                      <View style={[dynStyles.eventTimePill, { backgroundColor: (event.color ?? colors.primary) + '18' }]}>
-                        <Ionicons name="time-outline" size={11} color={event.color ?? colors.primary} />
-                        <Text style={[dynStyles.eventTime, { color: event.color ?? colors.primary }]}>
-                          {event.allDay ? 'All Day' : format(new Date(event.startDate), 'h:mm a')}
-                        </Text>
-                      </View>
-                      {event.location && (
-                        <Text style={dynStyles.eventLocation} numberOfLines={1}>
-                          📍 {event.location}
-                        </Text>
-                      )}
-                    </View>
-                  </View>
-
-                  <View style={dynStyles.eventRight}>
-                    <View style={dynStyles.eventAttendees}>
-                      {event.attendees.slice(0, 3).map((id, index) => {
-                        const member = members.find((m) => m.id === id);
-                        if (!member) return null;
-                        return (
-                          <Avatar
-                            key={id}
-                            name={member.name}
-                            color={member.avatarColor}
-                            size={24}
-                            style={{ marginLeft: index > 0 ? -7 : 0, zIndex: 3 - index }}
-                          />
-                        );
-                      })}
-                    </View>
-                    <Ionicons name="chevron-forward" size={14} color={colors.textMuted} style={{ marginTop: 6 }} />
-                  </View>
-                </View>
-              </Card>
-            ))
-          ) : (
-            <Card style={dynStyles.emptyCard} padding={20} onPress={() => navigation.navigate('Family', { screen: 'Calendar', params: { source: 'dashboard' } })}>
-              <Ionicons name="calendar-outline" size={32} color={colors.textMuted} />
-              <Text style={dynStyles.emptyText}>No events today — enjoy the free time!</Text>
-              <Text style={dynStyles.emptyAction}>Add Event →</Text>
-            </Card>
-          )}
-
-          <View style={dynStyles.sectionHeader}>
-            <Text style={dynStyles.sectionTitle}>{isChild ? 'My Priority Tasks' : 'Priority Tasks'}</Text>
-            <Pressable onPress={() => navigation.navigate('Family', { screen: 'Tasks', params: { memberId: activeMember?.id, role: activeMember?.role, source: 'dashboard' } })}>
-              <Text style={dynStyles.seeAll}>View All</Text>
-            </Pressable>
-          </View>
-
-          {visibleTasks
-            .filter((task) => task.status === 'pending')
-            .sort((a, b) => {
-              const priorityOrder: Record<string, number> = { urgent: 0, high: 1, medium: 2, low: 3 };
-              return priorityOrder[a.priority] - priorityOrder[b.priority];
-            })
-            .slice(0, 3)
-            .map((task: any) => {
-              const assignee = members.find((member) => task.assignedTo?.includes(member.id));
-              const prioColor =
-                task.priority === 'urgent' || task.priority === 'high'
-                  ? colors.danger
-                  : task.priority === 'medium'
-                    ? colors.warning
-                    : colors.success;
-
-              return (
-                <Card key={task.id} style={dynStyles.taskCard} onPress={() => navigation.navigate('Family', { screen: 'Tasks', params: { memberId: activeMember?.id, role: activeMember?.role, source: 'dashboard' } })} variant="elevated" padding={0}>
-                  <View style={dynStyles.taskRow}>
-                    <View style={[dynStyles.taskPriorityStrip, { backgroundColor: prioColor }]} />
-                    <View style={dynStyles.taskCheckWrap}>
-                      <Pressable style={[dynStyles.taskCheck, { borderColor: prioColor }]}>
-                        <Ionicons name="checkmark" size={14} color="transparent" />
-                      </Pressable>
-                    </View>
-                    <View style={{ flex: 1, paddingVertical: 14, paddingRight: 14 }}>
-                      <Text style={dynStyles.taskTitle}>{task.title}</Text>
-                      <View style={dynStyles.taskMeta}>
-                        <View style={[dynStyles.taskPrioBadge, { backgroundColor: prioColor + '20' }]}>
-                          <Text style={[dynStyles.taskPrioBadgeText, { color: prioColor }]}>
-                            {task.priority.toUpperCase()}
-                          </Text>
-                        </View>
-                        {task.dueDate && (
-                          <Text style={dynStyles.taskDue}>
-                            Due {format(new Date(task.dueDate), 'MMM d')}
-                          </Text>
-                        )}
-                      </View>
-                    </View>
-                    {assignee && (
-                      <View style={{ paddingRight: 14 }}>
-                        <Avatar name={assignee.name} color={assignee.avatarColor} size={30} />
+                    <Text style={dynStyles.statLabel}>{stat.label}</Text>
+                    {stat.urgent && (
+                      <View style={dynStyles.urgentPill}>
+                        <Text style={dynStyles.urgentPillText}>!</Text>
                       </View>
                     )}
-                  </View>
-                </Card>
-              );
-            })}
-
-          <Pressable onPress={() => navigation.navigate('WeeklyReport')} style={dynStyles.reportBanner}>
-            <LinearGradient colors={['#0F2952', '#1E4A8A']} style={dynStyles.reportBannerGrad}>
-              <View style={dynStyles.reportBannerLeft}>
-                <Ionicons name="bar-chart" size={20} color={colors.secondary} />
-                <View>
-                  <Text style={dynStyles.reportBannerTitle}>Weekly Report Ready</Text>
-                  <Text style={dynStyles.reportBannerSub}>
-                    {isChild
-                      ? 'Your weekly task and reward progress is ready'
-                      : 'Family Health Score +4 pts this week'}
-                  </Text>
-                </View>
+                    <View style={dynStyles.statChevron}>
+                      <Ionicons name="chevron-forward" size={12} color={stat.color} />
+                    </View>
+                  </Pressable>
+                ))}
               </View>
-              <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.6)" />
-            </LinearGradient>
-          </Pressable>
-        </Animated.View>
-      </ScrollView>
+
+              <View style={dynStyles.roleActions}>
+                {roleActions.map((action, idx) => (
+                  <Pressable
+                    key={action.label}
+                    style={[dynStyles.roleActionBtn, shadows.sm]}
+                    onPress={() => handleRoleActionPress(action.route)}
+                  >
+                    {idx === 0 ? (
+                      <LinearGradient colors={['#0F2952', '#1E4A8A']} style={dynStyles.roleActionGrad}>
+                        <Ionicons name={action.icon as any} size={19} color="#fff" />
+                        <Text style={[dynStyles.roleActionText, { color: '#fff' }]} numberOfLines={1}>{action.label}</Text>
+                      </LinearGradient>
+                    ) : (
+                      <View style={dynStyles.roleActionInner}>
+                        <Ionicons name={action.icon as any} size={19} color={colors.primary} />
+                        <Text style={dynStyles.roleActionText} numberOfLines={1}>{action.label}</Text>
+                      </View>
+                    )}
+                  </Pressable>
+                ))}
+              </View>
+
+              {insights
+                .filter((insight) => !insight.isRead)
+                .slice(0, 2)
+                .map((insight) => (
+                  <Card key={insight.id} style={dynStyles.insightCard} onPress={() => navigation.navigate('AI Assistant', { screen: 'AIAssistant' } as any)} variant="elevated">
+                    <View style={dynStyles.insightRow}>
+                      <View
+                        style={[
+                          dynStyles.insightIcon,
+                          {
+                            backgroundColor:
+                              insight.priority === 'high'
+                                ? colors.dangerLight
+                                : insight.priority === 'medium'
+                                  ? colors.warningLight
+                                  : '#E8EEF9',
+                          },
+                        ]}
+                      >
+                        <Ionicons
+                          name={
+                            insight.type === 'financial'
+                              ? 'wallet'
+                              : insight.type === 'alert'
+                                ? 'warning'
+                                : insight.type === 'task'
+                                  ? 'list'
+                                  : 'bulb'
+                          }
+                          size={18}
+                          color={
+                            insight.priority === 'high'
+                              ? colors.danger
+                              : insight.priority === 'medium'
+                                ? colors.warning
+                                : colors.primary
+                          }
+                        />
+                      </View>
+
+                      <View style={{ flex: 1, marginLeft: 12 }}>
+                        <Text style={dynStyles.insightTitle}>{insight.title}</Text>
+                        <Text style={dynStyles.insightSummary} numberOfLines={2}>
+                          {insight.summary}
+                        </Text>
+                      </View>
+
+                      <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                    </View>
+                  </Card>
+                ))}
+
+              {isParent && (
+                <>
+                  <View style={dynStyles.sectionHeader}>
+                    <Text style={dynStyles.sectionTitle}>Finance Overview</Text>
+                    <Pressable onPress={() => navigation.navigate('Finance')}>
+                      <Text style={dynStyles.seeAll}>See All</Text>
+                    </Pressable>
+                  </View>
+
+                  <Card variant="elevated" style={dynStyles.financeCard} padding={0} onPress={() => navigation.navigate('Finance')}>
+                    <LinearGradient colors={['#0F2952', '#1E4A8A']} style={dynStyles.financeGradient}>
+                      <View style={dynStyles.financeRow}>
+                        {[
+                          {
+                            label: 'Monthly Income',
+                            value: `$${monthlyIncome.toLocaleString()}`,
+                            icon: 'arrow-down-circle',
+                            color: '#4EECD0',
+                          },
+                          {
+                            label: 'Expenses',
+                            value: `$${monthlyExpenses.toLocaleString()}`,
+                            icon: 'arrow-up-circle',
+                            color: '#FF8080',
+                          },
+                          {
+                            label: 'Saved',
+                            value: `$${Math.max(0, monthlySavings).toLocaleString()}`,
+                            icon: 'save',
+                            color: '#FFD166',
+                          },
+                        ].map((item, index) => (
+                          <View
+                            key={item.label}
+                            style={[dynStyles.financeItem, index < 2 && dynStyles.financeItemBorder]}
+                          >
+                            <Ionicons name={item.icon as any} size={20} color={item.color} />
+                            <Text style={dynStyles.financeValue}>{item.value}</Text>
+                            <Text style={dynStyles.financeLabel}>{item.label}</Text>
+                          </View>
+                        ))}
+                      </View>
+
+                      <View style={dynStyles.savingsRateRow}>
+                        <Text style={dynStyles.savingsRateLabel}>Savings Rate</Text>
+                        <Text style={dynStyles.savingsRateValue}>
+                          {monthlyIncome > 0 ? Math.round((monthlySavings / monthlyIncome) * 100) : 0}%
+                        </Text>
+                      </View>
+
+                      <ProgressBar
+                        progress={monthlyIncome > 0 ? monthlySavings / monthlyIncome : 0}
+                        color={colors.accentLight}
+                        backgroundColor="rgba(255,255,255,0.1)"
+                        height={6}
+                        style={{ marginHorizontal: 16, marginBottom: 16 }}
+                      />
+                    </LinearGradient>
+                  </Card>
+                </>
+              )}
+
+              <View style={dynStyles.sectionHeader}>
+                <Text style={dynStyles.sectionTitle}>{isChild ? 'My Schedule' : "Today's Schedule"}</Text>
+                <Pressable onPress={() => navigation.navigate('Family', { screen: 'Calendar', params: { source: 'dashboard' } })}>
+                  <Text style={dynStyles.seeAll}>Calendar</Text>
+                </Pressable>
+              </View>
+
+              {todayEvents.length > 0 ? (
+                todayEvents.slice(0, 3).map((event) => (
+                  <Card key={event.id} style={dynStyles.eventCard} onPress={() => navigation.navigate('Family', { screen: 'Calendar', params: { source: 'dashboard' } })} variant="elevated" padding={0}>
+                    <View style={dynStyles.eventRow}>
+                      <View style={[dynStyles.eventColorStrip, { backgroundColor: event.color ?? colors.primary }]} />
+                      <View style={{ flex: 1, paddingVertical: 14, paddingLeft: 14 }}>
+                        <Text style={dynStyles.eventTitle}>{event.title}</Text>
+                        <View style={dynStyles.eventMeta}>
+                          <View style={[dynStyles.eventTimePill, { backgroundColor: (event.color ?? colors.primary) + '18' }]}>
+                            <Ionicons name="time-outline" size={11} color={event.color ?? colors.primary} />
+                            <Text style={[dynStyles.eventTime, { color: event.color ?? colors.primary }]}>
+                              {event.allDay ? 'All Day' : format(new Date(event.startDate), 'h:mm a')}
+                            </Text>
+                          </View>
+                          {event.location && (
+                            <Text style={dynStyles.eventLocation} numberOfLines={1}>
+                              📍 {event.location}
+                            </Text>
+                          )}
+                        </View>
+                      </View>
+
+                      <View style={dynStyles.eventRight}>
+                        <View style={dynStyles.eventAttendees}>
+                          {event.attendees.slice(0, 3).map((id, index) => {
+                            const member = members.find((m) => m.id === id);
+                            if (!member) return null;
+                            return (
+                              <Avatar
+                                key={id}
+                                name={member.name}
+                                color={member.avatarColor}
+                                size={24}
+                                style={{ marginLeft: index > 0 ? -7 : 0, zIndex: 3 - index }}
+                              />
+                            );
+                          })}
+                        </View>
+                        <Ionicons name="chevron-forward" size={14} color={colors.textMuted} style={{ marginTop: 6 }} />
+                      </View>
+                    </View>
+                  </Card>
+                ))
+              ) : (
+                <Card style={dynStyles.emptyCard} padding={20} onPress={() => navigation.navigate('Family', { screen: 'Calendar', params: { source: 'dashboard' } })}>
+                  <Ionicons name="calendar-outline" size={32} color={colors.textMuted} />
+                  <Text style={dynStyles.emptyText}>No events today — enjoy the free time!</Text>
+                  <Text style={dynStyles.emptyAction}>Add Event →</Text>
+                </Card>
+              )}
+
+              <View style={dynStyles.sectionHeader}>
+                <Text style={dynStyles.sectionTitle}>{isChild ? 'My Priority Tasks' : 'Priority Tasks'}</Text>
+                <Pressable onPress={() => navigation.navigate('Family', { screen: 'Tasks', params: { memberId: activeMember?.id, role: activeMember?.role, source: 'dashboard' } })}>
+                  <Text style={dynStyles.seeAll}>View All</Text>
+                </Pressable>
+              </View>
+
+              {visibleTasks
+                .filter((task) => task.status === 'pending')
+                .sort((a, b) => {
+                  const priorityOrder: Record<string, number> = { urgent: 0, high: 1, medium: 2, low: 3 };
+                  return priorityOrder[a.priority] - priorityOrder[b.priority];
+                })
+                .slice(0, 3)
+                .map((task: any) => {
+                  const assignee = members.find((member) => task.assignedTo?.includes(member.id));
+                  const prioColor =
+                    task.priority === 'urgent' || task.priority === 'high'
+                      ? colors.danger
+                      : task.priority === 'medium'
+                        ? colors.warning
+                        : colors.success;
+
+                  return (
+                    <Card key={task.id} style={dynStyles.taskCard} onPress={() => navigation.navigate('Family', { screen: 'Tasks', params: { memberId: activeMember?.id, role: activeMember?.role, source: 'dashboard' } })} variant="elevated" padding={0}>
+                      <View style={dynStyles.taskRow}>
+                        <View style={[dynStyles.taskPriorityStrip, { backgroundColor: prioColor }]} />
+                        <View style={dynStyles.taskCheckWrap}>
+                          <Pressable style={[dynStyles.taskCheck, { borderColor: prioColor }]}>
+                            <Ionicons name="checkmark" size={14} color="transparent" />
+                          </Pressable>
+                        </View>
+                        <View style={{ flex: 1, paddingVertical: 14, paddingRight: 14 }}>
+                          <Text style={dynStyles.taskTitle}>{task.title}</Text>
+                          <View style={dynStyles.taskMeta}>
+                            <View style={[dynStyles.taskPrioBadge, { backgroundColor: prioColor + '20' }]}>
+                              <Text style={[dynStyles.taskPrioBadgeText, { color: prioColor }]}>
+                                {task.priority.toUpperCase()}
+                              </Text>
+                            </View>
+                            {task.dueDate && (
+                              <Text style={dynStyles.taskDue}>
+                                Due {format(new Date(task.dueDate), 'MMM d')}
+                              </Text>
+                            )}
+                          </View>
+                        </View>
+                        {assignee && (
+                          <View style={{ paddingRight: 14 }}>
+                            <Avatar name={assignee.name} color={assignee.avatarColor} size={30} />
+                          </View>
+                        )}
+                      </View>
+                    </Card>
+                  );
+                })}
+
+              <Pressable onPress={() => navigation.navigate('WeeklyReport')} style={dynStyles.reportBanner}>
+                <LinearGradient colors={['#0F2952', '#1E4A8A']} style={dynStyles.reportBannerGrad}>
+                  <View style={dynStyles.reportBannerLeft}>
+                    <Ionicons name="bar-chart" size={20} color={colors.secondary} />
+                    <View>
+                      <Text style={dynStyles.reportBannerTitle}>Weekly Report Ready</Text>
+                      <Text style={dynStyles.reportBannerSub}>
+                        {isChild
+                          ? 'Your weekly task and reward progress is ready'
+                          : 'Family Health Score +4 pts this week'}
+                      </Text>
+                    </View>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.6)" />
+                </LinearGradient>
+              </Pressable>
+            </Animated.View>
+          </ScrollView>
+        )}
+      </CollapsibleHeader>
     </View>
   );
 }

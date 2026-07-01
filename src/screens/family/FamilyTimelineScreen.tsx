@@ -10,6 +10,7 @@ import { format, formatDistanceToNow, isSameMonth } from 'date-fns';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { Card } from '../../components/common/Card';
 import { Avatar } from '../../components/common/Avatar';
 import { Button } from '../../components/common/Button';
@@ -102,38 +103,62 @@ export function FamilyTimelineScreen({ navigation }: any) {
 
   const highlights = entries.filter((e) => e.isHighlight).length;
 
+  const screenHeader = (
+    <LinearGradient colors={['#4A0072', '#7B2D8B']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
+      <View style={styles.headerRow}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.headerTitle}>Family Story</Text>
+          <Text style={styles.headerSub}>{entries.length} moments · {highlights} highlights</Text>
+        </View>
+        <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
+          <Ionicons name="add" size={22} color="#fff" />
+        </Pressable>
+      </View>
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+        {TYPE_FILTERS.map((f) => (
+          <Pressable
+            key={f.key}
+            onPress={() => setFilter(f.key)}
+            style={[styles.filterChip, filter === f.key && styles.filterChipActive]}
+          >
+            <Text style={styles.filterEmoji}>{f.emoji}</Text>
+            <Text style={[styles.filterText, filter === f.key && styles.filterTextActive]}>{f.label}</Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+    </LinearGradient>
+  );
+
+  const screenCompact = (
+    <LinearGradient colors={['#4A0072', '#7B2D8B']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </Pressable>
+      <Text style={styles.headerTitle}>Family Story</Text>
+      <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
+        <Ionicons name="add" size={22} color="#fff" />
+      </Pressable>
+    </LinearGradient>
+  );
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#4A0072', '#7B2D8B']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
-        <View style={styles.headerRow}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.headerTitle}>Family Story</Text>
-            <Text style={styles.headerSub}>{entries.length} moments · {highlights} highlights</Text>
-          </View>
-          <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
-            <Ionicons name="add" size={22} color="#fff" />
-          </Pressable>
-        </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-          {TYPE_FILTERS.map((f) => (
-            <Pressable
-              key={f.key}
-              onPress={() => setFilter(f.key)}
-              style={[styles.filterChip, filter === f.key && styles.filterChipActive]}
-            >
-              <Text style={styles.filterEmoji}>{f.emoji}</Text>
-              <Text style={[styles.filterText, filter === f.key && styles.filterTextActive]}>{f.label}</Text>
-            </Pressable>
-          ))}
-        </ScrollView>
-      </LinearGradient>
-
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]} showsVerticalScrollIndicator={false}>
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+      <ScrollView
+        onScroll={onScroll}
+        onScrollEndDrag={onScrollEndDrag}
+        onMomentumScrollEnd={onMomentumScrollEnd}
+        scrollEventThrottle={scrollEventThrottle}
+        contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+        showsVerticalScrollIndicator={false}
+      >
         {filtered.length === 0 && (
           <View style={styles.empty}>
             <Text style={{ fontSize: 56 }}>📖</Text>
@@ -204,6 +229,8 @@ export function FamilyTimelineScreen({ navigation }: any) {
           );
         })}
       </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowModal(false)}>
         <ScrollView style={styles.modal} contentContainerStyle={{ paddingBottom: 40 }}>

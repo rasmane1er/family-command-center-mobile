@@ -1,6 +1,14 @@
 import { NativeModules, Platform } from 'react-native';
 
-const { UsageStatsModule, LocationModule, DeviceControlModule, FamilyControlsModule, IOSLocationModule, AppBlockerModule, FamilyActivityPickerModule } = NativeModules;
+const {
+  UsageStatsModule,
+  LocationModule,
+  DeviceControlModule,
+  FamilyControlsModule,
+  IOSLocationModule,
+  AppBlockerModule,
+  FamilyActivityPickerModule,
+} = NativeModules;
 
 export interface NativeAppUsage {
   packageName: string;
@@ -16,111 +24,175 @@ export interface NativeLocation {
   locationAt: string;
 }
 
+type PickerResult = {
+  applicationCount: number;
+  categoryCount: number;
+  available: boolean;
+  cancelled?: boolean;
+};
+
 const isAndroid = Platform.OS === 'android';
 const isIOS = Platform.OS === 'ios';
 
-export const GuardianNative = {
-  // Usage Stats (Android only)
-  getUsageStats: (date: string): Promise<NativeAppUsage[]> =>
-    isAndroid ? UsageStatsModule.getUsageStats(date) : Promise.resolve([]),
-  hasUsagePermission: (): Promise<boolean> =>
-    isAndroid ? UsageStatsModule.hasUsagePermission() : Promise.resolve(false),
-  openUsagePermissionSettings: (): Promise<boolean> =>
-    isAndroid ? UsageStatsModule.openUsagePermissionSettings() : Promise.resolve(false),
+const unavailablePickerResult: PickerResult = {
+  applicationCount: 0,
+  categoryCount: 0,
+  available: false,
+};
 
-  // Location (cross-platform)
+const safeCall = async <T>(
+  fn: (() => Promise<T>) | undefined,
+  fallback: T
+): Promise<T> => {
+  try {
+    if (!fn) return fallback;
+    return await fn();
+  } catch {
+    return fallback;
+  }
+};
+
+export const GuardianNative = {
+  // Android Usage Stats
+  getUsageStats: (date: string): Promise<NativeAppUsage[]> =>
+    isAndroid
+      ? safeCall(() => UsageStatsModule?.getUsageStats(date), [])
+      : Promise.resolve([]),
+
+  hasUsagePermission: (): Promise<boolean> =>
+    isAndroid
+      ? safeCall(() => UsageStatsModule?.hasUsagePermission(), false)
+      : Promise.resolve(false),
+
+  openUsagePermissionSettings: (): Promise<boolean> =>
+    isAndroid
+      ? safeCall(() => UsageStatsModule?.openUsagePermissionSettings(), false)
+      : Promise.resolve(false),
+
+  // Location
   startLocationTracking: (intervalMs: number): Promise<boolean> =>
     isAndroid
-      ? LocationModule.startLocationTracking(intervalMs)
+      ? safeCall(() => LocationModule?.startLocationTracking(intervalMs), false)
       : isIOS
-        ? IOSLocationModule.startLocationTracking(intervalMs)
+        ? safeCall(() => IOSLocationModule?.startLocationTracking(intervalMs), false)
         : Promise.resolve(false),
+
   stopLocationTracking: (): Promise<boolean> =>
     isAndroid
-      ? LocationModule.stopLocationTracking()
+      ? safeCall(() => LocationModule?.stopLocationTracking(), false)
       : isIOS
-        ? IOSLocationModule.stopLocationTracking()
+        ? safeCall(() => IOSLocationModule?.stopLocationTracking(), false)
         : Promise.resolve(false),
+
   getLastLocation: (): Promise<NativeLocation | null> =>
     isAndroid
-      ? LocationModule.getLastLocation()
+      ? safeCall(() => LocationModule?.getLastLocation(), null)
       : isIOS
-        ? IOSLocationModule.getLastLocation()
+        ? safeCall(() => IOSLocationModule?.getLastLocation(), null)
         : Promise.resolve(null),
+
   hasLocationPermission: (): Promise<boolean> =>
     isAndroid
-      ? LocationModule.hasLocationPermission()
+      ? safeCall(() => LocationModule?.hasLocationPermission(), false)
       : isIOS
-        ? IOSLocationModule.hasLocationPermission()
+        ? safeCall(() => IOSLocationModule?.hasLocationPermission(), false)
         : Promise.resolve(false),
 
-  // iOS Screen Time / Family Controls (iOS 16+ only)
-
-  /**
-   * Request Screen Time (FamilyControls) authorization.
-   * Resolves: "authorized" | "denied" | "notDetermined" | "unavailable"
-   */
+  // iOS Screen Time / Family Controls
   requestScreenTimePermission: (): Promise<string> =>
-    isIOS ? FamilyControlsModule.requestScreenTimePermission() : Promise.resolve('unavailable'),
+    isIOS
+      ? safeCall(
+          () => FamilyControlsModule?.requestScreenTimePermission(),
+          'unavailable'
+        )
+      : Promise.resolve('unavailable'),
 
-  /**
-   * Check whether Screen Time authorization is currently approved.
-   * Resolves: boolean
-   */
   isScreenTimeAuthorized: (): Promise<boolean> =>
-    isIOS ? FamilyControlsModule.isAuthorized() : Promise.resolve(false),
+    isIOS
+      ? safeCall(() => FamilyControlsModule?.isAuthorized(), false)
+      : Promise.resolve(false),
 
-  /**
-   * Apply app restrictions for the given bundle IDs.
-   *
-   * NOTE: Apple does not allow creating ApplicationTokens from bundle identifiers.
-   * To shield specific apps you must present FamilyActivityPicker (SwiftUI) and
-   * obtain a FamilyActivitySelection from the user. This method is provided for
-   * API surface compatibility; the bundleIds argument is currently unused at the
-   * native layer.
-   *
-   * Resolves: boolean
-   */
   setAppRestrictions: (bundleIds: string[]): Promise<boolean> =>
-    isIOS ? FamilyControlsModule.setAppRestrictions(bundleIds) : Promise.resolve(false),
+    isIOS
+      ? safeCall(() => FamilyControlsModule?.setAppRestrictions(bundleIds), false)
+      : Promise.resolve(false),
 
-  /**
-   * Clear all ManagedSettings shield restrictions.
-   * Resolves: boolean
-   */
   clearRestrictions: (): Promise<boolean> =>
-    isIOS ? FamilyControlsModule.clearRestrictions() : Promise.resolve(false),
+    isIOS
+      ? safeCall(() => FamilyControlsModule?.clearRestrictions(), false)
+      : Promise.resolve(false),
 
-  // Device Control
+  // Android Device Control
   lockScreen: (): Promise<boolean> =>
-    isAndroid ? DeviceControlModule.lockScreen() : Promise.resolve(false),
-  isDeviceAdminActive: (): Promise<boolean> =>
-    isAndroid ? DeviceControlModule.isDeviceAdminActive() : Promise.resolve(false),
-  requestDeviceAdmin: (): Promise<boolean> =>
-    isAndroid ? DeviceControlModule.requestDeviceAdmin() : Promise.resolve(false),
-  setBedtimeMode: (enabled: boolean): Promise<boolean> =>
-    isAndroid ? DeviceControlModule.setBedtimeMode(enabled) : Promise.resolve(false),
-  setSchoolMode: (enabled: boolean): Promise<boolean> =>
-    isAndroid ? DeviceControlModule.setSchoolMode(enabled) : Promise.resolve(false),
+    isAndroid
+      ? safeCall(() => DeviceControlModule?.lockScreen(), false)
+      : Promise.resolve(false),
 
-  // App Blocker (Android only — AccessibilityService)
+  isDeviceAdminActive: (): Promise<boolean> =>
+    isAndroid
+      ? safeCall(() => DeviceControlModule?.isDeviceAdminActive(), false)
+      : Promise.resolve(false),
+
+  requestDeviceAdmin: (): Promise<boolean> =>
+    isAndroid
+      ? safeCall(() => DeviceControlModule?.requestDeviceAdmin(), false)
+      : Promise.resolve(false),
+
+  setBedtimeMode: (enabled: boolean): Promise<boolean> =>
+    isAndroid
+      ? safeCall(() => DeviceControlModule?.setBedtimeMode(enabled), false)
+      : Promise.resolve(false),
+
+  setSchoolMode: (enabled: boolean): Promise<boolean> =>
+    isAndroid
+      ? safeCall(() => DeviceControlModule?.setSchoolMode(enabled), false)
+      : Promise.resolve(false),
+
+  // Android App Blocker
   setBlockedApps: (packages: string[]): Promise<boolean> =>
-    isAndroid ? AppBlockerModule.setBlockedApps(packages) : Promise.resolve(false),
+    isAndroid
+      ? safeCall(() => AppBlockerModule?.setBlockedApps(packages), false)
+      : Promise.resolve(false),
+
   getBlockedApps: (): Promise<string[]> =>
-    isAndroid ? AppBlockerModule.getBlockedApps() : Promise.resolve([]),
+    isAndroid
+      ? safeCall(() => AppBlockerModule?.getBlockedApps(), [])
+      : Promise.resolve([]),
+
   isAccessibilityServiceEnabled: (): Promise<boolean> =>
-    isAndroid ? AppBlockerModule.isAccessibilityServiceEnabled() : Promise.resolve(false),
+    isAndroid
+      ? safeCall(() => AppBlockerModule?.isAccessibilityServiceEnabled(), false)
+      : Promise.resolve(false),
+
   openAccessibilitySettings: (): Promise<boolean> =>
-    isAndroid ? AppBlockerModule.openAccessibilitySettings() : Promise.resolve(false),
+    isAndroid
+      ? safeCall(() => AppBlockerModule?.openAccessibilitySettings(), false)
+      : Promise.resolve(false),
 
   // iOS FamilyActivityPicker
-  presentAppPicker: (): Promise<{ applicationCount: number; categoryCount: number; available: boolean; cancelled?: boolean }> =>
-    isIOS ? FamilyActivityPickerModule.presentPicker() : Promise.resolve({ applicationCount: 0, categoryCount: 0, available: false }),
+  presentAppPicker: (): Promise<PickerResult> =>
+    isIOS
+      ? safeCall(
+          () => FamilyActivityPickerModule?.presentPicker(),
+          unavailablePickerResult
+        )
+      : Promise.resolve(unavailablePickerResult),
 
-  applyAppRestrictions: (applicationCount: number, categoryCount: number): Promise<boolean> =>
-    isIOS ? FamilyActivityPickerModule.applySelectedRestrictions(applicationCount, categoryCount) : Promise.resolve(false),
+  applyAppRestrictions: (
+    applicationCount: number,
+    categoryCount: number
+  ): Promise<boolean> =>
+    isIOS
+      ? safeCall(
+          () =>
+            FamilyActivityPickerModule?.applySelectedRestrictions(
+              applicationCount,
+              categoryCount
+            ),
+          false
+        )
+      : Promise.resolve(false),
 
-  // FCM token - handled by expo-notifications in the child app
-  // In the parent app we just expose a placeholder
+  // FCM token handled by Expo notifications
   getFCMToken: (): Promise<string | null> => Promise.resolve(null),
 };

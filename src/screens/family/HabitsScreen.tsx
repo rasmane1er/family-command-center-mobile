@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { StatusBar } from 'expo-status-bar';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import * as Haptics from 'expo-haptics';
 import { PremiumHeader } from '../../components/common/PremiumHeader';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
 import { Card } from '../../components/common/Card';
@@ -30,6 +34,7 @@ function getLastSevenDays(): string[] {
 }
 
 export function HabitsScreen({ navigation }: any) {
+  const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<'family' | 'personal'>('family');
   const [showModal, setShowModal] = useState(false);
   const [newTitle, setNewTitle] = useState('');
@@ -93,53 +98,78 @@ export function HabitsScreen({ navigation }: any) {
     setShowModal(false);
   };
 
+  const screenHeader = (
+    <LinearGradient colors={['#E67E22', '#D35400']} style={{ paddingTop: insets.top + 6, paddingHorizontal: 20, paddingBottom: 16 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+        <Pressable onPress={() => navigation.goBack()} style={{ marginRight: 12 }}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <Text style={{ flex: 1, fontSize: 18, fontWeight: '800', color: '#fff' }}>Family Habits</Text>
+        <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
+          <Ionicons name="add" size={22} color="#fff" />
+        </Pressable>
+      </View>
+      <View style={styles.statsRow}>
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>{completedToday}/{habits.length}</Text>
+          <Text style={styles.statLabel}>Today</Text>
+        </View>
+        <View style={[styles.statItem, styles.statBorder]}>
+          <Text style={styles.statValue}>{avgStreak}</Text>
+          <Text style={styles.statLabel}>Avg Streak</Text>
+        </View>
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>{totalStreak}</Text>
+          <Text style={styles.statLabel}>Total Days</Text>
+        </View>
+      </View>
+      <View style={styles.todayRow}>
+        <Text style={styles.todayLabel}>Today — {format(new Date(), 'EEEE, MMM d')}</Text>
+        <Text style={styles.todayProgress}>{Math.round((completedToday / Math.max(habits.length, 1)) * 100)}% done</Text>
+      </View>
+      <View style={styles.progressBar}>
+        <View style={[styles.progressFill, { width: `${(completedToday / Math.max(habits.length, 1)) * 100}%` }]} />
+      </View>
+    
+    <View style={styles.tabs}>
+            {(['family', 'personal'] as const).map((t) => (
+              <Pressable key={t} onPress={() => setTab(t)} style={[styles.tab, tab === t && styles.tabActive]}>
+                <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
+                  {t === 'family' ? '👨‍👩‍👧‍👦 Family Habits' : '👤 Personal'}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+</LinearGradient>
+  );
+
+  const screenCompact = (
+    <LinearGradient colors={['#E67E22', '#D35400']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Pressable onPress={() => navigation.goBack()}>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </Pressable>
+      <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>Family Habits</Text>
+      <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
+        <Ionicons name="add" size={22} color="#fff" />
+      </Pressable>
+    </LinearGradient>
+  );
+
   return (
     <View style={styles.container}>
-      <PremiumHeader
-        title="Family Habits"
-        colors={['#E67E22', '#D35400']}
-        onBack={() => navigation.goBack()}
-        rightAction={
-          <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
-            <Ionicons name="add" size={22} color="#fff" />
-          </Pressable>
-        }
+      <StatusBar style="light" />
+
+      
+
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+      <ScrollView
+        onScroll={onScroll}
+        onScrollEndDrag={onScrollEndDrag}
+        onMomentumScrollEnd={onMomentumScrollEnd}
+        scrollEventThrottle={scrollEventThrottle}
+        contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
       >
-        <View style={styles.statsRow}>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{completedToday}/{habits.length}</Text>
-            <Text style={styles.statLabel}>Today</Text>
-          </View>
-          <View style={[styles.statItem, styles.statBorder]}>
-            <Text style={styles.statValue}>{avgStreak}</Text>
-            <Text style={styles.statLabel}>Avg Streak</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{totalStreak}</Text>
-            <Text style={styles.statLabel}>Total Days</Text>
-          </View>
-        </View>
-
-        <View style={styles.todayRow}>
-          <Text style={styles.todayLabel}>Today — {format(new Date(), 'EEEE, MMM d')}</Text>
-          <Text style={styles.todayProgress}>{Math.round((completedToday / Math.max(habits.length, 1)) * 100)}% done</Text>
-        </View>
-        <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: `${(completedToday / Math.max(habits.length, 1)) * 100}%` }]} />
-        </View>
-      </PremiumHeader>
-
-      <View style={styles.tabs}>
-        {(['family', 'personal'] as const).map((t) => (
-          <Pressable key={t} onPress={() => setTab(t)} style={[styles.tab, tab === t && styles.tabActive]}>
-            <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
-              {t === 'family' ? '👨‍👩‍👧‍👦 Family Habits' : '👤 Personal'}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
         {displayed.map((habit) => {
           const done = isCompletedToday(habit.id);
           const member = habit.memberId ? members.find((m) => m.id === habit.memberId) : null;
@@ -225,6 +255,8 @@ export function HabitsScreen({ navigation }: any) {
           <Text style={styles.tipText}>• Habit streaks release dopamine — celebrate every milestone!</Text>
         </Card>
       </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowModal(false)}>
         <ScrollView style={styles.modal} contentContainerStyle={{ paddingBottom: 40 }}>

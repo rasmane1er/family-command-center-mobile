@@ -1,5 +1,15 @@
 import React from 'react';
-import { View, Text, StyleSheet, ViewStyle, Image } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ViewStyle,
+  Image,
+  TouchableOpacity,
+  Alert,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { colors } from '../../theme/colors';
 
 interface Props {
@@ -11,9 +21,22 @@ interface Props {
   showBadge?: boolean;
   badgeColor?: string;
   badgeIcon?: string;
+  /** If provided, tapping the avatar opens the image picker */
+  onImagePicked?: (uri: string) => void;
+  editable?: boolean;
 }
 
-export function Avatar({ name, color, size = 48, imageUri, style, showBadge, badgeColor }: Props) {
+export function Avatar({
+  name,
+  color,
+  size = 48,
+  imageUri,
+  style,
+  showBadge,
+  badgeColor,
+  onImagePicked,
+  editable = false,
+}: Props) {
   const initials = name
     .split(' ')
     .map((n) => n[0])
@@ -24,25 +47,69 @@ export function Avatar({ name, color, size = 48, imageUri, style, showBadge, bad
   const fontSize = size * 0.38;
   const avatarColor = color || colors.avatars[0];
 
+  async function handlePress() {
+    if (!editable && !onImagePicked) return;
+
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Allow photo access to set a profile picture.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+
+    if (!result.canceled && result.assets[0]?.uri) {
+      onImagePicked?.(result.assets[0].uri);
+    }
+  }
+
+  const isEditable = editable || !!onImagePicked;
+
+  const inner = (
+    <View
+      style={[
+        styles.avatar,
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: avatarColor,
+        },
+      ]}
+    >
+      {imageUri ? (
+        <Image
+          source={{ uri: imageUri }}
+          style={{ width: size, height: size, borderRadius: size / 2 }}
+        />
+      ) : (
+        <Text style={[styles.initials, { fontSize, color: '#fff' }]}>{initials}</Text>
+      )}
+
+      {/* Camera overlay when editable */}
+      {isEditable && (
+        <View style={[styles.editOverlay, { borderRadius: size / 2 }]}>
+          <Ionicons name="camera" size={size * 0.28} color="#fff" />
+        </View>
+      )}
+    </View>
+  );
+
   return (
     <View style={[styles.wrapper, style]}>
-      <View
-        style={[
-          styles.avatar,
-          {
-            width: size,
-            height: size,
-            borderRadius: size / 2,
-            backgroundColor: avatarColor,
-          },
-        ]}
-      >
-        {imageUri ? (
-          <Image source={{ uri: imageUri }} style={{ width: size, height: size, borderRadius: size / 2 }} />
-        ) : (
-          <Text style={[styles.initials, { fontSize, color: '#fff' }]}>{initials}</Text>
-        )}
-      </View>
+      {isEditable ? (
+        <TouchableOpacity onPress={handlePress} activeOpacity={0.8}>
+          {inner}
+        </TouchableOpacity>
+      ) : (
+        inner
+      )}
+
       {showBadge && (
         <View
           style={[
@@ -71,10 +138,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 2,
     borderColor: '#fff',
+    overflow: 'hidden',
   },
   initials: {
     fontWeight: '700',
     letterSpacing: 0.5,
+  },
+  editOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.38)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   badge: {
     position: 'absolute',

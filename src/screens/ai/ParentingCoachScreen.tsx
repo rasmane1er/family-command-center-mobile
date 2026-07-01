@@ -1,5 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { ChatInputBar } from '../../components/ai/ChatInputBar';
+import { useVoiceInput } from '../../hooks/useVoiceInput';
+import { AIResetMenu } from '../../components/ai/AIResetMenu';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -12,6 +15,7 @@ import { useGuardianStore } from '../../store/useGuardianStore';
 import { useMemoryStore } from '../../store/useMemoryStore';
 import { chatWithParentingCoach, AIMessage } from '../../services/aiService';
 import { computeAge } from '../../utils/buildFamilyContext';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 
 const COACHING_MODULES = [
   { id: 'm1', title: 'Positive Discipline', icon: 'heart', color: '#E74C3C', bg: '#FDEDEC', desc: 'Science-backed strategies that build connection while setting boundaries', sessions: 8, completed: 5, rating: 4.9 },
@@ -29,6 +33,9 @@ const DAILY_TIPS = [
   { tip: "Set up a family meeting once a week. Kids who have voice in family decisions show 40% better behavioral outcomes.", category: 'Communication', icon: 'people', color: '#27AE60' },
 ];
 
+const BOTTOM_MENU_HEIGHT = 78;
+const CHAT_INPUT_HEIGHT = 104;
+
 const AGE_ADVICE: Record<string, { range: string; tips: string[] }> = {
   toddler: { range: '2–5 years', tips: ['Routines are gold — predictability = security', 'Simple choices build confidence', 'Natural consequences work better than time-outs'] },
   school: { range: '6–12 years', tips: ['Let them fail sometimes — struggle builds resilience', 'Ask "What do you think?" before giving answers', 'Chores teach responsibility — start now'] },
@@ -40,6 +47,7 @@ export function ParentingCoachScreen({ navigation }: any) {
   const [activeTab, setActiveTab] = useState<'modules' | 'tips' | 'advice' | 'chat'>('modules');
   const [tipIndex, setTipIndex] = useState(0);
   const [chatInput, setChatInput] = useState('');
+  const voice = useVoiceInput({ onResult: (text) => handleChatSend(text) });
   const [chatHistory, setChatHistory] = useState<AIMessage[]>([]);
   const [chatLoading, setChatLoading] = useState(false);
   const [lastReply, setLastReply] = useState('');
@@ -101,16 +109,16 @@ export function ParentingCoachScreen({ navigation }: any) {
     setTimeout(() => chatScrollRef.current?.scrollToEnd({ animated: true }), 100);
   };
 
-  return (
-    <View style={styles.container}>
-      <StatusBar style="light" />
-      <LinearGradient colors={['#1A6B3C', '#27AE60']} style={[styles.header, { paddingTop: insets.top }]}>
+  const screenHeader = (
+      <LinearGradient colors={['#1A6B3C', '#27AE60']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
         <View style={styles.headerTop}>
           <Pressable onPress={() => navigation.goBack()} style={styles.back}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </Pressable>
           <Text style={styles.headerTitle}>AI Parenting Coach</Text>
-          <View style={{ width: 40 }} />
+          <AIResetMenu actions={[
+            { label: 'Clear Chat', description: 'Delete all chat messages', icon: 'chatbubble-outline', danger: true, onPress: () => setChatHistory([]) },
+          ]} />
         </View>
 
         <View style={styles.statsRow}>
@@ -128,151 +136,311 @@ export function ParentingCoachScreen({ navigation }: any) {
           </View>
         </View>
         <ProgressBar progress={overallProgress} color="#fff" height={6} />
-      </LinearGradient>
-
-      <View style={styles.tabs}>
-        {(['modules', 'tips', 'advice', 'chat'] as const).map((tab) => (
-          <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
-            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-              {tab === 'modules' ? 'Modules' : tab === 'tips' ? 'Tips' : tab === 'advice' ? 'Ages' : '✨ Ask AI'}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
-        {activeTab === 'modules' && COACHING_MODULES.map((module) => (
-          <Pressable key={module.id} onPress={() => Alert.alert(module.title, `${module.desc}\n\n${module.completed}/${module.sessions} sessions completed · ⭐ ${module.rating}`, [{ text: 'Close', style: 'cancel' }, { text: 'Ask AI Coach', onPress: () => navigation.navigate('AI Assistant') }])}>
-            <Card style={{ ...styles.moduleCard, backgroundColor: module.bg }} variant="default">
-              <View style={styles.moduleHeader}>
-                <View style={[styles.moduleIcon, { backgroundColor: module.color + '25' }]}>
-                  <Ionicons name={module.icon as any} size={22} color={module.color} />
-                </View>
-                <View style={{ flex: 1, marginLeft: 12 }}>
-                  <Text style={styles.moduleTitle}>{module.title}</Text>
-                  <Text style={styles.moduleDesc}>{module.desc}</Text>
-                </View>
-              </View>
-              <View style={styles.moduleFooter}>
-                <View style={{ flex: 1, marginRight: 12 }}>
-                  <ProgressBar progress={module.completed / module.sessions} color={module.color} height={5} />
-                  <Text style={styles.moduleProg}>{module.completed}/{module.sessions} sessions</Text>
-                </View>
-                <View style={styles.ratingBadge}>
-                  <Ionicons name="star" size={12} color={module.color} />
-                  <Text style={[styles.ratingText, { color: module.color }]}>{module.rating}</Text>
-                </View>
-              </View>
-            </Card>
-          </Pressable>
-        ))}
-
-        {activeTab === 'tips' && (
-          <>
-            <Card style={styles.tipCard} variant="elevated">
-              <View style={styles.tipHeader}>
-                <View style={[styles.tipIcon, { backgroundColor: DAILY_TIPS[tipIndex].color + '20' }]}>
-                  <Ionicons name={DAILY_TIPS[tipIndex].icon as any} size={24} color={DAILY_TIPS[tipIndex].color} />
-                </View>
-                <Text style={[styles.tipCategory, { color: DAILY_TIPS[tipIndex].color }]}>{DAILY_TIPS[tipIndex].category}</Text>
-              </View>
-              <Text style={styles.tipText}>"{DAILY_TIPS[tipIndex].tip}"</Text>
-              <View style={styles.tipNav}>
-                <Pressable onPress={() => setTipIndex(Math.max(0, tipIndex - 1))} style={styles.tipNavBtn}>
-                  <Ionicons name="chevron-back" size={20} color={colors.textMuted} />
-                </Pressable>
-                <Text style={styles.tipCounter}>{tipIndex + 1} / {DAILY_TIPS.length}</Text>
-                <Pressable onPress={() => setTipIndex(Math.min(DAILY_TIPS.length - 1, tipIndex + 1))} style={styles.tipNavBtn}>
-                  <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-                </Pressable>
-              </View>
-            </Card>
-          </>
-        )}
-
-        {activeTab === 'advice' && children.map((child) => {
-          const ageGroup = getChildAgeGroup(child.id);
-          const advice = AGE_ADVICE[ageGroup];
-          return (
-            <Card key={child.id} style={styles.adviceCard} variant="elevated">
-              <View style={styles.adviceHeader}>
-                <View style={[styles.childAvatar, { backgroundColor: child.avatarColor + '30' }]}>
-                  <Text style={[styles.childInitial, { color: child.avatarColor }]}>{child.name.charAt(0)}</Text>
-                </View>
-                <View>
-                  <Text style={styles.childName}>{child.name}</Text>
-                  <Text style={styles.ageRange}>Age group: {advice.range}</Text>
-                </View>
-              </View>
-              {advice.tips.map((tip, i) => (
-                <View key={i} style={styles.adviceTip}>
-                  <Ionicons name="checkmark-circle" size={16} color={colors.success} />
-                  <Text style={styles.adviceTipText}>{tip}</Text>
-                </View>
-              ))}
-            </Card>
-          );
-        })}
-
-      </ScrollView>
-
-      {activeTab === 'chat' && (
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.chatPanel}>
-          <ScrollView ref={chatScrollRef} style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 20 }}>
-            {chatHistory.length === 0 && (
-              <View style={styles.chatEmpty}>
-                <Text style={styles.chatEmptyTitle}>Ask the AI Parenting Coach</Text>
-                <Text style={styles.chatEmptyDesc}>Get personalized, evidence-based advice for your family</Text>
-                {['How do I handle tantrums effectively?', 'Tips for improving homework habits', 'How to talk to my teen about phone limits'].map((q) => (
-                  <Pressable key={q} style={styles.chatStarter} onPress={() => handleChatSend(q)}>
-                    <Text style={styles.chatStarterText}>{q}</Text>
-                    <Ionicons name="arrow-forward" size={14} color="#1A6B3C" />
-                  </Pressable>
-                ))}
-              </View>
-            )}
-            {chatHistory.map((m, i) => (
-              <View key={i} style={[styles.chatBubble, m.role === 'user' ? styles.chatBubbleUser : styles.chatBubbleAI]}>
-                <Text style={m.role === 'user' ? styles.chatBubbleUserText : styles.chatBubbleAIText}>{m.content}</Text>
-              </View>
+      
+    <View style={styles.tabs}>
+            {(['modules', 'tips', 'advice', 'chat'] as const).map((tab) => (
+              <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
+                <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
+                  {tab === 'modules' ? 'Modules' : tab === 'tips' ? 'Tips' : tab === 'advice' ? 'Ages' : '✨ Ask AI'}
+                </Text>
+              </Pressable>
             ))}
-            {chatLoading && (
-              <View style={styles.chatBubbleAI}>
-                <ActivityIndicator size="small" color="#1A6B3C" />
-              </View>
-            )}
-            {suggestions.length > 0 && !chatLoading && (
-              <View style={{ marginTop: 8 }}>
-                {suggestions.map((s) => (
-                  <Pressable key={s} style={styles.chatSuggestion} onPress={() => handleChatSend(s)}>
-                    <Text style={styles.chatSuggestionText}>{s}</Text>
+          </View>
+</LinearGradient>
+
+  );
+  const screenCompact = (
+    <LinearGradient
+      colors={['#1A6B3C', '#27AE60']}
+      start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+      style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+    >
+      <Pressable onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
+        <Ionicons name="arrow-back" size={22} color="#fff" />
+      </Pressable>
+      <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>Parenting Coach</Text>
+      <View />
+    </LinearGradient>
+  );
+
+  return (
+    <View style={styles.container}>
+      <StatusBar style="light" />
+
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({
+          onScroll,
+          onScrollEndDrag,
+          onMomentumScrollEnd,
+          scrollEventThrottle,
+          contentPaddingTop,
+        }) => (
+          <KeyboardAvoidingView
+            style={styles.flex}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
+          >
+            <ScrollView
+              ref={activeTab === 'chat' ? chatScrollRef : undefined}
+              keyboardShouldPersistTaps="handled"
+              onScroll={onScroll}
+              onScrollEndDrag={onScrollEndDrag}
+              onMomentumScrollEnd={onMomentumScrollEnd}
+              scrollEventThrottle={scrollEventThrottle}
+              contentContainerStyle={[
+                styles.content,
+                {
+                  paddingTop: contentPaddingTop,
+                  paddingBottom:
+                    activeTab === 'chat'
+                      ? BOTTOM_MENU_HEIGHT + Math.max(insets.bottom, 10) + CHAT_INPUT_HEIGHT
+                      : BOTTOM_MENU_HEIGHT + Math.max(insets.bottom, 10) + 24,
+                },
+              ]}
+            >
+              {activeTab === 'modules' &&
+                COACHING_MODULES.map((module) => (
+                  <Pressable
+                    key={module.id}
+                    onPress={() =>
+                      Alert.alert(
+                        module.title,
+                        `${module.desc}\n\n${module.completed}/${module.sessions} sessions completed · ⭐ ${module.rating}`,
+                        [
+                          { text: 'Close', style: 'cancel' },
+                          {
+                            text: 'Ask AI Coach',
+                            onPress: () => navigation.navigate('AI Assistant'),
+                          },
+                        ]
+                      )
+                    }
+                  >
+                    <Card
+                      style={{ ...styles.moduleCard, backgroundColor: module.bg }}
+                      variant="default"
+                    >
+                      <View style={styles.moduleHeader}>
+                        <View
+                          style={[
+                            styles.moduleIcon,
+                            { backgroundColor: module.color + '25' },
+                          ]}
+                        >
+                          <Ionicons name={module.icon as any} size={22} color={module.color} />
+                        </View>
+                        <View style={{ flex: 1, marginLeft: 12 }}>
+                          <Text style={styles.moduleTitle}>{module.title}</Text>
+                          <Text style={styles.moduleDesc}>{module.desc}</Text>
+                        </View>
+                      </View>
+                      <View style={styles.moduleFooter}>
+                        <View style={{ flex: 1, marginRight: 12 }}>
+                          <ProgressBar
+                            progress={module.completed / module.sessions}
+                            color={module.color}
+                            height={5}
+                          />
+                          <Text style={styles.moduleProg}>
+                            {module.completed}/{module.sessions} sessions
+                          </Text>
+                        </View>
+                        <View style={styles.ratingBadge}>
+                          <Ionicons name="star" size={12} color={module.color} />
+                          <Text style={[styles.ratingText, { color: module.color }]}>
+                            {module.rating}
+                          </Text>
+                        </View>
+                      </View>
+                    </Card>
                   </Pressable>
                 ))}
+
+              {activeTab === 'tips' && (
+                <Card style={styles.tipCard} variant="elevated">
+                  <View style={styles.tipHeader}>
+                    <View
+                      style={[
+                        styles.tipIcon,
+                        { backgroundColor: DAILY_TIPS[tipIndex].color + '20' },
+                      ]}
+                    >
+                      <Ionicons
+                        name={DAILY_TIPS[tipIndex].icon as any}
+                        size={24}
+                        color={DAILY_TIPS[tipIndex].color}
+                      />
+                    </View>
+                    <Text
+                      style={[
+                        styles.tipCategory,
+                        { color: DAILY_TIPS[tipIndex].color },
+                      ]}
+                    >
+                      {DAILY_TIPS[tipIndex].category}
+                    </Text>
+                  </View>
+                  <Text style={styles.tipText}>"{DAILY_TIPS[tipIndex].tip}"</Text>
+                  <View style={styles.tipNav}>
+                    <Pressable
+                      onPress={() => setTipIndex(Math.max(0, tipIndex - 1))}
+                      style={styles.tipNavBtn}
+                    >
+                      <Ionicons name="chevron-back" size={20} color={colors.textMuted} />
+                    </Pressable>
+                    <Text style={styles.tipCounter}>
+                      {tipIndex + 1} / {DAILY_TIPS.length}
+                    </Text>
+                    <Pressable
+                      onPress={() =>
+                        setTipIndex(Math.min(DAILY_TIPS.length - 1, tipIndex + 1))
+                      }
+                      style={styles.tipNavBtn}
+                    >
+                      <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+                    </Pressable>
+                  </View>
+                </Card>
+              )}
+
+              {activeTab === 'advice' &&
+                children.map((child) => {
+                  const ageGroup = getChildAgeGroup(child.id);
+                  const advice = AGE_ADVICE[ageGroup];
+                  return (
+                    <Card key={child.id} style={styles.adviceCard} variant="elevated">
+                      <View style={styles.adviceHeader}>
+                        <View
+                          style={[
+                            styles.childAvatar,
+                            { backgroundColor: child.avatarColor + '30' },
+                          ]}
+                        >
+                          <Text
+                            style={[styles.childInitial, { color: child.avatarColor }]}
+                          >
+                            {child.name.charAt(0)}
+                          </Text>
+                        </View>
+                        <View>
+                          <Text style={styles.childName}>{child.name}</Text>
+                          <Text style={styles.ageRange}>Age group: {advice.range}</Text>
+                        </View>
+                      </View>
+                      {advice.tips.map((tip, i) => (
+                        <View key={i} style={styles.adviceTip}>
+                          <Ionicons
+                            name="checkmark-circle"
+                            size={16}
+                            color={colors.success}
+                          />
+                          <Text style={styles.adviceTipText}>{tip}</Text>
+                        </View>
+                      ))}
+                    </Card>
+                  );
+                })}
+
+              {activeTab === 'chat' && (
+                <View style={styles.chatPanel}>
+                  {chatHistory.length === 0 && (
+                    <View style={styles.chatEmpty}>
+                      <Text style={styles.chatEmptyTitle}>Ask the AI Parenting Coach</Text>
+                      <Text style={styles.chatEmptyDesc}>
+                        Get personalized, evidence-based advice for your family
+                      </Text>
+                      {[
+                        'How do I handle tantrums effectively?',
+                        'Tips for improving homework habits',
+                        'How to talk to my teen about phone limits',
+                      ].map((q) => (
+                        <Pressable
+                          key={q}
+                          style={styles.chatStarter}
+                          onPress={() => handleChatSend(q)}
+                        >
+                          <Text style={styles.chatStarterText}>{q}</Text>
+                          <Ionicons name="arrow-forward" size={14} color="#1A6B3C" />
+                        </Pressable>
+                      ))}
+                    </View>
+                  )}
+
+                  {chatHistory.map((m, i) => (
+                    <View
+                      key={i}
+                      style={[
+                        styles.chatBubble,
+                        m.role === 'user' ? styles.chatBubbleUser : styles.chatBubbleAI,
+                      ]}
+                    >
+                      <Text
+                        style={
+                          m.role === 'user'
+                            ? styles.chatBubbleUserText
+                            : styles.chatBubbleAIText
+                        }
+                      >
+                        {m.content}
+                      </Text>
+                    </View>
+                  ))}
+
+                  {chatLoading && (
+                    <View style={[styles.chatBubble, styles.chatBubbleAI]}>
+                      <ActivityIndicator size="small" color="#1A6B3C" />
+                    </View>
+                  )}
+
+                  {suggestions.length > 0 &&
+                    !chatLoading &&
+                    suggestions.map((s) => (
+                      <Pressable
+                        key={s}
+                        style={styles.chatSuggestion}
+                        onPress={() => handleChatSend(s)}
+                      >
+                        <Text style={styles.chatSuggestionText}>{s}</Text>
+                      </Pressable>
+                    ))}
+                </View>
+              )}
+            </ScrollView>
+
+            {activeTab === 'chat' && (
+              <View
+                style={[
+                  styles.chatInputDock,
+                  {
+                    paddingBottom: Math.max(insets.bottom, 10),
+                    bottom: BOTTOM_MENU_HEIGHT,
+                  },
+                ]}
+              >
+                <ChatInputBar
+                  value={chatInput}
+                  onChangeText={setChatInput}
+                  onSend={() => handleChatSend()}
+                  onMicPressIn={voice.start}
+                  onMicPressOut={voice.stop}
+                  onMicCancel={voice.cancel}
+                  isListening={voice.isListening}
+                  partialTranscript={voice.partial}
+                  placeholder="Ask your parenting question..."
+                  bottomPadding={8}
+                  accentColor="#1A6B3C"
+                />
               </View>
             )}
-          </ScrollView>
-          <View style={styles.chatInputRow}>
-            <TextInput
-              style={styles.chatInput}
-              value={chatInput}
-              onChangeText={setChatInput}
-              placeholder="Ask your parenting question..."
-              placeholderTextColor={colors.textMuted}
-              onSubmitEditing={() => handleChatSend()}
-              returnKeyType="send"
-              multiline
-            />
-            <Pressable style={[styles.chatSendBtn, !chatInput.trim() && { opacity: 0.4 }]} onPress={() => handleChatSend()} disabled={!chatInput.trim()}>
-              <Ionicons name="send" size={18} color="#fff" />
-            </Pressable>
-          </View>
-        </KeyboardAvoidingView>
-      )}
+          </KeyboardAvoidingView>
+        )}
+      </CollapsibleHeader>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  flex: { flex: 1 },
   container: { flex: 1, backgroundColor: colors.background },
   header: { paddingHorizontal: 20, paddingBottom: 10 },
   headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
@@ -328,8 +496,6 @@ const styles = StyleSheet.create({
   chatBubbleAIText: { fontSize: 14, color: colors.text, lineHeight: 20 },
   chatSuggestion: { backgroundColor: '#E8F5EE', borderRadius: 20, paddingVertical: 8, paddingHorizontal: 14, marginBottom: 6, alignSelf: 'flex-start' },
   chatSuggestionText: { fontSize: 13, color: '#1A6B3C', fontWeight: '500' },
-  chatPanel: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: colors.background },
-  chatInputRow: { flexDirection: 'row', alignItems: 'flex-end', padding: 12, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.background, gap: 10 },
-  chatInput: { flex: 1, backgroundColor: colors.card, borderRadius: 22, paddingVertical: 10, paddingHorizontal: 16, fontSize: 14, color: colors.text, maxHeight: 100, borderWidth: 1, borderColor: colors.border },
-  chatSendBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#1A6B3C', alignItems: 'center', justifyContent: 'center' },
+  chatPanel: { flex: 1, minHeight: 420 },
+  chatInputDock: { position: 'absolute', left: 0, right: 0, backgroundColor: colors.background, borderTopWidth: 1, borderTopColor: colors.border, zIndex: 50, elevation: 50 },
 });

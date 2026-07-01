@@ -16,6 +16,7 @@ import { Avatar } from '../../components/common/Avatar';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { colors } from '../../theme/colors';
 import type { FamilyMember } from '../../types';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 
 const PIN_LENGTH = 4;
 
@@ -98,57 +99,79 @@ export function ProfileSwitcherScreen({ navigation, route }: any) {
 
   const numPadKeys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'del'];
 
+  const screenHeader = (
+    <LinearGradient
+      colors={['#0F2952', '#1E4A8A']}
+      style={[styles.header, { paddingTop: insets.top + 6 }]}
+    >
+      <Pressable onPress={goBackOrHome} style={styles.backBtn}>
+        <Ionicons name="arrow-back" size={22} color="#fff" />
+      </Pressable>
+      <Text style={styles.headerTitle}>Switch Profile</Text>
+      <View style={{ width: 40 }} />
+    </LinearGradient>
+  );
+
+  const screenCompact = (
+    <View style={{ backgroundColor: '#0F2952', paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Pressable onPress={goBackOrHome} style={styles.backBtn}>
+        <Ionicons name="arrow-back" size={22} color="#fff" />
+      </Pressable>
+      <Text style={styles.headerTitle}>Switch Profile</Text>
+      <View style={{ width: 40 }} />
+    </View>
+  );
+
   return (
-    <View style={styles.container}>
-      <LinearGradient
-        colors={['#0F2952', '#1E4A8A']}
-        style={[styles.header, { paddingTop: insets.top + 6 }]}
-      >
-        <Pressable onPress={goBackOrHome} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={22} color="#fff" />
-        </Pressable>
-        <Text style={styles.headerTitle}>Switch Profile</Text>
-        <View style={{ width: 40 }} />
-      </LinearGradient>
+    <>
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+          <ScrollView
+            onScroll={onScroll}
+            onScrollEndDrag={onScrollEndDrag}
+            onMomentumScrollEnd={onMomentumScrollEnd}
+            scrollEventThrottle={scrollEventThrottle}
+            contentContainerStyle={[styles.content, { paddingTop: contentPaddingTop }]}
+          >
+            <Text style={styles.subtitle}>Select who is using the app right now</Text>
 
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.subtitle}>Select who is using the app right now</Text>
-
-        {members.map((member) => {
-          const isActive = member.id === activeMemberId;
-          return (
-            <Card
-              key={member.id}
-              style={isActive ? { ...styles.card, ...styles.activeCard } : styles.card}
-              onPress={() => handleSwitch(member)}
-            >
-              <Avatar name={member.name} color={member.avatarColor} size={52} />
-              <View style={styles.cardText}>
-                <View style={styles.nameRow}>
-                  <Text style={styles.name}>{member.name}</Text>
-                  {member.isPinProtected && (
-                    <Text style={styles.lockIcon}>🔒</Text>
+            {members.map((member) => {
+              const isActive = member.id === activeMemberId;
+              return (
+                <Card
+                  key={member.id}
+                  style={isActive ? { ...styles.card, ...styles.activeCard } : styles.card}
+                  onPress={() => handleSwitch(member)}
+                >
+                  <Avatar name={member.name} color={member.avatarColor} size={52} />
+                  <View style={styles.cardText}>
+                    <View style={styles.nameRow}>
+                      <Text style={styles.name}>{member.name}</Text>
+                      {member.isPinProtected && (
+                        <Text style={styles.lockIcon}>🔒</Text>
+                      )}
+                    </View>
+                    <Text style={styles.role}>
+                      {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
+                    </Text>
+                    <Text style={styles.profileTypeBadge}>
+                      {member.isLocalProfile ? 'Local Profile' : 'Linked Account'}
+                    </Text>
+                  </View>
+                  {isActive ? (
+                    <View style={styles.activeBadge}>
+                      <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
+                      <Text style={styles.activeLabel}>Active</Text>
+                    </View>
+                  ) : (
+                    <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
                   )}
-                </View>
-                <Text style={styles.role}>
-                  {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
-                </Text>
-                <Text style={styles.profileTypeBadge}>
-                  {member.isLocalProfile ? 'Local Profile' : 'Linked Account'}
-                </Text>
-              </View>
-              {isActive ? (
-                <View style={styles.activeBadge}>
-                  <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
-                  <Text style={styles.activeLabel}>Active</Text>
-                </View>
-              ) : (
-                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-              )}
-            </Card>
-          );
-        })}
-      </ScrollView>
+                </Card>
+              );
+            })}
+          </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       {/* PIN Modal */}
       <Modal
@@ -223,7 +246,7 @@ export function ProfileSwitcherScreen({ navigation, route }: any) {
           </View>
         </View>
       </Modal>
-    </View>
+    </>
   );
 }
 

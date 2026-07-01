@@ -12,6 +12,9 @@ import { Button } from '../../components/common/Button';
 import { useOperationsStore } from '../../store/useOperationsStore';
 import { useShoppingStore } from '../../store/useShoppingStore';
 import type { PantryItem } from '../../types';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -29,6 +32,7 @@ const categoryIcons: Record<string, string> = {
 };
 
 export function PantryScreen({ navigation }: any) {
+  const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All');
@@ -127,46 +131,44 @@ export function PantryScreen({ navigation }: any) {
 
   const s = makeStyles(colors);
 
-  return (
-    <View style={s.container}>
-      <PremiumHeader
-        title="Pantry"
-        colors={['#27AE60', '#1ABC9C']}
-        onBack={() => navigation.goBack()}
-        rightAction={
-          <View style={s.headerActions}>
-            <Pressable onPress={handleAutoRestock} style={s.actionBtn}><Ionicons name="cart-outline" size={22} color="#fff" /></Pressable>
-            <Pressable onPress={() => setShowModal(true)} style={s.actionBtn}><Ionicons name="add" size={24} color="#fff" /></Pressable>
+  const screenHeader = (
+        <PremiumHeader
+          title="Pantry"
+          colors={['#27AE60', '#1ABC9C']}
+          onBack={() => navigation.goBack()}
+          rightAction={
+            <View style={s.headerActions}>
+              <Pressable onPress={handleAutoRestock} style={s.actionBtn}><Ionicons name="cart-outline" size={22} color="#fff" /></Pressable>
+              <Pressable onPress={() => setShowModal(true)} style={s.actionBtn}><Ionicons name="add" size={24} color="#fff" /></Pressable>
+            </View>
+          }
+        >
+          <View style={s.alertRow}>
+            {lowStock > 0 && (
+              <View style={s.alertChip}>
+                <Ionicons name="warning" size={14} color={colors.warning} />
+                <Text style={s.alertText}>{lowStock} low stock</Text>
+              </View>
+            )}
+            {expiring > 0 && (
+              <View style={[s.alertChip, { backgroundColor: 'rgba(231,76,60,0.25)' }]}>
+                <Ionicons name="time" size={14} color={colors.danger} />
+                <Text style={[s.alertText, { color: colors.danger }]}>{expiring} expiring soon</Text>
+              </View>
+            )}
+            <Text style={s.pantryCount}>{pantryItems.length} items</Text>
           </View>
-        }
-      >
-        <View style={s.alertRow}>
-          {lowStock > 0 && (
-            <View style={s.alertChip}>
-              <Ionicons name="warning" size={14} color={colors.warning} />
-              <Text style={s.alertText}>{lowStock} low stock</Text>
-            </View>
-          )}
-          {expiring > 0 && (
-            <View style={[s.alertChip, { backgroundColor: 'rgba(231,76,60,0.25)' }]}>
-              <Ionicons name="time" size={14} color={colors.danger} />
-              <Text style={[s.alertText, { color: colors.danger }]}>{expiring} expiring soon</Text>
-            </View>
-          )}
-          <Text style={s.pantryCount}>{pantryItems.length} items</Text>
-        </View>
 
-        <View style={s.searchBar}>
-          <Ionicons name="search-outline" size={18} color="rgba(255,255,255,0.7)" />
-          <TextInput
-            style={s.searchInput}
-            placeholder="Search pantry..."
-            placeholderTextColor="rgba(255,255,255,0.5)"
-            value={search}
-            onChangeText={setSearch}
-          />
-        </View>
-      </PremiumHeader>
+          <View style={s.searchBar}>
+            <Ionicons name="search-outline" size={18} color="rgba(255,255,255,0.7)" />
+            <TextInput
+              style={s.searchInput}
+              placeholder="Search pantry..."
+              placeholderTextColor="rgba(255,255,255,0.5)"
+              value={search}
+              onChangeText={setSearch}
+            />
+          </View>
 
       <View style={s.categoryBar}>
         {CATEGORIES.map((cat) => (
@@ -176,7 +178,34 @@ export function PantryScreen({ navigation }: any) {
         ))}
       </View>
 
-      <ScrollView contentContainerStyle={[s.content, { paddingBottom: 100 }]}>
+        </PremiumHeader>
+  );
+  const screenCompact = (
+    <LinearGradient
+      colors={['#27AE60', '#1ABC9C']}
+      start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+      style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+    >
+      <Pressable onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
+        <Ionicons name="arrow-back" size={22} color="#fff" />
+      </Pressable>
+      <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>Pantry</Text>
+      <View />
+    </LinearGradient>
+  );
+
+  return (
+    <View style={s.container}>
+
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+          <ScrollView
+            contentContainerStyle={[s.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+            onScroll={onScroll}
+            onScrollEndDrag={onScrollEndDrag}
+            onMomentumScrollEnd={onMomentumScrollEnd}
+            scrollEventThrottle={scrollEventThrottle}
+          >
         {filtered.map((item) => {
           const expiry = getExpiryStatus(item.expiryDate);
           const isLowStock = item.minQuantity !== undefined && item.quantity <= item.minQuantity;
@@ -217,7 +246,9 @@ export function PantryScreen({ navigation }: any) {
             <Text style={s.emptyTitle}>No items found</Text>
           </View>
         )}
-      </ScrollView>
+          </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowModal(false)}>
         <ScrollView style={s.modal} contentContainerStyle={{ paddingBottom: 40 }}>

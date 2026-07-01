@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { ProgressBar } from '../../components/common/ProgressBar';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { calculatePayoffPlan } from '../../services/debtService';
 import type { Debt, DebtType, PayoffPlanMonth } from '../../types';
 
@@ -129,38 +130,38 @@ export function DebtDetailScreen({ navigation, route }: Props) {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={[color, color + 'CC']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
-        <View style={styles.headerTop}>
-          <Pressable onPress={() => navigation.goBack()} hitSlop={12}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <View style={styles.headerMid}>
-            <Ionicons name={DEBT_TYPE_ICONS[debt.type]} size={18} color="#fff" />
-            <Text style={styles.headerTitle} numberOfLines={1}>{debt.name}</Text>
-          </View>
-          <View style={{ width: 40 }} />
-        </View>
-        <Text style={styles.headerBalance}>${formatMoney(debt.balance)}</Text>
-        <Text style={styles.headerBalanceLabel}>Remaining Balance</Text>
-        <View style={styles.headerStats}>
-          <View style={styles.headerStat}>
-            <Text style={styles.headerStatVal}>{aprPct.toFixed(2)}%</Text>
-            <Text style={styles.headerStatLabel}>APR</Text>
-          </View>
-          <View style={styles.headerStatDivider} />
-          <View style={styles.headerStat}>
-            <Text style={styles.headerStatVal}>${formatMoney(debt.minimumPayment)}</Text>
-            <Text style={styles.headerStatLabel}>Min Payment</Text>
-          </View>
-          <View style={styles.headerStatDivider} />
-          <View style={styles.headerStat}>
-            <Text style={styles.headerStatVal}>Day {debt.dueDate}</Text>
-            <Text style={styles.headerStatLabel}>Due Date</Text>
-          </View>
-        </View>
-      </LinearGradient>
 
       <ScrollView contentContainerStyle={styles.content}>
+        <LinearGradient colors={[color, color + 'CC']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
+          <View style={styles.headerTop}>
+            <Pressable onPress={() => navigation.goBack()} hitSlop={12}>
+              <Ionicons name="arrow-back" size={24} color="#fff" />
+            </Pressable>
+            <View style={styles.headerMid}>
+              <Ionicons name={DEBT_TYPE_ICONS[debt.type]} size={18} color="#fff" />
+              <Text style={styles.headerTitle} numberOfLines={1}>{debt.name}</Text>
+            </View>
+            <View style={{ width: 40 }} />
+          </View>
+          <Text style={styles.headerBalance}>${formatMoney(debt.balance)}</Text>
+          <Text style={styles.headerBalanceLabel}>Remaining Balance</Text>
+          <View style={styles.headerStats}>
+            <View style={styles.headerStat}>
+              <Text style={styles.headerStatVal}>{aprPct.toFixed(2)}%</Text>
+              <Text style={styles.headerStatLabel}>APR</Text>
+            </View>
+            <View style={styles.headerStatDivider} />
+            <View style={styles.headerStat}>
+              <Text style={styles.headerStatVal}>${formatMoney(debt.minimumPayment)}</Text>
+              <Text style={styles.headerStatLabel}>Min Payment</Text>
+            </View>
+            <View style={styles.headerStatDivider} />
+            <View style={styles.headerStat}>
+              <Text style={styles.headerStatVal}>Day {debt.dueDate}</Text>
+              <Text style={styles.headerStatLabel}>Due Date</Text>
+            </View>
+          </View>
+        </LinearGradient>
         {/* Progress */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Payoff Progress</Text>

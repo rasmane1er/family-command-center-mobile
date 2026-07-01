@@ -12,12 +12,14 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/ThemeContext';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
 import { ProgressBar } from '../../components/common/ProgressBar';
 import { PremiumHeader } from '../../components/common/PremiumHeader';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useMedicationStore, MedFrequency, Medication } from '../../store/useMedicationStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { useNavigation } from '@react-navigation/native';
@@ -68,6 +70,7 @@ export function MedicationManagerScreen({ navigation: navProp }: any) {
   const { colors } = useTheme();
   const navHook = useNavigation<any>();
   const navigation = navProp ?? navHook;
+  const insets = useSafeAreaInsets();
   const { medications, logs, addMedication, deleteMedication, logDose, seedDemoData } = useMedicationStore();
   const members = useFamilyStore((s) => s.members);
   const family = useFamilyStore((s) => s.family);
@@ -149,6 +152,48 @@ export function MedicationManagerScreen({ navigation: navProp }: any) {
   const unassignedMeds = activeMeds.filter((med) => !members.find((m) => m.id === med.memberId));
 
   const s = makeStyles(colors);
+
+  const screenHeader = (
+    <PremiumHeader
+      title="Medications"
+      onBack={() => navigation.goBack()}
+      colors={['#880E4F', '#AD1457']}
+      rightAction={
+        <Pressable onPress={() => setShowAddModal(true)} style={s.addBtn}>
+          <Ionicons name="add" size={26} color="#fff" />
+        </Pressable>
+      }
+    >
+      <View style={s.headerStats}>
+        <View style={s.headerStat}>
+          <Text style={s.headerStatNum}>{activeMeds.length}</Text>
+          <Text style={s.headerStatLabel}>Active</Text>
+        </View>
+        <View style={s.headerStatDivider} />
+        <View style={s.headerStat}>
+          <Text style={[s.headerStatNum, refillsDueThisWeek > 0 && s.alertNum]}>{refillsDueThisWeek}</Text>
+          <Text style={s.headerStatLabel}>Refills Due</Text>
+        </View>
+        <View style={s.headerStatDivider} />
+        <View style={s.headerStat}>
+          <Text style={s.headerStatNum}>{logs.filter((l) => new Date(l.takenAt).toDateString() === new Date().toDateString()).length}</Text>
+          <Text style={s.headerStatLabel}>Doses Today</Text>
+        </View>
+      </View>
+    </PremiumHeader>
+  );
+
+  const screenCompact = (
+    <View style={{ backgroundColor: '#880E4F', paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Pressable onPress={() => navigation.goBack()} style={s.addBtn}>
+        <Ionicons name="arrow-back" size={20} color="#fff" />
+      </Pressable>
+      <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700', flex: 1, marginLeft: 8 }}>Medications</Text>
+      <Pressable onPress={() => setShowAddModal(true)} style={s.addBtn}>
+        <Ionicons name="add" size={22} color="#fff" />
+      </Pressable>
+    </View>
+  );
 
   const renderActiveTab = () => (
     <View style={s.tabContent}>
@@ -387,33 +432,6 @@ export function MedicationManagerScreen({ navigation: navProp }: any) {
 
   return (
     <View style={s.container}>
-      <PremiumHeader
-        title="Medications"
-        onBack={() => navigation.goBack()}
-        colors={['#880E4F', '#AD1457']}
-        rightAction={
-          <Pressable onPress={() => setShowAddModal(true)} style={s.addBtn}>
-            <Ionicons name="add" size={26} color="#fff" />
-          </Pressable>
-        }
-      >
-        <View style={s.headerStats}>
-          <View style={s.headerStat}>
-            <Text style={s.headerStatNum}>{activeMeds.length}</Text>
-            <Text style={s.headerStatLabel}>Active</Text>
-          </View>
-          <View style={s.headerStatDivider} />
-          <View style={s.headerStat}>
-            <Text style={[s.headerStatNum, refillsDueThisWeek > 0 && s.alertNum]}>{refillsDueThisWeek}</Text>
-            <Text style={s.headerStatLabel}>Refills Due</Text>
-          </View>
-          <View style={s.headerStatDivider} />
-          <View style={s.headerStat}>
-            <Text style={s.headerStatNum}>{logs.filter((l) => new Date(l.takenAt).toDateString() === new Date().toDateString()).length}</Text>
-            <Text style={s.headerStatLabel}>Doses Today</Text>
-          </View>
-        </View>
-      </PremiumHeader>
 
       <View style={s.tabs}>
         {(['active', 'schedule', 'history'] as const).map((tab) => (
@@ -429,11 +447,20 @@ export function MedicationManagerScreen({ navigation: navProp }: any) {
         ))}
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+        <ScrollView
+          onScroll={onScroll}
+          onScrollEndDrag={onScrollEndDrag}
+          onMomentumScrollEnd={onMomentumScrollEnd}
+          scrollEventThrottle={scrollEventThrottle}
+          contentContainerStyle={{ paddingBottom: 100, paddingTop: contentPaddingTop }}>
         {activeTab === 'active' && renderActiveTab()}
         {activeTab === 'schedule' && renderScheduleTab()}
         {activeTab === 'history' && renderHistoryTab()}
-      </ScrollView>
+        </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       {/* Add Medication Modal */}
       <Modal visible={showAddModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowAddModal(false)}>

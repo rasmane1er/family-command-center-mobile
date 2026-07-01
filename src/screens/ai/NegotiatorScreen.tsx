@@ -1,5 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { ChatInputBar } from '../../components/ai/ChatInputBar';
+import { useVoiceInput } from '../../hooks/useVoiceInput';
+import { AIResetMenu } from '../../components/ai/AIResetMenu';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -14,6 +17,7 @@ import { useFamilyStore } from '../../store/useFamilyStore';
 import { useGuardianStore } from '../../store/useGuardianStore';
 import { chatWithNegotiator, AIMessage } from '../../services/aiService';
 import { useFamilyContextString } from '../../utils/buildFamilyContext';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 
 const NEGOTIATION_SCENARIOS = [
   { id: 's1', title: 'Bill Negotiation Script', desc: 'Lower your cable, insurance or phone bill', icon: 'call', color: '#2980B9', savings: '$240/yr avg', category: 'bills' },
@@ -137,6 +141,7 @@ export function NegotiatorScreen({ navigation }: any) {
   const [activeTab, setActiveTab] = useState<'chief' | 'negotiate' | 'conflicts' | 'chat'>('chief');
   const [selectedScenario, setSelectedScenario] = useState<string | null>(null);
   const [chatInput, setChatInput] = useState('');
+  const voice = useVoiceInput({ onResult: (text) => handleChatSend(text) });
   const [chatHistory, setChatHistory] = useState<AIMessage[]>([]);
   const [chatLoading, setChatLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -175,10 +180,8 @@ export function NegotiatorScreen({ navigation }: any) {
     );
   };
 
-  return (
-    <View style={styles.container}>
-      <StatusBar style="light" />
-      <LinearGradient colors={['#0D2137', '#0F2952']} style={[styles.header, { paddingTop: insets.top }]}>
+  const screenHeader = (
+      <LinearGradient colors={['#0D2137', '#0F2952']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
         <View style={styles.headerTop}>
           <Pressable onPress={() => navigation.goBack()} style={styles.back}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -191,6 +194,9 @@ export function NegotiatorScreen({ navigation }: any) {
             <Ionicons name="sparkles" size={14} color={colors.secondary} />
             <Text style={styles.aiChipText}>AI Active</Text>
           </View>
+          <AIResetMenu actions={[
+            { label: 'Clear Chat', description: 'Delete all chat messages', icon: 'chatbubble-outline', danger: true, onPress: () => setChatHistory([]) },
+          ]} />
         </View>
 
         <View style={styles.briefingCard}>
@@ -202,144 +208,231 @@ export function NegotiatorScreen({ navigation }: any) {
             <View style={styles.bStat}><Text style={styles.bStatVal}>$367</Text><Text style={styles.bStatLabel}>Savings Found</Text></View>
           </View>
         </View>
-      </LinearGradient>
-
-      <View style={styles.tabs}>
-        {(['chief', 'negotiate', 'conflicts', 'chat'] as const).map((tab) => (
-          <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
-            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-              {tab === 'chief' ? 'Briefing' : tab === 'negotiate' ? 'Scripts' : tab === 'conflicts' ? 'Conflicts' : '✨ Ask AI'}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
-        {activeTab === 'chief' && CHIEF_OF_STAFF_BRIEFINGS.map((item, i) => (
-          <Card key={i} style={styles.briefItem} variant="elevated">
-            <View style={styles.briefRow}>
-              <View style={styles.briefTime}>
-                <Text style={styles.briefTimeText}>{item.time}</Text>
-              </View>
-              <View style={[styles.briefIconBg, { backgroundColor: item.color + '15' }]}>
-                <Ionicons name={item.icon as keyof typeof Ionicons.glyphMap} size={18} color={item.color} />
-              </View>
-              <Text style={styles.briefAction}>{item.action}</Text>
-              <Badge
-                label={item.priority}
-                variant={item.priority === 'critical' || item.priority === 'high' ? 'danger' : item.priority === 'medium' ? 'warning' : 'neutral'}
-                size="sm"
-              />
-            </View>
-          </Card>
-        ))}
-
-        {activeTab === 'negotiate' && (
-          <View style={styles.scenariosGrid}>
-            {NEGOTIATION_SCENARIOS.map((s) => (
-              <Pressable key={s.id} onPress={() => handleNegotiate(s)} style={[styles.scenarioCard, { borderLeftColor: s.color }]}>
-                <View style={[styles.scenarioIcon, { backgroundColor: s.color + '15' }]}>
-                  <Ionicons name={s.icon as any} size={24} color={s.color} />
-                </View>
-                <Text style={styles.scenarioTitle}>{s.title}</Text>
-                <Text style={styles.scenarioDesc}>{s.desc}</Text>
-                <View style={styles.savingsBadge}>
-                  <Ionicons name="trending-up" size={12} color={colors.success} />
-                  <Text style={styles.savingsText}>{s.savings}</Text>
-                </View>
+      
+    <View style={styles.tabs}>
+            {(['chief', 'negotiate', 'conflicts', 'chat'] as const).map((tab) => (
+              <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
+                <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
+                  {tab === 'chief' ? 'Briefing' : tab === 'negotiate' ? 'Scripts' : tab === 'conflicts' ? 'Conflicts' : '✨ Ask AI'}
+                </Text>
               </Pressable>
             ))}
           </View>
-        )}
+</LinearGradient>
 
-        {activeTab === 'conflicts' && (
-          <>
-            {openConflicts.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Ionicons name="checkmark-circle" size={60} color={colors.success} />
-                <Text style={styles.emptyTitle}>No open conflicts!</Text>
-                <Text style={styles.emptyDesc}>Your family is in harmony. The AI will monitor for tension patterns.</Text>
-              </View>
-            ) : (
-              openConflicts.map((conflict) => (
-                <Card key={conflict.id} style={styles.conflictCard} variant="elevated">
-                  <View style={styles.conflictHeader}>
-                    <Badge
-                      label={conflict.severity}
-                      variant={conflict.severity === 'high' ? 'danger' : conflict.severity === 'medium' ? 'warning' : 'neutral'}
-                      size="sm"
-                    />
-                    <Badge
-                      label={conflict.status.replace('_', ' ')}
-                      variant="neutral"
-                      size="sm"
-                    />
-                  </View>
-                  <Text style={styles.conflictTitle}>{conflict.title}</Text>
-                  <Text style={styles.conflictDesc}>{conflict.description}</Text>
-                  {conflict.aiSuggestion && (
-                    <View style={styles.aiSuggestion}>
-                      <Ionicons name="sparkles" size={14} color={colors.secondary} />
-                      <Text style={styles.aiSuggestionText}>{conflict.aiSuggestion}</Text>
+  );
+  const screenCompact = (
+    <LinearGradient
+      colors={['#0D2137', '#0F2952']}
+      start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+      style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+    >
+      <Pressable onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
+        <Ionicons name="arrow-back" size={22} color="#fff" />
+      </Pressable>
+      <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>Chief of Staff</Text>
+      <View />
+    </LinearGradient>
+  );
+
+  return (
+    <View style={styles.container}>
+      <StatusBar style="light" />
+
+      
+
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+          <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
+          >
+            <ScrollView
+              ref={activeTab === 'chat' ? chatScrollRef : undefined}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={[
+                styles.content,
+                {
+                  paddingTop: contentPaddingTop,
+                  paddingBottom: activeTab === 'chat' ? Math.max(insets.bottom, 16) + 168 : 100,
+                },
+              ]}
+              onScroll={onScroll}
+              onScrollEndDrag={onScrollEndDrag}
+              onMomentumScrollEnd={onMomentumScrollEnd}
+              scrollEventThrottle={scrollEventThrottle}
+            >
+              {activeTab === 'chief' &&
+                CHIEF_OF_STAFF_BRIEFINGS.map((item, i) => (
+                  <Card key={i} style={styles.briefItem} variant="elevated">
+                    <View style={styles.briefRow}>
+                      <View style={styles.briefTime}>
+                        <Text style={styles.briefTimeText}>{item.time}</Text>
+                      </View>
+                      <View style={[styles.briefIconBg, { backgroundColor: item.color + '15' }]}>
+                        <Ionicons name={item.icon as keyof typeof Ionicons.glyphMap} size={18} color={item.color} />
+                      </View>
+                      <Text style={styles.briefAction}>{item.action}</Text>
+                      <Badge
+                        label={item.priority}
+                        variant={
+                          item.priority === 'critical' || item.priority === 'high'
+                            ? 'danger'
+                            : item.priority === 'medium'
+                              ? 'warning'
+                              : 'neutral'
+                        }
+                        size="sm"
+                      />
+                    </View>
+                  </Card>
+                ))}
+
+              {activeTab === 'negotiate' && (
+                <View style={styles.scenariosGrid}>
+                  {NEGOTIATION_SCENARIOS.map((s) => (
+                    <Pressable
+                      key={s.id}
+                      onPress={() => handleNegotiate(s)}
+                      style={[styles.scenarioCard, { borderLeftColor: s.color }]}
+                    >
+                      <View style={[styles.scenarioIcon, { backgroundColor: s.color + '15' }]}>
+                        <Ionicons name={s.icon as any} size={24} color={s.color} />
+                      </View>
+                      <Text style={styles.scenarioTitle}>{s.title}</Text>
+                      <Text style={styles.scenarioDesc}>{s.desc}</Text>
+                      <View style={styles.savingsBadge}>
+                        <Ionicons name="trending-up" size={12} color={colors.success} />
+                        <Text style={styles.savingsText}>{s.savings}</Text>
+                      </View>
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+
+              {activeTab === 'conflicts' && (
+                <>
+                  {openConflicts.length === 0 ? (
+                    <View style={styles.emptyState}>
+                      <Ionicons name="checkmark-circle" size={60} color={colors.success} />
+                      <Text style={styles.emptyTitle}>No open conflicts!</Text>
+                      <Text style={styles.emptyDesc}>
+                        Your family is in harmony. The AI will monitor for tension patterns.
+                      </Text>
+                    </View>
+                  ) : (
+                    openConflicts.map((conflict) => (
+                      <Card key={conflict.id} style={styles.conflictCard} variant="elevated">
+                        <View style={styles.conflictHeader}>
+                          <Badge
+                            label={conflict.severity}
+                            variant={
+                              conflict.severity === 'high'
+                                ? 'danger'
+                                : conflict.severity === 'medium'
+                                  ? 'warning'
+                                  : 'neutral'
+                            }
+                            size="sm"
+                          />
+                          <Badge label={conflict.status.replace('_', ' ')} variant="neutral" size="sm" />
+                        </View>
+                        <Text style={styles.conflictTitle}>{conflict.title}</Text>
+                        <Text style={styles.conflictDesc}>{conflict.description}</Text>
+                        {conflict.aiSuggestion && (
+                          <View style={styles.aiSuggestion}>
+                            <Ionicons name="sparkles" size={14} color={colors.secondary} />
+                            <Text style={styles.aiSuggestionText}>{conflict.aiSuggestion}</Text>
+                          </View>
+                        )}
+                      </Card>
+                    ))
+                  )}
+                </>
+              )}
+
+              {activeTab === 'chat' && (
+                <View style={styles.chatPanel}>
+                  {chatHistory.length === 0 && (
+                    <View style={styles.chatEmpty}>
+                      <Text style={styles.chatEmptyTitle}>AI Negotiation Coach</Text>
+                      <Text style={styles.chatEmptyDesc}>
+                        Get personalized scripts and strategies for any negotiation
+                      </Text>
+
+                      {[
+                        'How do I negotiate my cable bill down?',
+                        'Give me a salary negotiation script',
+                        'How do I dispute a medical bill?',
+                      ].map((q) => (
+                        <Pressable key={q} style={styles.chatStarter} onPress={() => handleChatSend(q)}>
+                          <Text style={styles.chatStarterText}>{q}</Text>
+                          <Ionicons name="arrow-forward" size={14} color="#0F2952" />
+                        </Pressable>
+                      ))}
                     </View>
                   )}
-                </Card>
-              ))
-            )}
-          </>
-        )}
-      </ScrollView>
 
-      {activeTab === 'chat' && (
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.chatPanel}>
-          <ScrollView ref={chatScrollRef} style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 20 }}>
-            {chatHistory.length === 0 && (
-              <View style={styles.chatEmpty}>
-                <Text style={styles.chatEmptyTitle}>AI Negotiation Coach</Text>
-                <Text style={styles.chatEmptyDesc}>Get personalized scripts and strategies for any negotiation</Text>
-                {['How do I negotiate my cable bill down?', 'Give me a salary negotiation script', 'How do I dispute a medical bill?'].map((q) => (
-                  <Pressable key={q} style={styles.chatStarter} onPress={() => handleChatSend(q)}>
-                    <Text style={styles.chatStarterText}>{q}</Text>
-                    <Ionicons name="arrow-forward" size={14} color="#0F2952" />
-                  </Pressable>
-                ))}
+                  {chatHistory.map((m, i) => (
+                    <View
+                      key={i}
+                      style={[
+                        styles.chatBubble,
+                        m.role === 'user' ? styles.chatBubbleUser : styles.chatBubbleAI,
+                      ]}
+                    >
+                      <Text style={m.role === 'user' ? styles.chatBubbleUserText : styles.chatBubbleAIText}>
+                        {m.content}
+                      </Text>
+                    </View>
+                  ))}
+
+                  {chatLoading && (
+                    <View style={[styles.chatBubble, styles.chatBubbleAI]}>
+                      <ActivityIndicator size="small" color="#0F2952" />
+                    </View>
+                  )}
+
+                  {suggestions.length > 0 &&
+                    !chatLoading &&
+                    suggestions.map((s) => (
+                      <Pressable key={s} style={styles.chatSuggestion} onPress={() => handleChatSend(s)}>
+                        <Text style={styles.chatSuggestionText}>{s}</Text>
+                      </Pressable>
+                    ))}
+                </View>
+              )}
+            </ScrollView>
+
+            {activeTab === 'chat' && (
+              <View
+                style={[
+                  styles.chatInputDock,
+                  {
+                    paddingBottom: Math.max(insets.bottom, 12) + 72,
+                  },
+                ]}
+              >
+                <ChatInputBar
+                  value={chatInput}
+                  onChangeText={setChatInput}
+                  onSend={() => handleChatSend()}
+                  onMicPressIn={voice.start}
+                  onMicPressOut={voice.stop}
+                  onMicCancel={voice.cancel}
+                  isListening={voice.isListening}
+                  partialTranscript={voice.partial}
+                  placeholder="Describe your negotiation situation..."
+                  bottomPadding={8}
+                  accentColor="#0F2952"
+                />
               </View>
             )}
-            {chatHistory.map((m, i) => (
-              <View key={i} style={[styles.chatBubble, m.role === 'user' ? styles.chatBubbleUser : styles.chatBubbleAI]}>
-                <Text style={m.role === 'user' ? styles.chatBubbleUserText : styles.chatBubbleAIText}>{m.content}</Text>
-              </View>
-            ))}
-            {chatLoading && (
-              <View style={styles.chatBubbleAI}><ActivityIndicator size="small" color="#0F2952" /></View>
-            )}
-            {suggestions.length > 0 && !chatLoading && (
-              <View style={{ marginTop: 8 }}>
-                {suggestions.map((s) => (
-                  <Pressable key={s} style={styles.chatSuggestion} onPress={() => handleChatSend(s)}>
-                    <Text style={styles.chatSuggestionText}>{s}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            )}
-          </ScrollView>
-          <View style={styles.chatInputRow}>
-            <TextInput
-              style={styles.chatInput}
-              value={chatInput}
-              onChangeText={setChatInput}
-              placeholder="Describe your negotiation situation..."
-              placeholderTextColor={colors.textMuted}
-              onSubmitEditing={() => handleChatSend()}
-              returnKeyType="send"
-              multiline
-            />
-            <Pressable style={[styles.chatSendBtn, !chatInput.trim() && { opacity: 0.4 }]} onPress={() => handleChatSend()} disabled={!chatInput.trim()}>
-              <Ionicons name="send" size={18} color="#fff" />
-            </Pressable>
-          </View>
-        </KeyboardAvoidingView>
-      )}
+          </KeyboardAvoidingView>
+        )}
+      </CollapsibleHeader>
+
     </View>
   );
 }
@@ -388,7 +481,7 @@ const styles = StyleSheet.create({
   emptyState: { alignItems: 'center', paddingVertical: 60 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginTop: 16 },
   emptyDesc: { fontSize: 13, color: colors.textSecondary, marginTop: 8, textAlign: 'center', paddingHorizontal: 32 },
-  chatPanel: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: colors.background },
+  chatPanel: { flex: 1, minHeight: 420 },
   chatEmpty: { alignItems: 'center', paddingTop: 20, paddingBottom: 8 },
   chatEmptyTitle: { fontSize: 18, fontWeight: '800', color: colors.text, marginBottom: 6 },
   chatEmptyDesc: { fontSize: 13, color: colors.textSecondary, textAlign: 'center', marginBottom: 20 },
@@ -401,6 +494,7 @@ const styles = StyleSheet.create({
   chatBubbleAIText: { fontSize: 14, color: colors.text, lineHeight: 20 },
   chatSuggestion: { backgroundColor: '#EEF2FA', borderRadius: 20, paddingVertical: 8, paddingHorizontal: 14, marginBottom: 6, alignSelf: 'flex-start' },
   chatSuggestionText: { fontSize: 13, color: '#0F2952', fontWeight: '500' },
+  chatInputDock: { position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: colors.background, borderTopWidth: 1, borderTopColor: colors.border },
   chatInputRow: { flexDirection: 'row', alignItems: 'flex-end', padding: 12, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.background, gap: 10 },
   chatInput: { flex: 1, backgroundColor: colors.card, borderRadius: 22, paddingVertical: 10, paddingHorizontal: 16, fontSize: 14, color: colors.text, maxHeight: 100, borderWidth: 1, borderColor: colors.border },
   chatSendBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#0F2952', alignItems: 'center', justifyContent: 'center' },

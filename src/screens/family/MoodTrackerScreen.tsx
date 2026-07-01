@@ -8,6 +8,7 @@ import { format, subDays } from 'date-fns';
 import { colors } from '../../theme/colors';
 import { Card } from '../../components/common/Card';
 import { Avatar } from '../../components/common/Avatar';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useMoodStore, MoodLevel } from '../../store/useMoodStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 
@@ -69,59 +70,82 @@ export function MoodTrackerScreen({ navigation }: any) {
 
   const getDateEntry = (memberId: string, date: string) => entries.find((e) => e.memberId === memberId && e.date === date);
 
-  return (
-    <View style={styles.container}>
-      <StatusBar style="light" />
-      <LinearGradient colors={['#E91E63', '#AD1457']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
-        <View style={styles.headerRow}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <Text style={styles.headerTitle}>Family Mood Tracker</Text>
-          <View style={{ width: 40 }} />
-        </View>
-
-        <View style={styles.familyMoodRow}>
-          <View style={styles.familyMoodLeft}>
-            <Text style={styles.familyMoodLabel}>FAMILY MOOD TODAY</Text>
-            <Text style={styles.familyMoodEmoji}>
-              {avg !== null ? MOOD_CONFIG[Math.round(avg) as MoodLevel]?.emoji : '❓'}
-            </Text>
-            <Text style={styles.familyMoodValue}>
-              {avg !== null ? `${avg.toFixed(1)}/5.0` : 'Not checked in'}
-            </Text>
-          </View>
-          <View style={styles.familyMoodRight}>
-            {members.map((m) => {
-              const todayE = getTodayMood(m.id);
-              return (
-                <View key={m.id} style={styles.memberMoodRow}>
-                  <Text style={styles.memberMoodName}>{m.name.split(' ')[0]}</Text>
-                  <Text style={styles.memberMoodEmoji}>
-                    {todayE ? MOOD_CONFIG[todayE.level].emoji : '—'}
-                  </Text>
-                </View>
-              );
-            })}
-          </View>
-        </View>
-      </LinearGradient>
-
-      {/* Member selector */}
-      <View style={styles.memberBar}>
-        {members.map((m) => (
-          <Pressable
-            key={m.id}
-            onPress={() => setSelectedMember(m.id)}
-            style={[styles.memberChip, selectedMember === m.id || (!selectedMember && m.id === members[0]?.id) ? styles.memberChipActive : {}]}
-          >
-            <Avatar name={m.name} color={m.avatarColor} size={32} />
-            <Text style={styles.memberChipName}>{m.name.split(' ')[0]}</Text>
-          </Pressable>
-        ))}
+  const screenHeader = (
+    <LinearGradient colors={['#E91E63', '#AD1457']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
+      <View style={styles.headerRow}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <Text style={styles.headerTitle}>Family Mood Tracker</Text>
+        <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
+      <View style={styles.familyMoodRow}>
+        <View style={styles.familyMoodLeft}>
+          <Text style={styles.familyMoodLabel}>FAMILY MOOD TODAY</Text>
+          <Text style={styles.familyMoodEmoji}>
+            {avg !== null ? MOOD_CONFIG[Math.round(avg) as MoodLevel]?.emoji : '❓'}
+          </Text>
+          <Text style={styles.familyMoodValue}>
+            {avg !== null ? `${avg.toFixed(1)}/5.0` : 'Not checked in'}
+          </Text>
+        </View>
+        <View style={styles.familyMoodRight}>
+          {members.map((m) => {
+            const todayE = getTodayMood(m.id);
+            return (
+              <View key={m.id} style={styles.memberMoodRow}>
+                <Text style={styles.memberMoodName}>{m.name.split(' ')[0]}</Text>
+                <Text style={styles.memberMoodEmoji}>
+                  {todayE ? MOOD_CONFIG[todayE.level].emoji : '—'}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+      </View>
+    </LinearGradient>
+  );
+
+  const screenCompact = (
+    <View style={{ backgroundColor: '#E91E63', paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </Pressable>
+      <Text style={styles.headerTitle}>Family Mood Tracker</Text>
+      <View style={{ width: 40 }} />
+    </View>
+  );
+
+  const memberBar = (
+    <View style={styles.memberBar}>
+      {members.map((m) => (
+        <Pressable
+          key={m.id}
+          onPress={() => setSelectedMember(m.id)}
+          style={[styles.memberChip, selectedMember === m.id || (!selectedMember && m.id === members[0]?.id) ? styles.memberChipActive : {}]}
+        >
+          <Avatar name={m.name} color={m.avatarColor} size={32} />
+          <Text style={styles.memberChipName}>{m.name.split(' ')[0]}</Text>
+        </Pressable>
+      ))}
+    </View>
+  );
+
+  return (
+    <>
+      <StatusBar style="light" />
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+          <>
+            {memberBar}
+            <ScrollView
+              onScroll={onScroll}
+              onScrollEndDrag={onScrollEndDrag}
+              onMomentumScrollEnd={onMomentumScrollEnd}
+              scrollEventThrottle={scrollEventThrottle}
+              contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+            >
         {/* Today's check-in */}
         <Text style={styles.sectionTitle}>
           {activeMember?.name.split(' ')[0]}'s Check-in Today
@@ -223,8 +247,11 @@ export function MoodTrackerScreen({ navigation }: any) {
             Your family's average mood this week is <Text style={styles.insightBold}>3.8/5</Text>. Marcus and Sarah tend to be happiest on weekends. Consider planning a fun family activity for next Saturday!
           </Text>
         </Card>
-      </ScrollView>
-    </View>
+            </ScrollView>
+          </>
+        )}
+      </CollapsibleHeader>
+    </>
   );
 }
 

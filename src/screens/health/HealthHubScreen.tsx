@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/ThemeContext';
 import { shadows } from '../../theme/spacing';
 import { Card } from '../../components/common/Card';
 import { ProgressBar } from '../../components/common/ProgressBar';
 import { Button } from '../../components/common/Button';
 import { PremiumHeader } from '../../components/common/PremiumHeader';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useHealthStore } from '../../store/useHealthStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { useNavigation } from '@react-navigation/native';
@@ -34,6 +36,7 @@ export function HealthHubScreen({ navigation: navProp }: any) {
   const { colors } = useTheme();
   const navHook = useNavigation<any>();
   const navigation = navProp ?? navHook;
+  const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<'overview' | 'metrics' | 'appointments'>('overview');
   const [selectedMember, setSelectedMember] = useState<string | null>(null);
   const { records, goals, seedDemoData } = useHealthStore();
@@ -81,39 +84,54 @@ export function HealthHubScreen({ navigation: navProp }: any) {
 
   const s = makeStyles(colors);
 
+  const screenHeader = (
+    <PremiumHeader
+      title="Family Health Hub"
+      onBack={() => navigation.goBack()}
+      colors={['#1A3C34', '#27AE60']}
+      rightAction={
+        <Pressable onPress={() => setShowAptModal(true)} style={s.addBtn}>
+          <Ionicons name="add" size={22} color="#fff" />
+        </Pressable>
+      }
+    >
+      <View style={s.scoreRow}>
+        <View style={s.scoreBlock}>
+          <Text style={s.scoreValue}>{FAMILY_HEALTH_SCORE}</Text>
+          <Text style={s.scoreLabel}>Family Health Score</Text>
+        </View>
+        <View style={s.memberScores}>
+          {members.slice(0, 4).map((m) => {
+            const memberSteps = records.filter((r) => r.memberId === m.id && r.metric === 'steps').slice(-1)[0];
+            const stepGoal = goals.find((g) => g.memberId === m.id && g.metric === 'steps');
+            const progress = memberSteps && stepGoal ? Math.min(1, memberSteps.value / stepGoal.target) : 0.5;
+            return (
+              <Pressable key={m.id} onPress={() => setSelectedMember(m.id)} style={s.memberMiniCard}>
+                <View style={[s.memberDot, { backgroundColor: m.avatarColor }]} />
+                <Text style={s.memberMiniName}>{m.name.split(' ')[0]}</Text>
+                <ProgressBar progress={progress} color={m.avatarColor} height={4} />
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+    </PremiumHeader>
+  );
+
+  const screenCompact = (
+    <View style={{ backgroundColor: '#1A3C34', paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Pressable onPress={() => navigation.goBack()} style={s.addBtn}>
+        <Ionicons name="arrow-back" size={20} color="#fff" />
+      </Pressable>
+      <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700', flex: 1, marginLeft: 8 }}>Family Health Hub</Text>
+      <Pressable onPress={() => setShowAptModal(true)} style={s.addBtn}>
+        <Ionicons name="add" size={22} color="#fff" />
+      </Pressable>
+    </View>
+  );
+
   return (
     <View style={s.container}>
-      <PremiumHeader
-        title="Family Health Hub"
-        onBack={() => navigation.goBack()}
-        colors={['#1A3C34', '#27AE60']}
-        rightAction={
-          <Pressable onPress={() => setShowAptModal(true)} style={s.addBtn}>
-            <Ionicons name="add" size={22} color="#fff" />
-          </Pressable>
-        }
-      >
-        <View style={s.scoreRow}>
-          <View style={s.scoreBlock}>
-            <Text style={s.scoreValue}>{FAMILY_HEALTH_SCORE}</Text>
-            <Text style={s.scoreLabel}>Family Health Score</Text>
-          </View>
-          <View style={s.memberScores}>
-            {members.slice(0, 4).map((m) => {
-              const memberSteps = records.filter((r) => r.memberId === m.id && r.metric === 'steps').slice(-1)[0];
-              const stepGoal = goals.find((g) => g.memberId === m.id && g.metric === 'steps');
-              const progress = memberSteps && stepGoal ? Math.min(1, memberSteps.value / stepGoal.target) : 0.5;
-              return (
-                <Pressable key={m.id} onPress={() => setSelectedMember(m.id)} style={s.memberMiniCard}>
-                  <View style={[s.memberDot, { backgroundColor: m.avatarColor }]} />
-                  <Text style={s.memberMiniName}>{m.name.split(' ')[0]}</Text>
-                  <ProgressBar progress={progress} color={m.avatarColor} height={4} />
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
-      </PremiumHeader>
 
       <View style={s.tabs}>
         {(['overview', 'metrics', 'appointments'] as const).map((tab) => (
@@ -125,7 +143,15 @@ export function HealthHubScreen({ navigation: navProp }: any) {
         ))}
       </View>
 
-      <ScrollView contentContainerStyle={[s.content, { paddingBottom: 100 }]}>
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+        <ScrollView
+          onScroll={onScroll}
+          onScrollEndDrag={onScrollEndDrag}
+          onMomentumScrollEnd={onMomentumScrollEnd}
+          scrollEventThrottle={scrollEventThrottle}
+          contentContainerStyle={[s.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}>
+
         {activeTab === 'overview' && (
           <>
             <Text style={s.sectionTitle}>AI Health Tips</Text>
@@ -265,7 +291,9 @@ export function HealthHubScreen({ navigation: navProp }: any) {
             </View>
           </Card>
         ))}
-      </ScrollView>
+        </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       <Modal visible={showAptModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowAptModal(false)}>
         <ScrollView style={s.modal} contentContainerStyle={{ paddingBottom: 40 }}>

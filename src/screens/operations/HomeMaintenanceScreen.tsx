@@ -21,6 +21,7 @@ import { shadows } from '../../theme/spacing';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import {
   useHomeMaintenanceStore,
   MaintenanceCategory,
@@ -330,52 +331,78 @@ export function HomeMaintenanceScreen({ navigation }: any) {
     </Card>
   );
 
+  const screenHeader = (
+    <LinearGradient colors={['#37474F', '#546E7A']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
+      <View style={styles.headerTop}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <Text style={styles.headerTitle}>Home Maintenance</Text>
+        <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
+          <Ionicons name="add" size={26} color="#fff" />
+        </Pressable>
+      </View>
+      <View style={styles.headerStats}>
+        <View style={styles.headerStat}>
+          <Text style={styles.headerStatNum}>{pendingTasks.length}</Text>
+          <Text style={styles.headerStatLabel}>Pending</Text>
+        </View>
+        <View style={styles.headerStatDivider} />
+        <View style={styles.headerStat}>
+          <Text style={styles.headerStatNum}>{urgentCount}</Text>
+          <Text style={styles.headerStatLabel}>Urgent</Text>
+        </View>
+        <View style={styles.headerStatDivider} />
+        <View style={styles.headerStat}>
+          <Text style={styles.headerStatNum}>${totalEstCost}</Text>
+          <Text style={styles.headerStatLabel}>Est. Cost</Text>
+        </View>
+      </View>
+    
+    <View style={styles.tabs}>
+            {(['pending', 'done', 'recurring'] as const).map((tab) => (
+              <Pressable
+                key={tab}
+                onPress={() => setActiveTab(tab)}
+                style={[styles.tab, activeTab === tab && styles.tabActive]}
+              >
+                <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
+                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+</LinearGradient>
+  );
+
+  const screenCompact = (
+    <LinearGradient
+      colors={['#37474F', '#546E7A']}
+      style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+    >
+      <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </Pressable>
+      <Text style={styles.headerTitle}>Home Maintenance</Text>
+      <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: '600' }}>{pendingTasks.length} pending</Text>
+    </LinearGradient>
+  );
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#37474F', '#546E7A']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
-        <View style={styles.headerTop}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <Text style={styles.headerTitle}>Home Maintenance</Text>
-          <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
-            <Ionicons name="add" size={26} color="#fff" />
-          </Pressable>
-        </View>
-        <View style={styles.headerStats}>
-          <View style={styles.headerStat}>
-            <Text style={styles.headerStatNum}>{pendingTasks.length}</Text>
-            <Text style={styles.headerStatLabel}>Pending</Text>
-          </View>
-          <View style={styles.headerStatDivider} />
-          <View style={styles.headerStat}>
-            <Text style={styles.headerStatNum}>{urgentCount}</Text>
-            <Text style={styles.headerStatLabel}>Urgent</Text>
-          </View>
-          <View style={styles.headerStatDivider} />
-          <View style={styles.headerStat}>
-            <Text style={styles.headerStatNum}>${totalEstCost}</Text>
-            <Text style={styles.headerStatLabel}>Est. Cost</Text>
-          </View>
-        </View>
-      </LinearGradient>
 
-      <View style={styles.tabs}>
-        {(['pending', 'done', 'recurring'] as const).map((tab) => (
-          <Pressable
-            key={tab}
-            onPress={() => setActiveTab(tab)}
-            style={[styles.tab, activeTab === tab && styles.tabActive]}
-          >
-            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      
 
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+      <ScrollView
+        contentContainerStyle={{ padding: 16, paddingBottom: 100, paddingTop: contentPaddingTop }}
+        onScroll={onScroll}
+        onScrollEndDrag={onScrollEndDrag}
+        onMomentumScrollEnd={onMomentumScrollEnd}
+        scrollEventThrottle={scrollEventThrottle}
+      >
         {activeTab === 'pending' && (
           <>
             {(() => {
@@ -441,6 +468,8 @@ export function HomeMaintenanceScreen({ navigation }: any) {
           </>
         )}
       </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       {/* Add Task Modal */}
       <Modal visible={showAddModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowAddModal(false)}>

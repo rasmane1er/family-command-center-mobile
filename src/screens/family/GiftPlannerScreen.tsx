@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
@@ -223,45 +224,68 @@ export function GiftPlannerScreen({ navigation }: any) {
     );
   };
 
+  const screenHeader = (
+    <LinearGradient colors={['#880E4F', '#C2185B']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
+      <View style={styles.headerTop}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <Text style={styles.headerTitle}>Gift Planner</Text>
+        <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
+          <Ionicons name="add" size={26} color="#fff" />
+        </Pressable>
+      </View>
+
+      <View style={styles.summaryRow}>
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryValue}>${totalBudget.toFixed(0)}</Text>
+          <Text style={styles.summaryLabel}>Total Budget</Text>
+        </View>
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryValue}>{purchased.length}</Text>
+          <Text style={styles.summaryLabel}>Purchased</Text>
+        </View>
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryValue}>{ideas.length}</Text>
+          <Text style={styles.summaryLabel}>Ideas</Text>
+        </View>
+      </View>
+
+      <View style={styles.tabRow}>
+        {tabs.map((tab) => (
+          <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
+            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>{tab}</Text>
+          </Pressable>
+        ))}
+      </View>
+    </LinearGradient>
+  );
+
+  const screenCompact = (
+    <LinearGradient colors={['#880E4F', '#C2185B']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </Pressable>
+      <Text style={styles.headerTitle}>Gift Planner</Text>
+      <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
+        <Ionicons name="add" size={26} color="#fff" />
+      </Pressable>
+    </LinearGradient>
+  );
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#880E4F', '#C2185B']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
-        <View style={styles.headerTop}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <Text style={styles.headerTitle}>Gift Planner</Text>
-          <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
-            <Ionicons name="add" size={26} color="#fff" />
-          </Pressable>
-        </View>
 
-        <View style={styles.summaryRow}>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryValue}>${totalBudget.toFixed(0)}</Text>
-            <Text style={styles.summaryLabel}>Total Budget</Text>
-          </View>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryValue}>{purchased.length}</Text>
-            <Text style={styles.summaryLabel}>Purchased</Text>
-          </View>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryValue}>{ideas.length}</Text>
-            <Text style={styles.summaryLabel}>Ideas</Text>
-          </View>
-        </View>
-
-        <View style={styles.tabRow}>
-          {tabs.map((tab) => (
-            <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
-              <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>{tab}</Text>
-            </Pressable>
-          ))}
-        </View>
-      </LinearGradient>
-
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+      <ScrollView
+        onScroll={onScroll}
+        onScrollEndDrag={onScrollEndDrag}
+        onMomentumScrollEnd={onMomentumScrollEnd}
+        scrollEventThrottle={scrollEventThrottle}
+        contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+      >
         {gifts.length === 0 && (
           <Pressable onPress={seedDemoData} style={styles.seedBtn}>
             <Ionicons name="flask" size={18} color={'#C2185B'} />
@@ -385,6 +409,8 @@ export function GiftPlannerScreen({ navigation }: any) {
           </>
         )}
       </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       {/* Add Gift Modal */}
       <Modal visible={showAddModal} animationType="slide" presentationStyle="pageSheet">

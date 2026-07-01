@@ -11,6 +11,7 @@ import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { Avatar } from '../../components/common/Avatar';
 import { Button } from '../../components/common/Button';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useLegacyStore } from '../../store/useLegacyStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import type { LegacyItemType } from '../../types';
@@ -73,52 +74,75 @@ export function LegacyVaultScreen({ navigation }: any) {
   const filtered = filter === 'all' ? items : items.filter((i) => i.type === filter);
   const featured = items.filter((i) => i.isFeatured);
 
+  const screenHeader = (
+    <LinearGradient colors={['#4A1942', '#7B2D8B']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
+      <View style={styles.headerTop}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.headerTitle}>Legacy Vault</Text>
+          <Text style={styles.headerSub}>Family stories • Traditions • Milestones</Text>
+        </View>
+        <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
+          <Ionicons name="add" size={24} color="#fff" />
+        </Pressable>
+      </View>
+
+      <View style={styles.statsRow}>
+        <View style={styles.stat}>
+          <Ionicons name="library" size={18} color="rgba(255,255,255,0.7)" />
+          <Text style={styles.statVal}>{items.length} Memories</Text>
+        </View>
+        <View style={styles.stat}>
+          <Ionicons name="star" size={18} color="rgba(255,255,255,0.7)" />
+          <Text style={styles.statVal}>{featured.length} Featured</Text>
+        </View>
+        <View style={styles.stat}>
+          <Ionicons name="heart" size={18} color="rgba(255,255,255,0.7)" />
+          <Text style={styles.statVal}>{items.reduce((s, i) => s + i.reactions.length, 0)} Reactions</Text>
+        </View>
+      </View>
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 12 }}>
+        {FILTER_TYPES.map((ft) => (
+          <Pressable
+            key={ft.key}
+            onPress={() => setFilter(ft.key)}
+            style={[styles.filterChip, filter === ft.key && styles.filterChipActive]}
+          >
+            <Text style={[styles.filterText, filter === ft.key && styles.filterTextActive]}>{ft.label}</Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+    </LinearGradient>
+  );
+
+  const screenCompact = (
+    <View style={{ backgroundColor: '#4A1942', paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </Pressable>
+      <Text style={styles.headerTitle}>Legacy Vault</Text>
+      <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
+        <Ionicons name="add" size={24} color="#fff" />
+      </Pressable>
+    </View>
+  );
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#4A1942', '#7B2D8B']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
-        <View style={styles.headerTop}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.headerTitle}>Legacy Vault</Text>
-            <Text style={styles.headerSub}>Family stories • Traditions • Milestones</Text>
-          </View>
-          <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
-            <Ionicons name="add" size={24} color="#fff" />
-          </Pressable>
-        </View>
 
-        <View style={styles.statsRow}>
-          <View style={styles.stat}>
-            <Ionicons name="library" size={18} color="rgba(255,255,255,0.7)" />
-            <Text style={styles.statVal}>{items.length} Memories</Text>
-          </View>
-          <View style={styles.stat}>
-            <Ionicons name="star" size={18} color="rgba(255,255,255,0.7)" />
-            <Text style={styles.statVal}>{featured.length} Featured</Text>
-          </View>
-          <View style={styles.stat}>
-            <Ionicons name="heart" size={18} color="rgba(255,255,255,0.7)" />
-            <Text style={styles.statVal}>{items.reduce((s, i) => s + i.reactions.length, 0)} Reactions</Text>
-          </View>
-        </View>
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 12 }}>
-          {FILTER_TYPES.map((ft) => (
-            <Pressable
-              key={ft.key}
-              onPress={() => setFilter(ft.key)}
-              style={[styles.filterChip, filter === ft.key && styles.filterChipActive]}
-            >
-              <Text style={[styles.filterText, filter === ft.key && styles.filterTextActive]}>{ft.label}</Text>
-            </Pressable>
-          ))}
-        </ScrollView>
-      </LinearGradient>
-
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+        <ScrollView
+          contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+          onScroll={onScroll}
+          onScrollEndDrag={onScrollEndDrag}
+          onMomentumScrollEnd={onMomentumScrollEnd}
+          scrollEventThrottle={scrollEventThrottle}
+        >
         {filter === 'all' && featured.length > 0 && (
           <>
             <Text style={styles.sectionTitle}>Featured</Text>
@@ -183,7 +207,9 @@ export function LegacyVaultScreen({ navigation }: any) {
             <Text style={styles.emptyDesc}>Start preserving your family's legacy by adding stories, traditions, and milestones.</Text>
           </View>
         )}
-      </ScrollView>
+        </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowModal(false)}>
         <ScrollView style={styles.modal} contentContainerStyle={{ paddingBottom: 40 }}>
@@ -238,6 +264,7 @@ export function LegacyVaultScreen({ navigation }: any) {
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },

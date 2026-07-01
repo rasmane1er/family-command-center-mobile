@@ -21,6 +21,7 @@ import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { useBucketListStore, BucketCategory, BucketItem } from '../../store/useBucketListStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 
 const CATEGORY_CONFIG: Record<BucketCategory, { color: string; icon: string; label: string }> = {
   travel:      { color: '#2980B9', icon: 'airplane',             label: 'Travel' },
@@ -230,62 +231,84 @@ export function BucketListScreen({ navigation }: any) {
     );
   };
 
+  const screenHeader = (
+    <LinearGradient
+      colors={['#4A148C', '#6A1B9A', '#7B1FA2']}
+      style={{ paddingTop: insets.top + 6, paddingBottom: 8, paddingHorizontal: 20 }}
+    >
+      <View style={styles.headerTop}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <Text style={styles.headerTitle}>Family Bucket List</Text>
+        <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
+          <Ionicons name="add" size={22} color="#fff" />
+        </Pressable>
+      </View>
+
+      <View style={styles.headerStats}>
+        <View style={styles.headerStatBlock}>
+          <Text style={styles.headerStatValue}>{items.length}</Text>
+          <Text style={styles.headerStatLabel}>Total Dreams</Text>
+        </View>
+        <View style={styles.headerStatDivider} />
+        <View style={styles.headerStatBlock}>
+          <Text style={styles.headerStatValue}>{completedItems.length}</Text>
+          <Text style={styles.headerStatLabel}>Completed</Text>
+        </View>
+        <View style={styles.headerStatDivider} />
+        <View style={styles.headerStatBlock}>
+          <Text style={styles.headerStatValue}>${(totalCost / 1000).toFixed(0)}K</Text>
+          <Text style={styles.headerStatLabel}>Est. Cost</Text>
+        </View>
+        <View style={styles.headerStatDivider} />
+        <View style={styles.headerStatBlock}>
+          <Text style={styles.headerStatValue}>{Math.round(completionPct * 100)}%</Text>
+          <Text style={styles.headerStatLabel}>Done</Text>
+        </View>
+      </View>
+    </LinearGradient>
+  );
+
+  const screenCompact = (
+    <LinearGradient colors={['#4A148C', '#6A1B9A', '#7B1FA2']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </Pressable>
+      <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>Bucket List</Text>
+      <Text style={{ fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.8)' }}>{Math.round(completionPct * 100)}% done</Text>
+    </LinearGradient>
+  );
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient
-        colors={['#4A148C', '#6A1B9A', '#7B1FA2']}
-        style={{ paddingTop: insets.top + 6, paddingBottom: 8, paddingHorizontal: 20 }}
-      >
-        <View style={styles.headerTop}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <Text style={styles.headerTitle}>Family Bucket List</Text>
-          <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
-            <Ionicons name="add" size={22} color="#fff" />
-          </Pressable>
-        </View>
 
-        <View style={styles.headerStats}>
-          <View style={styles.headerStatBlock}>
-            <Text style={styles.headerStatValue}>{items.length}</Text>
-            <Text style={styles.headerStatLabel}>Total Dreams</Text>
-          </View>
-          <View style={styles.headerStatDivider} />
-          <View style={styles.headerStatBlock}>
-            <Text style={styles.headerStatValue}>{completedItems.length}</Text>
-            <Text style={styles.headerStatLabel}>Completed</Text>
-          </View>
-          <View style={styles.headerStatDivider} />
-          <View style={styles.headerStatBlock}>
-            <Text style={styles.headerStatValue}>${(totalCost / 1000).toFixed(0)}K</Text>
-            <Text style={styles.headerStatLabel}>Est. Cost</Text>
-          </View>
-          <View style={styles.headerStatDivider} />
-          <View style={styles.headerStatBlock}>
-            <Text style={styles.headerStatValue}>{Math.round(completionPct * 100)}%</Text>
-            <Text style={styles.headerStatLabel}>Done</Text>
-          </View>
-        </View>
-      </LinearGradient>
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+          <>
+            {/* Tabs */}
+            <View style={styles.tabs}>
+              {(['dreams', 'completed', 'category'] as TabType[]).map((tab) => (
+                <Pressable
+                  key={tab}
+                  onPress={() => setActiveTab(tab)}
+                  style={[styles.tab, activeTab === tab && styles.tabActive]}
+                >
+                  <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
+                    {tab === 'dreams' ? 'Dream List' : tab === 'completed' ? 'Completed' : 'By Category'}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
 
-      {/* Tabs */}
-      <View style={styles.tabs}>
-        {(['dreams', 'completed', 'category'] as TabType[]).map((tab) => (
-          <Pressable
-            key={tab}
-            onPress={() => setActiveTab(tab)}
-            style={[styles.tab, activeTab === tab && styles.tabActive]}
-          >
-            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-              {tab === 'dreams' ? 'Dream List' : tab === 'completed' ? 'Completed' : 'By Category'}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+            <ScrollView
+              onScroll={onScroll}
+              onScrollEndDrag={onScrollEndDrag}
+              onMomentumScrollEnd={onMomentumScrollEnd}
+              scrollEventThrottle={scrollEventThrottle}
+              contentContainerStyle={{ paddingBottom: 100, paddingTop: contentPaddingTop }}
+            >
         {/* Dream List Tab */}
         {activeTab === 'dreams' && (
           <View style={styles.section}>
@@ -383,7 +406,10 @@ export function BucketListScreen({ navigation }: any) {
             </View>
           </View>
         )}
-      </ScrollView>
+            </ScrollView>
+          </>
+        )}
+      </CollapsibleHeader>
 
       {/* Add Item Modal */}
       <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet">

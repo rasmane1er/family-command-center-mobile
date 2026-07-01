@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Modal, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { AIResetMenu } from '../../components/ai/AIResetMenu';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useTheme } from '../../theme/ThemeContext';
 import { shadows } from '../../theme/spacing';
 import { Card } from '../../components/common/Card';
@@ -53,7 +55,7 @@ export function AIMemoryScreen({ navigation }: any) {
   const [aiSuggestions, setAISuggestions] = useState<string[]>([]);
   const aiScrollRef = useRef<ScrollView>(null);
 
-  const { memories, pinMemory, addMemory, seedDemoData } = useMemoryStore();
+  const { memories, pinMemory, addMemory, seedDemoData, clearMemories, deleteMemory } = useMemoryStore();
   const members = useFamilyStore((s) => s.members);
   const financialGoals = useFinanceStore((s) => s.financialGoals);
 
@@ -174,49 +176,79 @@ export function AIMemoryScreen({ navigation }: any) {
 
   const dynStyles = makeStyles(colors);
 
+  const screenHeader = (
+    <LinearGradient colors={['#2D1B69', '#6A1B9A']} style={[dynStyles.header, { paddingTop: insets.top + 6 }]}>
+      <View style={dynStyles.headerTop}>
+        <Pressable onPress={() => navigation.goBack()} style={dynStyles.back}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <View style={{ flex: 1 }}>
+          <Text style={dynStyles.headerTitle}>AI Memory Engine</Text>
+          <Text style={dynStyles.headerSub}>{memories.length} memories stored</Text>
+        </View>
+        <Pressable style={dynStyles.aiBtn} onPress={() => setShowAIChat(true)}>
+          <Ionicons name="sparkles" size={18} color="#fff" />
+        </Pressable>
+        <Pressable style={dynStyles.addBtn} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowModal(true); }}>
+          <Ionicons name="add" size={24} color="#fff" />
+        </Pressable>
+        <AIResetMenu actions={[
+          { label: 'Load Demo Data', description: 'Populate with sample memories', icon: 'sparkles-outline', onPress: () => seedDemoData() },
+          { label: 'Delete Pinned', description: 'Remove all pinned memories', icon: 'bookmark-outline', danger: true, onPress: () => memories.filter((m) => m.isPinned).forEach((m) => deleteMemory(m.id)) },
+          { label: 'Clear All Memories', description: 'Permanently delete every memory', icon: 'trash-outline', danger: true, onPress: () => clearMemories() },
+        ]} />
+      </View>
+      <View style={dynStyles.searchBar}>
+        <Ionicons name="search" size={16} color="rgba(255,255,255,0.6)" />
+        <TextInput
+          style={dynStyles.searchInput}
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Search memories, tags..."
+          placeholderTextColor="rgba(255,255,255,0.4)"
+        />
+      </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={dynStyles.filterScroll}>
+        {FILTER_TABS.map((tab) => (
+          <Pressable
+            key={tab.key}
+            onPress={() => setFilter(tab.key)}
+            style={[dynStyles.filterChip, filter === tab.key && dynStyles.filterChipActive]}
+          >
+            <Text style={[dynStyles.filterChipText, filter === tab.key && dynStyles.filterChipTextActive]}>{tab.label}</Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+    </LinearGradient>
+  );
+
+  const screenCompact = (
+    <View style={{ backgroundColor: '#2D1B69', paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Pressable onPress={() => navigation.goBack()} style={dynStyles.back}>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </Pressable>
+      <Text style={[dynStyles.headerTitle, { flex: 1, marginLeft: 8 }]}>AI Memory Engine</Text>
+      <Pressable style={dynStyles.aiBtn} onPress={() => setShowAIChat(true)}>
+        <Ionicons name="sparkles" size={18} color="#fff" />
+      </Pressable>
+      <Pressable style={dynStyles.addBtn} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowModal(true); }}>
+        <Ionicons name="add" size={24} color="#fff" />
+      </Pressable>
+    </View>
+  );
+
   return (
     <View style={dynStyles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#2D1B69', '#6A1B9A']} style={[dynStyles.header, { paddingTop: insets.top }]}>
-        <View style={dynStyles.headerTop}>
-          <Pressable onPress={() => navigation.goBack()} style={dynStyles.back}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <View style={{ flex: 1 }}>
-            <Text style={dynStyles.headerTitle}>AI Memory Engine</Text>
-            <Text style={dynStyles.headerSub}>{memories.length} memories stored</Text>
-          </View>
-          <Pressable style={dynStyles.aiBtn} onPress={() => setShowAIChat(true)}>
-            <Ionicons name="sparkles" size={18} color="#fff" />
-          </Pressable>
-          <Pressable style={dynStyles.addBtn} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowModal(true); }}>
-            <Ionicons name="add" size={24} color="#fff" />
-          </Pressable>
-        </View>
-        <View style={dynStyles.searchBar}>
-          <Ionicons name="search" size={16} color="rgba(255,255,255,0.6)" />
-          <TextInput
-            style={dynStyles.searchInput}
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Search memories, tags..."
-            placeholderTextColor="rgba(255,255,255,0.4)"
-          />
-        </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={dynStyles.filterScroll}>
-          {FILTER_TABS.map((tab) => (
-            <Pressable
-              key={tab.key}
-              onPress={() => setFilter(tab.key)}
-              style={[dynStyles.filterChip, filter === tab.key && dynStyles.filterChipActive]}
-            >
-              <Text style={[dynStyles.filterChipText, filter === tab.key && dynStyles.filterChipTextActive]}>{tab.label}</Text>
-            </Pressable>
-          ))}
-        </ScrollView>
-      </LinearGradient>
 
-      <ScrollView contentContainerStyle={[dynStyles.content, { paddingBottom: 100 }]}>
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+      <ScrollView
+        onScroll={onScroll}
+        onScrollEndDrag={onScrollEndDrag}
+        onMomentumScrollEnd={onMomentumScrollEnd}
+        scrollEventThrottle={scrollEventThrottle}
+        contentContainerStyle={[dynStyles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}>
         {pinned.length > 0 && (
           <>
             <View style={dynStyles.sectionHeader}>
@@ -307,6 +339,9 @@ export function AIMemoryScreen({ navigation }: any) {
           </View>
         )}
       </ScrollView>
+
+        )}
+      </CollapsibleHeader>
 
       <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet">
         <ScrollView style={dynStyles.modal} contentContainerStyle={{ paddingBottom: 40 }}>

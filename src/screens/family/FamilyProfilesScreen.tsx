@@ -29,6 +29,7 @@ import { useFamilyStore } from '../../store/useFamilyStore';
 import { useTheme } from '../../theme/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { shadows } from '../../theme/spacing';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import type { FamilyMember, MemberRole } from '../../types';
 import { defaultPermissionsForRole } from '../../types';
 
@@ -278,63 +279,84 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
 
   const dynStyles = makeStyles(colors);
 
+  const screenHeader = (
+    <LinearGradient
+      colors={['#0F2952', '#1E4A8A']}
+      style={[dynStyles.header, { paddingTop: insets.top + 6 }]}
+    >
+      {/* Top row */}
+      <View style={dynStyles.headerTop}>
+            {route?.params?.source === 'dashboard' && (
+              <Pressable onPress={() => navigation.getParent()?.navigate('Home')} style={dynStyles.backBtn}>
+                <Ionicons name="arrow-back" size={22} color="#fff" />
+              </Pressable>
+            )}
+            <View style={dynStyles.headerLeft}>
+              <Text style={dynStyles.headerTitle}>{t('family.title')}</Text>
+              <Text style={dynStyles.headerSubtitle}>
+                {members.length} {members.length === 1 ? 'member' : 'members'}
+                {family?.name ? ` · ${family.name}` : ''}
+              </Text>
+            </View>
+            <View style={dynStyles.headerActions}>
+              {activeMember && (
+                <Pressable
+                  style={dynStyles.activeProfilePill}
+                  onPress={() => navigation.navigate('ProfileSwitcher')}
+                >
+                  <Avatar name={activeMember.name} color={activeMember.avatarColor} size={26} />
+                  <Ionicons name="chevron-down" size={13} color="rgba(255,255,255,0.8)" style={{ marginLeft: 6 }} />
+                </Pressable>
+              )}
+              <Pressable onPress={openAddMemberModal} style={dynStyles.addBtn}>
+                <Ionicons name="person-add-outline" size={20} color="#fff" />
+              </Pressable>
+            </View>
+          </View>
+
+          {/* Stats row */}
+          <View style={dynStyles.statsRow}>
+            {[
+              { icon: 'checkmark-done-circle', value: pendingTasks, label: 'Tasks' },
+              { icon: 'calendar', value: todayEvents, label: 'Events Today' },
+              { icon: 'trophy', value: `${healthScore}`, label: 'Family Score' },
+            ].map((stat) => (
+              <View key={stat.label} style={dynStyles.statPill}>
+                <Ionicons name={stat.icon as any} size={14} color="rgba(255,255,255,0.75)" />
+                <Text style={dynStyles.statValue}>{stat.value}</Text>
+                <Text style={dynStyles.statLabel}>{stat.label}</Text>
+              </View>
+            ))}
+          </View>
+    </LinearGradient>
+  );
+
+  const screenCompact = (
+    <LinearGradient colors={['#0F2952', '#1E4A8A']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      {route?.params?.source === 'dashboard' && (
+        <Pressable onPress={() => navigation.getParent()?.navigate('Home')} style={dynStyles.backBtn}>
+          <Ionicons name="arrow-back" size={22} color="#fff" />
+        </Pressable>
+      )}
+      <Text style={[dynStyles.headerTitle, { flex: 1 }]}>{t('family.title')}</Text>
+      <Pressable onPress={openAddMemberModal} style={dynStyles.addBtn}>
+        <Ionicons name="person-add-outline" size={20} color="#fff" />
+      </Pressable>
+    </LinearGradient>
+  );
+
   return (
     <View style={dynStyles.container}>
       <StatusBar style="light" />
 
-      {/* ── HEADER ── */}
-      <LinearGradient
-        colors={['#0F2952', '#1E4A8A']}
-        style={[dynStyles.header, { paddingTop: insets.top + 6 }]}
-      >
-        {/* Top row */}
-        <View style={dynStyles.headerTop}>
-          {route?.params?.source === 'dashboard' && (
-            <Pressable onPress={() => navigation.getParent()?.navigate('Home')} style={dynStyles.backBtn}>
-              <Ionicons name="arrow-back" size={22} color="#fff" />
-            </Pressable>
-          )}
-          <View style={dynStyles.headerLeft}>
-            <Text style={dynStyles.headerTitle}>{t('family.title')}</Text>
-            <Text style={dynStyles.headerSubtitle}>
-              {members.length} {members.length === 1 ? 'member' : 'members'}
-              {family?.name ? ` · ${family.name}` : ''}
-            </Text>
-          </View>
-          <View style={dynStyles.headerActions}>
-            {activeMember && (
-              <Pressable
-                style={dynStyles.activeProfilePill}
-                onPress={() => navigation.navigate('ProfileSwitcher')}
-              >
-                <Avatar name={activeMember.name} color={activeMember.avatarColor} size={26} />
-                <Ionicons name="chevron-down" size={13} color="rgba(255,255,255,0.8)" style={{ marginLeft: 6 }} />
-              </Pressable>
-            )}
-            <Pressable onPress={openAddMemberModal} style={dynStyles.addBtn}>
-              <Ionicons name="person-add-outline" size={20} color="#fff" />
-            </Pressable>
-          </View>
-        </View>
-
-        {/* Stats row */}
-        <View style={dynStyles.statsRow}>
-          {[
-            { icon: 'checkmark-done-circle', value: pendingTasks, label: 'Tasks' },
-            { icon: 'calendar', value: todayEvents, label: 'Events Today' },
-            { icon: 'trophy', value: `${healthScore}`, label: 'Family Score' },
-          ].map((stat) => (
-            <View key={stat.label} style={dynStyles.statPill}>
-              <Ionicons name={stat.icon as any} size={14} color="rgba(255,255,255,0.75)" />
-              <Text style={dynStyles.statValue}>{stat.value}</Text>
-              <Text style={dynStyles.statLabel}>{stat.label}</Text>
-            </View>
-          ))}
-        </View>
-      </LinearGradient>
-
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
       <ScrollView
-        contentContainerStyle={[dynStyles.content, { paddingBottom: insets.bottom + 100 }]}
+        onScroll={onScroll}
+        onScrollEndDrag={onScrollEndDrag}
+        onMomentumScrollEnd={onMomentumScrollEnd}
+        scrollEventThrottle={scrollEventThrottle}
+        contentContainerStyle={[dynStyles.content, { paddingBottom: insets.bottom + 100, paddingTop: contentPaddingTop }]}
         showsVerticalScrollIndicator={false}
       >
         {/* ── MEMBER CARDS — horizontal scroll ── */}
@@ -521,6 +543,8 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
           ))}
         </View>
       </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       {/* ── INVITE OPTIONS MODAL ── */}
       <Modal

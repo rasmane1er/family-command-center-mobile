@@ -9,6 +9,7 @@ import { Card } from '../../components/common/Card';
 import { ProgressBar } from '../../components/common/ProgressBar';
 import { useWealthStore } from '../../store/useWealthStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 
 const METRICS = [
   { key: 'helpfulness', label: 'Helpfulness', icon: 'hand-right', color: '#27AE60' },
@@ -41,41 +42,41 @@ export function ReputationScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#0D47A1', '#1565C0']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
-        <View style={styles.headerTop}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <Text style={styles.headerTitle}>Family Reputation Score</Text>
-          <View style={{ width: 40 }} />
-        </View>
-
-        <Text style={styles.headerSub}>Who's topping the family leaderboard this week?</Text>
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 12 }}>
-          {sorted.map((score, i) => {
-            const member = getMember(score.memberId);
-            if (!member) return null;
-            const isSelected = (selectedMember ?? sorted[0].memberId) === score.memberId;
-            return (
-              <Pressable
-                key={score.memberId}
-                onPress={() => setSelectedMember(score.memberId)}
-                style={[styles.memberChip, isSelected && styles.memberChipActive]}
-              >
-                <Text style={styles.rankEmoji}>{LEADERBOARD_REWARDS[i]?.icon ?? '🏅'}</Text>
-                <View style={[styles.chipAvatar, { backgroundColor: member.avatarColor + '40' }]}>
-                  <Text style={[styles.chipInitial, { color: member.avatarColor }]}>{member.name.charAt(0)}</Text>
-                </View>
-                <Text style={[styles.chipName, isSelected && styles.chipNameActive]}>{member.name}</Text>
-                <Text style={[styles.chipScore, isSelected && styles.chipScoreActive]}>{score.overall}</Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-      </LinearGradient>
 
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
+        <LinearGradient colors={['#0D47A1', '#1565C0']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
+          <View style={styles.headerTop}>
+            <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+              <Ionicons name="arrow-back" size={24} color="#fff" />
+            </Pressable>
+            <Text style={styles.headerTitle}>Family Reputation Score</Text>
+            <View style={{ width: 40 }} />
+          </View>
+
+          <Text style={styles.headerSub}>Who's topping the family leaderboard this week?</Text>
+
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 12 }}>
+            {sorted.map((score, i) => {
+              const member = getMember(score.memberId);
+              if (!member) return null;
+              const isSelected = (selectedMember ?? sorted[0].memberId) === score.memberId;
+              return (
+                <Pressable
+                  key={score.memberId}
+                  onPress={() => setSelectedMember(score.memberId)}
+                  style={[styles.memberChip, isSelected && styles.memberChipActive]}
+                >
+                  <Text style={styles.rankEmoji}>{LEADERBOARD_REWARDS[i]?.icon ?? '🏅'}</Text>
+                  <View style={[styles.chipAvatar, { backgroundColor: member.avatarColor + '40' }]}>
+                    <Text style={[styles.chipInitial, { color: member.avatarColor }]}>{member.name.charAt(0)}</Text>
+                  </View>
+                  <Text style={[styles.chipName, isSelected && styles.chipNameActive]}>{member.name}</Text>
+                  <Text style={[styles.chipScore, isSelected && styles.chipScoreActive]}>{score.overall}</Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </LinearGradient>
         {selectedScore && activeMember && (
           <>
             <Card style={styles.profileCard} variant="elevated">

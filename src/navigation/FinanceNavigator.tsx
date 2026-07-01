@@ -14,6 +14,7 @@ import { ConnectBankScreen } from '../screens/finance/ConnectBankScreen';
 import { TransactionsScreen } from '../screens/finance/TransactionsScreen';
 import { SpendingInsightsScreen } from '../screens/finance/SpendingInsightsScreen';
 import { ReceiptScannerScreen } from '../screens/finance/ReceiptScannerScreen';
+import { TaxCenterScreen } from '../screens/finance/TaxCenterScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -34,6 +35,7 @@ export function FinanceNavigator() {
       <Stack.Screen name="Transactions" component={TransactionsScreen} options={{ title: 'Transactions' }} />
       <Stack.Screen name="SpendingInsights" component={SpendingInsightsScreen} options={{ title: 'Spending Insights' }} />
       <Stack.Screen name="ReceiptScanner" component={ReceiptScannerScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="TaxCenter" component={TaxCenterScreen} options={{ headerShown: false }} />
     </Stack.Navigator>
   );
 }

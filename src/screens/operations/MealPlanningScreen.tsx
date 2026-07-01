@@ -14,6 +14,7 @@ import { useOperationsStore } from '../../store/useOperationsStore';
 import { useShoppingStore } from '../../store/useShoppingStore';
 import type { MealPlan } from '../../types';
 import type { ShopCategory } from '../../store/useShoppingStore';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 
 interface PlannedMeal {
   name: string;
@@ -250,42 +251,65 @@ export function MealPlanningScreen({ navigation }: any) {
     setSelectedTags((prev) => prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]);
   };
 
+  const weekLabel = `Week of ${format(weekStartDate, 'MMMM d, yyyy')}`;
+
+  const screenHeader = (
+    <LinearGradient colors={['#F5A623', '#FF8C42']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
+      <View style={styles.headerTop}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <Text style={styles.headerTitle}>Meal Planning</Text>
+        <Pressable onPress={handleGeneratePlan} style={styles.addBtn}>
+          <Ionicons name="sparkles-outline" size={22} color="#fff" />
+        </Pressable>
+      </View>
+
+      <Text style={styles.weekLabel}>{weekLabel}</Text>
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.dayScroll}>
+        {weekDays.map((day) => {
+          const hasMeals = Object.keys(weekMeals[day.name] || {}).length > 0;
+          return (
+            <Pressable
+              key={day.name}
+              onPress={() => setSelectedDay(day.name)}
+              style={[styles.dayChip, selectedDay === day.name && styles.dayChipActive]}
+            >
+              <Text style={[styles.dayShort, selectedDay === day.name && styles.dayShortActive]}>{day.short}</Text>
+              <Text style={[styles.dayDate, selectedDay === day.name && styles.dayDateActive]}>{format(day.date, 'd')}</Text>
+              {day.isToday && <View style={styles.todayDot} />}
+              {hasMeals && <View style={[styles.mealDot, selectedDay === day.name && styles.mealDotActive]} />}
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+    </LinearGradient>
+  );
+
+  const screenCompact = (
+    <LinearGradient colors={['#F5A623', '#FF8C42']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </Pressable>
+      <Text style={styles.headerTitle}>Meal Planning</Text>
+      <Text style={{ fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.9)' }}>{totalCals} cal</Text>
+    </LinearGradient>
+  );
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#F5A623', '#FF8C42']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
-        <View style={styles.headerTop}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <Text style={styles.headerTitle}>Meal Planning</Text>
-          <Pressable onPress={handleGeneratePlan} style={styles.addBtn}>
-            <Ionicons name="sparkles-outline" size={22} color="#fff" />
-          </Pressable>
-        </View>
 
-        <Text style={styles.weekLabel}>Week of {format(weekStartDate, 'MMMM d, yyyy')}</Text>
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.dayScroll}>
-          {weekDays.map((day) => {
-            const hasMeals = Object.keys(weekMeals[day.name] || {}).length > 0;
-            return (
-              <Pressable
-                key={day.name}
-                onPress={() => setSelectedDay(day.name)}
-                style={[styles.dayChip, selectedDay === day.name && styles.dayChipActive]}
-              >
-                <Text style={[styles.dayShort, selectedDay === day.name && styles.dayShortActive]}>{day.short}</Text>
-                <Text style={[styles.dayDate, selectedDay === day.name && styles.dayDateActive]}>{format(day.date, 'd')}</Text>
-                {day.isToday && <View style={styles.todayDot} />}
-                {hasMeals && <View style={[styles.mealDot, selectedDay === day.name && styles.mealDotActive]} />}
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-      </LinearGradient>
-
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+          <ScrollView
+            contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+            onScroll={onScroll}
+            onScrollEndDrag={onScrollEndDrag}
+            onMomentumScrollEnd={onMomentumScrollEnd}
+            scrollEventThrottle={scrollEventThrottle}
+          >
         <View style={styles.daySummary}>
           <Text style={styles.daySummaryDay}>{selectedDay}</Text>
           <View style={styles.dayCalories}>
@@ -366,7 +390,9 @@ export function MealPlanningScreen({ navigation }: any) {
             <Text style={styles.shoppingListBtnText}>Generate Shopping List</Text>
           </Pressable>
         </Card>
-      </ScrollView>
+          </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       <Modal visible={!!addingMeal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setAddingMeal(null)}>
         <ScrollView style={styles.modal} contentContainerStyle={{ paddingBottom: 40 }}>

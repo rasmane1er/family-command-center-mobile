@@ -14,6 +14,7 @@ import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { ProgressBar } from '../../components/common/ProgressBar';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import {
   useSchoolStore, computeGPA, computeAverage, scoreToLetter,
   type SchoolAssignment, type AssignmentStatus,
@@ -95,38 +96,54 @@ export function SchoolCenterScreen({ navigation }: any) {
 
   const activeMember = members.find((m) => m.id === selectedChild);
 
+  const screenHeader = (
+        <LinearGradient colors={['#1E4A8A', '#45B7D1']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
+          <View style={styles.headerTop}>
+            <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+              <Ionicons name="arrow-back" size={24} color="#fff" />
+            </Pressable>
+            <Text style={styles.headerTitle}>School Center</Text>
+            <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
+              <Ionicons name="add" size={24} color="#fff" />
+            </Pressable>
+          </View>
+
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }}>
+            {children.map((child) => (
+              <Pressable
+                key={child.id}
+                onPress={() => setSelectedChild(child.id)}
+                style={[styles.childChip, selectedChild === child.id && styles.childChipActive]}
+              >
+                <View style={[styles.childDot, { backgroundColor: child.avatarColor }]} />
+                <Text style={[styles.childChipText, selectedChild === child.id && styles.childChipTextActive]}>
+                  {child.name}
+                </Text>
+              </Pressable>
+            ))}
+            {children.length === 0 && (
+              <Text style={styles.noChildText}>No children in family profile</Text>
+            )}
+          </ScrollView>
+        </LinearGradient>
+  );
+  const screenCompact = (
+    <LinearGradient
+      colors={['#1E4A8A', '#45B7D1']}
+      start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+      style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+    >
+      <Pressable onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
+        <Ionicons name="arrow-back" size={22} color="#fff" />
+      </Pressable>
+      <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>School Center</Text>
+      <View />
+    </LinearGradient>
+  );
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#1E4A8A', '#45B7D1']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
-        <View style={styles.headerTop}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <Text style={styles.headerTitle}>School Center</Text>
-          <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
-            <Ionicons name="add" size={24} color="#fff" />
-          </Pressable>
-        </View>
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }}>
-          {children.map((child) => (
-            <Pressable
-              key={child.id}
-              onPress={() => setSelectedChild(child.id)}
-              style={[styles.childChip, selectedChild === child.id && styles.childChipActive]}
-            >
-              <View style={[styles.childDot, { backgroundColor: child.avatarColor }]} />
-              <Text style={[styles.childChipText, selectedChild === child.id && styles.childChipTextActive]}>
-                {child.name}
-              </Text>
-            </Pressable>
-          ))}
-          {children.length === 0 && (
-            <Text style={styles.noChildText}>No children in family profile</Text>
-          )}
-        </ScrollView>
-      </LinearGradient>
 
       {/* GPA Hero */}
       {activeMember && (
@@ -171,7 +188,10 @@ export function SchoolCenterScreen({ navigation }: any) {
         ))}
       </View>
 
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
+
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+          <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]} onScroll={onScroll} onScrollEndDrag={onScrollEndDrag} onMomentumScrollEnd={onMomentumScrollEnd} scrollEventThrottle={scrollEventThrottle}>
         {activeTab === 'overview' && (
           <>
             <Text style={styles.sectionTitle}>Subject Snapshot</Text>
@@ -320,7 +340,9 @@ export function SchoolCenterScreen({ navigation }: any) {
             )}
           </>
         )}
-      </ScrollView>
+          </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       {/* Add Assignment Modal */}
       <Modal visible={showAddModal} transparent animationType="slide">

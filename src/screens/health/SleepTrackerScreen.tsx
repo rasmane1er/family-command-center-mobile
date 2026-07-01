@@ -13,11 +13,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { format } from 'date-fns';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/ThemeContext';
 import { shadows } from '../../theme/spacing';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { PremiumHeader } from '../../components/common/PremiumHeader';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useSleepStore, SleepQuality } from '../../store/useSleepStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { useNavigation } from '@react-navigation/native';
@@ -88,6 +90,7 @@ export function SleepTrackerScreen({ navigation: navProp }: any) {
   const { colors } = useTheme();
   const navHook = useNavigation<any>();
   const navigation = navProp ?? navHook;
+  const insets = useSafeAreaInsets();
   const { logs, addLog, deleteLog, getAverageSleep, seedDemoData } = useSleepStore();
   const members = useFamilyStore((s) => s.members);
 
@@ -179,8 +182,8 @@ export function SleepTrackerScreen({ navigation: navProp }: any) {
   const maxBarDuration = 12;
   const s = makeStyles(colors);
 
-  return (
-    <View style={s.container}>
+  const screenHeader = (
+    <View>
       <PremiumHeader
         title="Sleep Tracker"
         onBack={() => navigation.goBack()}
@@ -214,8 +217,6 @@ export function SleepTrackerScreen({ navigation: navProp }: any) {
           </View>
         </View>
       </PremiumHeader>
-
-      {/* Member Selector */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -242,8 +243,32 @@ export function SleepTrackerScreen({ navigation: navProp }: any) {
           );
         })}
       </ScrollView>
+    </View>
+  );
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+  const screenCompact = (
+    <View style={{ backgroundColor: '#1A1A2E', paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Pressable onPress={() => navigation.goBack()} style={s.addBtn}>
+        <Ionicons name="arrow-back" size={20} color="#fff" />
+      </Pressable>
+      <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700', flex: 1, marginLeft: 8 }}>Sleep Tracker</Text>
+      <Pressable onPress={() => { setModalMemberId(selectedMemberId); setShowModal(true); }} style={s.addBtn}>
+        <Ionicons name="add" size={22} color="#fff" />
+      </Pressable>
+    </View>
+  );
+
+  return (
+    <View style={s.container}>
+
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+      <ScrollView
+        onScroll={onScroll}
+        onScrollEndDrag={onScrollEndDrag}
+        onMomentumScrollEnd={onMomentumScrollEnd}
+        scrollEventThrottle={scrollEventThrottle}
+        contentContainerStyle={{ paddingBottom: 100, paddingTop: contentPaddingTop }}>
         {/* 7-Night Bar Chart */}
         <View style={s.section}>
           <Text style={s.sectionTitle}>Last 7 Nights</Text>
@@ -373,6 +398,8 @@ export function SleepTrackerScreen({ navigation: navProp }: any) {
           })}
         </View>
       </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       {/* Add Sleep Log Modal */}
       <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet">

@@ -15,6 +15,7 @@ import { useGuardianStore } from '../../../store/useGuardianStore';
 import { useFamilyStore } from '../../../store/useFamilyStore';
 import { colors } from '../../../theme/colors';
 import { shadows } from '../../../theme/spacing';
+import { CollapsibleHeader } from '../../../components/common/CollapsibleHeader';
 import type { ChildDevice, ChildDeviceStatus } from '../../../types';
 import { GuardianNative } from '../../../native/GuardianNative';
 
@@ -99,33 +100,33 @@ export function GuardianDashboardScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={['#0F2952', '#1E4A8A']}
-        style={[styles.header, { paddingTop: insets.top + 6 }]}
-      >
-        <View style={styles.headerRow}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={22} color="#fff" />
-          </Pressable>
-          <View style={styles.headerTextBlock}>
-            <Text style={styles.headerTitle}>Family Guardian</Text>
-            <Text style={styles.headerSubtitle}>Parental Controls</Text>
-          </View>
-          <Pressable
-            onPress={() => navigation.navigate('ApprovalRequests')}
-            style={styles.headerAction}
-          >
-            <Ionicons name="checkmark-circle-outline" size={22} color="#fff" />
-            {pendingApprovals.length > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{pendingApprovals.length}</Text>
-              </View>
-            )}
-          </Pressable>
-        </View>
-      </LinearGradient>
 
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
+        <LinearGradient
+          colors={['#0F2952', '#1E4A8A']}
+          style={[styles.header, { paddingTop: insets.top + 6 }]}
+        >
+          <View style={styles.headerRow}>
+            <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+              <Ionicons name="arrow-back" size={22} color="#fff" />
+            </Pressable>
+            <View style={styles.headerTextBlock}>
+              <Text style={styles.headerTitle}>Family Guardian</Text>
+              <Text style={styles.headerSubtitle}>Parental Controls</Text>
+            </View>
+            <Pressable
+              onPress={() => navigation.navigate('ApprovalRequests')}
+              style={styles.headerAction}
+            >
+              <Ionicons name="checkmark-circle-outline" size={22} color="#fff" />
+              {pendingApprovals.length > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{pendingApprovals.length}</Text>
+                </View>
+              )}
+            </Pressable>
+          </View>
+        </LinearGradient>
         {/* SOS Banner */}
         {unresolved.length > 0 && (
           <Pressable

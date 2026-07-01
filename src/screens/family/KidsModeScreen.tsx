@@ -6,6 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import * as Haptics from 'expo-haptics';
 import { format } from 'date-fns';
 import { colors } from '../../theme/colors';
@@ -107,63 +108,85 @@ export function KidsModeScreen({ navigation }: any) {
     ? [activeKid.avatarColor, activeKid.avatarColor + 'CC']
     : ['#2980B9', '#8E44AD'];
 
+  const screenHeader = (
+    <LinearGradient colors={GRADIENT_COLORS} style={{ paddingTop: insets.top + 6, paddingHorizontal: 20, paddingBottom: 24 }}>
+      <View style={styles.headerRow}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <Text style={styles.headerTitle}>Kids Mode 🎮</Text>
+        <View style={{ width: 38 }} />
+      </View>
+
+      {/* Kid selector */}
+      {kids.length > 1 && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, marginBottom: 16 }}>
+          {kids.map((kid) => (
+            <Pressable
+              key={kid.id}
+              onPress={() => setSelectedKid(kid.id)}
+              style={[styles.kidChip, (selectedKid === kid.id || (!selectedKid && kid.id === kids[0]?.id)) && styles.kidChipActive]}
+            >
+              <Avatar name={kid.name} color={kid.avatarColor} size={36} />
+              <Text style={styles.kidChipName}>{kid.name.split(' ')[0]}</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      )}
+
+      {/* Player card */}
+      {activeKid && (
+        <View style={styles.playerCard}>
+          <Avatar name={activeKid.name} color="#fff" size={64} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.playerName}>{activeKid.name.split(' ')[0]}</Text>
+            <View style={styles.levelRow}>
+              <View style={styles.levelBadge}>
+                <Text style={styles.levelText}>LVL {level}</Text>
+              </View>
+              <Text style={styles.xpText}>{xp.toLocaleString()} XP</Text>
+            </View>
+            <View style={styles.xpBar}>
+              <View style={[styles.xpFill, { width: `${xpProgress * 100}%` }]} />
+            </View>
+            <Text style={styles.xpNext}>{500 - (xp % 500)} XP to Level {level + 1}</Text>
+          </View>
+          <View style={styles.streakBadge}>
+            <Text style={styles.streakEmoji}>🔥</Text>
+            <Text style={styles.streakCount}>{completedTasksToday}</Text>
+            <Text style={styles.streakLabel}>today</Text>
+          </View>
+        </View>
+      )}
+    </LinearGradient>
+  );
+
+  const screenCompact = (
+    <View style={{ backgroundColor: GRADIENT_COLORS[0], paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </Pressable>
+      <Text style={styles.headerTitle}>Kids Mode 🎮</Text>
+      <View style={{ width: 38 }} />
+    </View>
+  );
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={GRADIENT_COLORS} style={[styles.header, { paddingTop: insets.top + 6 }]}>
-        <View style={styles.headerRow}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <Text style={styles.headerTitle}>Kids Mode 🎮</Text>
-          <View style={{ width: 38 }} />
-        </View>
-
-        {/* Kid selector */}
-        {kids.length > 1 && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, marginBottom: 16 }}>
-            {kids.map((kid) => (
-              <Pressable
-                key={kid.id}
-                onPress={() => setSelectedKid(kid.id)}
-                style={[styles.kidChip, (selectedKid === kid.id || (!selectedKid && kid.id === kids[0]?.id)) && styles.kidChipActive]}
-              >
-                <Avatar name={kid.name} color={kid.avatarColor} size={36} />
-                <Text style={styles.kidChipName}>{kid.name.split(' ')[0]}</Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-        )}
-
-        {/* Player card */}
-        {activeKid && (
-          <View style={styles.playerCard}>
-            <Avatar name={activeKid.name} color="#fff" size={64} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.playerName}>{activeKid.name.split(' ')[0]}</Text>
-              <View style={styles.levelRow}>
-                <View style={styles.levelBadge}>
-                  <Text style={styles.levelText}>LVL {level}</Text>
-                </View>
-                <Text style={styles.xpText}>{xp.toLocaleString()} XP</Text>
-              </View>
-              <View style={styles.xpBar}>
-                <View style={[styles.xpFill, { width: `${xpProgress * 100}%` }]} />
-              </View>
-              <Text style={styles.xpNext}>{500 - (xp % 500)} XP to Level {level + 1}</Text>
-            </View>
-            <View style={styles.streakBadge}>
-              <Text style={styles.streakEmoji}>🔥</Text>
-              <Text style={styles.streakCount}>{completedTasksToday}</Text>
-              <Text style={styles.streakLabel}>today</Text>
-            </View>
-          </View>
-        )}
-      </LinearGradient>
 
       <PointsBurst show={showBurst} />
 
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]} showsVerticalScrollIndicator={false}>
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+        <ScrollView
+          contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+          showsVerticalScrollIndicator={false}
+          onScroll={onScroll}
+          onScrollEndDrag={onScrollEndDrag}
+          onMomentumScrollEnd={onMomentumScrollEnd}
+          scrollEventThrottle={scrollEventThrottle}
+        >
         {/* Mood check-in */}
         {!todayMood && (
           <Card variant="elevated" style={styles.moodCard}>
@@ -309,7 +332,9 @@ export function KidsModeScreen({ navigation }: any) {
             </View>
           ))}
         </ScrollView>
-      </ScrollView>
+        </ScrollView>
+        )}
+      </CollapsibleHeader>
     </View>
   );
 }

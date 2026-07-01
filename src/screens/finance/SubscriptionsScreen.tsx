@@ -8,6 +8,7 @@ import { format, addMonths } from 'date-fns';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { Card } from '../../components/common/Card';
 import { Avatar } from '../../components/common/Avatar';
 import { Badge } from '../../components/common/Badge';
@@ -123,39 +124,65 @@ export function SubscriptionsScreen({ navigation }: any) {
     ]);
   };
 
+  const screenHeader = (
+    <LinearGradient colors={['#8E44AD', '#9B59B6']} style={{ paddingTop: insets.top + 6, paddingHorizontal: 20, paddingBottom: 24 }}>
+      <View style={styles.headerTop}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <Text style={styles.headerTitle}>Subscriptions</Text>
+        <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
+          <Ionicons name="add" size={26} color="#fff" />
+        </Pressable>
+      </View>
+
+      <View style={styles.summaryCard}>
+        <View style={styles.summaryItem}>
+          <Text style={styles.summaryValue}>${totalMonthly.toFixed(2)}</Text>
+          <Text style={styles.summaryLabel}>Per Month</Text>
+        </View>
+        <View style={styles.summaryDivider} />
+        <View style={styles.summaryItem}>
+          <Text style={styles.summaryValue}>${totalAnnual.toFixed(0)}</Text>
+          <Text style={styles.summaryLabel}>Per Year</Text>
+        </View>
+        <View style={styles.summaryDivider} />
+        <View style={styles.summaryItem}>
+          <Text style={styles.summaryValue}>{active.length}</Text>
+          <Text style={styles.summaryLabel}>Active</Text>
+        </View>
+      </View>
+    </LinearGradient>
+  );
+
+  const screenCompact = (
+    <View style={{ backgroundColor: '#8E44AD', paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </Pressable>
+      <Text style={styles.headerTitle}>Subscriptions</Text>
+      <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
+        <Ionicons name="add" size={26} color="#fff" />
+      </Pressable>
+    </View>
+  );
+
   return (
-    <View style={styles.container}>
+    <>
       <StatusBar style="light" />
-      <LinearGradient colors={['#8E44AD', '#9B59B6']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
-        <View style={styles.headerTop}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <Text style={styles.headerTitle}>Subscriptions</Text>
-          <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
-            <Ionicons name="add" size={26} color="#fff" />
-          </Pressable>
-        </View>
-
-        <View style={styles.summaryCard}>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryValue}>${totalMonthly.toFixed(2)}</Text>
-            <Text style={styles.summaryLabel}>Per Month</Text>
-          </View>
-          <View style={styles.summaryDivider} />
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryValue}>${totalAnnual.toFixed(0)}</Text>
-            <Text style={styles.summaryLabel}>Per Year</Text>
-          </View>
-          <View style={styles.summaryDivider} />
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryValue}>{active.length}</Text>
-            <Text style={styles.summaryLabel}>Active</Text>
-          </View>
-        </View>
-      </LinearGradient>
-
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
+      <CollapsibleHeader
+        fullHeader={screenHeader}
+        compactHeader={screenCompact}
+        wrapperStyle={styles.container}
+      >
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+          <ScrollView
+            onScroll={onScroll}
+            onScrollEndDrag={onScrollEndDrag}
+            onMomentumScrollEnd={onMomentumScrollEnd}
+            scrollEventThrottle={scrollEventThrottle}
+            contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+          >
 
         {(loadingDetected || visibleDetected.length > 0) && (
           <View style={styles.detectedSection}>
@@ -288,7 +315,9 @@ export function SubscriptionsScreen({ navigation }: any) {
             <Text style={styles.emptyDesc}>Tap + to track your family subscriptions</Text>
           </View>
         )}
-      </ScrollView>
+          </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowModal(false)}>
         <ScrollView style={styles.modal} contentContainerStyle={{ paddingBottom: 40 }}>
@@ -336,7 +365,7 @@ export function SubscriptionsScreen({ navigation }: any) {
           <Button title="Cancel" onPress={() => setShowModal(false)} variant="ghost" fullWidth style={{ marginTop: 8 }} />
         </ScrollView>
       </Modal>
-    </View>
+    </>
   );
 }
 

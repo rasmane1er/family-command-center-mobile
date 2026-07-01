@@ -13,10 +13,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { format } from 'date-fns';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/ThemeContext';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { PremiumHeader } from '../../components/common/PremiumHeader';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useWorkoutStore, WorkoutType } from '../../store/useWorkoutStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { useNavigation } from '@react-navigation/native';
@@ -46,6 +48,7 @@ export function WorkoutTrackerScreen({ navigation: navProp }: any) {
   const { colors } = useTheme();
   const navHook = useNavigation<any>();
   const navigation = navProp ?? navHook;
+  const insets = useSafeAreaInsets();
   const { workouts, addWorkout, deleteWorkout, getWeeklyCount, getTotalMinutes, seedDemoData } = useWorkoutStore();
   const members = useFamilyStore((s) => s.members);
 
@@ -139,8 +142,8 @@ export function WorkoutTrackerScreen({ navigation: navProp }: any) {
 
   const s = makeStyles(colors);
 
-  return (
-    <View style={s.container}>
+  const screenHeader = (
+    <View>
       <PremiumHeader
         title="Workout Tracker"
         onBack={() => navigation.goBack()}
@@ -174,8 +177,6 @@ export function WorkoutTrackerScreen({ navigation: navProp }: any) {
           </View>
         </View>
       </PremiumHeader>
-
-      {/* Member Selector */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -202,8 +203,32 @@ export function WorkoutTrackerScreen({ navigation: navProp }: any) {
           );
         })}
       </ScrollView>
+    </View>
+  );
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+  const screenCompact = (
+    <View style={{ backgroundColor: '#BF360C', paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Pressable onPress={() => navigation.goBack()} style={s.addBtn}>
+        <Ionicons name="arrow-back" size={20} color="#fff" />
+      </Pressable>
+      <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700', flex: 1, marginLeft: 8 }}>Workout Tracker</Text>
+      <Pressable onPress={() => { setModalMemberId(selectedMemberId); setShowModal(true); }} style={s.addBtn}>
+        <Ionicons name="add" size={22} color="#fff" />
+      </Pressable>
+    </View>
+  );
+
+  return (
+    <View style={s.container}>
+
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+      <ScrollView
+        onScroll={onScroll}
+        onScrollEndDrag={onScrollEndDrag}
+        onMomentumScrollEnd={onMomentumScrollEnd}
+        scrollEventThrottle={scrollEventThrottle}
+        contentContainerStyle={{ paddingBottom: 100, paddingTop: contentPaddingTop }}>
         {/* Weekly Activity Grid */}
         <View style={s.section}>
           <Text style={s.sectionTitle}>Weekly Activity</Text>
@@ -324,6 +349,8 @@ export function WorkoutTrackerScreen({ navigation: navProp }: any) {
           </Card>
         </View>
       </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       {/* Add Workout Modal */}
       <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet">

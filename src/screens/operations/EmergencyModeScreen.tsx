@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
 import { Card } from '../../components/common/Card';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 
 type EmergencyType = 'medical' | 'fire' | 'earthquake' | 'flood' | 'break_in' | 'power';
 
@@ -149,52 +150,78 @@ export function EmergencyModeScreen({ navigation }: any) {
     })),
   ];
 
+  const screenHeader = (
+    <LinearGradient colors={['#7B0000', '#B71C1C', '#D32F2F']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
+      <View style={styles.headerRow}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <Text style={styles.headerTitle}>Emergency Mode</Text>
+        <View style={{ width: 40 }} />
+      </View>
+
+      {/* SOS Button */}
+      <View style={styles.sosCenter}>
+        <Animated.View style={[styles.sosPulse, sosActive && { transform: [{ scale: pulseAnim }] }]}>
+          <Pressable onPress={handleSOS} style={[styles.sosBtn, sosActive && styles.sosBtnActive]}>
+            {sosActive ? (
+              <>
+                <Text style={styles.sosBtnText}>CANCEL</Text>
+                <Text style={styles.sosCountdown}>{sosCountdown}s</Text>
+              </>
+            ) : (
+              <>
+                <Ionicons name="alert-circle" size={32} color="#fff" />
+                <Text style={styles.sosBtnText}>SOS</Text>
+              </>
+            )}
+          </Pressable>
+        </Animated.View>
+        <Text style={styles.sosHint}>
+          {sosActive ? 'Sending SOS to all family members...' : 'Hold to activate emergency SOS'}
+        </Text>
+      </View>
+    
+    <View style={styles.tabs}>
+            {(['protocols', 'contacts', 'kit'] as const).map((t) => (
+              <Pressable key={t} onPress={() => setTab(t)} style={[styles.tab, tab === t && styles.tabActive]}>
+                <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
+                  {t === 'protocols' ? '📋 Protocols' : t === 'contacts' ? '📞 Contacts' : '🎒 Kit'}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+</LinearGradient>
+  );
+
+  const screenCompact = (
+    <LinearGradient
+      colors={['#7B0000', '#B71C1C', '#D32F2F']}
+      style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+    >
+      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </Pressable>
+      <Text style={styles.headerTitle}>Emergency Mode</Text>
+      <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: '600' }}>SOS Ready</Text>
+    </LinearGradient>
+  );
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#7B0000', '#B71C1C', '#D32F2F']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
-        <View style={styles.headerRow}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <Text style={styles.headerTitle}>Emergency Mode</Text>
-          <View style={{ width: 40 }} />
-        </View>
 
-        {/* SOS Button */}
-        <View style={styles.sosCenter}>
-          <Animated.View style={[styles.sosPulse, sosActive && { transform: [{ scale: pulseAnim }] }]}>
-            <Pressable onPress={handleSOS} style={[styles.sosBtn, sosActive && styles.sosBtnActive]}>
-              {sosActive ? (
-                <>
-                  <Text style={styles.sosBtnText}>CANCEL</Text>
-                  <Text style={styles.sosCountdown}>{sosCountdown}s</Text>
-                </>
-              ) : (
-                <>
-                  <Ionicons name="alert-circle" size={32} color="#fff" />
-                  <Text style={styles.sosBtnText}>SOS</Text>
-                </>
-              )}
-            </Pressable>
-          </Animated.View>
-          <Text style={styles.sosHint}>
-            {sosActive ? 'Sending SOS to all family members...' : 'Hold to activate emergency SOS'}
-          </Text>
-        </View>
-      </LinearGradient>
+      
 
-      <View style={styles.tabs}>
-        {(['protocols', 'contacts', 'kit'] as const).map((t) => (
-          <Pressable key={t} onPress={() => setTab(t)} style={[styles.tab, tab === t && styles.tabActive]}>
-            <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
-              {t === 'protocols' ? '📋 Protocols' : t === 'contacts' ? '📞 Contacts' : '🎒 Kit'}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+        onScroll={onScroll}
+        onScrollEndDrag={onScrollEndDrag}
+        onMomentumScrollEnd={onMomentumScrollEnd}
+        scrollEventThrottle={scrollEventThrottle}
+      >
         {tab === 'protocols' && (
           <>
             <Text style={styles.sectionLabel}>Select Emergency Type</Text>
@@ -294,6 +321,8 @@ export function EmergencyModeScreen({ navigation }: any) {
           </>
         )}
       </ScrollView>
+        )}
+      </CollapsibleHeader>
     </View>
   );
 }

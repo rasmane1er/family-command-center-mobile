@@ -12,6 +12,7 @@ import { useFinanceStore } from '../../store/useFinanceStore';
 import { useOperationsStore } from '../../store/useOperationsStore';
 import { useMemoryStore } from '../../store/useMemoryStore';
 import { useLegacyStore } from '../../store/useLegacyStore';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 
 type ResultCategory =
   | 'member'
@@ -447,38 +448,73 @@ export function SearchScreen({ navigation: navProp }: any) {
 
   const dynStyles = makeStyles(colors);
 
+  const screenHeader = (
+    <View style={[dynStyles.header, { paddingTop: insets.top + 6 }]}>
+      <View style={dynStyles.searchBar}>
+        <Ionicons name="search" size={20} color={colors.textMuted} />
+        <TextInput
+          style={dynStyles.searchInput}
+          placeholder={placeholder}
+          placeholderTextColor={colors.textMuted}
+          value={query}
+          onChangeText={setQuery}
+          autoFocus
+          returnKeyType="search"
+        />
+
+        {query.length > 0 && (
+          <Pressable onPress={() => setQuery('')}>
+            <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+          </Pressable>
+        )}
+      </View>
+
+      <Pressable onPress={() => navigation.goBack()} style={dynStyles.cancelBtn}>
+        <Text style={dynStyles.cancelText}>Cancel</Text>
+      </Pressable>
+    </View>
+  );
+
+  const screenCompact = (
+    <View
+      style={{
+        paddingTop: insets.top,
+        paddingBottom: 10,
+        paddingHorizontal: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: colors.card,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+        gap: 10,
+      }}
+    >
+      <View style={[dynStyles.searchBar, { flex: 1 }]}>
+        <Ionicons name="search" size={18} color={colors.textMuted} />
+        <Text style={[dynStyles.searchInput, { flex: 1, color: query ? colors.text : colors.textMuted }]} numberOfLines={1}>
+          {query || placeholder}
+        </Text>
+      </View>
+      <Pressable onPress={() => navigation.goBack()} style={dynStyles.cancelBtn}>
+        <Text style={dynStyles.cancelText}>Cancel</Text>
+      </Pressable>
+    </View>
+  );
+
   return (
     <View style={dynStyles.container}>
       <StatusBar style="dark" />
 
-      <View style={[dynStyles.header, { paddingTop: insets.top }]}>
-        <View style={dynStyles.searchBar}>
-          <Ionicons name="search" size={20} color={colors.textMuted} />
-          <TextInput
-            style={dynStyles.searchInput}
-            placeholder={placeholder}
-            placeholderTextColor={colors.textMuted}
-            value={query}
-            onChangeText={setQuery}
-            autoFocus
-            returnKeyType="search"
-          />
-
-          {query.length > 0 && (
-            <Pressable onPress={() => setQuery('')}>
-              <Ionicons name="close-circle" size={18} color={colors.textMuted} />
-            </Pressable>
-          )}
-        </View>
-
-        <Pressable onPress={() => navigation.goBack()} style={dynStyles.cancelBtn}>
-          <Text style={dynStyles.cancelText}>Cancel</Text>
-        </Pressable>
-      </View>
-
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
       <ScrollView
-        contentContainerStyle={[dynStyles.content, { paddingBottom: 100 }]}
+        contentContainerStyle={[dynStyles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
         keyboardShouldPersistTaps="handled"
+        onScroll={onScroll}
+        onScrollEndDrag={onScrollEndDrag}
+        onMomentumScrollEnd={onMomentumScrollEnd}
+        scrollEventThrottle={scrollEventThrottle}
       >
         {query.trim().length < 2 ? (
           <>
@@ -556,6 +592,8 @@ export function SearchScreen({ navigation: navProp }: any) {
           </>
         )}
       </ScrollView>
+        )}
+      </CollapsibleHeader>
     </View>
   );
 }

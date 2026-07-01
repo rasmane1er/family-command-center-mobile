@@ -14,6 +14,7 @@ import { CommandWallScreen } from '../screens/dashboard/CommandWallScreen';
 import { NotificationsScreen } from '../screens/dashboard/NotificationsScreen';
 import { SearchScreen } from '../screens/dashboard/SearchScreen';
 import { WeeklyReportScreen } from '../screens/dashboard/WeeklyReportScreen';
+import { GeofenceScreen } from '../screens/family/guardian/GeofenceScreen';
 
 import { useFamilyStore } from '../store/useFamilyStore';
 
@@ -142,6 +143,14 @@ export function MainNavigator() {
         component={HelpSupportScreen}
         options={{ animation: 'slide_from_right' }}
       />
+
+      {/* Full-screen map screens — no tab bar */}
+      <Stack.Screen
+        name="Geofence"
+        component={GeofenceScreen}
+        options={{ animation: 'slide_from_right' }}
+      />
+
     </Stack.Navigator>
   );
 }

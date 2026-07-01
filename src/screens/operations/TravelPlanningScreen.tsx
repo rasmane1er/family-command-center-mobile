@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { format, differenceInDays } from 'date-fns';
 import { colors } from '../../theme/colors';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { Card } from '../../components/common/Card';
 import { ProgressBar } from '../../components/common/ProgressBar';
 import { useTravelStore, Trip, ItineraryItemType } from '../../store/useTravelStore';
@@ -59,35 +60,6 @@ function TripDetailModal({ trip, onClose }: { trip: Trip; onClose: () => void })
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={[trip.color, trip.color + 'BB']} style={[styles.detailHeader, { paddingTop: insets.top + 6 }]}>
-        <View style={styles.detailHeaderRow}>
-          <Pressable onPress={onClose} style={styles.back}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.detailTitle}>{trip.emoji} {trip.name}</Text>
-            <Text style={styles.detailSub}>
-              {trip.destination} · {format(new Date(trip.startDate), 'MMM d')} – {format(new Date(trip.endDate), 'MMM d, yyyy')}
-            </Text>
-          </View>
-        </View>
-        <View style={styles.detailStats}>
-          <View style={styles.detailStat}>
-            <Text style={styles.detailStatVal}>{differenceInDays(new Date(trip.endDate), new Date(trip.startDate)) + 1}</Text>
-            <Text style={styles.detailStatLabel}>Days</Text>
-          </View>
-          <View style={styles.detailStatDiv} />
-          <View style={styles.detailStat}>
-            <Text style={styles.detailStatVal}>{trip.attendeeIds.length}</Text>
-            <Text style={styles.detailStatLabel}>Travelers</Text>
-          </View>
-          <View style={styles.detailStatDiv} />
-          <View style={styles.detailStat}>
-            <Text style={styles.detailStatVal}>${trip.budget.toLocaleString()}</Text>
-            <Text style={styles.detailStatLabel}>Budget</Text>
-          </View>
-        </View>
-      </LinearGradient>
 
       <View style={styles.detailTabs}>
         {(['itinerary', 'packing', 'budget'] as const).map((t) => (
@@ -101,6 +73,35 @@ function TripDetailModal({ trip, onClose }: { trip: Trip; onClose: () => void })
       </View>
 
       <ScrollView contentContainerStyle={[styles.detailContent, { paddingBottom: 100 }]}>
+        <LinearGradient colors={[trip.color, trip.color + 'BB']} style={[styles.detailHeader, { paddingTop: insets.top + 6 }]}>
+          <View style={styles.detailHeaderRow}>
+            <Pressable onPress={onClose} style={styles.back}>
+              <Ionicons name="arrow-back" size={24} color="#fff" />
+            </Pressable>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.detailTitle}>{trip.emoji} {trip.name}</Text>
+              <Text style={styles.detailSub}>
+                {trip.destination} · {format(new Date(trip.startDate), 'MMM d')} – {format(new Date(trip.endDate), 'MMM d, yyyy')}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.detailStats}>
+            <View style={styles.detailStat}>
+              <Text style={styles.detailStatVal}>{differenceInDays(new Date(trip.endDate), new Date(trip.startDate)) + 1}</Text>
+              <Text style={styles.detailStatLabel}>Days</Text>
+            </View>
+            <View style={styles.detailStatDiv} />
+            <View style={styles.detailStat}>
+              <Text style={styles.detailStatVal}>{trip.attendeeIds.length}</Text>
+              <Text style={styles.detailStatLabel}>Travelers</Text>
+            </View>
+            <View style={styles.detailStatDiv} />
+            <View style={styles.detailStat}>
+              <Text style={styles.detailStatVal}>${trip.budget.toLocaleString()}</Text>
+              <Text style={styles.detailStatLabel}>Budget</Text>
+            </View>
+          </View>
+        </LinearGradient>
         {tab === 'itinerary' && (
           Object.entries(itinByDate).length === 0 ? (
             <View style={styles.empty}>
@@ -355,35 +356,57 @@ export function TravelPlanningScreen({ navigation }: any) {
     return <TripDetailModal trip={liveTrip} onClose={() => setSelectedTrip(null)} />;
   }
 
+  const screenHeader = (
+    <LinearGradient colors={['#0E6655', '#1ABC9C']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
+      <View style={styles.headerRow}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.headerTitle}>Travel Planning</Text>
+          <Text style={styles.headerSub}>{upcomingCount} upcoming trips</Text>
+        </View>
+        <Pressable style={styles.addBtn} onPress={() => setShowAddTrip(true)}>
+          <Ionicons name="add" size={22} color="#fff" />
+        </Pressable>
+      </View>
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+        {(['all', 'planning', 'upcoming', 'active', 'completed'] as const).map((f) => (
+          <Pressable key={f} onPress={() => setFilter(f)} style={[styles.filterChip, filter === f && styles.filterChipActive]}>
+            <Text style={[styles.filterText, filter === f && styles.filterTextActive]}>
+              {f === 'all' ? 'All' : STATUS_CONFIG[f].label}
+            </Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+    </LinearGradient>
+  );
+
+  const screenCompact = (
+    <LinearGradient colors={['#0E6655', '#1ABC9C']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </Pressable>
+      <Text style={styles.headerTitle}>Travel Planning</Text>
+      <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', fontWeight: '600' }}>{upcomingCount} trips</Text>
+    </LinearGradient>
+  );
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#0E6655', '#1ABC9C']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
-        <View style={styles.headerRow}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.headerTitle}>Travel Planning</Text>
-            <Text style={styles.headerSub}>{upcomingCount} upcoming trips</Text>
-          </View>
-          <Pressable style={styles.addBtn} onPress={() => setShowAddTrip(true)}>
-            <Ionicons name="add" size={22} color="#fff" />
-          </Pressable>
-        </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-          {(['all', 'planning', 'upcoming', 'active', 'completed'] as const).map((f) => (
-            <Pressable key={f} onPress={() => setFilter(f)} style={[styles.filterChip, filter === f && styles.filterChipActive]}>
-              <Text style={[styles.filterText, filter === f && styles.filterTextActive]}>
-                {f === 'all' ? 'All' : STATUS_CONFIG[f].label}
-              </Text>
-            </Pressable>
-          ))}
-        </ScrollView>
-      </LinearGradient>
-
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]} showsVerticalScrollIndicator={false}>
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+        showsVerticalScrollIndicator={false}
+        onScroll={onScroll}
+        onScrollEndDrag={onScrollEndDrag}
+        onMomentumScrollEnd={onMomentumScrollEnd}
+        scrollEventThrottle={scrollEventThrottle}
+      >
         {filtered.length === 0 && (
           <View style={styles.empty}>
             <Text style={{ fontSize: 56 }}>✈️</Text>
@@ -463,6 +486,8 @@ export function TravelPlanningScreen({ navigation }: any) {
           );
         })}
       </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       <AddTripModal
         visible={showAddTrip}

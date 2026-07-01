@@ -8,6 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { i18n } from '../../i18n';
 
 import { Card } from '../../components/common/Card';
@@ -251,31 +252,50 @@ export function SettingsScreen({ navigation }: any) {
 
   const s = makeStyles(colors, isDark);
 
+  const screenHeader = (
+    <LinearGradient colors={['#0F2952', '#16476E']} style={[s.header, { paddingTop: insets.top + 12 }]}>
+      <View style={s.headerTop}>
+        <Pressable onPress={() => navigation.goBack()} style={s.back}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <Text style={s.headerTitle}>{t('settings.title')}</Text>
+        <View style={{ width: 40 }} />
+      </View>
+      <View style={s.profileRow}>
+        <View style={s.profileAvatar}>
+          <Ionicons name={isChild ? 'school' : isGrandparent ? 'heart' : 'home'} size={24} color="#fff" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={s.profileName}>{activeMember?.name || family?.name || 'Your Family'}</Text>
+          <Text style={s.profilePlan}>{roleLabel} Profile • {family?.name || 'Family Command Center'}</Text>
+          {user?.email && <Text style={s.profileEmail}>{user.email}</Text>}
+        </View>
+      </View>
+    </LinearGradient>
+  );
+
+  const screenCompact = (
+    <View style={{ backgroundColor: '#0F2952', paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Pressable onPress={() => navigation.goBack()} style={s.back}>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </Pressable>
+      <Text style={[s.headerTitle, { flex: 1, marginLeft: 12 }]}>{t('settings.title')}</Text>
+    </View>
+  );
+
   return (
     <View style={s.container}>
       <StatusBar style="light" />
 
-      <LinearGradient colors={['#0F2952', '#16476E']} style={[s.header, { paddingTop: insets.top + 12 }]}>
-        <View style={s.headerTop}>
-          <Pressable onPress={() => navigation.goBack()} style={s.back}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <Text style={s.headerTitle}>{t('settings.title')}</Text>
-          <View style={{ width: 40 }} />
-        </View>
-        <View style={s.profileRow}>
-          <View style={s.profileAvatar}>
-            <Ionicons name={isChild ? 'school' : isGrandparent ? 'heart' : 'home'} size={24} color="#fff" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={s.profileName}>{activeMember?.name || family?.name || 'Your Family'}</Text>
-            <Text style={s.profilePlan}>{roleLabel} Profile • {family?.name || 'Family Command Center'}</Text>
-            {user?.email && <Text style={s.profileEmail}>{user.email}</Text>}
-          </View>
-        </View>
-      </LinearGradient>
-
-      <ScrollView contentContainerStyle={[s.content, { paddingBottom: 100 }]} showsVerticalScrollIndicator={false}>
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+      <ScrollView
+        onScroll={onScroll}
+        onScrollEndDrag={onScrollEndDrag}
+        onMomentumScrollEnd={onMomentumScrollEnd}
+        scrollEventThrottle={scrollEventThrottle}
+        contentContainerStyle={[s.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+        showsVerticalScrollIndicator={false}>
         {isChild && (
           <Card style={s.roleNoticeCard} variant="elevated">
             <Ionicons name="lock-closed-outline" size={20} color={colors.primary} />
@@ -530,6 +550,8 @@ export function SettingsScreen({ navigation }: any) {
         <Text style={s.version}>{t('settings.version')}</Text>
         <Text style={s.versionSub}>{t('settings.tagline')}</Text>
       </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       {/* ── LANGUAGE MODAL ── */}
       <Modal visible={showLanguageModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowLanguageModal(false)}>

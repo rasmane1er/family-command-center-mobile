@@ -10,6 +10,7 @@ import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { ProgressBar } from '../../components/common/ProgressBar';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 
 const REWARD_STORE = [
   { id: 'r1', name: 'Extra Screen Time', description: '30 min of extra screen time', cost: 100, icon: 'phone-portrait', color: '#8E44AD', bg: '#F5EEF8' },
@@ -78,76 +79,99 @@ const activeChild =
     );
   };
 
+  const screenHeader = (
+    <LinearGradient colors={['#F5A623', '#E67E22']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
+      <View style={styles.headerTop}>
+        <Pressable onPress={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()} style={styles.back}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <Text style={styles.headerTitle}>Rewards Center</Text>
+        <Pressable style={styles.settingsBtn}>
+          <Ionicons name="settings-outline" size={20} color="#fff" />
+        </Pressable>
+      </View>
+
+      {/* Child selector */}
+      {role !== 'child' && visibleChildren.length > 0 && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.childScroll}>
+          {visibleChildren.map((child) => (
+            <Pressable
+              key={child.id}
+              onPress={() => setSelectedChild(child.id)}
+              style={[styles.childChip, (selectedChild === child.id || (!selectedChild && children[0].id === child.id)) && styles.childChipActive]}
+            >
+              <View style={[styles.childAvatar, { backgroundColor: child.avatarColor + '30' }]}>
+                <Text style={styles.childAvatarText}>{child.name.charAt(0)}</Text>
+              </View>
+              <Text style={styles.childName}>{child.name}</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      )}
+
+      {/* Points display */}
+      {activeChild && (
+        <View style={styles.pointsCard}>
+          <View style={styles.pointsLeft}>
+            <View style={styles.trophyBg}>
+              <Ionicons name="trophy" size={26} color={colors.secondary} />
+            </View>
+            <View>
+              <Text style={styles.pointsValue}>{(activeChild.points || 0).toLocaleString()}</Text>
+              <Text style={styles.pointsLabel}>Points available</Text>
+            </View>
+          </View>
+          <View style={styles.levelBadge}>
+            <Text style={styles.levelLabel}>Level</Text>
+            <Text style={styles.levelValue}>{activeChild.level || 1}</Text>
+          </View>
+        </View>
+      )}
+      {activeChild && (
+        <View style={styles.levelProgress}>
+          <Text style={styles.levelProgressText}>Level {(activeChild.level || 1) + 1} in {nextLevelPoints - (activeChild.points % 500)} pts</Text>
+          <ProgressBar progress={levelProgress} color="#fff" height={6} />
+        </View>
+      )}
+    
+    <View style={styles.tabs}>
+            {(['store', 'achievements', 'history'] as const).map((tab) => (
+              <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
+                <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
+                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+</LinearGradient>
+  );
+
+  const screenCompact = (
+    <LinearGradient colors={['#F5A623', '#E67E22']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Pressable onPress={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()} style={styles.back}>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </Pressable>
+      <Text style={styles.headerTitle}>Rewards Center</Text>
+      <Text style={{ fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.9)' }}>{activeChild ? `${(activeChild.points || 0).toLocaleString()} pts` : ''}</Text>
+    </LinearGradient>
+  );
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#F5A623', '#E67E22']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
-        <View style={styles.headerTop}>
-          <Pressable onPress={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()} style={styles.back}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <Text style={styles.headerTitle}>Rewards Center</Text>
-          <Pressable style={styles.settingsBtn}>
-            <Ionicons name="settings-outline" size={20} color="#fff" />
-          </Pressable>
-        </View>
-
-        {/* Child selector */}
-        {role !== 'child' && visibleChildren.length > 0 && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.childScroll}>
-            {visibleChildren.map((child) => (
-              <Pressable
-                key={child.id}
-                onPress={() => setSelectedChild(child.id)}
-                style={[styles.childChip, (selectedChild === child.id || (!selectedChild && children[0].id === child.id)) && styles.childChipActive]}
-              >
-                <View style={[styles.childAvatar, { backgroundColor: child.avatarColor + '30' }]}>
-                  <Text style={styles.childAvatarText}>{child.name.charAt(0)}</Text>
-                </View>
-                <Text style={styles.childName}>{child.name}</Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-        )}
-
-        {/* Points display */}
-        {activeChild && (
-          <View style={styles.pointsCard}>
-            <View style={styles.pointsLeft}>
-              <View style={styles.trophyBg}>
-                <Ionicons name="trophy" size={26} color={colors.secondary} />
-              </View>
-              <View>
-                <Text style={styles.pointsValue}>{(activeChild.points || 0).toLocaleString()}</Text>
-                <Text style={styles.pointsLabel}>Points available</Text>
-              </View>
-            </View>
-            <View style={styles.levelBadge}>
-              <Text style={styles.levelLabel}>Level</Text>
-              <Text style={styles.levelValue}>{activeChild.level || 1}</Text>
-            </View>
-          </View>
-        )}
-        {activeChild && (
-          <View style={styles.levelProgress}>
-            <Text style={styles.levelProgressText}>Level {(activeChild.level || 1) + 1} in {nextLevelPoints - (activeChild.points % 500)} pts</Text>
-            <ProgressBar progress={levelProgress} color="#fff" height={6} />
-          </View>
-        )}
-      </LinearGradient>
 
       {/* Tabs */}
-      <View style={styles.tabs}>
-        {(['store', 'achievements', 'history'] as const).map((tab) => (
-          <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
-            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      
 
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+          <ScrollView
+            contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+            onScroll={onScroll}
+            onScrollEndDrag={onScrollEndDrag}
+            onMomentumScrollEnd={onMomentumScrollEnd}
+            scrollEventThrottle={scrollEventThrottle}
+          >
         {activeTab === 'store' && (
           <>
             <View style={styles.storeGrid}>
@@ -228,6 +252,8 @@ const activeChild =
           </View>
         )}
       </ScrollView>
+        )}
+      </CollapsibleHeader>
     </View>
   );
 }

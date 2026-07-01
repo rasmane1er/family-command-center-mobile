@@ -9,6 +9,7 @@ import { Card } from '../../components/common/Card';
 import { ProgressBar } from '../../components/common/ProgressBar';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { Avatar } from '../../components/common/Avatar';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 
 interface Achievement {
   id: string;
@@ -64,110 +65,133 @@ export function AchievementsScreen({ navigation }: any) {
     points: ACHIEVEMENTS.filter((a) => a.unlocked && a.memberId === m.id).reduce((s, a) => s + a.points, 0),
   })).sort((a, b) => b.points - a.points);
 
+  const screenHeader = (
+    <LinearGradient colors={['#1A1A2E', '#16213E', '#0F3460']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
+      <View style={styles.headerTop}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <Text style={styles.headerTitle}>Achievements</Text>
+        <View style={{ width: 40 }} />
+      </View>
+
+      <View style={styles.statsRow}>
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>{unlockedCount}/{totalCount}</Text>
+          <Text style={styles.statLabel}>Unlocked</Text>
+        </View>
+        <View style={[styles.statItem, styles.statBorder]}>
+          <Text style={styles.statValue}>{totalPoints}</Text>
+          <Text style={styles.statLabel}>Points Earned</Text>
+        </View>
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>{Math.round((unlockedCount / totalCount) * 100)}%</Text>
+          <Text style={styles.statLabel}>Completion</Text>
+        </View>
+      </View>
+
+      <ProgressBar progress={unlockedCount / totalCount} color={colors.secondary} height={6} />
+    </LinearGradient>
+  );
+
+  const screenCompact = (
+    <LinearGradient colors={['#1A1A2E', '#16213E', '#0F3460']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </Pressable>
+      <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>Achievements</Text>
+      <Text style={{ fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.8)' }}>{totalPoints} pts</Text>
+    </LinearGradient>
+  );
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#1A1A2E', '#16213E', '#0F3460']} style={[styles.header, { paddingTop: insets.top }]}>
-        <View style={styles.headerTop}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <Text style={styles.headerTitle}>Achievements</Text>
-          <View style={{ width: 40 }} />
-        </View>
 
-        <View style={styles.statsRow}>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{unlockedCount}/{totalCount}</Text>
-            <Text style={styles.statLabel}>Unlocked</Text>
-          </View>
-          <View style={[styles.statItem, styles.statBorder]}>
-            <Text style={styles.statValue}>{totalPoints}</Text>
-            <Text style={styles.statLabel}>Points Earned</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{Math.round((unlockedCount / totalCount) * 100)}%</Text>
-            <Text style={styles.statLabel}>Completion</Text>
-          </View>
-        </View>
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+          <ScrollView
+            onScroll={onScroll}
+            onScrollEndDrag={onScrollEndDrag}
+            onMomentumScrollEnd={onMomentumScrollEnd}
+            scrollEventThrottle={scrollEventThrottle}
+            contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+          >
+            {/* Leaderboard */}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.leaderboard} contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12, gap: 10 }}>
+              {memberAchievements.map((ma, i) => (
+                <View key={ma.member.id} style={styles.leaderCard}>
+                  <Text style={styles.leaderRank}>{['🥇', '🥈', '🥉', '4️⃣'][i] || `${i + 1}`}</Text>
+                  <Avatar name={ma.member.name} color={ma.member.avatarColor} size={36} />
+                  <Text style={styles.leaderName}>{ma.member.name.split(' ')[0]}</Text>
+                  <Text style={styles.leaderPts}>{ma.points} pts</Text>
+                </View>
+              ))}
+            </ScrollView>
 
-        <ProgressBar progress={unlockedCount / totalCount} color={colors.secondary} height={6} />
-      </LinearGradient>
+            <View style={styles.tabs}>
+              {(['all', 'unlocked', 'progress'] as const).map((t) => (
+                <Pressable key={t} onPress={() => setActiveTab(t)} style={[styles.tab, activeTab === t && styles.tabActive]}>
+                  <Text style={[styles.tabText, activeTab === t && styles.tabTextActive]}>
+                    {t === 'all' ? 'All' : t === 'unlocked' ? '🏆 Unlocked' : '🔄 In Progress'}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
 
-      {/* Leaderboard */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.leaderboard} contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12, gap: 10 }}>
-        {memberAchievements.map((ma, i) => (
-          <View key={ma.member.id} style={styles.leaderCard}>
-            <Text style={styles.leaderRank}>{['🥇', '🥈', '🥉', '4️⃣'][i] || `${i + 1}`}</Text>
-            <Avatar name={ma.member.name} color={ma.member.avatarColor} size={36} />
-            <Text style={styles.leaderName}>{ma.member.name.split(' ')[0]}</Text>
-            <Text style={styles.leaderPts}>{ma.points} pts</Text>
-          </View>
-        ))}
-      </ScrollView>
+            <View style={styles.categoryBar}>
+              {CATEGORIES.map((c) => (
+                <Pressable key={c} onPress={() => setCategory(c)} style={[styles.catChip, category === c && styles.catChipActive]}>
+                  <Text style={[styles.catChipText, category === c && styles.catChipTextActive]}>{c}</Text>
+                </Pressable>
+              ))}
+            </View>
 
-      <View style={styles.tabs}>
-        {(['all', 'unlocked', 'progress'] as const).map((t) => (
-          <Pressable key={t} onPress={() => setActiveTab(t)} style={[styles.tab, activeTab === t && styles.tabActive]}>
-            <Text style={[styles.tabText, activeTab === t && styles.tabTextActive]}>
-              {t === 'all' ? 'All' : t === 'unlocked' ? '🏆 Unlocked' : '🔄 In Progress'}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      <View style={styles.categoryBar}>
-        {CATEGORIES.map((c) => (
-          <Pressable key={c} onPress={() => setCategory(c)} style={[styles.catChip, category === c && styles.catChipActive]}>
-            <Text style={[styles.catChipText, category === c && styles.catChipTextActive]}>{c}</Text>
-          </Pressable>
-        ))}
-      </View>
-
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
-        <View style={styles.grid}>
-          {filtered.map((a) => {
-            const member = a.memberId ? members.find((m) => m.id === a.memberId) : null;
-            return (
-              <Card key={a.id} style={{ ...styles.achievCard, ...(a.unlocked ? styles.achievCardUnlocked : {}) }} variant="elevated">
-                <View style={[styles.achievIconWrap, { backgroundColor: a.unlocked ? a.bg : '#F5F5F5' }]}>
-                  <Ionicons name={a.icon as any} size={28} color={a.unlocked ? a.color : '#BDBDBD'} />
-                  {a.unlocked && (
-                    <View style={styles.unlockedBadge}>
-                      <Ionicons name="checkmark" size={10} color="#fff" />
+            <View style={styles.grid}>
+              {filtered.map((a) => {
+                const member = a.memberId ? members.find((m) => m.id === a.memberId) : null;
+                return (
+                  <Card key={a.id} style={{ ...styles.achievCard, ...(a.unlocked ? styles.achievCardUnlocked : {}) }} variant="elevated">
+                    <View style={[styles.achievIconWrap, { backgroundColor: a.unlocked ? a.bg : '#F5F5F5' }]}>
+                      <Ionicons name={a.icon as any} size={28} color={a.unlocked ? a.color : '#BDBDBD'} />
+                      {a.unlocked && (
+                        <View style={styles.unlockedBadge}>
+                          <Ionicons name="checkmark" size={10} color="#fff" />
+                        </View>
+                      )}
                     </View>
-                  )}
-                </View>
-                <Text style={[styles.achievTitle, !a.unlocked && styles.achievTitleLocked]}>{a.title}</Text>
-                <Text style={styles.achievDesc} numberOfLines={2}>{a.desc}</Text>
-                {!a.unlocked && (
-                  <View style={{ marginTop: 8 }}>
-                    <ProgressBar progress={a.progress / a.goal} color={a.color} height={4} />
-                    <Text style={styles.achievProgress}>{a.progress}/{a.goal}</Text>
-                  </View>
-                )}
-                <View style={styles.achievFooter}>
-                  <View style={[styles.achievPoints, { backgroundColor: a.unlocked ? a.bg : '#F5F5F5' }]}>
-                    <Ionicons name="star" size={10} color={a.unlocked ? a.color : '#BDBDBD'} />
-                    <Text style={[styles.achievPtsText, { color: a.unlocked ? a.color : '#BDBDBD' }]}>{a.points} pts</Text>
-                  </View>
-                  {member && (
-                    <Avatar name={member.name} color={member.avatarColor} size={20} />
-                  )}
-                </View>
-              </Card>
-            );
-          })}
-        </View>
+                    <Text style={[styles.achievTitle, !a.unlocked && styles.achievTitleLocked]}>{a.title}</Text>
+                    <Text style={styles.achievDesc} numberOfLines={2}>{a.desc}</Text>
+                    {!a.unlocked && (
+                      <View style={{ marginTop: 8 }}>
+                        <ProgressBar progress={a.progress / a.goal} color={a.color} height={4} />
+                        <Text style={styles.achievProgress}>{a.progress}/{a.goal}</Text>
+                      </View>
+                    )}
+                    <View style={styles.achievFooter}>
+                      <View style={[styles.achievPoints, { backgroundColor: a.unlocked ? a.bg : '#F5F5F5' }]}>
+                        <Ionicons name="star" size={10} color={a.unlocked ? a.color : '#BDBDBD'} />
+                        <Text style={[styles.achievPtsText, { color: a.unlocked ? a.color : '#BDBDBD' }]}>{a.points} pts</Text>
+                      </View>
+                      {member && (
+                        <Avatar name={member.name} color={member.avatarColor} size={20} />
+                      )}
+                    </View>
+                  </Card>
+                );
+              })}
+            </View>
 
-        {filtered.length === 0 && (
-          <View style={styles.empty}>
-            <Text style={{ fontSize: 48 }}>{activeTab === 'unlocked' ? '🏆' : '🎯'}</Text>
-            <Text style={styles.emptyTitle}>No achievements {activeTab === 'unlocked' ? 'unlocked' : 'in progress'}</Text>
-            <Text style={styles.emptyDesc}>Complete tasks, meet goals, and build habits to unlock achievements!</Text>
-          </View>
+            {filtered.length === 0 && (
+              <View style={styles.empty}>
+                <Text style={{ fontSize: 48 }}>{activeTab === 'unlocked' ? '🏆' : '🎯'}</Text>
+                <Text style={styles.emptyTitle}>No achievements {activeTab === 'unlocked' ? 'unlocked' : 'in progress'}</Text>
+                <Text style={styles.emptyDesc}>Complete tasks, meet goals, and build habits to unlock achievements!</Text>
+              </View>
+            )}
+          </ScrollView>
         )}
-      </ScrollView>
+      </CollapsibleHeader>
     </View>
   );
 }

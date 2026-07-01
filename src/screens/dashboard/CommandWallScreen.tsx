@@ -14,6 +14,7 @@ import { useFinanceStore } from '../../store/useFinanceStore';
 import { useAIStore } from '../../store/useAIStore';
 import { useAutomationStore } from '../../store/useAutomationStore';
 import { useWealthStore } from '../../store/useWealthStore';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 
 const { width } = Dimensions.get('window');
 
@@ -74,25 +75,61 @@ const todayEvents = visibleEvents.filter(
   const topMember = [...reputationScores].sort((a, b) => b.overall - a.overall)[0];
   const topMemberInfo = members.find((m) => m.id === topMember?.memberId);
 
+  const screenHeader = (
+    <LinearGradient colors={['#0D1B2A', '#0F2952', '#1E4A8A']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
+      <View style={styles.headerTop}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.headerTitle}>Command Wall</Text>
+          <Text style={styles.headerSub}>{format(today, 'EEEE, MMMM d')}</Text>
+        </View>
+        <View style={styles.aiDot}>
+          <Ionicons name="sparkles" size={14} color={colors.secondary} />
+        </View>
+      </View>
+    </LinearGradient>
+  );
+
+  const screenCompact = (
+    <LinearGradient
+      colors={['#0D1B2A', '#1E4A8A']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 0 }}
+      style={{
+        paddingTop: insets.top,
+        paddingBottom: 10,
+        paddingHorizontal: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+      }}
+    >
+      <Pressable onPress={() => navigation.goBack()} style={{ marginRight: 12 }}>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </Pressable>
+      <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800', flex: 1 }}>Command Wall</Text>
+      <View style={styles.aiDot}>
+        <Ionicons name="sparkles" size={14} color={colors.secondary} />
+      </View>
+    </LinearGradient>
+  );
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#0D1B2A', '#0F2952', '#1E4A8A']} style={[styles.header, { paddingTop: insets.top }]}>
-        <View style={styles.headerTop}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.headerTitle}>Command Wall</Text>
-            <Text style={styles.headerSub}>{format(today, 'EEEE, MMMM d')}</Text>
-          </View>
-          <View style={styles.aiDot}>
-            <Ionicons name="sparkles" size={14} color={colors.secondary} />
-          </View>
-        </View>
-      </LinearGradient>
 
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]} showsVerticalScrollIndicator={false}>
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+        <ScrollView
+          contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+          showsVerticalScrollIndicator={false}
+          onScroll={onScroll}
+          onScrollEndDrag={onScrollEndDrag}
+          onMomentumScrollEnd={onMomentumScrollEnd}
+          scrollEventThrottle={scrollEventThrottle}
+        >
         {/* AI Briefing Banner */}
         {topInsight && (
           <LinearGradient colors={[colors.primary + 'CC', colors.primary]} style={styles.briefingBanner}>
@@ -250,7 +287,9 @@ const todayEvents = visibleEvents.filter(
             </Pressable>
           ))}
         </View>
-      </ScrollView>
+        </ScrollView>
+        )}
+      </CollapsibleHeader>
     </View>
   );
 }

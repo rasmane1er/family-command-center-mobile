@@ -8,6 +8,7 @@ import { colors } from '../../theme/colors';
 import { Card } from '../../components/common/Card';
 import { ProgressBar } from '../../components/common/ProgressBar';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 
 const RELATIONSHIP_PAIRS = [
   { pair: ['member-1', 'member-2'], label: 'Marcus & Sarah', score: 88, trend: 'up', icon: 'heart', color: '#E74C3C', checkIns: 12, lastActivity: 'Date night 3 days ago' },
@@ -42,39 +43,63 @@ export function RelationshipHealthScreen({ navigation }: any) {
   const getScoreColor = (score: number) =>
     score >= 85 ? colors.success : score >= 70 ? colors.warning : colors.danger;
 
-  return (
-    <View style={styles.container}>
-      <StatusBar style="light" />
-      <LinearGradient colors={['#880E4F', '#E91E63']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
-        <View style={styles.headerTop}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <Text style={styles.headerTitle}>Relationship Health</Text>
-          <View style={{ width: 40 }} />
-        </View>
-
-        <View style={styles.scoreCircle}>
-          <Text style={styles.scoreValue}>{overallHealth}</Text>
-          <Text style={styles.scoreLabel}>Family Bond Score</Text>
-        </View>
-        <View style={styles.trendRow}>
-          <Ionicons name="trending-up" size={16} color="rgba(255,255,255,0.8)" />
-          <Text style={styles.trendText}>+4 points this week — relationships are thriving!</Text>
-        </View>
-      </LinearGradient>
-
-      <View style={styles.tabs}>
-        {(['bonds', 'languages', 'activities'] as const).map((tab) => (
-          <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
-            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-              {tab === 'bonds' ? 'Bond Scores' : tab === 'languages' ? 'Love Languages' : 'Activities'}
-            </Text>
-          </Pressable>
-        ))}
+  const screenHeader = (
+    <LinearGradient colors={['#880E4F', '#E91E63']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
+      <View style={styles.headerTop}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <Text style={styles.headerTitle}>Relationship Health</Text>
+        <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
+      <View style={styles.scoreCircle}>
+        <Text style={styles.scoreValue}>{overallHealth}</Text>
+        <Text style={styles.scoreLabel}>Family Bond Score</Text>
+      </View>
+      <View style={styles.trendRow}>
+        <Ionicons name="trending-up" size={16} color="rgba(255,255,255,0.8)" />
+        <Text style={styles.trendText}>+4 points this week — relationships are thriving!</Text>
+      </View>
+    </LinearGradient>
+  );
+
+  const screenCompact = (
+    <View style={{ backgroundColor: '#880E4F', paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </Pressable>
+      <Text style={styles.headerTitle}>Relationship Health</Text>
+      <View style={{ width: 40 }} />
+    </View>
+  );
+
+  const tabs = (
+    <View style={styles.tabs}>
+      {(['bonds', 'languages', 'activities'] as const).map((tab) => (
+        <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
+          <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
+            {tab === 'bonds' ? 'Bond Scores' : tab === 'languages' ? 'Love Languages' : 'Activities'}
+          </Text>
+        </Pressable>
+      ))}
+    </View>
+  );
+
+  return (
+    <>
+      <StatusBar style="light" />
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+          <>
+            {tabs}
+            <ScrollView
+              onScroll={onScroll}
+              onScrollEndDrag={onScrollEndDrag}
+              onMomentumScrollEnd={onMomentumScrollEnd}
+              scrollEventThrottle={scrollEventThrottle}
+              contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+            >
         {activeTab === 'bonds' && RELATIONSHIP_PAIRS.map((rel, i) => (
           <Card key={i} style={styles.relCard} variant="elevated">
             <View style={styles.relHeader}>
@@ -145,8 +170,11 @@ export function RelationshipHealthScreen({ navigation }: any) {
             </Pressable>
           </Card>
         ))}
-      </ScrollView>
-    </View>
+            </ScrollView>
+          </>
+        )}
+      </CollapsibleHeader>
+    </>
   );
 }
 

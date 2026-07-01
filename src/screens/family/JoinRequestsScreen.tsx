@@ -1,9 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '../../components/common/Button';
 import { Card } from '../../components/common/Card';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { useJoinRequestsStore } from '../../store/useJoinRequestsStore';
 import { colors } from '../../theme/colors';
@@ -17,6 +19,7 @@ const FILTERS: RequestFilter[] = ['pending', 'approved', 'rejected'];
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
 export function JoinRequestsScreen({ navigation, route }: any) {
+  const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<RequestFilter>('pending');
 
   const requests = useJoinRequestsStore((s) => s.requests);
@@ -86,20 +89,40 @@ export function JoinRequestsScreen({ navigation, route }: any) {
     ]);
   };
 
-  return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <Pressable onPress={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={22} color={colors.text} />
-        </Pressable>
-        <View style={styles.headerIcon}>
-          <Ionicons name="person-add-outline" size={34} color={colors.primary} />
-        </View>
-
-        <Text style={styles.title}>Join Requests</Text>
-        <Text style={styles.subtitle}>Approve, reject, and review family join history.</Text>
+  const screenHeader = (
+    <View style={[styles.header, { backgroundColor: '#0F2952', paddingTop: insets.top + 6 }]}>
+      <Pressable onPress={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()} style={styles.backBtnHeader}>
+        <Ionicons name="arrow-back" size={22} color="#fff" />
+      </Pressable>
+      <View style={styles.headerIcon}>
+        <Ionicons name="person-add-outline" size={34} color="#fff" />
       </View>
+      <Text style={styles.title}>Join Requests</Text>
+      <Text style={styles.subtitle}>Approve, reject, and review family join history.</Text>
+    </View>
+  );
 
+  const screenCompact = (
+    <View style={{ backgroundColor: '#0F2952', paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Pressable onPress={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()} style={styles.backBtnHeader}>
+        <Ionicons name="arrow-back" size={22} color="#fff" />
+      </Pressable>
+      <Text style={{ fontSize: 16, fontWeight: '700', color: '#fff' }}>Join Requests</Text>
+      <View style={{ width: 38 }} />
+    </View>
+  );
+
+  return (
+    <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+      {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={[styles.content, { paddingTop: contentPaddingTop }]}
+        onScroll={onScroll}
+        onScrollEndDrag={onScrollEndDrag}
+        onMomentumScrollEnd={onMomentumScrollEnd}
+        scrollEventThrottle={scrollEventThrottle}
+      >
       <View style={styles.filterRow}>
         {FILTERS.map((item) => {
           const active = filter === item;
@@ -215,7 +238,9 @@ export function JoinRequestsScreen({ navigation, route }: any) {
           </Card>
         ))
       )}
-    </ScrollView>
+      </ScrollView>
+      )}
+    </CollapsibleHeader>
   );
 }
 
@@ -223,8 +248,8 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: 16, paddingBottom: 100 },
 
-  header: { alignItems: 'center', paddingVertical: 28 },
-  backBtn: { position: 'absolute', top: 16, left: 0, width: 40, height: 40, borderRadius: 20, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  header: { alignItems: 'center', paddingVertical: 28, paddingHorizontal: 20 },
+  backBtnHeader: { width: 38, height: 38, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
 
   headerIcon: {
     width: 68,
@@ -235,11 +260,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  title: { fontSize: 20, fontWeight: '800', color: colors.text, marginTop: 12 },
+  title: { fontSize: 20, fontWeight: '800', color: '#fff', marginTop: 12 },
 
   subtitle: {
     fontSize: 13,
-    color: colors.textSecondary,
+    color: 'rgba(255,255,255,0.7)',
     marginTop: 6,
     textAlign: 'center',
     lineHeight: 20,

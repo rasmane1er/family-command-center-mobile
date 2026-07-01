@@ -14,6 +14,7 @@ import { useGuardianStore } from '../../../store/useGuardianStore';
 import { useFamilyStore } from '../../../store/useFamilyStore';
 import { colors } from '../../../theme/colors';
 import { shadows } from '../../../theme/spacing';
+import { CollapsibleHeader } from '../../../components/common/CollapsibleHeader';
 import type { ParentApprovalRequest } from '../../../types';
 
 const TYPE_LABELS: Record<ParentApprovalRequest['type'], string> = {
@@ -81,46 +82,71 @@ export function ApprovalRequestsScreen({ navigation }: any) {
     { key: 'denied', label: `Denied (${counts.denied})`, color: colors.danger },
   ];
 
+  const screenHeader = (
+    <LinearGradient
+      colors={['#0F2952', '#1E4A8A']}
+      style={[styles.header, { paddingTop: insets.top + 6 }]}
+    >
+      <View style={styles.headerRow}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Ionicons name="arrow-back" size={22} color="#fff" />
+        </Pressable>
+        <Text style={styles.headerTitle}>Approval Requests</Text>
+        {counts.pending > 0 && (
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>{counts.pending}</Text>
+          </View>
+        )}
+      </View>
+
+      <View style={styles.filterRow}>
+        {filterTabs.map((tab) => (
+          <Pressable
+            key={tab.key}
+            onPress={() => setFilter(tab.key)}
+            style={[
+              styles.filterTab,
+              filter === tab.key && { backgroundColor: colors.background },
+            ]}
+          >
+            <Text style={[
+              styles.filterTabText,
+              filter === tab.key && { color: tab.color, fontWeight: '700' },
+            ]}>
+              {tab.label}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+    </LinearGradient>
+  );
+
+  const screenCompact = (
+    <LinearGradient colors={['#0F2952', '#1E4A8A']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Ionicons name="arrow-back" size={22} color="#fff" />
+      </Pressable>
+      <Text style={styles.headerTitle}>Approval Requests</Text>
+      {counts.pending > 0 && (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{counts.pending}</Text>
+        </View>
+      )}
+    </LinearGradient>
+  );
+
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={['#0F2952', '#1E4A8A']}
-        style={[styles.header, { paddingTop: insets.top + 6 }]}
+
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+      <ScrollView
+        onScroll={onScroll}
+        onScrollEndDrag={onScrollEndDrag}
+        onMomentumScrollEnd={onMomentumScrollEnd}
+        scrollEventThrottle={scrollEventThrottle}
+        contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
       >
-        <View style={styles.headerRow}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={22} color="#fff" />
-          </Pressable>
-          <Text style={styles.headerTitle}>Approval Requests</Text>
-          {counts.pending > 0 && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{counts.pending}</Text>
-            </View>
-          )}
-        </View>
-
-        <View style={styles.filterRow}>
-          {filterTabs.map((tab) => (
-            <Pressable
-              key={tab.key}
-              onPress={() => setFilter(tab.key)}
-              style={[
-                styles.filterTab,
-                filter === tab.key && { backgroundColor: colors.background },
-              ]}
-            >
-              <Text style={[
-                styles.filterTabText,
-                filter === tab.key && { color: tab.color, fontWeight: '700' },
-              ]}>
-                {tab.label}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-      </LinearGradient>
-
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
         {filtered.length === 0 && (
           <View style={styles.emptyState}>
             <Ionicons
@@ -203,6 +229,8 @@ export function ApprovalRequestsScreen({ navigation }: any) {
           );
         })}
       </ScrollView>
+        )}
+      </CollapsibleHeader>
     </View>
   );
 }

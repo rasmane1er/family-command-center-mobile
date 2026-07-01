@@ -18,21 +18,21 @@ export function HomeSetupScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#0F2952', '#1E4A8A']} style={styles.header}>
-        <View style={styles.headerTopRow}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <Pressable onPress={() => navigation.navigate('VehicleSetup')} style={styles.skipBtn}>
-            <Text style={styles.skipBtnText}>SKIP</Text>
-          </Pressable>
-        </View>
-        <View style={styles.stepBadge}><Text style={styles.stepText}>Step 3 of 7</Text></View>
-        <Text style={styles.headerTitle}>Home Setup</Text>
-        <Text style={styles.headerSub}>Tell us about your home</Text>
-      </LinearGradient>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+        <LinearGradient colors={['#0F2952', '#1E4A8A']} style={styles.header}>
+          <View style={styles.headerTopRow}>
+            <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+              <Ionicons name="arrow-back" size={24} color="#fff" />
+            </Pressable>
+            <Pressable onPress={() => navigation.navigate('VehicleSetup')} style={styles.skipBtn}>
+              <Text style={styles.skipBtnText}>SKIP</Text>
+            </Pressable>
+          </View>
+          <View style={styles.stepBadge}><Text style={styles.stepText}>Step 3 of 7</Text></View>
+          <Text style={styles.headerTitle}>Home Setup</Text>
+          <Text style={styles.headerSub}>Tell us about your home</Text>
+        </LinearGradient>
         <View style={styles.progressBar}>
           <View style={[styles.progressFill, { width: '43%' }]} />
         </View>

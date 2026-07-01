@@ -4,6 +4,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { getSpendingByCategory, getMonthlySpending, getTransactions } from '../../services/plaidService';
 import type { PlaidTransaction } from '../../types';
 
@@ -27,6 +29,7 @@ function monthShort(ym: string): string {
 }
 
 export function SpendingInsightsScreen({ navigation }: { navigation: any }) {
+  const insets = useSafeAreaInsets();
   const [month, setMonth] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;

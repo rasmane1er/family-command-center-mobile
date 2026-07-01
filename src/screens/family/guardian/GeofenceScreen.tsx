@@ -18,6 +18,7 @@ import { useGuardianStore } from '../../../store/useGuardianStore';
 import { useFamilyStore } from '../../../store/useFamilyStore';
 import { colors } from '../../../theme/colors';
 import { shadows } from '../../../theme/spacing';
+import { CollapsibleHeader } from '../../../components/common/CollapsibleHeader';
 import type { GeofenceAction, GeofenceZone } from '../../../types';
 
 const ACTION_OPTIONS: { value: GeofenceAction; label: string }[] = [
@@ -117,25 +118,25 @@ export function GeofenceScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={['#0F2952', '#1E4A8A']}
-        style={[styles.header, { paddingTop: insets.top + 6 }]}
-      >
-        <View style={styles.headerRow}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={22} color="#fff" />
-          </Pressable>
-          <Text style={styles.headerTitle}>Geofence Zones</Text>
-          <Pressable
-            onPress={() => { resetForm(); setShowModal(true); }}
-            style={styles.addBtn}
-          >
-            <Ionicons name="add" size={22} color="#fff" />
-          </Pressable>
-        </View>
-      </LinearGradient>
 
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
+        <LinearGradient
+          colors={['#0F2952', '#1E4A8A']}
+          style={[styles.header, { paddingTop: insets.top + 6 }]}
+        >
+          <View style={styles.headerRow}>
+            <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+              <Ionicons name="arrow-back" size={22} color="#fff" />
+            </Pressable>
+            <Text style={styles.headerTitle}>Geofence Zones</Text>
+            <Pressable
+              onPress={() => { resetForm(); setShowModal(true); }}
+              style={styles.addBtn}
+            >
+              <Ionicons name="add" size={22} color="#fff" />
+            </Pressable>
+          </View>
+        </LinearGradient>
         {zones.length === 0 && (
           <View style={styles.emptyState}>
             <Ionicons name="location-outline" size={64} color={colors.textMuted} />

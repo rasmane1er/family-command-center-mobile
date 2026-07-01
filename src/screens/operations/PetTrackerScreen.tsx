@@ -23,6 +23,7 @@ import { Button } from '../../components/common/Button';
 import { usePetStore, PetSpecies, PetEventType, Pet } from '../../store/usePetStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { getPetCharges, type PetCharge } from '../../services/autoFillService';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -416,31 +417,44 @@ export function PetTrackerScreen({ navigation }: any) {
     );
   };
 
+  const screenHeader = (
+    <LinearGradient colors={['#1B5E20', '#388E3C']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
+      <View style={styles.headerTop}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <Text style={styles.headerTitle}>Pet Tracker</Text>
+        <Pressable onPress={() => setShowAddPetModal(true)} style={styles.addBtn}>
+          <Ionicons name="add" size={26} color="#fff" />
+        </Pressable>
+      </View>
+      <View style={styles.headerStats}>
+        <View style={styles.headerStat}>
+          <Text style={styles.headerStatNum}>{pets.length}</Text>
+          <Text style={styles.headerStatLabel}>Pets</Text>
+        </View>
+        <View style={styles.headerStatDivider} />
+        <View style={styles.headerStat}>
+          <Text style={styles.headerStatNum}>{upcomingCount}</Text>
+          <Text style={styles.headerStatLabel}>Upcoming Events</Text>
+        </View>
+      </View>
+    </LinearGradient>
+  );
+
+  const screenCompact = (
+    <LinearGradient colors={['#1B5E20', '#388E3C']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </Pressable>
+      <Text style={styles.headerTitle}>Pet Tracker</Text>
+      <Text style={{ fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.9)' }}>{pets.length} pets</Text>
+    </LinearGradient>
+  );
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#1B5E20', '#388E3C']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
-        <View style={styles.headerTop}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <Text style={styles.headerTitle}>Pet Tracker</Text>
-          <Pressable onPress={() => setShowAddPetModal(true)} style={styles.addBtn}>
-            <Ionicons name="add" size={26} color="#fff" />
-          </Pressable>
-        </View>
-        <View style={styles.headerStats}>
-          <View style={styles.headerStat}>
-            <Text style={styles.headerStatNum}>{pets.length}</Text>
-            <Text style={styles.headerStatLabel}>Pets</Text>
-          </View>
-          <View style={styles.headerStatDivider} />
-          <View style={styles.headerStat}>
-            <Text style={styles.headerStatNum}>{upcomingCount}</Text>
-            <Text style={styles.headerStatLabel}>Upcoming Events</Text>
-          </View>
-        </View>
-      </LinearGradient>
 
       {vetCharges.length > 0 && (
         <View style={styles.vetBanner}>
@@ -517,11 +531,21 @@ export function PetTrackerScreen({ navigation }: any) {
         ))}
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
-        {activeTab === 'pets' && renderPetsTab()}
-        {activeTab === 'events' && renderEventsTab()}
-        {activeTab === 'health' && renderHealthTab()}
-      </ScrollView>
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+          <ScrollView
+            contentContainerStyle={{ paddingBottom: 100, paddingTop: contentPaddingTop }}
+            onScroll={onScroll}
+            onScrollEndDrag={onScrollEndDrag}
+            onMomentumScrollEnd={onMomentumScrollEnd}
+            scrollEventThrottle={scrollEventThrottle}
+          >
+            {activeTab === 'pets' && renderPetsTab()}
+            {activeTab === 'events' && renderEventsTab()}
+            {activeTab === 'health' && renderHealthTab()}
+          </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       {/* Add Pet Modal */}
       <Modal visible={showAddPetModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowAddPetModal(false)}>

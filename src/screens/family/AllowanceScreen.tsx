@@ -13,6 +13,7 @@ import { Card } from '../../components/common/Card';
 import { ProgressBar } from '../../components/common/ProgressBar';
 import { useAllowanceStore, AllowanceTransactionType } from '../../store/useAllowanceStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 
 const TX_CONFIG: Record<AllowanceTransactionType, { icon: string; color: string; label: string }> = {
   weekly: { icon: 'calendar', color: '#2980B9', label: 'Weekly' },
@@ -78,43 +79,65 @@ export function AllowanceScreen({ navigation }: any) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
 
+  const screenHeader = (
+    <LinearGradient colors={['#1A5276', '#2980B9']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
+      <View style={styles.headerRow}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.headerTitle}>Allowance Manager</Text>
+          <Text style={styles.headerSub}>${totalWeekly.toFixed(2)}/week budget</Text>
+        </View>
+        <Pressable onPress={handlePayAll} style={styles.payBtn}>
+          <Ionicons name="cash" size={16} color="#fff" />
+          <Text style={styles.payBtnText}>Pay All</Text>
+        </Pressable>
+      </View>
+
+      <View style={styles.heroCard}>
+        <View style={styles.heroItem}>
+          <Text style={styles.heroVal}>${totalBalance.toFixed(2)}</Text>
+          <Text style={styles.heroLabel}>Total Balance</Text>
+        </View>
+        <View style={styles.heroDivider} />
+        <View style={styles.heroItem}>
+          <Text style={styles.heroVal}>{configs.length}</Text>
+          <Text style={styles.heroLabel}>Recipients</Text>
+        </View>
+        <View style={styles.heroDivider} />
+        <View style={styles.heroItem}>
+          <Text style={styles.heroVal}>${totalWeekly.toFixed(0)}</Text>
+          <Text style={styles.heroLabel}>Per Week</Text>
+        </View>
+      </View>
+    </LinearGradient>
+  );
+
+  const screenCompact = (
+    <LinearGradient colors={['#1A5276', '#2980B9']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </Pressable>
+      <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>Allowance Manager</Text>
+      <Text style={{ fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.8)' }}>${totalBalance.toFixed(0)}</Text>
+    </LinearGradient>
+  );
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#1A5276', '#2980B9']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
-        <View style={styles.headerRow}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.headerTitle}>Allowance Manager</Text>
-            <Text style={styles.headerSub}>${totalWeekly.toFixed(2)}/week budget</Text>
-          </View>
-          <Pressable onPress={handlePayAll} style={styles.payBtn}>
-            <Ionicons name="cash" size={16} color="#fff" />
-            <Text style={styles.payBtnText}>Pay All</Text>
-          </Pressable>
-        </View>
 
-        <View style={styles.heroCard}>
-          <View style={styles.heroItem}>
-            <Text style={styles.heroVal}>${totalBalance.toFixed(2)}</Text>
-            <Text style={styles.heroLabel}>Total Balance</Text>
-          </View>
-          <View style={styles.heroDivider} />
-          <View style={styles.heroItem}>
-            <Text style={styles.heroVal}>{configs.length}</Text>
-            <Text style={styles.heroLabel}>Recipients</Text>
-          </View>
-          <View style={styles.heroDivider} />
-          <View style={styles.heroItem}>
-            <Text style={styles.heroVal}>${totalWeekly.toFixed(0)}</Text>
-            <Text style={styles.heroLabel}>Per Week</Text>
-          </View>
-        </View>
-      </LinearGradient>
-
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]} showsVerticalScrollIndicator={false}>
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+      <ScrollView
+        onScroll={onScroll}
+        onScrollEndDrag={onScrollEndDrag}
+        onMomentumScrollEnd={onMomentumScrollEnd}
+        scrollEventThrottle={scrollEventThrottle}
+        contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+        showsVerticalScrollIndicator={false}
+      >
         <Text style={styles.sectionTitle}>Family Members</Text>
         {configs.map((config) => {
           const member = getMember(config.memberId);
@@ -206,6 +229,8 @@ export function AllowanceScreen({ navigation }: any) {
           </View>
         )}
       </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       <Modal visible={showBonusModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowBonusModal(false)}>
         <View style={styles.modal}>

@@ -1,4 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { ChatInputBar } from '../../components/ai/ChatInputBar';
+import { useVoiceInput } from '../../hooks/useVoiceInput';
+import { AIResetMenu } from '../../components/ai/AIResetMenu';
 import {
   View,
   Text,
@@ -80,6 +83,7 @@ export function FamilySafetyAssistantScreen({ navigation }: any) {
   const [contextMode, setContextMode] = useState<ContextMode>('general');
   const [messages, setMessages] = useState<ChatMessage[]>([buildStarterMessage('general')]);
   const [input, setInput] = useState('');
+  const voice = useVoiceInput({ onResult: (text) => sendMessage(text) });
   const [isLoading, setIsLoading] = useState(false);
 
   const scrollToEnd = useCallback(() => {
@@ -231,8 +235,10 @@ export function FamilySafetyAssistantScreen({ navigation }: any) {
     );
   };
 
+  const tabBarHeight = Math.max(insets.bottom, 34) + 72;
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: tabBarHeight }]}>
       <StatusBar style="light" />
 
       {/* Header */}
@@ -248,15 +254,9 @@ export function FamilySafetyAssistantScreen({ navigation }: any) {
             <Text style={styles.headerTitle}>Family Safety AI</Text>
             <Text style={styles.headerSubtitle}>Powered by guardian insights</Text>
           </View>
-          <Pressable
-            onPress={() => {
-              setMessages([buildStarterMessage(contextMode)]);
-              setInput('');
-            }}
-            style={styles.clearBtn}
-          >
-            <Ionicons name="refresh-outline" size={20} color="rgba(255,255,255,0.6)" />
-          </Pressable>
+          <AIResetMenu actions={[
+            { label: 'Reset Conversation', description: 'Clear all messages and start fresh', icon: 'refresh-outline', danger: true, onPress: () => { setMessages([buildStarterMessage(contextMode)]); setInput(''); } },
+          ]} />
         </View>
 
         {/* Context Tabs */}
@@ -311,28 +311,20 @@ export function FamilySafetyAssistantScreen({ navigation }: any) {
           showsVerticalScrollIndicator={false}
         />
 
-        {/* Input row */}
-        <View style={[styles.inputRow, { paddingBottom: insets.bottom + 8 }]}>
-          <TextInput
-            style={styles.input}
-            value={input}
-            onChangeText={setInput}
-            placeholder="Ask about family safety..."
-            placeholderTextColor={colors.textMuted}
-            multiline
-            maxLength={500}
-            returnKeyType="send"
-            onSubmitEditing={() => sendMessage(input)}
-            editable={!isLoading}
-          />
-          <Pressable
-            style={[styles.sendBtn, (!input.trim() || isLoading) && styles.sendBtnDisabled]}
-            onPress={() => sendMessage(input)}
-            disabled={!input.trim() || isLoading}
-          >
-            <Ionicons name="send" size={18} color="#fff" />
-          </Pressable>
-        </View>
+        <ChatInputBar
+          value={input}
+          onChangeText={setInput}
+          onSend={() => sendMessage(input)}
+          onMicPressIn={voice.start}
+          onMicPressOut={voice.stop}
+          onMicCancel={voice.cancel}
+          isListening={voice.isListening}
+          partialTranscript={voice.partial}
+          placeholder="Ask about family safety..."
+          disabled={isLoading}
+          bottomPadding={8}
+          accentColor="#8E44AD"
+        />
       </KeyboardAvoidingView>
     </View>
   );

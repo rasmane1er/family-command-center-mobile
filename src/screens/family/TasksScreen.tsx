@@ -11,6 +11,9 @@ import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import type { Task, TaskPriority } from '../../types';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const FILTERS = ['All', 'Pending', 'Completed', 'Overdue'];
 const PRIORITIES: TaskPriority[] = ['urgent', 'high', 'medium', 'low'];
@@ -23,6 +26,7 @@ const priorityColors = {
 };
 
 export function TasksScreen({ navigation, route }: any) {
+  const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState('All');
   const [showAddModal, setShowAddModal] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
@@ -84,41 +88,66 @@ const filteredTasks = visibleTasks
     overdue: visibleTasks.filter((t) => t.status === 'overdue').length,
   };
 
+  const screenHeader = (
+        <PremiumHeader
+          title="Family Tasks"
+          onBack={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()}
+          rightAction={
+            <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
+              <Ionicons name="add" size={26} color="#fff" />
+            </Pressable>
+          }
+        >
+          <View style={styles.statsRow}>
+            {[
+              { label: 'Total', value: stats.total, color: 'rgba(255,255,255,0.8)' },
+              { label: 'Done', value: stats.completed, color: colors.success },
+              { label: 'Pending', value: stats.pending, color: colors.secondary },
+              { label: 'Overdue', value: stats.overdue, color: colors.danger },
+            ].map((s, i) => (
+              <View key={i} style={styles.statChip}>
+                <Text style={[styles.statValue, { color: s.color }]}>{s.value}</Text>
+                <Text style={styles.statLabel}>{s.label}</Text>
+              </View>
+            ))}
+          </View>
+
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
+            {FILTERS.map((f) => (
+              <Pressable key={f} onPress={() => setFilter(f)} style={[styles.filterChip, filter === f && styles.filterChipActive]}>
+                <Text style={[styles.filterText, filter === f && styles.filterTextActive]}>{f}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </PremiumHeader>
+  );
+  const screenCompact = (
+    <LinearGradient
+      colors={['#0F2952', '#1E4A8A']}
+      start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+      style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+    >
+      <Pressable onPress={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
+        <Ionicons name="arrow-back" size={22} color="#fff" />
+      </Pressable>
+      <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>Tasks</Text>
+      <View />
+    </LinearGradient>
+  );
+
   return (
     <View style={styles.container}>
-      <PremiumHeader
-        title="Family Tasks"
-        onBack={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()}
-        rightAction={
-          <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
-            <Ionicons name="add" size={26} color="#fff" />
-          </Pressable>
-        }
-      >
-        <View style={styles.statsRow}>
-          {[
-            { label: 'Total', value: stats.total, color: 'rgba(255,255,255,0.8)' },
-            { label: 'Done', value: stats.completed, color: colors.success },
-            { label: 'Pending', value: stats.pending, color: colors.secondary },
-            { label: 'Overdue', value: stats.overdue, color: colors.danger },
-          ].map((s, i) => (
-            <View key={i} style={styles.statChip}>
-              <Text style={[styles.statValue, { color: s.color }]}>{s.value}</Text>
-              <Text style={styles.statLabel}>{s.label}</Text>
-            </View>
-          ))}
-        </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
-          {FILTERS.map((f) => (
-            <Pressable key={f} onPress={() => setFilter(f)} style={[styles.filterChip, filter === f && styles.filterChipActive]}>
-              <Text style={[styles.filterText, filter === f && styles.filterTextActive]}>{f}</Text>
-            </Pressable>
-          ))}
-        </ScrollView>
-      </PremiumHeader>
 
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+          <ScrollView
+            contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+            onScroll={onScroll}
+            onScrollEndDrag={onScrollEndDrag}
+            onMomentumScrollEnd={onMomentumScrollEnd}
+            scrollEventThrottle={scrollEventThrottle}
+          >
         {filteredTasks.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="checkmark-done-circle-outline" size={64} color={colors.textMuted} />
@@ -179,7 +208,9 @@ const filteredTasks = visibleTasks
             );
           })
         )}
-      </ScrollView>
+          </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       <Modal visible={showAddModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowAddModal(false)}>
         <View style={styles.modal}>

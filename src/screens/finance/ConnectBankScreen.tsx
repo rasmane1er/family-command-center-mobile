@@ -15,6 +15,8 @@ import * as Haptics from 'expo-haptics';
 import { PlaidLinkButton } from '../../components/finance/PlaidLinkButton';
 import { getConnectedItems, disconnectItem, syncPlaid } from '../../services/plaidService';
 import { colors } from '../../theme/colors';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
+import { LinearGradient } from 'expo-linear-gradient';
 
 interface ConnectedItem {
   id: string;
@@ -79,10 +81,8 @@ export function ConnectBankScreen({ navigation }: any) {
     }
   };
 
-  return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Header */}
-      <View style={styles.header}>
+  const screenHeader = (
+    <View style={[styles.header, { paddingTop: insets.top + 6 }]}>
         <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color={colors.text} />
         </Pressable>
@@ -96,8 +96,28 @@ export function ConnectBankScreen({ navigation }: any) {
           </Pressable>
         )}
       </View>
+  );
+  const screenCompact = (
+    <LinearGradient
+      colors={['#0F2952', '#1E4A8A']}
+      start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+      style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+    >
+      <Pressable onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
+        <Ionicons name="arrow-back" size={22} color="#fff" />
+      </Pressable>
+      <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>Connect Bank</Text>
+      <View />
+    </LinearGradient>
+  );
 
-      <ScrollView contentContainerStyle={styles.content}>
+  return (
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+
+
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+          <ScrollView contentContainerStyle={[styles.content, { paddingTop: contentPaddingTop }]} onScroll={onScroll} onScrollEndDrag={onScrollEndDrag} onMomentumScrollEnd={onMomentumScrollEnd} scrollEventThrottle={scrollEventThrottle}>
         {/* Info card */}
         <View style={styles.infoCard}>
           <Ionicons name="shield-checkmark" size={24} color="#10B981" />
@@ -181,7 +201,9 @@ export function ConnectBankScreen({ navigation }: any) {
             </Text>
           </View>
         </View>
-      </ScrollView>
+          </ScrollView>
+        )}
+      </CollapsibleHeader>
     </View>
   );
 }

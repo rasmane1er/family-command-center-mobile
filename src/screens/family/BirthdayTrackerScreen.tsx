@@ -14,6 +14,7 @@ import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
 import { useBirthdayStore, Birthday, Relationship } from '../../store/useBirthdayStore';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 
 type Tab = 'upcoming' | 'all' | 'calendar';
 
@@ -470,66 +471,86 @@ export function BirthdayTrackerScreen({ navigation }: any) {
     );
   };
 
+  const screenHeader = (
+    <LinearGradient
+      colors={['#880E4F', '#AD1457', '#E91E63']}
+      style={[styles.header, { paddingTop: insets.top + 6 }]}
+    >
+      <View style={styles.headerRow}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.headerTitle}>Birthday Tracker 🎂</Text>
+          <Text style={styles.headerSub}>Never forget a birthday</Text>
+        </View>
+        <Pressable onPress={() => setShowAdd(true)} style={styles.addBtn}>
+          <Ionicons name="add" size={22} color="#fff" />
+        </Pressable>
+      </View>
+
+      <View style={styles.statsRow}>
+        {[
+          { label: 'Tracked', value: birthdays.length, icon: 'calendar' },
+          { label: 'This Month', value: thisMonthBirthdays.length, icon: 'gift' },
+          { label: 'Today', value: todayBirthdays.length, icon: 'cake' },
+        ].map((s, i) => (
+          <View key={i} style={[styles.statItem, i < 2 && styles.statBorder]}>
+            <Text style={styles.statVal}>{s.value}</Text>
+            <Text style={styles.statLabel}>{s.label}</Text>
+          </View>
+        ))}
+      </View>
+    </LinearGradient>
+  );
+
+  const screenCompact = (
+    <LinearGradient colors={['#880E4F', '#AD1457', '#E91E63']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </Pressable>
+      <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>Birthday Tracker</Text>
+      <Text style={{ fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.8)' }}>{birthdays.length} tracked</Text>
+    </LinearGradient>
+  );
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient
-        colors={['#880E4F', '#AD1457', '#E91E63']}
-        style={[styles.header, { paddingTop: insets.top + 6 }]}
-      >
-        <View style={styles.headerRow}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.headerTitle}>Birthday Tracker 🎂</Text>
-            <Text style={styles.headerSub}>Never forget a birthday</Text>
-          </View>
-          <Pressable onPress={() => setShowAdd(true)} style={styles.addBtn}>
-            <Ionicons name="add" size={22} color="#fff" />
-          </Pressable>
-        </View>
 
-        <View style={styles.statsRow}>
-          {[
-            { label: 'Tracked', value: birthdays.length, icon: 'calendar' },
-            { label: 'This Month', value: thisMonthBirthdays.length, icon: 'gift' },
-            { label: 'Today', value: todayBirthdays.length, icon: 'cake' },
-          ].map((s, i) => (
-            <View key={i} style={[styles.statItem, i < 2 && styles.statBorder]}>
-              <Text style={styles.statVal}>{s.value}</Text>
-              <Text style={styles.statLabel}>{s.label}</Text>
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+          <>
+            {hasTodayBirthdays && (
+              <LinearGradient colors={['#FFD700', '#FFA000']} style={styles.celebrationBanner}>
+                <Text style={styles.celebrationText}>
+                  🎉 Today is {todayBirthdays.map((b) => b.name).join(' & ')}
+                  {todayBirthdays.length === 1 ? "'s" : "'"} Birthday! 🎂🎊
+                </Text>
+              </LinearGradient>
+            )}
+
+            <View style={styles.tabs}>
+              {(['upcoming', 'all', 'calendar'] as Tab[]).map((tab) => (
+                <Pressable
+                  key={tab}
+                  onPress={() => setActiveTab(tab)}
+                  style={[styles.tab, activeTab === tab && styles.tabActive]}
+                >
+                  <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
+                    {tab === 'upcoming' ? 'Upcoming' : tab === 'all' ? 'All' : 'Calendar'}
+                  </Text>
+                </Pressable>
+              ))}
             </View>
-          ))}
-        </View>
-      </LinearGradient>
-
-      {hasTodayBirthdays && (
-        <LinearGradient colors={['#FFD700', '#FFA000']} style={styles.celebrationBanner}>
-          <Text style={styles.celebrationText}>
-            🎉 Today is {todayBirthdays.map((b) => b.name).join(' & ')}
-            {todayBirthdays.length === 1 ? "'s" : "'"} Birthday! 🎂🎊
-          </Text>
-        </LinearGradient>
-      )}
-
-      <View style={styles.tabs}>
-        {(['upcoming', 'all', 'calendar'] as Tab[]).map((tab) => (
-          <Pressable
-            key={tab}
-            onPress={() => setActiveTab(tab)}
-            style={[styles.tab, activeTab === tab && styles.tabActive]}
-          >
-            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-              {tab === 'upcoming' ? 'Upcoming' : tab === 'all' ? 'All' : 'Calendar'}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
 
       {activeTab !== 'calendar' ? (
         <ScrollView
-          contentContainerStyle={[styles.content, { paddingBottom: 100 }]}
+          onScroll={onScroll}
+          onScrollEndDrag={onScrollEndDrag}
+          onMomentumScrollEnd={onMomentumScrollEnd}
+          scrollEventThrottle={scrollEventThrottle}
+          contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
           showsVerticalScrollIndicator={false}
         >
           {birthdays.length === 0 && (
@@ -576,7 +597,13 @@ export function BirthdayTrackerScreen({ navigation }: any) {
           ))}
         </ScrollView>
       ) : (
-        <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
+        <ScrollView
+          onScroll={onScroll}
+          onScrollEndDrag={onScrollEndDrag}
+          onMomentumScrollEnd={onMomentumScrollEnd}
+          scrollEventThrottle={scrollEventThrottle}
+          contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+        >
           {birthdays.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={{ fontSize: 60 }}>🎂</Text>
@@ -593,6 +620,9 @@ export function BirthdayTrackerScreen({ navigation }: any) {
           )}
         </ScrollView>
       )}
+          </>
+        )}
+      </CollapsibleHeader>
 
       <AddBirthdayModal
         visible={showAdd}

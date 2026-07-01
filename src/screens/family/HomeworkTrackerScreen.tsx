@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
@@ -263,75 +264,95 @@ const visibleChildren =
 
   const isEmpty = assignments.length === 0;
 
+  const screenHeader = (
+    <LinearGradient
+      colors={['#1A237E', '#283593', '#3949AB']}
+      style={[styles.header, { paddingTop: insets.top + 6 }]}
+    >
+      <View style={styles.headerRow}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <Text style={styles.headerTitle}>Homework Tracker</Text>
+        <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
+          <Ionicons name="add" size={22} color="#fff" />
+        </Pressable>
+      </View>
+
+      <View style={styles.statsRow}>
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>{totalAssignments}</Text>
+          <Text style={styles.statLabel}>Total</Text>
+        </View>
+        <View style={[styles.statItem, styles.statBorder]}>
+          <Text style={[styles.statValue, overdueCount > 0 ? styles.overdueValue : {}]}>
+            {overdueCount}
+          </Text>
+          <Text style={styles.statLabel}>Overdue</Text>
+        </View>
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>{avgGrade > 0 ? `${avgGrade}%` : '--'}</Text>
+          <Text style={styles.statLabel}>Avg Grade</Text>
+        </View>
+      </View>
+
+      {role !== 'child' && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.memberScroll} contentContainerStyle={styles.memberScrollContent}>
+          {visibleChildren.map((m) => (
+            <Pressable
+              key={m.id}
+              onPress={() => { setSelectedMemberId(m.id); Haptics.selectionAsync(); }}
+              style={[styles.memberTab, selectedMemberId === m.id && { borderBottomColor: '#3949AB', borderBottomWidth: 2.5 }]}
+            >
+              <Avatar name={m.name} color={m.avatarColor} size={30} />
+              <Text style={[styles.memberTabText, selectedMemberId === m.id && styles.memberTabTextActive]}>
+                {m.name.split(' ')[0]}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      )}
+    
+    <View style={styles.tabs}>
+            {(['due_soon', 'all', 'grades'] as const).map((t) => (
+              <Pressable key={t} onPress={() => setActiveTab(t)} style={[styles.tab, activeTab === t && styles.tabActive]}>
+                <Text style={[styles.tabText, activeTab === t && styles.tabTextActive]}>
+                  {t === 'due_soon' ? 'Due Soon' : t === 'all' ? 'All' : 'Grades'}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+</LinearGradient>
+  );
+
+  const screenCompact = (
+    <LinearGradient colors={['#1A237E', '#283593']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </Pressable>
+      <Text style={styles.headerTitle}>Homework Tracker</Text>
+      <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
+        <Ionicons name="add" size={22} color="#fff" />
+      </Pressable>
+    </LinearGradient>
+  );
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient
-        colors={['#1A237E', '#283593', '#3949AB']}
-        style={[styles.header, { paddingTop: insets.top + 6 }]}
-      >
-        <View style={styles.headerRow}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <Text style={styles.headerTitle}>Homework Tracker</Text>
-          <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
-            <Ionicons name="add" size={22} color="#fff" />
-          </Pressable>
-        </View>
-
-        <View style={styles.statsRow}>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{totalAssignments}</Text>
-            <Text style={styles.statLabel}>Total</Text>
-          </View>
-          <View style={[styles.statItem, styles.statBorder]}>
-            <Text style={[styles.statValue, overdueCount > 0 ? styles.overdueValue : {}]}>
-              {overdueCount}
-            </Text>
-            <Text style={styles.statLabel}>Overdue</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{avgGrade > 0 ? `${avgGrade}%` : '--'}</Text>
-            <Text style={styles.statLabel}>Avg Grade</Text>
-          </View>
-        </View>
-      </LinearGradient>
-
-      {/* Member tabs */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.memberScroll}
-        contentContainerStyle={styles.memberScrollContent}
-      >
-        {role !== 'child' &&
-         visibleChildren.map((m) => (
-          <Pressable
-            key={m.id}
-            onPress={() => { setSelectedMemberId(m.id); Haptics.selectionAsync(); }}
-            style={[styles.memberTab, selectedMemberId === m.id && { borderBottomColor: '#3949AB', borderBottomWidth: 2.5 }]}
-          >
-            <Avatar name={m.name} color={m.avatarColor} size={30} />
-            <Text style={[styles.memberTabText, selectedMemberId === m.id && styles.memberTabTextActive]}>
-              {m.name.split(' ')[0]}
-            </Text>
-          </Pressable>
-        ))}
-      </ScrollView>
 
       {/* Tabs */}
-      <View style={styles.tabs}>
-        {(['due_soon', 'all', 'grades'] as const).map((t) => (
-          <Pressable key={t} onPress={() => setActiveTab(t)} style={[styles.tab, activeTab === t && styles.tabActive]}>
-            <Text style={[styles.tabText, activeTab === t && styles.tabTextActive]}>
-              {t === 'due_soon' ? 'Due Soon' : t === 'all' ? 'All' : 'Grades'}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      
 
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+      <ScrollView
+        onScroll={onScroll}
+        onScrollEndDrag={onScrollEndDrag}
+        onMomentumScrollEnd={onMomentumScrollEnd}
+        scrollEventThrottle={scrollEventThrottle}
+        contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+      >
         {isEmpty && (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyEmoji}>📚</Text>
@@ -409,6 +430,8 @@ const visibleChildren =
           </>
         )}
       </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       {/* Add Assignment Modal */}
       <Modal
@@ -541,7 +564,7 @@ const styles = StyleSheet.create({
   statValue: { fontSize: 20, fontWeight: '800', color: '#fff' },
   overdueValue: { color: '#FF6B6B' },
   statLabel: { fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
-  memberScroll: { backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border },
+  memberScroll: { marginTop: 8 },
   memberScrollContent: { paddingHorizontal: 12, paddingVertical: 8, gap: 8 },
   memberTab: { alignItems: 'center', paddingHorizontal: 12, paddingVertical: 6, gap: 4, borderBottomWidth: 2.5, borderBottomColor: 'transparent' },
   memberTabText: { fontSize: 11, fontWeight: '600', color: colors.textSecondary },

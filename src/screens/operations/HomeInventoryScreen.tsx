@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
 import { Card } from '../../components/common/Card';
@@ -293,7 +294,7 @@ export function HomeInventoryScreen({ navigation }: any) {
   };
 
   const renderByRoomTab = () => (
-    <ScrollView contentContainerStyle={styles.tabContent}>
+    <View style={styles.tabContent}>
       {items.length === 0 ? (
         <View style={styles.emptyState}>
           <Ionicons name="home-outline" size={56} color={colors.textMuted} />
@@ -332,7 +333,7 @@ export function HomeInventoryScreen({ navigation }: any) {
           );
         })
       )}
-    </ScrollView>
+    </View>
   );
 
   const renderAllItemsTab = () => {
@@ -349,7 +350,7 @@ export function HomeInventoryScreen({ navigation }: any) {
     }
     const sorted = [...filtered].sort((a, b) => (b.currentValue ?? 0) - (a.currentValue ?? 0));
     return (
-      <ScrollView contentContainerStyle={styles.tabContent}>
+      <View style={styles.tabContent}>
         <TextInput
           style={styles.searchInput}
           value={searchQuery}
@@ -380,7 +381,7 @@ export function HomeInventoryScreen({ navigation }: any) {
         {sorted.length === 0 && (
           <Text style={styles.noResults}>No items match your search.</Text>
         )}
-      </ScrollView>
+      </View>
     );
   };
 
@@ -394,7 +395,7 @@ export function HomeInventoryScreen({ navigation }: any) {
     const maxCatValue = Math.max(...sortedCats.map((c) => c[1]), 1);
 
     return (
-      <ScrollView contentContainerStyle={styles.tabContent}>
+      <View style={styles.tabContent}>
         <Card style={styles.totalValueCard} variant="elevated">
           <Text style={styles.totalValueLabel}>Total Insured Value</Text>
           <Text style={styles.totalValueAmount}>${totalValue.toLocaleString()}</Text>
@@ -423,103 +424,134 @@ export function HomeInventoryScreen({ navigation }: any) {
             {warrantyExpiring.map(renderItemCard)}
           </>
         )}
-      </ScrollView>
+      </View>
     );
   };
+
+  const screenHeader = (
+    <LinearGradient
+      colors={['#212121', '#37474F', '#455A64']}
+      style={{ paddingTop: insets.top + 6, paddingBottom: 8, paddingHorizontal: 20 }}
+    >
+      <View style={styles.headerTop}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <Text style={styles.headerTitle}>Home Inventory</Text>
+        <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
+          <Ionicons name="add" size={26} color="#fff" />
+        </Pressable>
+      </View>
+
+      <View style={styles.headerStats}>
+        <View style={styles.statBlock}>
+          <Text style={styles.statValue}>{items.length}</Text>
+          <Text style={styles.statLabel}>Total Items</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statBlock}>
+          <Text style={styles.statValue}>${(totalValue / 1000).toFixed(1)}K</Text>
+          <Text style={styles.statLabel}>Total Value</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statBlock}>
+          <Text style={styles.statValue}>{roomsWithItems.length}</Text>
+          <Text style={styles.statLabel}>Rooms</Text>
+        </View>
+      </View>
+    
+    <View style={styles.tabBar}>
+            {(['By Room', 'All Items', 'Value Report'] as const).map((tab) => (
+              <Pressable
+                key={tab}
+                onPress={() => setActiveTab(tab)}
+                style={{ ...styles.tabItem, ...(activeTab === tab && styles.tabItemActive) }}
+              >
+                <Text style={{ ...styles.tabText, ...(activeTab === tab && styles.tabTextActive) }}>
+                  {tab}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+</LinearGradient>
+  );
+
+  const screenCompact = (
+    <LinearGradient
+      colors={['#212121', '#37474F']}
+      style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center' }}
+    >
+      <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </Pressable>
+      <Text style={[styles.headerTitle, { flex: 1, textAlign: 'center' }]}>Home Inventory</Text>
+      <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>{items.length} items</Text>
+    </LinearGradient>
+  );
 
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient
-        colors={['#212121', '#37474F', '#455A64']}
-        style={{ paddingTop: insets.top + 6, paddingBottom: 8, paddingHorizontal: 20 }}
-      >
-        <View style={styles.headerTop}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </Pressable>
-          <Text style={styles.headerTitle}>Home Inventory</Text>
-          <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
-            <Ionicons name="add" size={26} color="#fff" />
-          </Pressable>
-        </View>
-
-        <View style={styles.headerStats}>
-          <View style={styles.statBlock}>
-            <Text style={styles.statValue}>{items.length}</Text>
-            <Text style={styles.statLabel}>Total Items</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statBlock}>
-            <Text style={styles.statValue}>${(totalValue / 1000).toFixed(1)}K</Text>
-            <Text style={styles.statLabel}>Total Value</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statBlock}>
-            <Text style={styles.statValue}>{roomsWithItems.length}</Text>
-            <Text style={styles.statLabel}>Rooms</Text>
-          </View>
-        </View>
-      </LinearGradient>
 
       {/* Tabs */}
-      <View style={styles.tabBar}>
-        {(['By Room', 'All Items', 'Value Report'] as const).map((tab) => (
-          <Pressable
-            key={tab}
-            onPress={() => setActiveTab(tab)}
-            style={{ ...styles.tabItem, ...(activeTab === tab && styles.tabItemActive) }}
+      
+
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+          <ScrollView
+            contentContainerStyle={{ paddingBottom: 100, paddingTop: contentPaddingTop }}
+            onScroll={onScroll}
+            onScrollEndDrag={onScrollEndDrag}
+            onMomentumScrollEnd={onMomentumScrollEnd}
+            scrollEventThrottle={scrollEventThrottle}
           >
-            <Text style={{ ...styles.tabText, ...(activeTab === tab && styles.tabTextActive) }}>
-              {tab}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      {retailPurchases.filter((p) => !dismissedPurchases.has(p.merchantName + p.date)).length > 0 && (
-        <View style={styles.retailBanner}>
-          <Pressable onPress={() => setRetailBannerExpanded((v) => !v)} style={styles.retailBannerHeader}>
-            <Ionicons name="bag-handle-outline" size={16} color="#37474F" />
-            <Text style={styles.retailBannerTitle}>Recent purchases to add?</Text>
-            <Ionicons name={retailBannerExpanded ? 'chevron-up' : 'chevron-down'} size={16} color="#37474F" />
-          </Pressable>
-          {retailBannerExpanded && retailPurchases
-            .filter((p) => !dismissedPurchases.has(p.merchantName + p.date))
-            .slice(0, 5)
-            .map((purchase, i) => (
-              <View key={i} style={styles.retailPurchaseRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.retailMerchant}>{purchase.merchantName}</Text>
-                  <Text style={styles.retailDetail}>${purchase.amount} · {purchase.date}</Text>
-                </View>
-                <Pressable
-                  onPress={() => {
-                    setNewName(purchase.merchantName);
-                    setNewPurchaseDate(purchase.date);
-                    setNewPurchasePrice(purchase.amount.toString());
-                    setNewCurrentValue(purchase.amount.toString());
-                    setShowAddModal(true);
-                    setDismissedPurchases((prev) => new Set([...prev, purchase.merchantName + purchase.date]));
-                  }}
-                  style={styles.retailAddBtn}
-                >
-                  <Ionicons name="add" size={14} color="#fff" />
-                  <Text style={styles.retailAddBtnText}>Add</Text>
+            {retailPurchases.filter((p) => !dismissedPurchases.has(p.merchantName + p.date)).length > 0 && (
+              <View style={styles.retailBanner}>
+                <Pressable onPress={() => setRetailBannerExpanded((v) => !v)} style={styles.retailBannerHeader}>
+                  <Ionicons name="bag-handle-outline" size={16} color="#37474F" />
+                  <Text style={styles.retailBannerTitle}>Recent purchases to add?</Text>
+                  <Ionicons name={retailBannerExpanded ? 'chevron-up' : 'chevron-down'} size={16} color="#37474F" />
                 </Pressable>
-                <Pressable onPress={() => setDismissedPurchases((prev) => new Set([...prev, purchase.merchantName + purchase.date]))} style={styles.retailDismissBtn}>
-                  <Ionicons name="close" size={14} color={colors.textMuted} />
-                </Pressable>
+                {retailBannerExpanded && retailPurchases
+                  .filter((p) => !dismissedPurchases.has(p.merchantName + p.date))
+                  .slice(0, 5)
+                  .map((purchase, i) => (
+                    <View key={i} style={styles.retailPurchaseRow}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.retailMerchant}>{purchase.merchantName}</Text>
+                        <Text style={styles.retailDetail}>${purchase.amount} · {purchase.date}</Text>
+                      </View>
+                      <Pressable
+                        onPress={() => {
+                          setNewName(purchase.merchantName);
+                          setNewPurchaseDate(purchase.date);
+                          setNewPurchasePrice(purchase.amount.toString());
+                          setNewCurrentValue(purchase.amount.toString());
+                          setShowAddModal(true);
+                          setDismissedPurchases((prev) => new Set([...prev, purchase.merchantName + purchase.date]));
+                        }}
+                        style={styles.retailAddBtn}
+                      >
+                        <Ionicons name="add" size={14} color="#fff" />
+                        <Text style={styles.retailAddBtnText}>Add</Text>
+                      </Pressable>
+                      <Pressable onPress={() => setDismissedPurchases((prev) => new Set([...prev, purchase.merchantName + purchase.date]))} style={styles.retailDismissBtn}>
+                        <Ionicons name="close" size={14} color={colors.textMuted} />
+                      </Pressable>
+                    </View>
+                  ))}
               </View>
-            ))}
-        </View>
-      )}
+            )}
 
-      {activeTab === 'By Room' && renderByRoomTab()}
-      {activeTab === 'All Items' && renderAllItemsTab()}
-      {activeTab === 'Value Report' && renderValueReportTab()}
+            {activeTab === 'By Room' && renderByRoomTab()}
+            {activeTab === 'All Items' && renderAllItemsTab()}
+            {activeTab === 'Value Report' && renderValueReportTab()}
+          </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       {/* Add Item Modal */}
+
       <Modal visible={showAddModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <ScrollView style={styles.modalSheet} contentContainerStyle={{ paddingBottom: 40 }}>
