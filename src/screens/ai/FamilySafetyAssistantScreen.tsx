@@ -23,8 +23,8 @@ import { useFamilyStore } from '../../store/useFamilyStore';
 import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
 import type { ChatMessage } from '../../types';
-import { API_BASE_URL } from '../../config/api';
 import { useTabBarInset } from '../../hooks/useTabBarInset';
+import { chatWithSafetyAssistant } from '../../services/aiService';
 
 const PURPLE = '#8E44AD';
 const PURPLE_LIGHT = '#F3E8FA';
@@ -156,26 +156,27 @@ export function FamilySafetyAssistantScreen({ navigation }: any) {
     setIsLoading(true);
 
     const contextString = buildContextString();
+    // Backend expects Gemini's 'user' | 'model' roles, not this screen's
+    // local 'user' | 'assistant' ChatMessage convention — sending
+    // 'assistant' directly (as the previous raw-fetch version did) failed
+    // the backend's zod validation regardless of auth.
     const history = messages
       .filter((m) => !m.isLoading)
       .slice(-5)
-      .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
+      .map((m) => ({ role: (m.role === 'assistant' ? 'model' : 'user') as 'user' | 'model', content: m.content }));
 
     try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL ?? API_BASE_URL}/ai/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: trimmed, context: contextString, history, mode: contextMode }),
+      const result = await chatWithSafetyAssistant({
+        message: trimmed,
+        context: contextString,
+        history,
+        mode: contextMode,
       });
 
-      let reply = '';
-      let suggestions: string[] = [];
+      let reply = result.reply;
+      let suggestions = result.suggestions;
 
-      if (response.ok) {
-        const data = await response.json();
-        reply = data.reply ?? '';
-        suggestions = data.suggestions ?? [];
-      } else {
+      if (result.error) {
         reply = getFallbackResponse(trimmed, contextMode);
         suggestions = getFallbackSuggestions(contextMode);
       }

@@ -3,6 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { mmkvStorage } from '../storage/mmkvStorage';
 import type { ChatMessage, AIInsight } from '../types';
 import { API_BASE_URL } from '../config/api';
+import { secureStorage } from '../storage/secureStorage';
 
 interface AIState {
   messages: ChatMessage[];
@@ -56,9 +57,18 @@ export const useAIStore = create<AIState>()(
         content: m.content,
       }));
 
+      // /ai/chat requires auth — this call was missing the Authorization
+      // header entirely, so every request 401'd and silently fell through
+      // to the canned getDemoResponse() below, which is why this looked
+      // like it was "working" (plausible fake answers) while actually never
+      // reaching the real model.
+      const token = await secureStorage.getToken('access_token');
       const response = await fetch(`${API_BASE_URL}/ai/chat`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ message: content, context: familyContext, history }),
       });
 

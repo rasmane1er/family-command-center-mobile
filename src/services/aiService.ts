@@ -1,4 +1,5 @@
 import { API_BASE_URL } from '../config/api';
+import { secureStorage } from '../storage/secureStorage';
 
 const API_BASE = API_BASE_URL;
 
@@ -18,11 +19,19 @@ async function post<T>(
   body: Record<string, unknown>,
   token?: string,
 ): Promise<T> {
+  // Every /ai/* route requires auth — falling back to a stored token here
+  // (rather than requiring every call site to remember to pass one) is what
+  // actually matters: every AI screen was omitting this `token` param, so
+  // every request 401'd and got swallowed into a generic "unavailable"
+  // message. Centralizing it here means that class of bug can't recur
+  // per-screen — new callers get it for free.
+  const authToken = token ?? (await secureStorage.getToken('access_token'));
+
   const res = await fetch(`${API_BASE}${path}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
     },
     body: JSON.stringify(body),
   });
