@@ -71,7 +71,7 @@ const FAQ_CATEGORIES = [
     items: [
       {
         q: 'How many AI queries do I get?',
-        a: 'Free plan: 10 queries/month. Premium: 50/month. Family Pro: unlimited. Queries reset on the 1st of each month.',
+        a: 'Free plan: 10 queries/month. Premium: 100/month. Family Pro: unlimited. Queries reset on the 1st of each month.',
       },
       {
         q: 'What can the AI assistant do?',
@@ -476,15 +476,19 @@ export default function HelpSupportScreen({ navigation }: { navigation: any }) {
 
   // ── Quick contact handlers ────────────────────────────────────────────────
   function openEmail() {
-    Linking.openURL('mailto:support@familycommandcenter.app?subject=Support%20Request');
+    Linking.openURL('mailto:support@familycommandcenter.app?subject=Support%20Request').catch(() =>
+      Alert.alert('Error', 'Unable to open your email app.'),
+    );
   }
 
   function openLiveChat() {
-    Alert.alert('Coming Soon', 'Live chat launching soon! Email us for now.', [{ text: 'OK' }]);
+    navigation.navigate('LiveChat');
   }
 
   function openCommunity() {
-    Linking.openURL('https://community.familycommandcenter.app');
+    Linking.openURL('https://community.familycommandcenter.app').catch(() =>
+      Alert.alert('Error', 'Unable to open the community link.'),
+    );
   }
 
   const screenHeader = (

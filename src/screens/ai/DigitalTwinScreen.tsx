@@ -17,6 +17,7 @@ import { useOperationsStore } from '../../store/useOperationsStore';
 import { useGuardianStore } from '../../store/useGuardianStore';
 import { chatWithDigitalTwin, AIMessage } from '../../services/aiService';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
+import { useTabBarInset } from '../../hooks/useTabBarInset';
 
 const { width } = Dimensions.get('window');
 
@@ -188,6 +189,7 @@ function getLabelPosition(i: number, total: number, centerX: number, centerY: nu
 
 export function DigitalTwinScreen({ navigation }: { navigation: { goBack: () => void; navigate: (s: string) => void } }) {
   const insets = useSafeAreaInsets();
+  const tabBarInset = useTabBarInset();
   const [tab, setTab] = useState<'twin' | 'predict' | 'whatif' | 'chat'>('twin');
   const [chatInput, setChatInput] = useState('');
   const voice = useVoiceInput({ onResult: (text) => handleChatSend(text) });
@@ -310,7 +312,7 @@ export function DigitalTwinScreen({ navigation }: { navigation: { goBack: () => 
                 {
                   paddingTop: contentPaddingTop,
                   paddingBottom:
-                    tab === 'chat' ? Math.max(insets.bottom, 16) + 170 : 100,
+                    tab === 'chat' ? tabBarInset + 98 : 100,
                 },
               ]}
               onScroll={onScroll}
@@ -554,7 +556,7 @@ export function DigitalTwinScreen({ navigation }: { navigation: { goBack: () => 
             style={[
               styles.chatInputDock,
               {
-                paddingBottom: Math.max(insets.bottom, 12) + 72,
+                paddingBottom: tabBarInset,
               },
             ]}
           >

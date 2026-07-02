@@ -1,8 +1,11 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Text, Pressable, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as WebBrowser from 'expo-web-browser';
-import * as Linking from 'expo-linking';
+import {
+  createPlaidLinkSession,
+  type LinkSuccess,
+  type LinkExit,
+} from 'react-native-plaid-link-sdk';
 import { createLinkToken, exchangeToken } from '../../services/plaidService';
 import { colors } from '../../theme/colors';
 import * as Haptics from 'expo-haptics';
@@ -13,78 +16,62 @@ interface Props {
   style?: object;
 }
 
-const PLAID_LINK_URL = 'https://cdn.plaid.com/link/v2/stable/link.html';
-
-// Set in app.json "scheme". For production, also set PLAID_REDIRECT_URI on the server
-// pointing to https://your-api.com/plaid/oauth-redirect
+// Set in app.json "scheme". For production, also set PLAID_REDIRECT_URI on the
+// server pointing to https://your-api.com/plaid/oauth-redirect — the native
+// SDK handles the OAuth bank-login redirect back into the app automatically
+// once the link token was created with a matching redirect_uri.
 const APP_SCHEME = 'familycommandcenter';
 const OAUTH_DEEP_LINK = `${APP_SCHEME}://plaid-oauth`;
 
 export function PlaidLinkButton({ onSuccess, onExit, style }: Props) {
   const [loading, setLoading] = useState(false);
 
-  // Handle Plaid returning via deep link after OAuth bank login (production)
-  useEffect(() => {
-    const subscription = Linking.addEventListener('url', async ({ url }) => {
-      if (!url.startsWith(OAUTH_DEEP_LINK)) return;
-      setLoading(true);
+  const handleSuccess = useCallback(
+    async (success: LinkSuccess) => {
       try {
-        const parsed = Linking.parse(url);
-        const publicToken = parsed.queryParams?.['public_token'] as string | undefined;
-        const institutionId = parsed.queryParams?.['institution_id'] as string | undefined;
-        const institutionName = parsed.queryParams?.['institution_name'] as string | undefined;
-
-        if (!publicToken) return; // oauth_state_id redirect (intermediate) — ignore
-
-        const result = await exchangeToken(publicToken, institutionId, institutionName);
+        const institutionId = success.metadata.institution?.id;
+        const institutionName = success.metadata.institution?.name;
+        const exchanged = await exchangeToken(success.publicToken, institutionId, institutionName);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        Alert.alert('Connected!', `${result.institutionName} is now linked. Syncing transactions…`);
-        onSuccess?.(result.institutionName);
+        Alert.alert('Connected!', `${exchanged.institutionName} is now linked. Syncing transactions…`);
+        onSuccess?.(exchanged.institutionName);
       } catch (err: any) {
         Alert.alert('Error', err.message || 'Failed to finalize bank connection.');
       } finally {
         setLoading(false);
       }
-    });
-    return () => subscription.remove();
-  }, [onSuccess]);
+    },
+    [onSuccess],
+  );
+
+  const handleExit = useCallback(
+    (exit: LinkExit) => {
+      setLoading(false);
+      if (exit.error) {
+        Alert.alert('Connection Failed', exit.error.displayMessage || exit.error.errorMessage);
+      }
+      onExit?.();
+    },
+    [onExit],
+  );
 
   const handlePress = useCallback(async () => {
     if (loading) return;
     setLoading(true);
     try {
-      // Pass the deep-link as redirect so the backend includes it in the link_token.
-      // In sandbox this is a no-op (ignored by Plaid for non-OAuth institutions).
-      // In production PLAID_REDIRECT_URI on the server overrides this with the HTTPS bridge.
       const token = await createLinkToken(OAUTH_DEEP_LINK);
-      const url = `${PLAID_LINK_URL}?token=${token}`;
-
-      const result = await WebBrowser.openAuthSessionAsync(url, OAUTH_DEEP_LINK);
-
-      if (result.type === 'success') {
-        // Non-OAuth flow: public_token comes back in the redirect URL immediately
-        const parsed = Linking.parse(result.url);
-        const publicToken = parsed.queryParams?.['public_token'] as string | undefined;
-        const institutionId = parsed.queryParams?.['institution_id'] as string | undefined;
-        const institutionName = parsed.queryParams?.['institution_name'] as string | undefined;
-
-        if (publicToken) {
-          const exchanged = await exchangeToken(publicToken, institutionId, institutionName);
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          Alert.alert('Connected!', `${exchanged.institutionName} is now linked. Syncing transactions…`);
-          onSuccess?.(exchanged.institutionName);
-          return;
-        }
-        // Otherwise it's the OAuth intermediate redirect — deep-link listener above takes over
-      } else {
-        onExit?.();
-      }
+      const session = await createPlaidLinkSession({
+        token,
+        onSuccess: handleSuccess,
+        onExit: handleExit,
+        onEvent: () => {},
+      });
+      await session.open();
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to open bank connection.');
-    } finally {
       setLoading(false);
+      Alert.alert('Error', err.message || 'Failed to open bank connection.');
     }
-  }, [loading, onSuccess, onExit]);
+  }, [loading, handleSuccess, handleExit]);
 
   return (
     <Pressable onPress={handlePress} disabled={loading} style={[styles.btn, style]}>

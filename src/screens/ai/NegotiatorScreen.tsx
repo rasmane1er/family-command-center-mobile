@@ -18,6 +18,7 @@ import { useGuardianStore } from '../../store/useGuardianStore';
 import { chatWithNegotiator, AIMessage } from '../../services/aiService';
 import { useFamilyContextString } from '../../utils/buildFamilyContext';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
+import { useTabBarInset } from '../../hooks/useTabBarInset';
 
 const NEGOTIATION_SCENARIOS = [
   { id: 's1', title: 'Bill Negotiation Script', desc: 'Lower your cable, insurance or phone bill', icon: 'call', color: '#2980B9', savings: '$240/yr avg', category: 'bills' },
@@ -138,6 +139,7 @@ function useChiefOfStaffBriefings(): BriefingItem[] {
 
 export function NegotiatorScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
+  const tabBarInset = useTabBarInset();
   const [activeTab, setActiveTab] = useState<'chief' | 'negotiate' | 'conflicts' | 'chat'>('chief');
   const [selectedScenario, setSelectedScenario] = useState<string | null>(null);
   const [chatInput, setChatInput] = useState('');
@@ -255,7 +257,7 @@ export function NegotiatorScreen({ navigation }: any) {
                 styles.content,
                 {
                   paddingTop: contentPaddingTop,
-                  paddingBottom: activeTab === 'chat' ? Math.max(insets.bottom, 16) + 168 : 100,
+                  paddingBottom: activeTab === 'chat' ? tabBarInset + 96 : 100,
                 },
               ]}
               onScroll={onScroll}
@@ -410,7 +412,7 @@ export function NegotiatorScreen({ navigation }: any) {
                 style={[
                   styles.chatInputDock,
                   {
-                    paddingBottom: Math.max(insets.bottom, 12) + 72,
+                    paddingBottom: tabBarInset,
                   },
                 ]}
               >

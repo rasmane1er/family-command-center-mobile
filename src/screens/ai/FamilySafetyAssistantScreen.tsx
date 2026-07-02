@@ -24,6 +24,7 @@ import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
 import type { ChatMessage } from '../../types';
 import { API_BASE_URL } from '../../config/api';
+import { useTabBarInset } from '../../hooks/useTabBarInset';
 
 const PURPLE = '#8E44AD';
 const PURPLE_LIGHT = '#F3E8FA';
@@ -235,7 +236,7 @@ export function FamilySafetyAssistantScreen({ navigation }: any) {
     );
   };
 
-  const tabBarHeight = Math.max(insets.bottom, 34) + 72;
+  const tabBarHeight = useTabBarInset();
 
   return (
     <View style={[styles.container, { paddingBottom: tabBarHeight }]}>

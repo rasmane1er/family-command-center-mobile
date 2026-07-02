@@ -23,6 +23,7 @@ import { useMemoryStore } from '../../store/useMemoryStore';
 import { useSubscription } from '../../hooks/useSubscription';
 import { UpgradePrompt } from '../../components/common/UpgradePrompt';
 import { useFamilyContextString } from '../../utils/buildFamilyContext';
+import { useTabBarInset } from '../../hooks/useTabBarInset';
 
 const AI_FEATURES = [
   { label: 'Memory', icon: 'albums', color: '#6A1B9A', screen: 'AIMemory' },
@@ -61,7 +62,7 @@ export function AIAssistantScreen({ navigation }: { navigation: { navigate: (scr
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const { t } = useTranslation();
-  const tabBarHeight = Math.max(insets.bottom, 34) + 72;
+  const tabBarHeight = useTabBarInset();
   const [input, setInput] = useState('');
   const voice = useVoiceInput({ onResult: (text) => handleSend(text) });
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
@@ -409,7 +410,7 @@ export function AIAssistantScreen({ navigation }: { navigation: { navigate: (scr
         onClose={() => setShowUpgradePrompt(false)}
         featureName="Unlimited AI Queries"
         requiredTier="premium"
-        description="You've used your monthly AI queries. Upgrade to Premium for 50 queries/month or Family Pro for unlimited access."
+        description="You've used your monthly AI queries. Upgrade to Premium for 100 queries/month or Family Pro for unlimited access."
       />
     </View>
   );

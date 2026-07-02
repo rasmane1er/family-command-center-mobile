@@ -2,6 +2,7 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { RoleGuard } from '../components/auth/RoleGuard';
+import { SubscriptionGate } from '../components/common/SubscriptionGate';
 
 import { AIAssistantScreen } from '../screens/ai/AIAssistantScreen';
 import { AIMemoryScreen } from '../screens/ai/AIMemoryScreen';
@@ -56,13 +57,15 @@ export function AINavigator() {
 
       <Stack.Screen name="DigitalTwin">
         {(props) => (
-          <RoleGuard
-            allowParent
-            title="Digital Twin Restricted"
-            message="The Family Digital Twin is only available to parents, guardians, or admins."
-          >
-            <DigitalTwinScreen {...props} />
-          </RoleGuard>
+          <SubscriptionGate requiredTier="family_pro" featureName="Family Digital Twin">
+            <RoleGuard
+              allowParent
+              title="Digital Twin Restricted"
+              message="The Family Digital Twin is only available to parents, guardians, or admins."
+            >
+              <DigitalTwinScreen {...props} />
+            </RoleGuard>
+          </SubscriptionGate>
         )}
       </Stack.Screen>
 

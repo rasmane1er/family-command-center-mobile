@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Dimensions,
@@ -10,19 +10,19 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
-import Svg, { Circle, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
 
-import { useTranslation } from 'react-i18next';
 import { useJoinRequestsStore } from '../../store/useJoinRequestsStore';
 import { useFinancialHealth } from '../../hooks/useFinancialHealth';
+import { useSubscription } from '../../hooks/useSubscription';
+import { usePurchases } from '../../hooks/usePurchases';
 import { Avatar } from '../../components/common/Avatar';
 import { Card } from '../../components/common/Card';
 import { ProgressBar } from '../../components/common/ProgressBar';
 import { useAIStore } from '../../store/useAIStore';
-import { useAppStore } from '../../store/useAppStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { useNotificationsStore } from '../../store/useNotificationsStore';
@@ -30,47 +30,27 @@ import { useTheme } from '../../theme/ThemeContext';
 import { shadows } from '../../theme/spacing';
 import { getVisibleTasks, getVisibleEvents } from '../../utils/roleVisibility';
 import { getAllowedNotificationTypes } from '../../utils/roleFilters';
-import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 
 const { width } = Dimensions.get('window');
 
-// SCORE_COLOR is used inside the component where colors is available from useTheme
-
-function HealthRing({ score, color, size = 96 }: { score: number; color: string; size?: number }) {
-  const strokeWidth = 9;
-  const r = (size - strokeWidth) / 2;
-  const cx = size / 2;
-  const cy = size / 2;
-  const circumference = 2 * Math.PI * r;
-  const progress = Math.min(Math.max(score / 100, 0), 1);
-  const dash = progress * circumference;
-  const gap = circumference - dash;
-  return (
-    <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
-      <Defs>
-        <SvgGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
-          <Stop offset="0%" stopColor={color} stopOpacity="1" />
-          <Stop offset="100%" stopColor={color} stopOpacity="0.5" />
-        </SvgGradient>
-      </Defs>
-      <Circle cx={cx} cy={cy} r={r} stroke="rgba(255,255,255,0.1)" strokeWidth={strokeWidth} fill="none" />
-      <Circle
-        cx={cx} cy={cy} r={r}
-        stroke="url(#ringGrad)"
-        strokeWidth={strokeWidth}
-        fill="none"
-        strokeDasharray={`${dash} ${gap}`}
-        strokeLinecap="round"
-      />
-    </Svg>
-  );
-}
+const COMMAND_COLORS = {
+  navy900: '#081120',
+  navy800: '#0E1E36',
+  navy700: '#142B4D',
+  gold: '#C6A664',
+  teal: '#00C2A8',
+  orange: '#F97316',
+  red: '#DC2626',
+  blue: '#2563EB',
+  slate: '#64748B',
+};
 
 export function DashboardScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
-  const { t } = useTranslation();
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(12)).current;
+  const [fabOpen, setFabOpen] = useState(false);
 
   const SCORE_COLOR = (score: number) =>
     score >= 80 ? colors.success : score >= 60 ? colors.warning : colors.danger;
@@ -90,6 +70,10 @@ export function DashboardScreen({ navigation }: any) {
   const isChild = activeMember?.role === 'child';
   const isGrandparent = activeMember?.role === 'grandparent';
 
+  const { isAtLeast } = useSubscription();
+  const hasFinanceAccess = isAtLeast('premium');
+  const { showPaywall } = usePurchases();
+
   const healthScore = useFinancialHealth();
   const { monthlyIncome, monthlyExpenses, monthlySavings, bills } = useFinanceStore();
 
@@ -102,12 +86,19 @@ export function DashboardScreen({ navigation }: any) {
   ).length;
 
   useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 600,
-      useNativeDriver: true,
-    }).start();
-  }, [fadeAnim]);
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 520,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 520,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [fadeAnim, slideAnim]);
 
   const visibleTasks = getVisibleTasks(tasks, activeMember);
   const visibleEvents = getVisibleEvents(events, activeMember);
@@ -138,43 +129,69 @@ export function DashboardScreen({ navigation }: any) {
     ? activeMember.role.charAt(0).toUpperCase() + activeMember.role.slice(1)
     : 'Family';
 
-  const quickStats = useMemo(() => {
+  const savingsRate = monthlyIncome > 0 ? Math.round((monthlySavings / monthlyIncome) * 100) : 0;
+  const expenseRate = monthlyIncome > 0 ? Math.min(monthlyExpenses / monthlyIncome, 1) : 0;
+
+  const operationalStatus = useMemo(() => {
+    if (overdueBills > 0 || overdueTasks > 0) {
+      return {
+        label: 'Attention Needed',
+        tone: COMMAND_COLORS.orange,
+        icon: 'warning-outline',
+        message: `${overdueTasks + overdueBills} priority item${overdueTasks + overdueBills === 1 ? '' : 's'} need review`,
+      };
+    }
+
+    if (healthScore.overall >= 80 && monthlySavings >= 0) {
+      return {
+        label: 'Household Stable',
+        tone: COMMAND_COLORS.teal,
+        icon: 'shield-checkmark-outline',
+        message: 'No critical issues detected today',
+      };
+    }
+
+    return {
+      label: 'Monitor Closely',
+      tone: COMMAND_COLORS.gold,
+      icon: 'pulse-outline',
+      message: 'Some areas should be reviewed this week',
+    };
+  }, [healthScore.overall, monthlySavings, overdueBills, overdueTasks]);
+
+  const kpiCards = useMemo(() => {
     if (isChild) {
       return [
         {
-          icon: 'school',
-          label: 'Homework',
-          value: `${activeMemberPendingTasks} pending`,
-          color: '#4ECDC4',
-          bg: '#E8F8F7',
-          urgent: activeMemberPendingTasks > 3,
-          route: 'HomeworkTracker',
+          label: 'My Tasks',
+          value: `${activeMemberPendingTasks}`,
+          detail: 'pending',
+          icon: 'checkbox-outline',
+          tone: COMMAND_COLORS.teal,
+          route: 'Tasks',
         },
         {
-          icon: 'trophy',
-          label: 'My Points',
-          value: `${activeMember?.points?.toLocaleString() ?? 0} pts`,
-          color: '#F5A623',
-          bg: '#FEF3E2',
-          urgent: false,
+          label: 'Points',
+          value: `${activeMember?.points?.toLocaleString() ?? 0}`,
+          detail: 'earned',
+          icon: 'trophy-outline',
+          tone: COMMAND_COLORS.gold,
           route: 'OperationsRewards',
         },
         {
-          icon: 'calendar',
-          label: 'My Events',
-          value: `${todayEvents.length} today`,
-          color: '#2980B9',
-          bg: '#EBF5FB',
-          urgent: false,
+          label: 'Events',
+          value: `${todayEvents.length}`,
+          detail: 'today',
+          icon: 'calendar-outline',
+          tone: COMMAND_COLORS.blue,
           route: 'Calendar',
         },
         {
-          icon: 'star',
           label: 'Level',
-          value: `Level ${activeMember?.level ?? 1}`,
-          color: '#8E44AD',
-          bg: '#F5EEF8',
-          urgent: false,
+          value: `${activeMember?.level ?? 1}`,
+          detail: 'current',
+          icon: 'star-outline',
+          tone: '#8B5CF6',
           route: 'OperationsRewards',
         },
       ];
@@ -183,122 +200,173 @@ export function DashboardScreen({ navigation }: any) {
     if (isGrandparent) {
       return [
         {
-          icon: 'gift',
-          label: 'Birthdays',
-          value: `${todayEvents.length} upcoming`,
-          color: '#AD1457',
-          bg: '#FCE4EC',
-          urgent: false,
-          route: 'BirthdayTracker',
+          label: 'Family Score',
+          value: `${healthScore.overall}`,
+          detail: 'overall',
+          icon: 'heart-outline',
+          tone: SCORE_COLOR(healthScore.overall),
+          route: 'WeeklyReport',
         },
         {
-          icon: 'calendar',
-          label: 'Family Events',
-          value: `${todayEvents.length} today`,
-          color: '#F5A623',
-          bg: '#FEF3E2',
-          urgent: false,
+          label: 'Events',
+          value: `${todayEvents.length}`,
+          detail: 'today',
+          icon: 'calendar-outline',
+          tone: COMMAND_COLORS.gold,
           route: 'Calendar',
         },
         {
-          icon: 'people',
           label: 'Members',
-          value: `${members.length} family`,
-          color: '#2980B9',
-          bg: '#EBF5FB',
-          urgent: false,
+          value: `${members.length}`,
+          detail: 'family',
+          icon: 'people-outline',
+          tone: COMMAND_COLORS.blue,
           route: 'FamilyProfiles',
         },
         {
-          icon: 'heart',
-          label: 'Family Score',
-          value: `${healthScore.overall}/100`,
-          color: SCORE_COLOR(healthScore.overall),
-          bg: '#E8EEF9',
-          urgent: false,
-          route: 'WeeklyReport',
+          label: 'Updates',
+          value: `${unreadNotifications}`,
+          detail: 'unread',
+          icon: 'notifications-outline',
+          tone: COMMAND_COLORS.teal,
+          route: 'Notifications',
         },
       ];
     }
 
     return [
       {
-        icon: 'checkmark-done',
-        label: 'Tasks',
-        value: `${pendingTasks} pending`,
-        color: '#4ECDC4',
-        bg: '#E8F8F7',
-        urgent: overdueTasks > 0,
+        label: 'Household Score',
+        value: `${healthScore.overall}`,
+        detail: `Grade ${healthScore.grade}`,
+        icon: 'shield-checkmark-outline',
+        tone: SCORE_COLOR(healthScore.overall),
+        route: 'WeeklyReport',
+      },
+      {
+        label: 'Open Tasks',
+        value: `${pendingTasks}`,
+        detail: overdueTasks > 0 ? `${overdueTasks} urgent` : 'on track',
+        icon: 'checkbox-outline',
+        tone: overdueTasks > 0 ? COMMAND_COLORS.orange : COMMAND_COLORS.teal,
         route: 'Tasks',
       },
       {
-        icon: 'calendar',
-        label: "Today's Events",
-        value: `${todayEvents.length} events`,
-        color: '#F5A623',
-        bg: '#FEF3E2',
-        urgent: false,
-        route: 'Calendar',
-      },
-      {
-        icon: 'receipt',
-        label: t('finance.bills'),
-        value: overdueBills > 0 ? `${overdueBills} overdue!` : 'On track',
-        color: overdueBills > 0 ? colors.danger : colors.success,
-        bg: overdueBills > 0 ? colors.dangerLight : colors.successLight,
-        urgent: overdueBills > 0,
-        route: 'Bills',
-      },
-      {
-        icon: monthlySavings < 0 ? 'trending-down' : 'trending-up',
-        label: 'Monthly Savings',
-        value: monthlySavings === 0 && monthlyIncome === 0
-          ? 'No data'
-          : `$${Math.abs(monthlySavings).toLocaleString('en-US', { maximumFractionDigits: 0 })}`,
-        color: monthlySavings < 0 ? colors.danger : '#27AE60',
-        bg: monthlySavings < 0 ? colors.dangerLight : '#D5F5E3',
-        urgent: monthlySavings < 0,
+        label: 'Budget Status',
+        value: monthlyIncome > 0 ? `${savingsRate}%` : '—',
+        detail: monthlySavings < 0 ? 'negative' : 'savings rate',
+        icon: 'wallet-outline',
+        tone: monthlySavings < 0 ? COMMAND_COLORS.red : COMMAND_COLORS.gold,
         route: 'Budgeting',
+      },
+      {
+        label: 'Today',
+        value: `${todayEvents.length}`,
+        detail: 'events',
+        icon: 'calendar-outline',
+        tone: COMMAND_COLORS.blue,
+        route: 'Calendar',
       },
     ];
   }, [
-    isChild,
-    isGrandparent,
+    SCORE_COLOR,
     activeMember,
     activeMemberPendingTasks,
-    todayEvents.length,
-    members.length,
+    healthScore.grade,
     healthScore.overall,
-    pendingTasks,
-    overdueTasks,
-    overdueBills,
-    monthlySavings,
+    isChild,
+    isGrandparent,
+    members.length,
     monthlyIncome,
+    monthlySavings,
+    overdueTasks,
+    pendingTasks,
+    savingsRate,
+    todayEvents.length,
+    unreadNotifications,
   ]);
 
-  const roleActions = useMemo(() => {
-    if (isChild) {
-      return [
-        { label: `My Tasks (${activeMemberPendingTasks})`, icon: 'checkbox-outline', route: 'Tasks' },
-        { label: 'Rewards', icon: 'trophy-outline', route: 'OperationsRewards' },
-        { label: 'Homework', icon: 'school-outline', route: 'HomeworkTracker' },
-      ];
-    }
+  const actionItems = useMemo(() => {
+    const urgentTasks = visibleTasks
+      .filter((task) => task.status === 'overdue' || task.priority === 'urgent' || task.priority === 'high')
+      .slice(0, 3)
+      .map((task: any) => ({
+        id: `task-${task.id}`,
+        title: task.title,
+        subtitle: task.dueDate ? `Due ${format(new Date(task.dueDate), 'MMM d')}` : 'Priority task',
+        icon: 'alert-circle-outline',
+        tone: task.priority === 'urgent' || task.status === 'overdue' ? COMMAND_COLORS.red : COMMAND_COLORS.orange,
+        route: 'Tasks',
+      }));
 
-    if (isGrandparent) {
-      return [
-        { label: 'Birthdays', icon: 'gift-outline', route: 'BirthdayTracker' },
-        { label: 'Timeline', icon: 'time-outline', route: 'FamilyTimeline' },
-        { label: 'Family Board', icon: 'megaphone-outline', route: 'FamilyBoard' },
-      ];
-    }
+    const urgentBills = isParent
+      ? bills
+          .filter((bill) => bill.status === 'overdue')
+          .slice(0, 2)
+          .map((bill: any) => ({
+            id: `bill-${bill.id}`,
+            title: bill.name ?? 'Overdue bill',
+            // Finance is a Premium feature — the urgency ("you have an overdue
+            // bill") stays visible as a conversion hook, but the exact figure
+            // doesn't, to stay consistent with Finance being paywalled.
+            subtitle: !hasFinanceAccess
+              ? 'Payment needed — upgrade to view'
+              : bill.amount ? `$${Number(bill.amount).toLocaleString()} needs payment` : 'Payment needed',
+            icon: 'receipt-outline',
+            tone: COMMAND_COLORS.red,
+            route: 'Bills',
+          }))
+      : [];
+
+    const aiInsights = insights
+      .filter((insight) => !insight.isRead)
+      .slice(0, 1)
+      .map((insight: any) => ({
+        id: `insight-${insight.id}`,
+        title: insight.title,
+        subtitle: insight.summary,
+        icon: 'sparkles-outline',
+        tone: insight.priority === 'high' ? COMMAND_COLORS.orange : COMMAND_COLORS.gold,
+        route: 'AIAssistant',
+      }));
+
+    const approvals = isParent && pendingJoinRequestsCount > 0
+      ? [
+          {
+            id: 'join-requests',
+            title: `${pendingJoinRequestsCount} family join request${pendingJoinRequestsCount === 1 ? '' : 's'}`,
+            subtitle: 'Review and approve household access',
+            icon: 'person-add-outline',
+            tone: COMMAND_COLORS.blue,
+            route: 'JoinRequests',
+          },
+        ]
+      : [];
+
+    const combined = [...urgentBills, ...approvals, ...urgentTasks, ...aiInsights];
+
+    if (combined.length > 0) return combined.slice(0, 5);
 
     return [
-      { label: `Approvals (${pendingJoinRequestsCount})`, icon: 'person-add-outline', route: 'JoinRequests' },
-      { label: 'Bills', icon: 'receipt-outline', route: 'Finance' },
-      { label: `Tasks (${pendingTasks})`, icon: 'checkbox-outline', route: 'Tasks' },
+      {
+        id: 'clear',
+        title: 'No urgent actions right now',
+        subtitle: 'Your household command center is clear for the moment',
+        icon: 'checkmark-circle-outline',
+        tone: COMMAND_COLORS.teal,
+        route: 'WeeklyReport',
+      },
     ];
-  }, [isChild, isGrandparent, activeMemberPendingTasks, pendingJoinRequestsCount, pendingTasks]);
+  }, [bills, insights, isParent, hasFinanceAccess, pendingJoinRequestsCount, visibleTasks]);
+
+  const timelineItems = useMemo(() => {
+    return todayEvents
+      .slice()
+      .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
+      .slice(0, 5);
+  }, [todayEvents]);
+
+  const featuredInsight = insights.find((insight) => !insight.isRead) ?? insights[0];
 
   const greeting = () => {
     const hour = new Date().getHours();
@@ -329,21 +397,36 @@ export function DashboardScreen({ navigation }: any) {
   };
 
   const handleRoleActionPress = (route: string) => {
-    // Top-level MainNavigator screens
     if (route === 'WeeklyReport') {
       navigation.navigate('WeeklyReport');
       return;
     }
 
-    // Finance tab screens
+    if (route === 'Notifications') {
+      navigation.navigate('Notifications');
+      return;
+    }
+
+    if (route === 'Search') {
+      navigation.navigate('Search');
+      return;
+    }
+
+    if (route === 'Settings') {
+      navigation.navigate('Settings');
+      return;
+    }
+
     if (route === 'Finance') {
       navigation.navigate('Finance');
       return;
     }
+
     if (route === 'Bills') {
       navigation.navigate('Finance', { screen: 'Bills', params: { source: 'dashboard' } } as any);
       return;
     }
+
     if (route === 'Budgeting') {
       navigation.navigate('Finance', { screen: 'Budgeting', params: { source: 'dashboard' } } as any);
       return;
@@ -354,9 +437,8 @@ export function DashboardScreen({ navigation }: any) {
       return;
     }
 
-    // Operations tab screens
     if (route === 'OperationsRewards') {
-      navigation.navigate('Operations', {
+      navigation.navigate('Family', {
         screen: 'Rewards',
         params: {
           memberId: activeMember?.id,
@@ -367,7 +449,6 @@ export function DashboardScreen({ navigation }: any) {
       return;
     }
 
-    // All other routes live inside the Family tab navigator
     navigation.navigate('Family', {
       screen: route,
       params: {
@@ -378,821 +459,1099 @@ export function DashboardScreen({ navigation }: any) {
     });
   };
 
+  const handleQuickAction = (route: string) => {
+    setFabOpen(false);
+    handleRoleActionPress(route);
+  };
+
   const dynStyles = makeStyles(colors);
-
-  const screenHeader = (
-    <LinearGradient
-      colors={['#0D1B2A', '#0F2952', '#1E4A8A']}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={[dynStyles.header, { paddingTop: insets.top + 6 }]}
-    >
-      {/* decorative blobs — isolated so overflow:hidden doesn't clip icons */}
-      <View style={StyleSheet.absoluteFill} pointerEvents="none">
-        <View style={dynStyles.headerCircle1} />
-        <View style={dynStyles.headerCircle2} />
-      </View>
-
-      <Animated.View style={{ opacity: fadeAnim }}>
-        <View style={dynStyles.headerTop}>
-          <View style={dynStyles.headerTextBlock}>
-            <Text style={dynStyles.greeting}>{greeting()},</Text>
-            <Text style={dynStyles.familyName} numberOfLines={1} ellipsizeMode="tail">
-              {family?.name ?? 'My Family'} 👋
-            </Text>
-            <Text style={dynStyles.date}>{format(new Date(), 'EEEE, MMMM d, yyyy')}</Text>
-
-            {activeMember && (
-              <Pressable
-                style={dynStyles.activeProfileBadge}
-                onPress={() =>
-                  navigation.navigate('Family', {
-                    screen: 'ProfileSwitcher',
-                    params: { source: 'dashboard' },
-                  })
-                }
-              >
-                <Avatar name={activeMember.name} color={activeMember.avatarColor} size={24} />
-                <Text style={dynStyles.activeProfileName}>
-                  {activeMember.name} • {roleLabel}
-                </Text>
-                <Ionicons name="chevron-down" size={13} color="#fff" />
-              </Pressable>
-            )}
-          </View>
-
-          <View style={dynStyles.headerActions}>
-            <Pressable style={dynStyles.headerIconBtn} onPress={() => navigation.navigate('Search')}>
-              <Ionicons name="search" size={20} color="rgba(255,255,255,0.9)" />
-            </Pressable>
-
-            <Pressable
-              style={dynStyles.headerIconBtn}
-              onPress={() => navigation.navigate('Notifications')}
-            >
-              <Ionicons name="notifications" size={21} color="#fff" />
-              {unreadNotifications > 0 && (
-                <View style={dynStyles.notifDot}>
-                  <Text style={dynStyles.notifCount}>
-                    {unreadNotifications > 9 ? '9+' : unreadNotifications}
-                  </Text>
-                </View>
-              )}
-            </Pressable>
-
-            <Pressable style={dynStyles.headerIconBtn} onPress={() => navigation.navigate('Settings')}>
-              <Ionicons name="settings-outline" size={21} color="rgba(255,255,255,0.9)" />
-            </Pressable>
-          </View>
-        </View>
-
-        <View style={dynStyles.roleBanner}>
-          <Ionicons
-            name={
-              isChild
-                ? 'school-outline'
-                : isGrandparent
-                  ? 'heart-outline'
-                  : 'shield-checkmark-outline'
-            }
-            size={16}
-            color={colors.secondary}
-          />
-          <Text style={dynStyles.roleBannerText}>
-            {isChild
-              ? 'Child dashboard: chores, homework, rewards, and events.'
-              : isGrandparent
-                ? 'Grandparent dashboard: family moments, birthdays, and updates.'
-                : 'Parent dashboard: bills, tasks, calendar, approvals, and household health.'}
-          </Text>
-        </View>
-
-        <View style={dynStyles.healthScoreCard}>
-          <View style={dynStyles.healthScoreLeft}>
-            <View style={{ position: 'relative', alignItems: 'center', justifyContent: 'center' }}>
-              <HealthRing score={healthScore.overall} color={SCORE_COLOR(healthScore.overall)} size={96} />
-              <View style={dynStyles.healthRingInner}>
-                <Text style={[dynStyles.healthScoreValue, { color: SCORE_COLOR(healthScore.overall) }]}>
-                  {healthScore.overall}
-                </Text>
-              </View>
-            </View>
-            <Text style={dynStyles.healthScoreLabel}>HEALTH SCORE</Text>
-            <View style={dynStyles.healthScoreTrend}>
-              <Text style={[dynStyles.healthScoreTrendText, {
-                color: healthScore.grade === 'A' ? colors.success :
-                       healthScore.grade === 'B' ? '#27AE60' :
-                       healthScore.grade === 'C' ? '#F5A623' :
-                       healthScore.grade === 'D' ? '#E67E22' : '#E74C3C',
-              }]}>Grade {healthScore.grade}</Text>
-            </View>
-          </View>
-
-          <View style={dynStyles.healthScoreRight}>
-            {[
-              { label: 'Finance', value: healthScore.financial, icon: 'wallet' },
-              { label: 'Tasks', value: healthScore.tasks, icon: 'checkmark-circle' },
-              { label: 'Goals', value: healthScore.goals, icon: 'flag' },
-              { label: 'Wellness', value: healthScore.health, icon: 'heart' },
-            ].map((item) => (
-              <View key={item.label} style={dynStyles.healthSubItem}>
-                <View style={dynStyles.healthSubRow}>
-                  <Ionicons name={item.icon as any} size={12} color="rgba(255,255,255,0.7)" />
-                  <Text style={dynStyles.healthSubLabel}>{item.label}</Text>
-                  <Text style={[dynStyles.healthSubPct, { color: SCORE_COLOR(item.value) }]}>{item.value}</Text>
-                </View>
-                <View style={dynStyles.healthSubBar}>
-                  <View
-                    style={[
-                      dynStyles.healthSubFill,
-                      { width: `${item.value}%`, backgroundColor: SCORE_COLOR(item.value) },
-                    ]}
-                  />
-                </View>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        <View style={dynStyles.membersRow}>
-          <Text style={dynStyles.membersLabel}>Family Members</Text>
-          <Pressable onPress={openFamilyMembers}>
-            <Text style={dynStyles.membersViewAll}>Manage</Text>
-          </Pressable>
-        </View>
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={dynStyles.membersScroll}>
-          {members.map((member) => (
-            <Pressable
-              key={member.id}
-              style={dynStyles.memberChip}
-              onPress={() => openMemberDetails(member.id)}
-            >
-              <Avatar
-                name={member.name}
-                color={member.avatarColor}
-                size={44}
-                showBadge
-                badgeColor={member.status === 'active' ? colors.success : colors.warning}
-              />
-              <Text style={dynStyles.memberChipName}>{member.name.split(' ')[0]}</Text>
-              <Text style={dynStyles.memberChipPoints}>{member.points.toLocaleString()} pts</Text>
-            </Pressable>
-          ))}
-
-          {isParent && (
-            <Pressable style={dynStyles.addMemberChip} onPress={openInviteMember}>
-              <View style={dynStyles.addMemberIcon}>
-                <Ionicons name="add" size={22} color={colors.primary} />
-              </View>
-              <Text style={dynStyles.addMemberText}>Invite</Text>
-            </Pressable>
-          )}
-        </ScrollView>
-      </Animated.View>
-    </LinearGradient>
-  );
-
-  const screenCompact = (
-    <LinearGradient
-      colors={['#0D1B2A', '#1E4A8A']}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 0 }}
-      style={{
-        paddingTop: insets.top,
-        paddingBottom: 10,
-        paddingHorizontal: 16,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-      }}
-    >
-      <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800' }} numberOfLines={1}>
-        {family?.name ?? 'My Family'}
-      </Text>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-        <View style={{ backgroundColor: SCORE_COLOR(healthScore.overall), borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 }}>
-          <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>{healthScore.overall}</Text>
-        </View>
-        <Pressable onPress={() => navigation.navigate('Notifications')}>
-          <Ionicons name="notifications" size={20} color="#fff" />
-          {unreadNotifications > 0 && (
-            <View style={dynStyles.notifDot}>
-              <Text style={dynStyles.notifCount}>{unreadNotifications > 9 ? '9+' : unreadNotifications}</Text>
-            </View>
-          )}
-        </Pressable>
-      </View>
-    </LinearGradient>
-  );
 
   return (
     <View style={dynStyles.container}>
       <StatusBar style="light" />
 
-      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
-        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            onScroll={onScroll}
-            onScrollEndDrag={onScrollEndDrag}
-            onMomentumScrollEnd={onMomentumScrollEnd}
-            scrollEventThrottle={scrollEventThrottle}
-            contentContainerStyle={[dynStyles.scrollContent, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
-          >
-            <Animated.View style={{ opacity: fadeAnim, paddingHorizontal: 16, marginTop: 4 }}>
-              <View style={dynStyles.quickStats}>
-                {quickStats.map((stat) => (
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[dynStyles.scrollContent, { paddingBottom: 132 + insets.bottom }]}
+      >
+        <LinearGradient
+          colors={[COMMAND_COLORS.navy900, COMMAND_COLORS.navy800, COMMAND_COLORS.navy700]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[dynStyles.header, { paddingTop: insets.top + 12 }]}
+        >
+          <View style={StyleSheet.absoluteFill} pointerEvents="none">
+            <View style={dynStyles.headerGlowGold} />
+            <View style={dynStyles.headerGlowTeal} />
+          </View>
+
+          <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+            <View style={dynStyles.headerTop}>
+              <View style={dynStyles.headerIdentity}>
+                <Text style={dynStyles.eyebrow}>Family Command Center</Text>
+                <Text style={dynStyles.greeting}>{greeting()},</Text>
+                <Text style={dynStyles.familyName} numberOfLines={1} ellipsizeMode="tail">
+                  {family?.name ?? 'My Family'}
+                </Text>
+                <Text style={dynStyles.dateText}>{format(new Date(), 'EEEE, MMMM d')}</Text>
+
+                {activeMember && (
                   <Pressable
-                    key={stat.label}
-                    style={[dynStyles.statCard, shadows.sm]}
-                    onPress={() => stat.route && handleRoleActionPress(stat.route)}
-                    android_ripple={{ color: stat.color + '22' }}
+                    style={dynStyles.activeProfileBadge}
+                    onPress={() =>
+                      navigation.navigate('Family', {
+                        screen: 'ProfileSwitcher',
+                        params: { source: 'dashboard' },
+                      })
+                    }
                   >
-                    <View style={[dynStyles.statIconCircle, { backgroundColor: stat.bg }]}>
-                      <Ionicons name={stat.icon as any} size={18} color={stat.color} />
-                    </View>
-                    <Text style={[dynStyles.statValue, { color: stat.urgent ? colors.danger : colors.text }]}>
-                      {stat.value}
+                    <Avatar name={activeMember.name} color={activeMember.avatarColor} size={24} />
+                    <Text style={dynStyles.activeProfileName} numberOfLines={1}>
+                      {activeMember.name} • {roleLabel}
                     </Text>
-                    <Text style={dynStyles.statLabel}>{stat.label}</Text>
-                    {stat.urgent && (
-                      <View style={dynStyles.urgentPill}>
-                        <Text style={dynStyles.urgentPillText}>!</Text>
-                      </View>
-                    )}
-                    <View style={dynStyles.statChevron}>
-                      <Ionicons name="chevron-forward" size={12} color={stat.color} />
-                    </View>
+                    <Ionicons name="chevron-down" size={13} color="#fff" />
                   </Pressable>
-                ))}
+                )}
               </View>
 
-              <View style={dynStyles.roleActions}>
-                {roleActions.map((action, idx) => (
-                  <Pressable
-                    key={action.label}
-                    style={[dynStyles.roleActionBtn, shadows.sm]}
-                    onPress={() => handleRoleActionPress(action.route)}
-                  >
-                    {idx === 0 ? (
-                      <LinearGradient colors={['#0F2952', '#1E4A8A']} style={dynStyles.roleActionGrad}>
-                        <Ionicons name={action.icon as any} size={19} color="#fff" />
-                        <Text style={[dynStyles.roleActionText, { color: '#fff' }]} numberOfLines={1}>{action.label}</Text>
-                      </LinearGradient>
-                    ) : (
-                      <View style={dynStyles.roleActionInner}>
-                        <Ionicons name={action.icon as any} size={19} color={colors.primary} />
-                        <Text style={dynStyles.roleActionText} numberOfLines={1}>{action.label}</Text>
-                      </View>
-                    )}
-                  </Pressable>
-                ))}
-              </View>
+              <View style={dynStyles.headerActions}>
+                <Pressable style={dynStyles.headerIconBtn} onPress={() => navigation.navigate('Search')}>
+                  <Ionicons name="search-outline" size={20} color="#fff" />
+                </Pressable>
 
-              {insights
-                .filter((insight) => !insight.isRead)
-                .slice(0, 2)
-                .map((insight) => (
-                  <Card key={insight.id} style={dynStyles.insightCard} onPress={() => navigation.navigate('AI Assistant', { screen: 'AIAssistant' } as any)} variant="elevated">
-                    <View style={dynStyles.insightRow}>
-                      <View
-                        style={[
-                          dynStyles.insightIcon,
-                          {
-                            backgroundColor:
-                              insight.priority === 'high'
-                                ? colors.dangerLight
-                                : insight.priority === 'medium'
-                                  ? colors.warningLight
-                                  : '#E8EEF9',
-                          },
-                        ]}
-                      >
-                        <Ionicons
-                          name={
-                            insight.type === 'financial'
-                              ? 'wallet'
-                              : insight.type === 'alert'
-                                ? 'warning'
-                                : insight.type === 'task'
-                                  ? 'list'
-                                  : 'bulb'
-                          }
-                          size={18}
-                          color={
-                            insight.priority === 'high'
-                              ? colors.danger
-                              : insight.priority === 'medium'
-                                ? colors.warning
-                                : colors.primary
-                          }
-                        />
-                      </View>
-
-                      <View style={{ flex: 1, marginLeft: 12 }}>
-                        <Text style={dynStyles.insightTitle}>{insight.title}</Text>
-                        <Text style={dynStyles.insightSummary} numberOfLines={2}>
-                          {insight.summary}
-                        </Text>
-                      </View>
-
-                      <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                <Pressable style={dynStyles.headerIconBtn} onPress={() => navigation.navigate('Notifications')}>
+                  <Ionicons name="notifications-outline" size={20} color="#fff" />
+                  {unreadNotifications > 0 && (
+                    <View style={dynStyles.notifDot}>
+                      <Text style={dynStyles.notifCount}>{unreadNotifications > 9 ? '9+' : unreadNotifications}</Text>
                     </View>
-                  </Card>
-                ))}
+                  )}
+                </Pressable>
 
-              {isParent && (
-                <>
-                  <View style={dynStyles.sectionHeader}>
-                    <Text style={dynStyles.sectionTitle}>Finance Overview</Text>
-                    <Pressable onPress={() => navigation.navigate('Finance')}>
-                      <Text style={dynStyles.seeAll}>See All</Text>
-                    </Pressable>
+                <Pressable style={dynStyles.headerIconBtn} onPress={() => navigation.navigate('Settings')}>
+                  <Ionicons name="settings-outline" size={20} color="#fff" />
+                </Pressable>
+              </View>
+            </View>
+
+            <View style={dynStyles.smartStatusCard}>
+              <View style={[dynStyles.statusIcon, { backgroundColor: operationalStatus.tone + '22' }]}> 
+                <Ionicons name={operationalStatus.icon as any} size={18} color={operationalStatus.tone} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={dynStyles.statusLabel}>{operationalStatus.label}</Text>
+                <Text style={dynStyles.statusMessage}>{operationalStatus.message}</Text>
+              </View>
+              <Text style={dynStyles.statusScore}>{healthScore.overall}</Text>
+            </View>
+
+            <View style={dynStyles.smartBar}>
+              <View style={dynStyles.smartBarItem}>
+                <Text style={dynStyles.smartBarValue}>{pendingTasks}</Text>
+                <Text style={dynStyles.smartBarLabel}>Pending</Text>
+              </View>
+              <View style={dynStyles.smartBarDivider} />
+              <View style={dynStyles.smartBarItem}>
+                <Text style={[dynStyles.smartBarValue, overdueTasks > 0 && { color: COMMAND_COLORS.orange }]}>{overdueTasks}</Text>
+                <Text style={dynStyles.smartBarLabel}>Urgent</Text>
+              </View>
+              <View style={dynStyles.smartBarDivider} />
+              <View style={dynStyles.smartBarItem}>
+                <Text style={[dynStyles.smartBarValue, { color: monthlySavings < 0 ? COMMAND_COLORS.red : COMMAND_COLORS.teal }]}>${Math.abs(monthlySavings).toLocaleString('en-US', { maximumFractionDigits: 0 })}</Text>
+                <Text style={dynStyles.smartBarLabel}>{monthlySavings < 0 ? 'Deficit' : 'Saved'}</Text>
+              </View>
+            </View>
+          </Animated.View>
+        </LinearGradient>
+
+        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+          <View style={dynStyles.kpiGrid}>
+            {kpiCards.map((item) => (
+              <Pressable
+                key={item.label}
+                style={[dynStyles.kpiCard, shadows.sm]}
+                onPress={() => handleRoleActionPress(item.route)}
+              >
+                <View style={[dynStyles.kpiIcon, { backgroundColor: item.tone + '16' }]}> 
+                  <Ionicons name={item.icon as any} size={18} color={item.tone} />
+                </View>
+                <Text style={dynStyles.kpiValue}>{item.value}</Text>
+                <Text style={dynStyles.kpiLabel}>{item.label}</Text>
+                <Text style={[dynStyles.kpiDetail, { color: item.tone }]}>{item.detail}</Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <View style={dynStyles.sectionHeader}>
+            <View>
+              <Text style={dynStyles.sectionTitle}>Action Center</Text>
+              <Text style={dynStyles.sectionSubtitle}>Highest priority household decisions</Text>
+            </View>
+            <Pressable onPress={() => handleRoleActionPress('Tasks')} style={dynStyles.sectionButton}>
+              <Text style={dynStyles.sectionButtonText}>Review</Text>
+            </Pressable>
+          </View>
+
+          <View style={dynStyles.actionStack}>
+            {actionItems.map((item) => (
+              <Pressable key={item.id} onPress={() => handleRoleActionPress(item.route)} style={dynStyles.actionCard}>
+                <View style={[dynStyles.actionIcon, { backgroundColor: item.tone + '16' }]}> 
+                  <Ionicons name={item.icon as any} size={18} color={item.tone} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={dynStyles.actionTitle}>{item.title}</Text>
+                  <Text style={dynStyles.actionSubtitle} numberOfLines={2}>{item.subtitle}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+              </Pressable>
+            ))}
+          </View>
+
+          <View style={dynStyles.sectionHeader}>
+            <View>
+              <Text style={dynStyles.sectionTitle}>{isChild ? 'My Timeline' : 'Today Timeline'}</Text>
+              <Text style={dynStyles.sectionSubtitle}>Chronological household flow</Text>
+            </View>
+            <Pressable onPress={() => handleRoleActionPress('Calendar')} style={dynStyles.sectionButton}>
+              <Text style={dynStyles.sectionButtonText}>Calendar</Text>
+            </Pressable>
+          </View>
+
+          <View style={dynStyles.timelinePanel}>
+            {timelineItems.length > 0 ? (
+              timelineItems.map((event, index) => (
+                <Pressable key={event.id} onPress={() => handleRoleActionPress('Calendar')} style={dynStyles.timelineRow}>
+                  <View style={dynStyles.timelineLeft}>
+                    <Text style={dynStyles.timelineTime}>{event.allDay ? 'All day' : format(new Date(event.startDate), 'h:mm a')}</Text>
+                    {index < timelineItems.length - 1 && <View style={dynStyles.timelineLine} />}
                   </View>
-
-                  <Card variant="elevated" style={dynStyles.financeCard} padding={0} onPress={() => navigation.navigate('Finance')}>
-                    <LinearGradient colors={['#0F2952', '#1E4A8A']} style={dynStyles.financeGradient}>
-                      <View style={dynStyles.financeRow}>
-                        {[
-                          {
-                            label: 'Monthly Income',
-                            value: `$${monthlyIncome.toLocaleString()}`,
-                            icon: 'arrow-down-circle',
-                            color: '#4EECD0',
-                          },
-                          {
-                            label: 'Expenses',
-                            value: `$${monthlyExpenses.toLocaleString()}`,
-                            icon: 'arrow-up-circle',
-                            color: '#FF8080',
-                          },
-                          {
-                            label: 'Saved',
-                            value: `$${Math.max(0, monthlySavings).toLocaleString()}`,
-                            icon: 'save',
-                            color: '#FFD166',
-                          },
-                        ].map((item, index) => (
-                          <View
-                            key={item.label}
-                            style={[dynStyles.financeItem, index < 2 && dynStyles.financeItemBorder]}
-                          >
-                            <Ionicons name={item.icon as any} size={20} color={item.color} />
-                            <Text style={dynStyles.financeValue}>{item.value}</Text>
-                            <Text style={dynStyles.financeLabel}>{item.label}</Text>
-                          </View>
-                        ))}
-                      </View>
-
-                      <View style={dynStyles.savingsRateRow}>
-                        <Text style={dynStyles.savingsRateLabel}>Savings Rate</Text>
-                        <Text style={dynStyles.savingsRateValue}>
-                          {monthlyIncome > 0 ? Math.round((monthlySavings / monthlyIncome) * 100) : 0}%
-                        </Text>
-                      </View>
-
-                      <ProgressBar
-                        progress={monthlyIncome > 0 ? monthlySavings / monthlyIncome : 0}
-                        color={colors.accentLight}
-                        backgroundColor="rgba(255,255,255,0.1)"
-                        height={6}
-                        style={{ marginHorizontal: 16, marginBottom: 16 }}
-                      />
-                    </LinearGradient>
-                  </Card>
-                </>
-              )}
-
-              <View style={dynStyles.sectionHeader}>
-                <Text style={dynStyles.sectionTitle}>{isChild ? 'My Schedule' : "Today's Schedule"}</Text>
-                <Pressable onPress={() => navigation.navigate('Family', { screen: 'Calendar', params: { source: 'dashboard' } })}>
-                  <Text style={dynStyles.seeAll}>Calendar</Text>
+                  <View style={dynStyles.timelineDotWrap}>
+                    <View style={[dynStyles.timelineDot, { backgroundColor: event.color ?? COMMAND_COLORS.gold }]} />
+                  </View>
+                  <View style={dynStyles.timelineContent}>
+                    <Text style={dynStyles.timelineTitle}>{event.title}</Text>
+                    <Text style={dynStyles.timelineMeta} numberOfLines={1}>
+                      {event.location ? event.location : `${event.attendees?.length ?? 0} attendee${(event.attendees?.length ?? 0) === 1 ? '' : 's'}`}
+                    </Text>
+                  </View>
                 </Pressable>
-              </View>
+              ))
+            ) : (
+              <Pressable style={dynStyles.emptyPanel} onPress={() => handleRoleActionPress('Calendar')}>
+                <Ionicons name="calendar-clear-outline" size={28} color={colors.textMuted} />
+                <Text style={dynStyles.emptyTitle}>No scheduled events today</Text>
+                <Text style={dynStyles.emptyText}>Enjoy the white space or add a new household event.</Text>
+              </Pressable>
+            )}
+          </View>
 
-              {todayEvents.length > 0 ? (
-                todayEvents.slice(0, 3).map((event) => (
-                  <Card key={event.id} style={dynStyles.eventCard} onPress={() => navigation.navigate('Family', { screen: 'Calendar', params: { source: 'dashboard' } })} variant="elevated" padding={0}>
-                    <View style={dynStyles.eventRow}>
-                      <View style={[dynStyles.eventColorStrip, { backgroundColor: event.color ?? colors.primary }]} />
-                      <View style={{ flex: 1, paddingVertical: 14, paddingLeft: 14 }}>
-                        <Text style={dynStyles.eventTitle}>{event.title}</Text>
-                        <View style={dynStyles.eventMeta}>
-                          <View style={[dynStyles.eventTimePill, { backgroundColor: (event.color ?? colors.primary) + '18' }]}>
-                            <Ionicons name="time-outline" size={11} color={event.color ?? colors.primary} />
-                            <Text style={[dynStyles.eventTime, { color: event.color ?? colors.primary }]}>
-                              {event.allDay ? 'All Day' : format(new Date(event.startDate), 'h:mm a')}
-                            </Text>
-                          </View>
-                          {event.location && (
-                            <Text style={dynStyles.eventLocation} numberOfLines={1}>
-                              📍 {event.location}
-                            </Text>
-                          )}
-                        </View>
-                      </View>
+          <View style={dynStyles.sectionHeader}>
+            <View>
+              <Text style={dynStyles.sectionTitle}>Family Status Board</Text>
+              <Text style={dynStyles.sectionSubtitle}>People, roles, progress, and access</Text>
+            </View>
+            <Pressable onPress={openFamilyMembers} style={dynStyles.sectionButton}>
+              <Text style={dynStyles.sectionButtonText}>Manage</Text>
+            </Pressable>
+          </View>
 
-                      <View style={dynStyles.eventRight}>
-                        <View style={dynStyles.eventAttendees}>
-                          {event.attendees.slice(0, 3).map((id, index) => {
-                            const member = members.find((m) => m.id === id);
-                            if (!member) return null;
-                            return (
-                              <Avatar
-                                key={id}
-                                name={member.name}
-                                color={member.avatarColor}
-                                size={24}
-                                style={{ marginLeft: index > 0 ? -7 : 0, zIndex: 3 - index }}
-                              />
-                            );
-                          })}
-                        </View>
-                        <Ionicons name="chevron-forward" size={14} color={colors.textMuted} style={{ marginTop: 6 }} />
-                      </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={dynStyles.memberBoardScroll}>
+            {members.map((member) => {
+              const memberTasks = visibleTasks.filter((task: any) => task.assignedTo?.includes(member.id) && task.status === 'pending').length;
+              return (
+                <Pressable key={member.id} style={dynStyles.memberStatusCard} onPress={() => openMemberDetails(member.id)}>
+                  <View style={dynStyles.memberTopRow}>
+                    <Avatar
+                      name={member.name}
+                      color={member.avatarColor}
+                      size={44}
+                      showBadge
+                      badgeColor={member.status === 'active' ? colors.success : colors.warning}
+                    />
+                    <View style={[dynStyles.memberRolePill, { backgroundColor: colors.primary + '12' }]}> 
+                      <Text style={[dynStyles.memberRoleText, { color: colors.primary }]}>{member.role}</Text>
                     </View>
-                  </Card>
-                ))
-              ) : (
-                <Card style={dynStyles.emptyCard} padding={20} onPress={() => navigation.navigate('Family', { screen: 'Calendar', params: { source: 'dashboard' } })}>
-                  <Ionicons name="calendar-outline" size={32} color={colors.textMuted} />
-                  <Text style={dynStyles.emptyText}>No events today — enjoy the free time!</Text>
-                  <Text style={dynStyles.emptyAction}>Add Event →</Text>
-                </Card>
-              )}
+                  </View>
+                  <Text style={dynStyles.memberName} numberOfLines={1}>{member.name}</Text>
+                  <Text style={dynStyles.memberStatusText}>{memberTasks} pending task{memberTasks === 1 ? '' : 's'}</Text>
+                  <View style={dynStyles.memberFooter}>
+                    <Ionicons name="trophy-outline" size={13} color={COMMAND_COLORS.gold} />
+                    <Text style={dynStyles.memberPoints}>{member.points?.toLocaleString?.() ?? 0} pts</Text>
+                  </View>
+                </Pressable>
+              );
+            })}
 
+            {isParent && (
+              <Pressable style={dynStyles.inviteCard} onPress={openInviteMember}>
+                <View style={dynStyles.inviteIcon}>
+                  <Ionicons name="add" size={22} color={colors.primary} />
+                </View>
+                <Text style={dynStyles.inviteTitle}>Invite</Text>
+                <Text style={dynStyles.inviteSubtitle}>Add family access</Text>
+              </Pressable>
+            )}
+          </ScrollView>
+
+          {isParent && (
+            <>
               <View style={dynStyles.sectionHeader}>
-                <Text style={dynStyles.sectionTitle}>{isChild ? 'My Priority Tasks' : 'Priority Tasks'}</Text>
-                <Pressable onPress={() => navigation.navigate('Family', { screen: 'Tasks', params: { memberId: activeMember?.id, role: activeMember?.role, source: 'dashboard' } })}>
-                  <Text style={dynStyles.seeAll}>View All</Text>
+                <View>
+                  <Text style={dynStyles.sectionTitle}>Finance Snapshot</Text>
+                  <Text style={dynStyles.sectionSubtitle}>Income, spend, and savings position</Text>
+                </View>
+                <Pressable onPress={() => handleRoleActionPress('Finance')} style={dynStyles.sectionButton}>
+                  <Text style={dynStyles.sectionButtonText}>Open</Text>
                 </Pressable>
               </View>
 
-              {visibleTasks
-                .filter((task) => task.status === 'pending')
-                .sort((a, b) => {
-                  const priorityOrder: Record<string, number> = { urgent: 0, high: 1, medium: 2, low: 3 };
-                  return priorityOrder[a.priority] - priorityOrder[b.priority];
-                })
-                .slice(0, 3)
-                .map((task: any) => {
-                  const assignee = members.find((member) => task.assignedTo?.includes(member.id));
-                  const prioColor =
-                    task.priority === 'urgent' || task.priority === 'high'
-                      ? colors.danger
-                      : task.priority === 'medium'
-                        ? colors.warning
-                        : colors.success;
-
-                  return (
-                    <Card key={task.id} style={dynStyles.taskCard} onPress={() => navigation.navigate('Family', { screen: 'Tasks', params: { memberId: activeMember?.id, role: activeMember?.role, source: 'dashboard' } })} variant="elevated" padding={0}>
-                      <View style={dynStyles.taskRow}>
-                        <View style={[dynStyles.taskPriorityStrip, { backgroundColor: prioColor }]} />
-                        <View style={dynStyles.taskCheckWrap}>
-                          <Pressable style={[dynStyles.taskCheck, { borderColor: prioColor }]}>
-                            <Ionicons name="checkmark" size={14} color="transparent" />
-                          </Pressable>
-                        </View>
-                        <View style={{ flex: 1, paddingVertical: 14, paddingRight: 14 }}>
-                          <Text style={dynStyles.taskTitle}>{task.title}</Text>
-                          <View style={dynStyles.taskMeta}>
-                            <View style={[dynStyles.taskPrioBadge, { backgroundColor: prioColor + '20' }]}>
-                              <Text style={[dynStyles.taskPrioBadgeText, { color: prioColor }]}>
-                                {task.priority.toUpperCase()}
-                              </Text>
-                            </View>
-                            {task.dueDate && (
-                              <Text style={dynStyles.taskDue}>
-                                Due {format(new Date(task.dueDate), 'MMM d')}
-                              </Text>
-                            )}
-                          </View>
-                        </View>
-                        {assignee && (
-                          <View style={{ paddingRight: 14 }}>
-                            <Avatar name={assignee.name} color={assignee.avatarColor} size={30} />
-                          </View>
-                        )}
-                      </View>
-                    </Card>
-                  );
-                })}
-
-              <Pressable onPress={() => navigation.navigate('WeeklyReport')} style={dynStyles.reportBanner}>
-                <LinearGradient colors={['#0F2952', '#1E4A8A']} style={dynStyles.reportBannerGrad}>
-                  <View style={dynStyles.reportBannerLeft}>
-                    <Ionicons name="bar-chart" size={20} color={colors.secondary} />
+              <Pressable
+                style={dynStyles.financeCard}
+                onPress={() => (hasFinanceAccess ? handleRoleActionPress('Finance') : showPaywall('premium'))}
+              >
+                <LinearGradient colors={[COMMAND_COLORS.navy800, COMMAND_COLORS.navy700]} style={dynStyles.financeGradient}>
+                  <View style={dynStyles.financeTopRow}>
                     <View>
-                      <Text style={dynStyles.reportBannerTitle}>Weekly Report Ready</Text>
-                      <Text style={dynStyles.reportBannerSub}>
-                        {isChild
-                          ? 'Your weekly task and reward progress is ready'
-                          : 'Family Health Score +4 pts this week'}
+                      <Text style={dynStyles.financeTitle}>Monthly Cash Flow</Text>
+                      <Text style={dynStyles.financeSubtitle}>Savings rate {savingsRate}%</Text>
+                    </View>
+                    <View style={[dynStyles.financeBadge, { backgroundColor: monthlySavings < 0 ? COMMAND_COLORS.red + '22' : COMMAND_COLORS.teal + '22' }]}>
+                      <Text style={[dynStyles.financeBadgeText, { color: monthlySavings < 0 ? COMMAND_COLORS.red : COMMAND_COLORS.teal }]}>
+                        {monthlySavings < 0 ? 'Deficit' : 'Positive'}
                       </Text>
                     </View>
                   </View>
-                  <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.6)" />
+
+                  <View style={dynStyles.financeMetricRow}>
+                    <View style={dynStyles.financeMetric}>
+                      <Text style={dynStyles.financeMetricLabel}>Income</Text>
+                      <Text style={dynStyles.financeMetricValue}>${monthlyIncome.toLocaleString()}</Text>
+                    </View>
+                    <View style={dynStyles.financeMetric}>
+                      <Text style={dynStyles.financeMetricLabel}>Expenses</Text>
+                      <Text style={dynStyles.financeMetricValue}>${monthlyExpenses.toLocaleString()}</Text>
+                    </View>
+                    <View style={dynStyles.financeMetric}>
+                      <Text style={dynStyles.financeMetricLabel}>Savings</Text>
+                      <Text style={dynStyles.financeMetricValue}>${monthlySavings.toLocaleString()}</Text>
+                    </View>
+                  </View>
+
+                  <View style={dynStyles.progressLabelRow}>
+                    <Text style={dynStyles.progressLabel}>Expense load</Text>
+                    <Text style={dynStyles.progressValue}>{Math.round(expenseRate * 100)}%</Text>
+                  </View>
+                  <ProgressBar
+                    progress={expenseRate}
+                    color={expenseRate > 0.85 ? COMMAND_COLORS.orange : COMMAND_COLORS.teal}
+                    backgroundColor="rgba(255,255,255,0.12)"
+                    height={7}
+                  />
                 </LinearGradient>
+
+                {!hasFinanceAccess && (
+                  <>
+                    <BlurView intensity={28} tint="dark" style={StyleSheet.absoluteFill} />
+                    <View style={dynStyles.financeLockOverlay} pointerEvents="none">
+                      <View style={dynStyles.financeLockIconCircle}>
+                        <Ionicons name="lock-closed" size={18} color="#fff" />
+                      </View>
+                      <Text style={dynStyles.financeLockText}>Upgrade to Premium to view</Text>
+                    </View>
+                  </>
+                )}
               </Pressable>
-            </Animated.View>
-          </ScrollView>
-        )}
-      </CollapsibleHeader>
+            </>
+          )}
+
+          <View style={dynStyles.sectionHeader}>
+            <View>
+              <Text style={dynStyles.sectionTitle}>Commander AI</Text>
+              <Text style={dynStyles.sectionSubtitle}>Predictive household guidance</Text>
+            </View>
+            <Pressable onPress={() => handleRoleActionPress('AIAssistant')} style={dynStyles.sectionButton}>
+              <Text style={dynStyles.sectionButtonText}>Ask AI</Text>
+            </Pressable>
+          </View>
+
+          <Pressable onPress={() => handleRoleActionPress('AIAssistant')} style={dynStyles.aiCard}>
+            <LinearGradient colors={[COMMAND_COLORS.navy900, COMMAND_COLORS.navy700]} style={dynStyles.aiGradient}>
+              <View style={dynStyles.aiTopRow}>
+                <View style={dynStyles.aiIconWrap}>
+                  <Ionicons name="sparkles-outline" size={20} color={COMMAND_COLORS.gold} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={dynStyles.aiTitle}>{featuredInsight?.title ?? 'Household intelligence is ready'}</Text>
+                  <Text style={dynStyles.aiText} numberOfLines={3}>
+                    {featuredInsight?.summary ??
+                      (isParent
+                        ? 'Review spending, tasks, and calendar load to keep the household ahead of upcoming pressure points.'
+                        : isChild
+                          ? 'Stay on top of tasks, homework, rewards, and your upcoming family schedule.'
+                          : 'Review family updates, events, birthdays, and household highlights in one place.')}
+                  </Text>
+                </View>
+              </View>
+              <View style={dynStyles.aiActionRow}>
+                <Text style={dynStyles.aiActionText}>Open Commander AI</Text>
+                <Ionicons name="arrow-forward" size={16} color={COMMAND_COLORS.gold} />
+              </View>
+            </LinearGradient>
+          </Pressable>
+
+          <View style={dynStyles.sectionHeader}>
+            <View>
+              <Text style={dynStyles.sectionTitle}>Weekly Progress</Text>
+              <Text style={dynStyles.sectionSubtitle}>Performance across key household areas</Text>
+            </View>
+            <Pressable onPress={() => handleRoleActionPress('WeeklyReport')} style={dynStyles.sectionButton}>
+              <Text style={dynStyles.sectionButtonText}>Report</Text>
+            </Pressable>
+          </View>
+
+          <View style={dynStyles.progressCard}>
+            {[
+              { label: 'Finance', value: healthScore.financial, color: SCORE_COLOR(healthScore.financial) },
+              { label: 'Tasks', value: healthScore.tasks, color: SCORE_COLOR(healthScore.tasks) },
+              { label: 'Goals', value: healthScore.goals, color: SCORE_COLOR(healthScore.goals) },
+              { label: 'Wellness', value: healthScore.health, color: SCORE_COLOR(healthScore.health) },
+            ].map((item) => (
+              <View key={item.label} style={dynStyles.progressItem}>
+                <View style={dynStyles.progressLabelRowLight}>
+                  <Text style={dynStyles.progressItemLabel}>{item.label}</Text>
+                  <Text style={[dynStyles.progressItemValue, { color: item.color }]}>{item.value}%</Text>
+                </View>
+                <ProgressBar progress={item.value / 100} color={item.color} backgroundColor={colors.border} height={6} />
+              </View>
+            ))}
+          </View>
+        </Animated.View>
+      </ScrollView>
+
+      {fabOpen && (
+        <View style={[dynStyles.fabMenu, { bottom: 92 + insets.bottom }]}> 
+          {[
+            { label: 'Add Task', icon: 'checkbox-outline', route: 'Tasks' },
+            { label: 'Add Event', icon: 'calendar-outline', route: 'Calendar' },
+            ...(isParent ? [{ label: 'Add Expense', icon: 'wallet-outline', route: 'Budgeting' }] : []),
+            { label: 'Ask AI', icon: 'sparkles-outline', route: 'AIAssistant' },
+          ].map((item) => (
+            <Pressable key={item.label} style={dynStyles.fabMenuItem} onPress={() => handleQuickAction(item.route)}>
+              <Text style={dynStyles.fabMenuLabel}>{item.label}</Text>
+              <View style={dynStyles.fabMiniIcon}>
+                <Ionicons name={item.icon as any} size={17} color="#fff" />
+              </View>
+            </Pressable>
+          ))}
+        </View>
+      )}
+
+      <Pressable style={[dynStyles.fab, { bottom: 24 + insets.bottom }]} onPress={() => setFabOpen((prev) => !prev)}>
+        <Ionicons name={fabOpen ? 'close' : 'add'} size={28} color="#fff" />
+      </Pressable>
     </View>
   );
 }
 
 function makeStyles(colors: import('../../theme/ThemeContext').ThemeColors) {
+  const cardWidth = (width - 48) / 2;
+
   return StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
-    scrollContent: {},
-    header: { paddingHorizontal: 20, paddingBottom: 8 },
-    headerCircle1: {
-      position: 'absolute',
-      width: 250,
-      height: 250,
-      borderRadius: 125,
-      backgroundColor: '#F5A623',
-      opacity: 0.05,
-      top: -100,
-      right: -60,
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
     },
-    headerCircle2: {
+    scrollContent: {
+      paddingBottom: 132,
+    },
+    header: {
+      paddingHorizontal: 18,
+      paddingBottom: 22,
+      borderBottomLeftRadius: 28,
+      borderBottomRightRadius: 28,
+      overflow: 'hidden',
+    },
+    headerGlowGold: {
       position: 'absolute',
-      width: 160,
-      height: 160,
-      borderRadius: 80,
-      backgroundColor: '#00D4AA',
+      width: 260,
+      height: 260,
+      borderRadius: 130,
+      backgroundColor: COMMAND_COLORS.gold,
       opacity: 0.08,
-      bottom: -40,
-      left: -40,
+      right: -90,
+      top: -120,
+    },
+    headerGlowTeal: {
+      position: 'absolute',
+      width: 180,
+      height: 180,
+      borderRadius: 90,
+      backgroundColor: COMMAND_COLORS.teal,
+      opacity: 0.08,
+      left: -70,
+      bottom: -80,
     },
     headerTop: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
       alignItems: 'flex-start',
-      marginBottom: 8,
-      gap: 10,
+      justifyContent: 'space-between',
+      gap: 12,
+      marginBottom: 16,
     },
-    headerTextBlock: { flex: 1, minWidth: 0, paddingRight: 4 },
-    greeting: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: '500', letterSpacing: 0.3 },
-    familyName: { fontSize: 20, fontWeight: '900', color: '#fff', marginVertical: 2, flexShrink: 1, letterSpacing: -0.5 },
-    date: { fontSize: 12, color: 'rgba(255,255,255,0.45)', letterSpacing: 0.2 },
+    headerIdentity: {
+      flex: 1,
+      minWidth: 0,
+    },
+    eyebrow: {
+      color: COMMAND_COLORS.gold,
+      fontSize: 10,
+      fontWeight: '900',
+      letterSpacing: 1.3,
+      textTransform: 'uppercase',
+      marginBottom: 6,
+    },
+    greeting: {
+      color: 'rgba(255,255,255,0.64)',
+      fontSize: 13,
+      fontWeight: '600',
+      letterSpacing: 0.2,
+    },
+    familyName: {
+      color: '#fff',
+      fontSize: 25,
+      lineHeight: 30,
+      fontWeight: '900',
+      letterSpacing: -0.8,
+      marginTop: 2,
+    },
+    dateText: {
+      color: 'rgba(255,255,255,0.52)',
+      fontSize: 12,
+      fontWeight: '600',
+      marginTop: 3,
+    },
     activeProfileBadge: {
-      marginTop: 10,
+      marginTop: 12,
       flexDirection: 'row',
       alignItems: 'center',
       alignSelf: 'flex-start',
-      backgroundColor: 'rgba(255,255,255,0.14)',
+      gap: 7,
+      backgroundColor: 'rgba(255,255,255,0.12)',
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.12)',
       paddingHorizontal: 9,
-      paddingVertical: 5,
-      borderRadius: 18,
+      paddingVertical: 6,
+      borderRadius: 999,
+      maxWidth: '95%',
     },
     activeProfileName: {
       color: '#fff',
       fontSize: 12,
-      fontWeight: '700',
-      marginHorizontal: 7,
+      fontWeight: '800',
+      flexShrink: 1,
     },
-    roleBanner: {
+    headerActions: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 8,
-      backgroundColor: 'rgba(255,255,255,0.09)',
-      borderRadius: 14,
-      paddingHorizontal: 12,
-      paddingVertical: 10,
-      marginBottom: 14,
-      borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.1)',
+      flexShrink: 0,
     },
-    roleBannerText: {
-      flex: 1,
-      fontSize: 12,
-      color: 'rgba(255,255,255,0.78)',
-      fontWeight: '600',
-      lineHeight: 17,
-    },
-    headerActions: { flexDirection: 'row', gap: 7, alignItems: 'center', marginTop: 4, flexShrink: 0 },
     headerIconBtn: {
       width: 39,
       height: 39,
+      borderRadius: 14,
+      backgroundColor: 'rgba(255,255,255,0.11)',
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.1)',
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: 'rgba(255,255,255,0.11)',
-      borderRadius: 13,
       position: 'relative',
     },
     notifDot: {
       position: 'absolute',
-      top: -5,
-      right: -5,
-      minWidth: 17,
-      height: 17,
-      borderRadius: 9,
-      backgroundColor: colors.danger,
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderWidth: 2,
-      borderColor: '#0F2952',
-      paddingHorizontal: 3,
-    },
-    notifCount: { fontSize: 9, fontWeight: '800', color: '#fff' },
-    healthScoreCard: {
-      backgroundColor: 'rgba(255,255,255,0.07)',
-      borderRadius: 22,
-      padding: 18,
-      flexDirection: 'row',
-      marginBottom: 20,
-      borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.11)',
-      alignItems: 'center',
-    },
-    healthScoreLeft: {
-      alignItems: 'center',
-      paddingRight: 18,
-      borderRightWidth: 1,
-      borderRightColor: 'rgba(255,255,255,0.13)',
-      marginRight: 16,
-    },
-    healthRingInner: {
-      position: 'absolute',
-      alignItems: 'center',
-      justifyContent: 'center',
-      width: 96,
-      height: 96,
-    },
-    healthScoreLabel: {
-      fontSize: 8,
-      fontWeight: '800',
-      color: 'rgba(255,255,255,0.45)',
-      letterSpacing: 1.3,
-      marginTop: 6,
-    },
-    healthScoreValue: { fontSize: 20, fontWeight: '900', lineHeight: 30 },
-    healthScoreMax: { fontSize: 14, fontWeight: '400', color: 'rgba(255,255,255,0.5)' },
-    healthScoreTrend: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 4 },
-    healthScoreTrendText: { fontSize: 10, color: colors.success, fontWeight: '700' },
-    healthScoreRight: { flex: 1, justifyContent: 'space-between', gap: 8 },
-    healthSubItem: {},
-    healthSubRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 3 },
-    healthSubLabel: { fontSize: 10, color: 'rgba(255,255,255,0.65)', fontWeight: '600', flex: 1 },
-    healthSubPct: { fontSize: 10, fontWeight: '800' },
-    healthSubBar: { height: 3, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 2 },
-    healthSubFill: { height: 3, borderRadius: 2 },
-    membersRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-    membersLabel: { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.7)' },
-    membersViewAll: { fontSize: 12, color: colors.secondary, fontWeight: '600' },
-    membersScroll: { marginBottom: 4 },
-    memberChip: { alignItems: 'center', marginRight: 16 },
-    memberChipName: { fontSize: 12, color: 'rgba(255,255,255,0.85)', fontWeight: '600', marginTop: 6 },
-    memberChipPoints: { fontSize: 10, color: colors.secondary, fontWeight: '500', marginTop: 2 },
-    addMemberChip: { alignItems: 'center', marginRight: 16 },
-    addMemberIcon: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
-      backgroundColor: 'rgba(255,255,255,0.1)',
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderWidth: 1.5,
-      borderColor: 'rgba(255,255,255,0.2)',
-      borderStyle: 'dashed',
-    },
-    addMemberText: { fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 6 },
-    quickStats: { flexDirection: 'row', gap: 10, marginVertical: 16, flexWrap: 'wrap' },
-    statCard: {
-      flex: 1,
-      minWidth: (width - 52) / 2 - 5,
-      borderRadius: 16,
-      padding: 14,
-      alignItems: 'flex-start',
-      position: 'relative',
-      backgroundColor: colors.card,
-      borderWidth: 1,
-      borderColor: 'rgba(0,0,0,0.04)',
-    },
-    statIconCircle: {
-      width: 36,
-      height: 36,
-      borderRadius: 11,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: 10,
-    },
-    statValue: { fontSize: 17, fontWeight: '800', marginBottom: 2, color: colors.text },
-    statLabel: { fontSize: 11, color: colors.textSecondary, fontWeight: '500' },
-    urgentPill: {
-      position: 'absolute',
-      top: 10,
-      right: 24,
-      width: 18,
+      top: -6,
+      right: -6,
+      minWidth: 18,
       height: 18,
       borderRadius: 9,
-      backgroundColor: colors.danger,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    urgentPillText: { fontSize: 10, fontWeight: '900', color: '#fff' },
-    statChevron: { position: 'absolute', bottom: 10, right: 10 },
-    roleActions: {
-      flexDirection: 'row',
-      gap: 10,
-      marginBottom: 10,
-    },
-    roleActionBtn: {
-      flex: 1,
-      borderRadius: 16,
-      overflow: 'hidden',
-      minHeight: 72,
-    },
-    roleActionGrad: {
-      flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 5,
-      paddingVertical: 14,
-      paddingHorizontal: 8,
-      minHeight: 72,
-    },
-    roleActionInner: {
-      flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 5,
-      backgroundColor: colors.card,
-      paddingVertical: 14,
-      paddingHorizontal: 8,
-      minHeight: 72,
-      borderWidth: 1,
-      borderColor: 'rgba(0,0,0,0.06)',
-      borderRadius: 16,
-    },
-    roleActionText: {
-      fontSize: 11,
-      fontWeight: '800',
-      color: colors.text,
-      textAlign: 'center',
-    },
-    insightCard: { marginBottom: 10, borderRadius: 16, borderLeftWidth: 3, borderLeftColor: colors.primary },
-    insightRow: { flexDirection: 'row', alignItems: 'center' },
-    insightIcon: { width: 42, height: 42, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
-    insightTitle: { fontSize: 14, fontWeight: '800', color: colors.text, marginBottom: 3 },
-    insightSummary: { fontSize: 12, color: colors.textSecondary, lineHeight: 17 },
-    sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 22, marginBottom: 12 },
-    sectionTitle: { fontSize: 17, fontWeight: '800', color: colors.text, letterSpacing: -0.3 },
-    seeAll: { fontSize: 12, color: colors.primary, fontWeight: '700', backgroundColor: '#E8EEF9', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 99 },
-    financeCard: { borderRadius: 22, overflow: 'hidden', marginBottom: 4 },
-    financeGradient: { borderRadius: 22, padding: 0 },
-    financeRow: { flexDirection: 'row', paddingTop: 22, paddingHorizontal: 8 },
-    financeItem: { flex: 1, alignItems: 'center', paddingVertical: 10 },
-    financeItemBorder: { borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: 'rgba(255,255,255,0.2)' },
-    financeValue: { fontSize: 19, fontWeight: '800', color: '#fff', marginTop: 7, marginBottom: 4, letterSpacing: -0.5 },
-    financeLabel: { fontSize: 10, color: 'rgba(255,255,255,0.55)', textAlign: 'center', letterSpacing: 0.3 },
-    savingsRateRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 10 },
-    savingsRateLabel: { fontSize: 12, color: 'rgba(255,255,255,0.55)' },
-    savingsRateValue: { fontSize: 13, color: colors.accentLight, fontWeight: '800' },
-    eventCard: { marginBottom: 10, borderRadius: 16, overflow: 'hidden' },
-    eventRow: { flexDirection: 'row', alignItems: 'center' },
-    eventColorStrip: { width: 4, alignSelf: 'stretch' },
-    eventTitle: { fontSize: 14, fontWeight: '700', color: colors.text, marginBottom: 6 },
-    eventMeta: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-    eventTimePill: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
-    eventTime: { fontSize: 11, fontWeight: '700' },
-    eventLocation: { fontSize: 11, color: colors.textMuted, flex: 1 },
-    eventRight: { alignItems: 'center', paddingRight: 14 },
-    eventAttendees: { flexDirection: 'row', alignItems: 'center' },
-    emptyCard: { alignItems: 'center', backgroundColor: colors.card },
-    emptyText: { fontSize: 14, color: colors.textSecondary, marginTop: 10, textAlign: 'center' },
-    emptyAction: { fontSize: 13, color: colors.primary, fontWeight: '700', marginTop: 8 },
-    taskCard: { marginBottom: 10, borderRadius: 14, overflow: 'hidden' },
-    taskRow: { flexDirection: 'row', alignItems: 'center' },
-    taskPriorityStrip: { width: 4, alignSelf: 'stretch' },
-    taskCheckWrap: { paddingHorizontal: 12, paddingVertical: 14 },
-    taskCheck: {
-      width: 22,
-      height: 22,
-      borderRadius: 11,
+      backgroundColor: COMMAND_COLORS.red,
       borderWidth: 2,
+      borderColor: COMMAND_COLORS.navy800,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 3,
+    },
+    notifCount: {
+      color: '#fff',
+      fontSize: 9,
+      fontWeight: '900',
+    },
+    smartStatusCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      backgroundColor: 'rgba(255,255,255,0.09)',
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.12)',
+      padding: 14,
+      marginBottom: 12,
+    },
+    statusIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 14,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    taskTitle: { fontSize: 14, fontWeight: '700', color: colors.text, marginBottom: 6 },
-    taskMeta: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    taskPrioBadge: { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },
-    taskPrioBadgeText: { fontSize: 9, fontWeight: '800', letterSpacing: 0.5 },
-    taskDue: { fontSize: 11, color: colors.textSecondary },
-    reportBanner: { marginVertical: 16, borderRadius: 16, overflow: 'hidden' },
-    reportBannerGrad: {
+    statusLabel: {
+      color: '#fff',
+      fontSize: 14,
+      fontWeight: '900',
+      letterSpacing: -0.2,
+      marginBottom: 2,
+    },
+    statusMessage: {
+      color: 'rgba(255,255,255,0.62)',
+      fontSize: 12,
+      fontWeight: '600',
+      lineHeight: 17,
+    },
+    statusScore: {
+      color: COMMAND_COLORS.gold,
+      fontSize: 26,
+      fontWeight: '900',
+      letterSpacing: -1,
+    },
+    smartBar: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingHorizontal: 16,
-      paddingVertical: 14,
+      backgroundColor: 'rgba(0,0,0,0.18)',
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.09)',
+      paddingVertical: 11,
+      paddingHorizontal: 8,
     },
-    reportBannerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-    reportBannerTitle: { fontSize: 14, fontWeight: '700', color: '#fff' },
-    reportBannerSub: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
+    smartBarItem: {
+      flex: 1,
+      alignItems: 'center',
+    },
+    smartBarValue: {
+      color: '#fff',
+      fontSize: 15,
+      fontWeight: '900',
+      letterSpacing: -0.3,
+    },
+    smartBarLabel: {
+      color: 'rgba(255,255,255,0.48)',
+      fontSize: 10,
+      fontWeight: '700',
+      marginTop: 2,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+    smartBarDivider: {
+      width: 1,
+      height: 28,
+      backgroundColor: 'rgba(255,255,255,0.12)',
+    },
+    kpiGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 12,
+      paddingHorizontal: 18,
+      marginTop: 18,
+    },
+    kpiCard: {
+      width: cardWidth,
+      minHeight: 130,
+      borderRadius: 22,
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 15,
+      justifyContent: 'space-between',
+    },
+    kpiIcon: {
+      width: 38,
+      height: 38,
+      borderRadius: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 10,
+    },
+    kpiValue: {
+      color: colors.text,
+      fontSize: 23,
+      fontWeight: '900',
+      letterSpacing: -0.8,
+    },
+    kpiLabel: {
+      color: colors.textSecondary,
+      fontSize: 12,
+      fontWeight: '800',
+      marginTop: 2,
+    },
+    kpiDetail: {
+      fontSize: 11,
+      fontWeight: '900',
+      marginTop: 6,
+      textTransform: 'uppercase',
+      letterSpacing: 0.4,
+    },
+    sectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      justifyContent: 'space-between',
+      paddingHorizontal: 18,
+      marginTop: 26,
+      marginBottom: 12,
+      gap: 12,
+    },
+    sectionTitle: {
+      color: colors.text,
+      fontSize: 19,
+      fontWeight: '900',
+      letterSpacing: -0.5,
+    },
+    sectionSubtitle: {
+      color: colors.textSecondary,
+      fontSize: 12,
+      fontWeight: '600',
+      marginTop: 3,
+      lineHeight: 16,
+    },
+    sectionButton: {
+      backgroundColor: colors.primary + '12',
+      borderRadius: 999,
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+      flexShrink: 0,
+    },
+    sectionButtonText: {
+      color: colors.primary,
+      fontSize: 12,
+      fontWeight: '900',
+    },
+    actionStack: {
+      paddingHorizontal: 18,
+      gap: 10,
+    },
+    actionCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      backgroundColor: colors.card,
+      borderRadius: 18,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 14,
+    },
+    actionIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    actionTitle: {
+      color: colors.text,
+      fontSize: 14,
+      fontWeight: '900',
+      letterSpacing: -0.2,
+    },
+    actionSubtitle: {
+      color: colors.textSecondary,
+      fontSize: 12,
+      fontWeight: '600',
+      lineHeight: 17,
+      marginTop: 2,
+    },
+    timelinePanel: {
+      marginHorizontal: 18,
+      backgroundColor: colors.card,
+      borderRadius: 22,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingVertical: 4,
+      overflow: 'hidden',
+    },
+    timelineRow: {
+      flexDirection: 'row',
+      minHeight: 72,
+      paddingHorizontal: 14,
+    },
+    timelineLeft: {
+      width: 66,
+      alignItems: 'flex-start',
+      paddingTop: 17,
+    },
+    timelineTime: {
+      color: colors.textSecondary,
+      fontSize: 11,
+      fontWeight: '900',
+    },
+    timelineLine: {
+      position: 'absolute',
+      top: 40,
+      left: 72,
+      width: 1,
+      height: 46,
+      backgroundColor: colors.border,
+    },
+    timelineDotWrap: {
+      width: 20,
+      alignItems: 'center',
+      paddingTop: 22,
+    },
+    timelineDot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+    },
+    timelineContent: {
+      flex: 1,
+      paddingVertical: 16,
+      paddingLeft: 8,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+    },
+    timelineTitle: {
+      color: colors.text,
+      fontSize: 14,
+      fontWeight: '900',
+      letterSpacing: -0.2,
+    },
+    timelineMeta: {
+      color: colors.textSecondary,
+      fontSize: 12,
+      fontWeight: '600',
+      marginTop: 4,
+    },
+    emptyPanel: {
+      alignItems: 'center',
+      paddingHorizontal: 24,
+      paddingVertical: 26,
+    },
+    emptyTitle: {
+      color: colors.text,
+      fontSize: 15,
+      fontWeight: '900',
+      marginTop: 10,
+    },
+    emptyText: {
+      color: colors.textSecondary,
+      fontSize: 12,
+      textAlign: 'center',
+      lineHeight: 18,
+      marginTop: 4,
+    },
+    memberBoardScroll: {
+      paddingHorizontal: 18,
+      gap: 12,
+    },
+    memberStatusCard: {
+      width: 168,
+      backgroundColor: colors.card,
+      borderRadius: 22,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 14,
+      marginRight: 12,
+    },
+    memberTopRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 12,
+    },
+    memberRolePill: {
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 999,
+    },
+    memberRoleText: {
+      fontSize: 9,
+      fontWeight: '900',
+      textTransform: 'uppercase',
+    },
+    memberName: {
+      color: colors.text,
+      fontSize: 14,
+      fontWeight: '900',
+      letterSpacing: -0.2,
+    },
+    memberStatusText: {
+      color: colors.textSecondary,
+      fontSize: 12,
+      fontWeight: '600',
+      marginTop: 4,
+    },
+    memberFooter: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      marginTop: 14,
+    },
+    memberPoints: {
+      color: colors.textSecondary,
+      fontSize: 12,
+      fontWeight: '800',
+    },
+    inviteCard: {
+      width: 132,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.card,
+      borderRadius: 22,
+      borderWidth: 1.5,
+      borderStyle: 'dashed',
+      borderColor: colors.border,
+      padding: 14,
+      marginRight: 18,
+    },
+    inviteIcon: {
+      width: 44,
+      height: 44,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.primary + '12',
+      marginBottom: 10,
+    },
+    inviteTitle: {
+      color: colors.text,
+      fontSize: 14,
+      fontWeight: '900',
+    },
+    inviteSubtitle: {
+      color: colors.textSecondary,
+      fontSize: 11,
+      fontWeight: '600',
+      textAlign: 'center',
+      marginTop: 3,
+    },
+    financeCard: {
+      marginHorizontal: 18,
+      borderRadius: 24,
+      overflow: 'hidden',
+    },
+    financeLockOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+    },
+    financeLockIconCircle: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: 'rgba(255,255,255,0.18)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    financeLockText: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: '#fff',
+    },
+    financeGradient: {
+      padding: 18,
+      borderRadius: 24,
+    },
+    financeTopRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      gap: 12,
+      marginBottom: 18,
+    },
+    financeTitle: {
+      color: '#fff',
+      fontSize: 17,
+      fontWeight: '900',
+      letterSpacing: -0.3,
+    },
+    financeSubtitle: {
+      color: 'rgba(255,255,255,0.58)',
+      fontSize: 12,
+      fontWeight: '700',
+      marginTop: 4,
+    },
+    financeBadge: {
+      borderRadius: 999,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+    },
+    financeBadgeText: {
+      fontSize: 11,
+      fontWeight: '900',
+      textTransform: 'uppercase',
+      letterSpacing: 0.4,
+    },
+    financeMetricRow: {
+      flexDirection: 'row',
+      gap: 8,
+      marginBottom: 16,
+    },
+    financeMetric: {
+      flex: 1,
+      backgroundColor: 'rgba(255,255,255,0.08)',
+      borderRadius: 16,
+      padding: 11,
+    },
+    financeMetricLabel: {
+      color: 'rgba(255,255,255,0.52)',
+      fontSize: 10,
+      fontWeight: '800',
+      textTransform: 'uppercase',
+      letterSpacing: 0.4,
+    },
+    financeMetricValue: {
+      color: '#fff',
+      fontSize: 14,
+      fontWeight: '900',
+      marginTop: 6,
+      letterSpacing: -0.4,
+    },
+    progressLabelRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+    progressLabel: {
+      color: 'rgba(255,255,255,0.62)',
+      fontSize: 12,
+      fontWeight: '800',
+    },
+    progressValue: {
+      color: COMMAND_COLORS.gold,
+      fontSize: 12,
+      fontWeight: '900',
+    },
+    aiCard: {
+      marginHorizontal: 18,
+      borderRadius: 24,
+      overflow: 'hidden',
+    },
+    aiGradient: {
+      borderRadius: 24,
+      padding: 18,
+    },
+    aiTopRow: {
+      flexDirection: 'row',
+      gap: 13,
+      alignItems: 'flex-start',
+    },
+    aiIconWrap: {
+      width: 42,
+      height: 42,
+      borderRadius: 15,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'rgba(198,166,100,0.14)',
+      borderWidth: 1,
+      borderColor: 'rgba(198,166,100,0.18)',
+    },
+    aiTitle: {
+      color: '#fff',
+      fontSize: 16,
+      fontWeight: '900',
+      letterSpacing: -0.3,
+    },
+    aiText: {
+      color: 'rgba(255,255,255,0.66)',
+      fontSize: 13,
+      fontWeight: '600',
+      lineHeight: 19,
+      marginTop: 5,
+    },
+    aiActionRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginTop: 16,
+      paddingTop: 14,
+      borderTopWidth: 1,
+      borderTopColor: 'rgba(255,255,255,0.1)',
+    },
+    aiActionText: {
+      color: COMMAND_COLORS.gold,
+      fontSize: 13,
+      fontWeight: '900',
+    },
+    progressCard: {
+      marginHorizontal: 18,
+      backgroundColor: colors.card,
+      borderRadius: 22,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 16,
+      gap: 14,
+    },
+    progressItem: {
+      gap: 7,
+    },
+    progressLabelRowLight: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    progressItemLabel: {
+      color: colors.text,
+      fontSize: 13,
+      fontWeight: '800',
+    },
+    progressItemValue: {
+      fontSize: 12,
+      fontWeight: '900',
+    },
+    fab: {
+      position: 'absolute',
+      right: 22,
+      width: 58,
+      height: 58,
+      borderRadius: 29,
+      backgroundColor: COMMAND_COLORS.gold,
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 12 },
+      shadowOpacity: 0.22,
+      shadowRadius: 18,
+      elevation: 12,
+    },
+    fabMenu: {
+      position: 'absolute',
+      right: 22,
+      gap: 10,
+      alignItems: 'flex-end',
+    },
+    fabMenuItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    fabMenuLabel: {
+      color: '#fff',
+      backgroundColor: COMMAND_COLORS.navy800,
+      borderRadius: 999,
+      overflow: 'hidden',
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      fontSize: 12,
+      fontWeight: '900',
+    },
+    fabMiniIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: COMMAND_COLORS.navy700,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
   });
 }

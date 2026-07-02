@@ -38,6 +38,7 @@ import { ScreenTimeScreen } from '../screens/family/guardian/ScreenTimeScreen';
 import { SOSAlertsScreen } from '../screens/family/guardian/SOSAlertsScreen';
 import { ApprovalRequestsScreen } from '../screens/family/guardian/ApprovalRequestsScreen';
 import { PairDeviceScreen } from '../screens/family/guardian/PairDeviceScreen';
+import { RewardsScreen } from '../screens/operations/RewardsScreen';
 
 
 const Stack = createNativeStackNavigator();
@@ -244,6 +245,14 @@ export function FamilyNavigator() {
         {(props) => (
           <RoleGuard allowParent allowChild>
             <AchievementsScreen {...props} />
+          </RoleGuard>
+        )}
+      </Stack.Screen>
+
+      <Stack.Screen name="Rewards">
+        {(props) => (
+          <RoleGuard allowParent allowChild>
+            <RewardsScreen {...props} />
           </RoleGuard>
         )}
       </Stack.Screen>

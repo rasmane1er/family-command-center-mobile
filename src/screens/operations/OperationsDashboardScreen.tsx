@@ -163,232 +163,254 @@ export function OperationsDashboardScreen({ navigation }: any) {
     };
   }, [vehicleAlerts.length, lowStockItems.length, expiringDocs.length]);
 
-
   const screenHeader = (
-        <LinearGradient
-          colors={['#102F59', '#0D4268', '#0A4A72']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[styles.header, { paddingTop: insets.top + 6 }]}
-        >
-          <View style={styles.headerTop}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.headerTitle}>Operations Center</Text>
-              <Text style={styles.headerSubtitle}>
-                Home, Vehicles, Documents & More
-              </Text>
-            </View>
+    <LinearGradient
+      colors={['#102F59', '#0D4268', '#0A4A72']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={[styles.header, { paddingTop: insets.top + 6 }]}
+    >
+      <View style={styles.headerTop}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.headerTitle}>Operations Center</Text>
+          <Text style={styles.headerSubtitle}>
+            Home, Vehicles, Documents & More
+          </Text>
+        </View>
+      </View>
 
-          </View>
+      <View style={styles.alertRow}>
+        {alertCards.map((item) => (
+          <Pressable
+            key={item.label}
+            onPress={() => navigation.navigate(item.screen)}
+            style={({ pressed }) => [
+              styles.alertCard,
+              pressed && styles.pressed,
+            ]}
+          >
+            <Ionicons
+              name={item.icon as any}
+              size={15}
+              color={item.count > 0 ? item.color : 'rgba(255,255,255,0.42)'}
+            />
 
-          <View style={styles.alertRow}>
-            {alertCards.map((item) => (
-              <Pressable
-                key={item.label}
-                onPress={() => navigation.navigate(item.screen)}
-                style={({ pressed }) => [
-                  styles.alertCard,
-                  pressed && styles.pressed,
-                ]}
-              >
-                <Ionicons
-                  name={item.icon as any}
-                  size={15}
-                  color={item.count > 0 ? item.color : 'rgba(255,255,255,0.42)'}
-                />
+            <Text
+              style={[
+                styles.alertNumber,
+                {
+                  color:
+                    item.count > 0
+                      ? item.color
+                      : 'rgba(255,255,255,0.42)',
+                },
+              ]}
+            >
+              {item.count}
+            </Text>
 
-                <Text
-                  style={[
-                    styles.alertNumber,
-                    {
-                      color:
-                        item.count > 0
-                          ? item.color
-                          : 'rgba(255,255,255,0.42)',
-                    },
-                  ]}
-                >
-                  {item.count}
-                </Text>
-
-                <Text style={styles.alertLabel}>{item.label}</Text>
-              </Pressable>
-            ))}
-          </View>
-        </LinearGradient>
+            <Text style={styles.alertLabel}>{item.label}</Text>
+          </Pressable>
+        ))}
+      </View>
+    </LinearGradient>
   );
+
   const screenCompact = (
     <LinearGradient
       colors={['#102F59', '#0A4A72']}
-      start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-      style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={[
+        styles.compactHeader,
+        {
+          paddingTop: insets.top,
+        },
+      ]}
     >
-
-      <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>Operations</Text>
-      <View />
+      <Text style={styles.compactTitle}>Operations</Text>
+      <Text style={styles.compactMeta}>{totalAlerts} alerts</Text>
     </LinearGradient>
   );
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
 
       <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
-        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+        {({
+          onScroll,
+          onScrollEndDrag,
+          onMomentumScrollEnd,
+          scrollEventThrottle,
+          contentPaddingTop,
+        }) => (
           <ScrollView
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={[styles.content, { paddingTop: contentPaddingTop }]}
-            onScroll={onScroll} onScrollEndDrag={onScrollEndDrag} onMomentumScrollEnd={onMomentumScrollEnd} scrollEventThrottle={scrollEventThrottle}
+            contentContainerStyle={[
+              styles.content,
+              {
+                paddingTop: contentPaddingTop + 14,
+                paddingBottom: 130,
+              },
+            ]}
+            onScroll={onScroll}
+            onScrollEndDrag={onScrollEndDrag}
+            onMomentumScrollEnd={onMomentumScrollEnd}
+            scrollEventThrottle={scrollEventThrottle}
           >
-        <Pressable
-          disabled={!priorityAlert.screen}
-          onPress={() =>
-            priorityAlert.screen && navigation.navigate(priorityAlert.screen)
-          }
-          style={({ pressed }) => [
-            styles.priorityCard,
-            pressed && priorityAlert.screen && styles.pressed,
-          ]}
-        >
-          <View style={[styles.priorityIcon, { backgroundColor: priorityAlert.bg }]}>
-            <Ionicons
-              name={priorityAlert.icon as any}
-              size={27}
-              color={priorityAlert.color}
-            />
-          </View>
-
-          <View style={{ flex: 1 }}>
-            <View style={styles.priorityTitleRow}>
-              <Text style={styles.priorityTitle}>{priorityAlert.title}</Text>
-              <View style={styles.priorityBadge}>
-                <Text style={styles.priorityBadgeText}>{totalAlerts}</Text>
-              </View>
-            </View>
-
-            <Text style={styles.priorityMessage}>{priorityAlert.message}</Text>
-          </View>
-
-          {priorityAlert.screen && (
-            <Ionicons name="chevron-forward" size={22} color="#7A8AA3" />
-          )}
-        </Pressable>
-
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Quick Access</Text>
-          <Text style={styles.sectionLink}>Customize</Text>
-        </View>
-
-        <View style={styles.quickGrid}>
-          <QuickTile
-            title="Emergency"
-            subtitle="SOS & Safety"
-            icon="shield"
-            color="#DC2626"
-            bg="#FDECEC"
-            onPress={() => navigation.navigate('EmergencyMode')}
-          />
-
-          <QuickTile
-            title="Documents"
-            subtitle="Secure Vault"
-            icon="folder"
-            color="#2086E8"
-            bg="#E8F2FF"
-            onPress={() => navigation.navigate('Documents')}
-          />
-
-          <QuickTile
-            title="Automation"
-            subtitle="Smart Rules"
-            icon="flash"
-            color="#8B5CF6"
-            bg="#F1EAFE"
-            onPress={() => navigation.navigate('Automation')}
-          />
-
-          <QuickTile
-            title="Meal Plan"
-            subtitle="This Week"
-            icon="calendar"
-            color="#20B486"
-            bg="#E7F8F1"
-            onPress={() => navigation.navigate('MealPlanning')}
-          />
-        </View>
-
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Modules</Text>
-          <Text style={styles.moduleCount}>{filteredModules.length} tools</Text>
-        </View>
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterRow}
-        >
-          {FILTERS.map((filter) => {
-            const active = activeFilter === filter;
-
-            return (
-              <Pressable
-                key={filter}
-                onPress={() => setActiveFilter(filter)}
-                style={[styles.filterChip, active && styles.filterChipActive]}
-              >
-                <Text
-                  style={[styles.filterText, active && styles.filterTextActive]}
-                >
-                  {filter}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-
-        <View style={styles.moduleList}>
-          {filteredModules.map((mod) => (
             <Pressable
-              key={mod.key}
-              onPress={() => navigation.navigate(mod.key)}
+              disabled={!priorityAlert.screen}
+              onPress={() =>
+                priorityAlert.screen && navigation.navigate(priorityAlert.screen)
+              }
               style={({ pressed }) => [
-                styles.moduleRow,
-                pressed && styles.pressed,
+                styles.priorityCard,
+                pressed && priorityAlert.screen && styles.pressed,
               ]}
             >
-              <View style={[styles.moduleIcon, { backgroundColor: mod.bg }]}>
-                <Ionicons name={mod.icon as any} size={24} color={mod.color} />
+              <View style={[styles.priorityIcon, { backgroundColor: priorityAlert.bg }]}>
+                <Ionicons
+                  name={priorityAlert.icon as any}
+                  size={27}
+                  color={priorityAlert.color}
+                />
               </View>
 
               <View style={{ flex: 1 }}>
-                <Text style={styles.moduleTitle}>{mod.label}</Text>
-                <Text style={styles.moduleSubtitle}>{mod.desc}</Text>
+                <View style={styles.priorityTitleRow}>
+                  <Text style={styles.priorityTitle}>{priorityAlert.title}</Text>
+                  <View style={styles.priorityBadge}>
+                    <Text style={styles.priorityBadgeText}>{totalAlerts}</Text>
+                  </View>
+                </View>
+
+                <Text style={styles.priorityMessage}>{priorityAlert.message}</Text>
               </View>
 
-              <View style={styles.moduleArrow}>
-                <Ionicons name="chevron-forward" size={18} color="#7890AA" />
-              </View>
+              {priorityAlert.screen && (
+                <Ionicons name="chevron-forward" size={22} color="#7A8AA3" />
+              )}
             </Pressable>
-          ))}
-        </View>
 
-        <LinearGradient
-          colors={['#0B355F', '#061F3A']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.snapshotCard}
-        >
-          <View style={styles.snapshotHeader}>
-            <Text style={styles.snapshotTitle}>Household Snapshot</Text>
-            <Text style={styles.snapshotSubtitle}>Live operational overview</Text>
-          </View>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Quick Access</Text>
+              <Text style={styles.sectionLink}>Customize</Text>
+            </View>
 
-          <View style={styles.snapshotGrid}>
-            <SnapshotItem icon="basket" label="Pantry" value={pantryItems.length} color="#2EAD4A" />
-            <SnapshotItem icon="car" label="Vehicles" value={vehicles.length} color="#EF4444" />
-            <SnapshotItem icon="folder" label="Docs" value={documents.length} color="#2086E8" />
-            <SnapshotItem icon="shield" label="Expiring" value={expiringDocs.length} color="#F5A623" />
-          </View>
-        </LinearGradient>
+            <View style={styles.quickGrid}>
+              <QuickTile
+                title="Emergency"
+                subtitle="SOS & Safety"
+                icon="shield"
+                color="#DC2626"
+                bg="#FDECEC"
+                onPress={() => navigation.navigate('EmergencyMode')}
+              />
+
+              <QuickTile
+                title="Documents"
+                subtitle="Secure Vault"
+                icon="folder"
+                color="#2086E8"
+                bg="#E8F2FF"
+                onPress={() => navigation.navigate('Documents')}
+              />
+
+              <QuickTile
+                title="Automation"
+                subtitle="Smart Rules"
+                icon="flash"
+                color="#8B5CF6"
+                bg="#F1EAFE"
+                onPress={() => navigation.navigate('Automation')}
+              />
+
+              <QuickTile
+                title="Meal Plan"
+                subtitle="This Week"
+                icon="calendar"
+                color="#20B486"
+                bg="#E7F8F1"
+                onPress={() => navigation.navigate('MealPlanning')}
+              />
+            </View>
+
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Modules</Text>
+              <Text style={styles.moduleCount}>{filteredModules.length} tools</Text>
+            </View>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.filterRow}
+            >
+              {FILTERS.map((filter) => {
+                const active = activeFilter === filter;
+
+                return (
+                  <Pressable
+                    key={filter}
+                    onPress={() => setActiveFilter(filter)}
+                    style={[styles.filterChip, active && styles.filterChipActive]}
+                  >
+                    <Text
+                      style={[styles.filterText, active && styles.filterTextActive]}
+                    >
+                      {filter}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+
+            <View style={styles.moduleList}>
+              {filteredModules.map((mod) => (
+                <Pressable
+                  key={mod.key}
+                  onPress={() => navigation.navigate(mod.key)}
+                  style={({ pressed }) => [
+                    styles.moduleRow,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <View style={[styles.moduleIcon, { backgroundColor: mod.bg }]}>
+                    <Ionicons name={mod.icon as any} size={24} color={mod.color} />
+                  </View>
+
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.moduleTitle}>{mod.label}</Text>
+                    <Text style={styles.moduleSubtitle}>{mod.desc}</Text>
+                  </View>
+
+                  <View style={styles.moduleArrow}>
+                    <Ionicons name="chevron-forward" size={18} color="#7890AA" />
+                  </View>
+                </Pressable>
+              ))}
+            </View>
+
+            <LinearGradient
+              colors={['#0B355F', '#061F3A']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.snapshotCard}
+            >
+              <View style={styles.snapshotHeader}>
+                <Text style={styles.snapshotTitle}>Household Snapshot</Text>
+                <Text style={styles.snapshotSubtitle}>
+                  Live operational overview
+                </Text>
+              </View>
+
+              <View style={styles.snapshotGrid}>
+                <SnapshotItem icon="basket" label="Pantry" value={pantryItems.length} color="#2EAD4A" />
+                <SnapshotItem icon="car" label="Vehicles" value={vehicles.length} color="#EF4444" />
+                <SnapshotItem icon="folder" label="Docs" value={documents.length} color="#2086E8" />
+                <SnapshotItem icon="shield" label="Expiring" value={expiringDocs.length} color="#F5A623" />
+              </View>
+            </LinearGradient>
           </ScrollView>
         )}
       </CollapsibleHeader>
@@ -433,6 +455,27 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 18,
     paddingBottom: 24,
+  },
+
+  compactHeader: {
+    paddingBottom: 10,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+
+  compactTitle: {
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+  },
+
+  compactMeta: {
+    color: 'rgba(255,255,255,0.82)',
+    fontSize: 12,
+    fontWeight: '800',
   },
 
   headerTop: {
@@ -488,8 +531,6 @@ const styles = StyleSheet.create({
 
   content: {
     paddingHorizontal: 18,
-    paddingTop: 22,
-    paddingBottom: 130,
   },
 
   priorityCard: {
@@ -508,8 +549,8 @@ const styles = StyleSheet.create({
   },
 
   priorityIcon: {
-    width: 18,
-    height: 18,
+    width: 54,
+    height: 54,
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',

@@ -37,6 +37,7 @@ const defaultSettings: AppSettings = {
   militaryMode: false,
   weekStartsOn: 0,
   subscriptionTier: 'free',
+  deviceLockedMemberId: null,
 };
 
 export const useAppStore = create<AppState>()(

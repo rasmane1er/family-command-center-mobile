@@ -5,6 +5,7 @@ import { TabNavigator } from './TabNavigator';
 
 import { SettingsScreen } from '../screens/settings/SettingsScreen';
 import HelpSupportScreen from '../screens/settings/HelpSupportScreen';
+import { LiveChatScreen } from '../screens/settings/LiveChatScreen';
 import { HealthHubScreen } from '../screens/health/HealthHubScreen';
 import { MedicationManagerScreen } from '../screens/health/MedicationManagerScreen';
 import { SleepTrackerScreen } from '../screens/health/SleepTrackerScreen';
@@ -141,6 +142,12 @@ export function MainNavigator() {
       <Stack.Screen
         name="HelpSupport"
         component={HelpSupportScreen}
+        options={{ animation: 'slide_from_right' }}
+      />
+
+      <Stack.Screen
+        name="LiveChat"
+        component={LiveChatScreen}
         options={{ animation: 'slide_from_right' }}
       />
 

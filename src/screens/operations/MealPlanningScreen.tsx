@@ -15,6 +15,7 @@ import { useShoppingStore } from '../../store/useShoppingStore';
 import type { MealPlan } from '../../types';
 import type { ShopCategory } from '../../store/useShoppingStore';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
+import { useTabBarInset } from '../../hooks/useTabBarInset';
 
 interface PlannedMeal {
   name: string;
@@ -55,6 +56,7 @@ const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
 
 export function MealPlanningScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
+  const tabBarInset = useTabBarInset();
   const [selectedDay, setSelectedDay] = useState('Monday');
   const [weekMeals, setWeekMeals] = useState(INITIAL_MEALS);
   const [addingMeal, setAddingMeal] = useState<{ day: string; type: string } | null>(null);
@@ -304,7 +306,7 @@ export function MealPlanningScreen({ navigation }: any) {
       <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
         {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
           <ScrollView
-            contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+            contentContainerStyle={[styles.content, { paddingBottom: tabBarInset, paddingTop: contentPaddingTop }]}
             onScroll={onScroll}
             onScrollEndDrag={onScrollEndDrag}
             onMomentumScrollEnd={onMomentumScrollEnd}

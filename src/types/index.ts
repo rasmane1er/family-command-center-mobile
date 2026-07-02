@@ -719,6 +719,11 @@ export interface AppSettings {
   weekStartsOn: 0 | 1 | 6;
   displayName?: string;
   subscriptionTier?: string;
+  // Device-local only (never synced) — when set, this physical device is
+  // pinned to a single family member's profile and the profile switcher is
+  // hidden, so e.g. a child can't switch into a parent's profile on their
+  // own phone. See src/screens/family/ProfileSwitcherScreen.tsx.
+  deviceLockedMemberId?: string | null;
 }
 
 // ===================== GUARDIAN / PARENTAL CONTROL =====================

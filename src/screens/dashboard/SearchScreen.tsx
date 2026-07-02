@@ -133,7 +133,7 @@ export function SearchScreen({ navigation: navProp }: any) {
           icon: 'trophy',
           color: '#F5A623',
           bg: '#FEF3E2',
-          route: 'Operations',
+          route: 'Family',
           params: {
             screen: 'Rewards',
             params: {

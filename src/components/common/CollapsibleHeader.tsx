@@ -48,9 +48,15 @@ export function CollapsibleHeader({ fullHeader, compactHeader, children, wrapper
   const fullTranslateY = useRef(new Animated.Value(0)).current;
   const fullCurrentY = useRef(0);
 
-  // Compact bar fades in once full header is gone
+  // Compact bar fades in once full header is gone. `compactVisible` (ref) is
+  // read inside scroll-event handlers to avoid stale-closure issues there;
+  // `isCompactVisible` (state) is what actually drives the `pointerEvents`
+  // prop below — a ref mutation alone doesn't trigger a re-render, so without
+  // this the compact bar's back button silently stops receiving touches once
+  // it fades in, until something unrelated happens to force a re-render.
   const compactOpacity = useRef(new Animated.Value(0)).current;
   const compactVisible = useRef(false);
+  const [isCompactVisible, setIsCompactVisible] = useState(false);
 
   const lastScrollY = useRef(0);
 
@@ -73,12 +79,14 @@ export function CollapsibleHeader({ fullHeader, compactHeader, children, wrapper
   function showCompact() {
     if (compactVisible.current) return;
     compactVisible.current = true;
+    setIsCompactVisible(true);
     Animated.timing(compactOpacity, { toValue: 1, duration: SNAP_MS, useNativeDriver: true }).start();
   }
 
   function hideCompact() {
     if (!compactVisible.current) return;
     compactVisible.current = false;
+    setIsCompactVisible(false);
     Animated.timing(compactOpacity, { toValue: 0, duration: SNAP_MS, useNativeDriver: true }).start();
   }
 
@@ -146,7 +154,7 @@ export function CollapsibleHeader({ fullHeader, compactHeader, children, wrapper
       {/* Compact bar — pinned, fades in once full header is gone */}
       <Animated.View
         onLayout={onCompactLayout}
-        pointerEvents={compactVisible.current ? 'box-none' : 'none'}
+        pointerEvents={isCompactVisible ? 'box-none' : 'none'}
         style={[styles.layer, styles.compactLayer, { opacity: compactOpacity }]}
       >
         {compactHeader}

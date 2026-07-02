@@ -19,6 +19,9 @@ import { CollapsibleHeader } from '../../../components/common/CollapsibleHeader'
 import type { ChildDevice, ChildDeviceStatus } from '../../../types';
 import { GuardianNative } from '../../../native/GuardianNative';
 
+const BOTTOM_MENU_HEIGHT = 72;
+const FAB_BOTTOM_OFFSET = BOTTOM_MENU_HEIGHT + 22;
+
 const statusColors: Record<ChildDeviceStatus, string> = {
   online: colors.success,
   offline: colors.textMuted,
@@ -38,6 +41,7 @@ const statusLabels: Record<ChildDeviceStatus, string> = {
 function BatteryIcon({ level }: { level: number }) {
   const color = level > 20 ? colors.success : colors.danger;
   const iconName = level > 80 ? 'battery-full' : level > 40 ? 'battery-half' : 'battery-dead';
+
   return (
     <View style={styles.batteryRow}>
       <Ionicons name={iconName as any} size={16} color={color} />
@@ -49,15 +53,20 @@ function BatteryIcon({ level }: { level: number }) {
 function formatLastSeen(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diff / 60000);
+
   if (mins < 1) return 'Just now';
   if (mins < 60) return `${mins}m ago`;
+
   const hours = Math.floor(mins / 60);
+
   if (hours < 24) return `${hours}h ago`;
+
   return `${Math.floor(hours / 24)}d ago`;
 }
 
 export function GuardianDashboardScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
+
   const devices = useGuardianStore((s) => s.devices);
   const sosAlerts = useGuardianStore((s) => s.sosAlerts);
   const approvalRequests = useGuardianStore((s) => s.approvalRequests);
@@ -67,6 +76,10 @@ export function GuardianDashboardScreen({ navigation }: any) {
 
   const unresolved = sosAlerts.filter((a) => !a.isResolved);
   const pendingApprovals = approvalRequests.filter((r) => r.status === 'pending');
+  const onlineDevices = devices.filter((d) => d.status === 'online').length;
+  const restrictedDevices = devices.filter(
+    (d) => d.status === 'restricted' || d.status === 'school_mode' || d.status === 'bedtime'
+  ).length;
 
   const getMemberName = (memberId: string) =>
     members.find((m) => m.id === memberId)?.name ?? 'Unknown';
@@ -80,6 +93,7 @@ export function GuardianDashboardScreen({ navigation }: any) {
       school_on: 'Enable School Mode',
       bedtime_on: 'Enable Bedtime Mode',
     };
+
     Alert.alert(
       labels[type],
       `Send "${labels[type]}" command to ${device.deviceName}?`,
@@ -89,6 +103,7 @@ export function GuardianDashboardScreen({ navigation }: any) {
           text: 'Send',
           onPress: () => {
             sendCommand(device.id, type, family?.id ?? 'demo-family');
+
             if (type === 'lock') GuardianNative.lockScreen();
             if (type === 'school_on') GuardianNative.setSchoolMode(true);
             if (type === 'bedtime_on') GuardianNative.setBedtimeMode(true);
@@ -98,155 +113,291 @@ export function GuardianDashboardScreen({ navigation }: any) {
     );
   };
 
-  return (
-    <View style={styles.container}>
+  const screenHeader = (
+    <LinearGradient
+      colors={['#071B36', '#0F2952', '#1E4A8A']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={[styles.header, { paddingTop: insets.top + 8 }]}
+    >
+      <View style={styles.headerRow}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.headerIconButton}>
+          <Ionicons name="arrow-back" size={22} color="#fff" />
+        </Pressable>
 
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
-        <LinearGradient
-          colors={['#0F2952', '#1E4A8A']}
-          style={[styles.header, { paddingTop: insets.top + 6 }]}
-        >
-          <View style={styles.headerRow}>
-            <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
-              <Ionicons name="arrow-back" size={22} color="#fff" />
-            </Pressable>
-            <View style={styles.headerTextBlock}>
-              <Text style={styles.headerTitle}>Family Guardian</Text>
-              <Text style={styles.headerSubtitle}>Parental Controls</Text>
-            </View>
-            <Pressable
-              onPress={() => navigation.navigate('ApprovalRequests')}
-              style={styles.headerAction}
-            >
-              <Ionicons name="checkmark-circle-outline" size={22} color="#fff" />
-              {pendingApprovals.length > 0 && (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{pendingApprovals.length}</Text>
-                </View>
-              )}
-            </Pressable>
+        <View style={styles.headerTextBlock}>
+          <View style={styles.headerEyebrowRow}>
+            <View style={styles.liveDot} />
+            <Text style={styles.headerEyebrow}>Guardian Command Center</Text>
           </View>
-        </LinearGradient>
-        {/* SOS Banner */}
-        {unresolved.length > 0 && (
-          <Pressable
-            onPress={() => navigation.navigate('SOSAlerts')}
-            style={styles.sosBanner}
-          >
-            <Ionicons name="warning" size={22} color="#fff" />
-            <Text style={styles.sosBannerText}>
-              {unresolved.length} Active SOS Alert{unresolved.length > 1 ? 's' : ''} — Tap to view
-            </Text>
-            <Ionicons name="chevron-forward" size={18} color="#fff" />
-          </Pressable>
-        )}
-
-        {/* Quick links row */}
-        <View style={styles.quickLinksRow}>
-          {[
-            { label: 'Geofences', icon: 'location', route: 'Geofence', color: '#2980B9', bg: '#D6EAF8' },
-            { label: 'Screen Time', icon: 'time', route: 'ScreenTime', color: '#8E44AD', bg: '#F3E5F5' },
-            { label: 'SOS Alerts', icon: 'warning', route: 'SOSAlerts', color: colors.danger, bg: colors.dangerLight },
-            { label: 'Approvals', icon: 'checkmark-circle', route: 'ApprovalRequests', color: colors.success, bg: colors.successLight },
-          ].map((item) => (
-            <Pressable
-              key={item.route}
-              onPress={() => navigation.navigate(item.route)}
-              style={[styles.quickLink, shadows.sm]}
-            >
-              <View style={[styles.quickLinkIcon, { backgroundColor: item.bg }]}>
-                <Ionicons name={item.icon as any} size={20} color={item.color} />
-              </View>
-              <Text style={styles.quickLinkLabel}>{item.label}</Text>
-            </Pressable>
-          ))}
+          <Text style={styles.headerTitle}>Family Guardian</Text>
+          <Text style={styles.headerSubtitle}>
+            Devices, approvals, safety alerts, and parental controls
+          </Text>
         </View>
 
-        <Text style={styles.sectionTitle}>Paired Devices</Text>
+        <Pressable
+          onPress={() => navigation.navigate('ApprovalRequests')}
+          style={styles.headerIconButton}
+        >
+          <Ionicons name="checkmark-circle-outline" size={22} color="#fff" />
+          {pendingApprovals.length > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{pendingApprovals.length}</Text>
+            </View>
+          )}
+        </Pressable>
+      </View>
 
-        {devices.length === 0 && (
-          <View style={styles.emptyState}>
-            <Ionicons name="phone-portrait-outline" size={64} color={colors.textMuted} />
-            <Text style={styles.emptyTitle}>No paired devices yet</Text>
-            <Text style={styles.emptyDesc}>Tap + to pair a child's device</Text>
+      <View style={styles.heroCard}>
+        <View style={styles.heroTopRow}>
+          <View>
+            <Text style={styles.heroLabel}>Protection status</Text>
+            <Text style={styles.heroTitle}>
+              {unresolved.length > 0 ? 'Action needed' : 'All systems guarded'}
+            </Text>
+          </View>
+
+          <View
+            style={[
+              styles.statusPill,
+              unresolved.length > 0 ? styles.statusPillDanger : styles.statusPillSafe,
+            ]}
+          >
+            <Ionicons
+              name={unresolved.length > 0 ? 'warning' : 'shield-checkmark'}
+              size={14}
+              color={unresolved.length > 0 ? colors.danger : colors.success}
+            />
+            <Text
+              style={[
+                styles.statusPillText,
+                { color: unresolved.length > 0 ? colors.danger : colors.success },
+              ]}
+            >
+              {unresolved.length > 0 ? `${unresolved.length} SOS` : 'Secure'}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.heroStatsRow}>
+          <View style={styles.heroStat}>
+            <Text style={styles.heroStatValue}>{devices.length}</Text>
+            <Text style={styles.heroStatLabel}>Devices</Text>
+          </View>
+
+          <View style={styles.heroDivider} />
+
+          <View style={styles.heroStat}>
+            <Text style={styles.heroStatValue}>{onlineDevices}</Text>
+            <Text style={styles.heroStatLabel}>Online</Text>
+          </View>
+
+          <View style={styles.heroDivider} />
+
+          <View style={styles.heroStat}>
+            <Text style={styles.heroStatValue}>{pendingApprovals.length}</Text>
+            <Text style={styles.heroStatLabel}>Approvals</Text>
+          </View>
+
+          <View style={styles.heroDivider} />
+
+          <View style={styles.heroStat}>
+            <Text style={styles.heroStatValue}>{restrictedDevices}</Text>
+            <Text style={styles.heroStatLabel}>Controlled</Text>
+          </View>
+        </View>
+      </View>
+    </LinearGradient>
+  );
+
+  const screenCompact = (
+    <LinearGradient
+      colors={['#071B36', '#0F2952']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={[styles.compactHeader, { paddingTop: insets.top }]}
+    >
+      <Pressable onPress={() => navigation.goBack()} style={styles.compactBack}>
+        <Ionicons name="arrow-back" size={21} color="#fff" />
+      </Pressable>
+
+      <View style={styles.compactTitleBlock}>
+        <Text style={styles.compactTitle}>Family Guardian</Text>
+        <Text style={styles.compactSubtitle}>
+          {devices.length} device{devices.length === 1 ? '' : 's'} · {pendingApprovals.length} approval
+          {pendingApprovals.length === 1 ? '' : 's'}
+        </Text>
+      </View>
+
+      <Pressable
+        onPress={() => navigation.navigate('ApprovalRequests')}
+        style={styles.compactAction}
+      >
+        <Ionicons name="checkmark-circle-outline" size={21} color="#fff" />
+        {pendingApprovals.length > 0 && (
+          <View style={styles.compactBadge}>
+            <Text style={styles.compactBadgeText}>{pendingApprovals.length}</Text>
           </View>
         )}
+      </Pressable>
+    </LinearGradient>
+  );
 
-        {devices.map((device) => (
-          <Pressable
-            key={device.id}
-            style={[styles.deviceCard, shadows.card]}
-            onPress={() => navigation.navigate('ChildDeviceDetail', { deviceId: device.id })}
+  return (
+    <View style={styles.container}>
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({
+          onScroll,
+          onScrollEndDrag,
+          onMomentumScrollEnd,
+          scrollEventThrottle,
+          contentPaddingTop,
+        }) => (
+          <ScrollView
+            contentContainerStyle={[
+              styles.content,
+              {
+                paddingTop: contentPaddingTop,
+                paddingBottom: Math.max(insets.bottom, 16) + BOTTOM_MENU_HEIGHT + 96,
+              },
+            ]}
+            onScroll={onScroll}
+            onScrollEndDrag={onScrollEndDrag}
+            onMomentumScrollEnd={onMomentumScrollEnd}
+            scrollEventThrottle={scrollEventThrottle}
+            showsVerticalScrollIndicator={false}
           >
-            <View style={styles.deviceCardHeader}>
-              <View style={[styles.deviceAvatar, { backgroundColor: getMemberColor(device.memberId) }]}>
-                <Text style={styles.deviceAvatarText}>
-                  {getMemberName(device.memberId).charAt(0).toUpperCase()}
+            {/* SOS Banner */}
+            {unresolved.length > 0 && (
+              <Pressable
+                onPress={() => navigation.navigate('SOSAlerts')}
+                style={styles.sosBanner}
+              >
+                <Ionicons name="warning" size={22} color="#fff" />
+                <Text style={styles.sosBannerText}>
+                  {unresolved.length} Active SOS Alert{unresolved.length > 1 ? 's' : ''} — Tap to view
                 </Text>
-              </View>
+                <Ionicons name="chevron-forward" size={18} color="#fff" />
+              </Pressable>
+            )}
 
-              <View style={styles.deviceInfo}>
-                <Text style={styles.deviceMemberName}>{getMemberName(device.memberId)}</Text>
-                <Text style={styles.deviceName}>{device.deviceName}</Text>
-                <View style={styles.deviceMeta}>
-                  <View style={[styles.statusBadge, { backgroundColor: statusColors[device.status] + '22' }]}>
-                    <View style={[styles.statusDot, { backgroundColor: statusColors[device.status] }]} />
-                    <Text style={[styles.statusLabel, { color: statusColors[device.status] }]}>
-                      {statusLabels[device.status]}
-                    </Text>
+            {/* Quick links row */}
+            <View style={styles.quickLinksRow}>
+              {[
+                { label: 'Geofences', icon: 'location', route: 'Geofence', color: '#2980B9', bg: '#D6EAF8' },
+                { label: 'Screen Time', icon: 'time', route: 'ScreenTime', color: '#8E44AD', bg: '#F3E5F5' },
+                { label: 'SOS Alerts', icon: 'warning', route: 'SOSAlerts', color: colors.danger, bg: colors.dangerLight },
+                { label: 'Approvals', icon: 'checkmark-circle', route: 'ApprovalRequests', color: colors.success, bg: colors.successLight },
+              ].map((item) => (
+                <Pressable
+                  key={item.route}
+                  onPress={() => navigation.navigate(item.route)}
+                  style={[styles.quickLink, shadows.sm]}
+                >
+                  <View style={[styles.quickLinkIcon, { backgroundColor: item.bg }]}>
+                    <Ionicons name={item.icon as any} size={20} color={item.color} />
                   </View>
-                  <Ionicons
-                    name={device.platform === 'ios' ? 'logo-apple' : 'logo-android'}
-                    size={14}
-                    color={colors.textMuted}
-                    style={{ marginLeft: 8 }}
-                  />
-                </View>
-              </View>
-
-              <View style={styles.deviceRight}>
-                <BatteryIcon level={device.batteryLevel} />
-                <Text style={styles.lastSeen}>{formatLastSeen(device.lastSeen)}</Text>
-              </View>
+                  <Text style={styles.quickLinkLabel}>{item.label}</Text>
+                </Pressable>
+              ))}
             </View>
 
-            <View style={styles.deviceActions}>
+            <Text style={styles.sectionTitle}>Paired Devices</Text>
+
+            {devices.length === 0 && (
+              <View style={styles.emptyState}>
+                <Ionicons name="phone-portrait-outline" size={64} color={colors.textMuted} />
+                <Text style={styles.emptyTitle}>No paired devices yet</Text>
+                <Text style={styles.emptyDesc}>Tap + to pair a child's device</Text>
+              </View>
+            )}
+
+            {devices.map((device) => (
               <Pressable
-                style={styles.deviceActionBtn}
-                onPress={() => handleQuickCommand(device, 'lock')}
-              >
-                <Ionicons name="lock-closed" size={16} color={colors.danger} />
-                <Text style={[styles.deviceActionText, { color: colors.danger }]}>Lock</Text>
-              </Pressable>
-              <Pressable
-                style={styles.deviceActionBtn}
-                onPress={() => handleQuickCommand(device, 'school_on')}
-              >
-                <Ionicons name="school" size={16} color="#2980B9" />
-                <Text style={[styles.deviceActionText, { color: '#2980B9' }]}>School</Text>
-              </Pressable>
-              <Pressable
-                style={styles.deviceActionBtn}
-                onPress={() => handleQuickCommand(device, 'bedtime_on')}
-              >
-                <Ionicons name="moon" size={16} color="#6A1B9A" />
-                <Text style={[styles.deviceActionText, { color: '#6A1B9A' }]}>Bedtime</Text>
-              </Pressable>
-              <Pressable
-                style={styles.deviceActionBtn}
+                key={device.id}
+                style={[styles.deviceCard, shadows.card]}
                 onPress={() => navigation.navigate('ChildDeviceDetail', { deviceId: device.id })}
               >
-                <Ionicons name="settings-outline" size={16} color={colors.textSecondary} />
-                <Text style={[styles.deviceActionText, { color: colors.textSecondary }]}>Manage</Text>
+                <View style={styles.deviceCardHeader}>
+                  <View style={[styles.deviceAvatar, { backgroundColor: getMemberColor(device.memberId) }]}>
+                    <Text style={styles.deviceAvatarText}>
+                      {getMemberName(device.memberId).charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+
+                  <View style={styles.deviceInfo}>
+                    <Text style={styles.deviceMemberName}>{getMemberName(device.memberId)}</Text>
+                    <Text style={styles.deviceName}>{device.deviceName}</Text>
+                    <View style={styles.deviceMeta}>
+                      <View style={[styles.statusBadge, { backgroundColor: statusColors[device.status] + '22' }]}>
+                        <View style={[styles.statusDot, { backgroundColor: statusColors[device.status] }]} />
+                        <Text style={[styles.statusLabel, { color: statusColors[device.status] }]}>
+                          {statusLabels[device.status]}
+                        </Text>
+                      </View>
+                      <Ionicons
+                        name={device.platform === 'ios' ? 'logo-apple' : 'logo-android'}
+                        size={14}
+                        color={colors.textMuted}
+                        style={{ marginLeft: 8 }}
+                      />
+                    </View>
+                  </View>
+
+                  <View style={styles.deviceRight}>
+                    <BatteryIcon level={device.batteryLevel} />
+                    <Text style={styles.lastSeen}>{formatLastSeen(device.lastSeen)}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.deviceActions}>
+                  <Pressable
+                    style={styles.deviceActionBtn}
+                    onPress={() => handleQuickCommand(device, 'lock')}
+                  >
+                    <Ionicons name="lock-closed" size={16} color={colors.danger} />
+                    <Text style={[styles.deviceActionText, { color: colors.danger }]}>Lock</Text>
+                  </Pressable>
+
+                  <Pressable
+                    style={styles.deviceActionBtn}
+                    onPress={() => handleQuickCommand(device, 'school_on')}
+                  >
+                    <Ionicons name="school" size={16} color="#2980B9" />
+                    <Text style={[styles.deviceActionText, { color: '#2980B9' }]}>School</Text>
+                  </Pressable>
+
+                  <Pressable
+                    style={styles.deviceActionBtn}
+                    onPress={() => handleQuickCommand(device, 'bedtime_on')}
+                  >
+                    <Ionicons name="moon" size={16} color="#6A1B9A" />
+                    <Text style={[styles.deviceActionText, { color: '#6A1B9A' }]}>Bedtime</Text>
+                  </Pressable>
+
+                  <Pressable
+                    style={styles.deviceActionBtn}
+                    onPress={() => navigation.navigate('ChildDeviceDetail', { deviceId: device.id })}
+                  >
+                    <Ionicons name="settings-outline" size={16} color={colors.textSecondary} />
+                    <Text style={[styles.deviceActionText, { color: colors.textSecondary }]}>Manage</Text>
+                  </Pressable>
+                </View>
               </Pressable>
-            </View>
-          </Pressable>
-        ))}
-      </ScrollView>
+            ))}
+          </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       {/* FAB */}
       <Pressable
-        style={styles.fab}
+        style={[
+          styles.fab,
+          {
+            bottom: Math.max(insets.bottom, 16) + FAB_BOTTOM_OFFSET,
+          },
+        ]}
         onPress={() => navigation.navigate('PairDevice')}
       >
         <Ionicons name="add" size={28} color="#fff" />
@@ -259,44 +410,190 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
 
   header: {
-    paddingHorizontal: 20,
-    paddingBottom: 8,
+    paddingHorizontal: 10,
+    paddingBottom: 5,
   },
 
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    marginBottom: 5,
   },
 
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+  headerIconButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.16)',
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   headerTextBlock: { flex: 1 },
 
-  headerTitle: {
-    fontSize: 18,
+  headerEyebrowRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 1,
+  },
+
+  liveDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: '#4ADE80',
+  },
+
+  headerEyebrow: {
+    fontSize: 10,
     fontWeight: '800',
+    color: 'rgba(255,255,255,0.72)',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '900',
     color: '#fff',
+    letterSpacing: -0.5,
   },
 
   headerSubtitle: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.65)',
-    marginTop: 2,
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.68)',
+    marginTop: 3,
+    lineHeight: 17,
   },
 
-  headerAction: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+  heroCard: {
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.14)',
+    borderRadius: 22,
+    padding: 10,
+  },
+
+  heroTopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 5,
+  },
+
+  heroLabel: {
+    fontSize: 6,
+    color: 'rgba(255,255,255,0.62)',
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+
+  heroTitle: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#fff',
+    letterSpacing: -0.2,
+  },
+
+  statusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 999,
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+  },
+
+  statusPillSafe: {
+    backgroundColor: 'rgba(39,174,96,0.18)',
+  },
+
+  statusPillDanger: {
+    backgroundColor: 'rgba(231,76,60,0.18)',
+  },
+
+  statusPillText: {
+    fontSize: 8,
+    fontWeight: '800',
+  },
+
+  heroStatsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+
+  heroStat: {
+    flex: 1,
+    alignItems: 'center',
+  },
+
+  heroStatValue: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#fff',
+  },
+
+  heroStatLabel: {
+    fontSize: 8,
+    color: 'rgba(255,255,255,0.62)',
+    marginTop: 3,
+    fontWeight: '700',
+  },
+
+  heroDivider: {
+    width: 1,
+    height: 18,
+    backgroundColor: 'rgba(255,255,255,0.16)',
+  },
+
+  compactHeader: {
+    paddingBottom: 10,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+
+  compactBack: {
+    width: 38,
+    height: 38,
+    borderRadius: 13,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  compactTitleBlock: {
+    flex: 1,
+  },
+
+  compactTitle: {
+    color: '#fff',
+    fontSize: 17,
+    fontWeight: '900',
+    letterSpacing: -0.3,
+  },
+
+  compactSubtitle: {
+    color: 'rgba(255,255,255,0.62)',
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 1,
+  },
+
+  compactAction: {
+    width: 38,
+    height: 38,
+    borderRadius: 13,
+    backgroundColor: 'rgba(255,255,255,0.14)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -306,15 +603,34 @@ const styles = StyleSheet.create({
     top: -4,
     right: -4,
     backgroundColor: colors.danger,
+    borderRadius: 9,
+    minWidth: 18,
+    height: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 2,
+    borderColor: '#0F2952',
+  },
+
+  badgeText: { fontSize: 10, color: '#fff', fontWeight: '800' },
+
+  compactBadge: {
+    position: 'absolute',
+    top: -3,
+    right: -3,
+    backgroundColor: colors.danger,
     borderRadius: 8,
     minWidth: 16,
     height: 16,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 3,
+    borderWidth: 1.5,
+    borderColor: '#0F2952',
   },
 
-  badgeText: { fontSize: 10, color: '#fff', fontWeight: '700' },
+  compactBadgeText: { fontSize: 9, color: '#fff', fontWeight: '800' },
 
   content: { padding: 16 },
 
@@ -322,16 +638,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.danger,
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 14,
     marginBottom: 16,
     gap: 10,
+    ...shadows.sm,
   },
 
   sosBannerText: {
     flex: 1,
     color: '#fff',
-    fontWeight: '700',
+    fontWeight: '800',
     fontSize: 14,
   },
 
@@ -344,30 +661,31 @@ const styles = StyleSheet.create({
   quickLink: {
     flex: 1,
     backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 12,
+    borderRadius: 14,
+    paddingVertical: 13,
+    paddingHorizontal: 8,
     alignItems: 'center',
-    gap: 6,
+    gap: 7,
   },
 
   quickLinkIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 42,
+    height: 42,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   quickLinkLabel: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '800',
     color: colors.text,
     textAlign: 'center',
   },
 
   sectionTitle: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '800',
     color: colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -381,7 +699,7 @@ const styles = StyleSheet.create({
 
   emptyTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
     color: colors.text,
     marginTop: 16,
   },
@@ -394,7 +712,7 @@ const styles = StyleSheet.create({
 
   deviceCard: {
     backgroundColor: colors.card,
-    borderRadius: 16,
+    borderRadius: 18,
     marginBottom: 14,
     overflow: 'hidden',
   },
@@ -416,7 +734,7 @@ const styles = StyleSheet.create({
 
   deviceAvatarText: {
     fontSize: 20,
-    fontWeight: '800',
+    fontWeight: '900',
     color: '#fff',
   },
 
@@ -424,7 +742,7 @@ const styles = StyleSheet.create({
 
   deviceMemberName: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
     color: colors.text,
   },
 
@@ -457,7 +775,7 @@ const styles = StyleSheet.create({
 
   statusLabel: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 
   deviceRight: {
@@ -473,7 +791,7 @@ const styles = StyleSheet.create({
 
   batteryText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 
   lastSeen: {
@@ -485,6 +803,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderTopWidth: 1,
     borderTopColor: colors.border,
+    backgroundColor: colors.background + '66',
   },
 
   deviceActionBtn: {
@@ -497,12 +816,11 @@ const styles = StyleSheet.create({
 
   deviceActionText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 
   fab: {
     position: 'absolute',
-    bottom: 30,
     right: 20,
     width: 56,
     height: 56,

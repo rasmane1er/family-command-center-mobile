@@ -256,7 +256,7 @@ const todayEvents = visibleEvents.filter(
     isChild
       ? [
           { label: 'My Homework', icon: 'school', color: '#2980B9', tab: 'Family', screen: 'HomeworkTracker' },
-          { label: 'My Rewards', icon: 'trophy', color: '#F5A623', tab: 'Operations', screen: 'Rewards' },
+          { label: 'My Rewards', icon: 'trophy', color: '#F5A623', tab: 'Family', screen: 'Rewards' },
           { label: 'My Tasks', icon: 'checkbox', color: '#27AE60', tab: 'Family', screen: 'Tasks' },
           { label: 'Family Board', icon: 'people', color: '#8E44AD', tab: 'Family', screen: 'FamilyBoard' },
         ]

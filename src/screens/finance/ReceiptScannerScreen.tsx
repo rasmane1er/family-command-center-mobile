@@ -13,8 +13,7 @@ import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import type { Transaction, Bill, Subscription } from '../../types';
-
-const API_BASE_URL = 'http://localhost:3000';
+import { API_BASE_URL } from '../../config/api';
 
 const CATEGORIES = ['Food & Drink', 'Shopping', 'Transportation', 'Bills & Utilities', 'Entertainment', 'Health', 'Education', 'Other'];
 

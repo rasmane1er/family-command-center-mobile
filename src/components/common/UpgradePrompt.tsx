@@ -1,10 +1,11 @@
-import React from 'react';
-import { View, Text, Pressable, StyleSheet, Modal } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Pressable, StyleSheet, Modal, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../theme/ThemeContext';
-import { useAppStore } from '../../store/useAppStore';
 import { SubscriptionTier, TIER_LABELS, TIER_PRICES } from '../../hooks/useSubscription';
+import { usePurchases } from '../../hooks/usePurchases';
+import { PAYWALL_RESULT } from 'react-native-purchases-ui';
 
 interface Props {
   visible: boolean;
@@ -16,12 +17,18 @@ interface Props {
 
 export function UpgradePrompt({ visible, onClose, featureName, requiredTier, description }: Props) {
   const { colors } = useTheme();
-  const updateSettings = useAppStore((s) => s.updateSettings);
+  const { showPaywall } = usePurchases();
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleUpgrade = () => {
-    updateSettings({ subscriptionTier: requiredTier });
-    onClose();
-    // In production: launch in-app purchase flow here
+  const handleUpgrade = async () => {
+    setIsLoading(true);
+    const result = await showPaywall(requiredTier === 'family_pro' ? 'family_pro' : 'premium');
+    setIsLoading(false);
+    if (result === PAYWALL_RESULT.PURCHASED || result === PAYWALL_RESULT.RESTORED) {
+      onClose();
+    }
+    // CANCELLED / NOT_PRESENTED / ERROR: leave the prompt open so the user can
+    // retry — usePurchases() surfaces the specific error elsewhere if needed.
   };
 
   return (
@@ -40,12 +47,16 @@ export function UpgradePrompt({ visible, onClose, featureName, requiredTier, des
                 {TIER_LABELS[requiredTier]} — {TIER_PRICES[requiredTier]}
               </Text>
             </View>
-            <Pressable onPress={handleUpgrade} style={styles.upgradeBtn}>
+            <Pressable onPress={handleUpgrade} style={styles.upgradeBtn} disabled={isLoading}>
               <LinearGradient colors={['#F5A623', '#FF8C42']} style={styles.upgradeBtnGradient}>
-                <Text style={styles.upgradeBtnText}>Upgrade to {TIER_LABELS[requiredTier]}</Text>
+                {isLoading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.upgradeBtnText}>Upgrade to {TIER_LABELS[requiredTier]}</Text>
+                )}
               </LinearGradient>
             </Pressable>
-            <Pressable onPress={onClose} style={styles.cancelBtn}>
+            <Pressable onPress={onClose} style={styles.cancelBtn} disabled={isLoading}>
               <Text style={[styles.cancelText, { color: colors.textSecondary }]}>Maybe later</Text>
             </Pressable>
           </View>

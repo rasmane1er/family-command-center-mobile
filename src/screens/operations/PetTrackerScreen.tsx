@@ -456,90 +456,91 @@ export function PetTrackerScreen({ navigation }: any) {
     <View style={styles.container}>
       <StatusBar style="light" />
 
-      {vetCharges.length > 0 && (
-        <View style={styles.vetBanner}>
-          <Pressable onPress={() => setVetBannerExpanded((v) => !v)} style={styles.vetBannerHeader}>
-            <Ionicons name="medical" size={16} color="#1B5E20" />
-            <Text style={styles.vetBannerTitle}>Detected {vetCharges.length} vet charge(s)</Text>
-            <Ionicons name={vetBannerExpanded ? 'chevron-up' : 'chevron-down'} size={16} color="#1B5E20" />
-          </Pressable>
-          {vetBannerExpanded && vetCharges
-            .filter((c) => !dismissedCharges.has(c.merchantName + c.date))
-            .map((charge, i) => {
-              const chargeKey = charge.merchantName + charge.date;
-              return (
-                <View key={i} style={styles.vetChargeRow}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.vetChargeMerchant}>{charge.merchantName}</Text>
-                    <Text style={styles.vetChargeDetail}>${charge.amount} · {charge.date}</Text>
-                  </View>
-                  {pets.length > 0 && (
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ maxWidth: 120 }}>
-                      {pets.map((p) => (
-                        <Pressable
-                          key={p.id}
-                          onPress={() => setSelectedPetForCharge((prev) => ({ ...prev, [chargeKey]: p.id }))}
-                          style={[styles.vetPetChip, selectedPetForCharge[chargeKey] === p.id && styles.vetPetChipActive]}
-                        >
-                          <Text style={styles.vetPetChipText}>{p.emoji}</Text>
-                        </Pressable>
-                      ))}
-                    </ScrollView>
-                  )}
-                  <Pressable
-                    onPress={() => {
-                      const petId = selectedPetForCharge[chargeKey] ?? (pets[0]?.id ?? '');
-                      if (!petId) {
-                        Alert.alert('No Pet', 'Add a pet first.');
-                        return;
-                      }
-                      addEvent({
-                        petId,
-                        type: 'vet',
-                        title: charge.merchantName,
-                        date: charge.date,
-                        cost: charge.amount,
-                        isDone: true,
-                      });
-                      setDismissedCharges((prev) => new Set([...prev, chargeKey]));
-                      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                    }}
-                    style={styles.vetLogBtn}
-                  >
-                    <Text style={styles.vetLogBtnText}>Log</Text>
-                  </Pressable>
-                  <Pressable onPress={() => setDismissedCharges((prev) => new Set([...prev, chargeKey]))} style={styles.vetDismissBtn}>
-                    <Ionicons name="close" size={14} color={colors.textMuted} />
-                  </Pressable>
-                </View>
-              );
-            })}
-        </View>
-      )}
-
-      <View style={styles.tabs}>
-        {(['pets', 'events', 'health'] as const).map((tab) => (
-          <Pressable
-            key={tab}
-            onPress={() => setActiveTab(tab)}
-            style={[styles.tab, activeTab === tab && styles.tabActive]}
-          >
-            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
       <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
         {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
           <ScrollView
-            contentContainerStyle={{ paddingBottom: 100, paddingTop: contentPaddingTop }}
+            contentContainerStyle={{ paddingTop: contentPaddingTop + 12, paddingBottom: 100 }}
             onScroll={onScroll}
             onScrollEndDrag={onScrollEndDrag}
             onMomentumScrollEnd={onMomentumScrollEnd}
             scrollEventThrottle={scrollEventThrottle}
+            showsVerticalScrollIndicator={false}
           >
+            {vetCharges.length > 0 && (
+              <View style={styles.vetBanner}>
+                <Pressable onPress={() => setVetBannerExpanded((v) => !v)} style={styles.vetBannerHeader}>
+                  <Ionicons name="medical" size={16} color="#1B5E20" />
+                  <Text style={styles.vetBannerTitle}>Detected {vetCharges.length} vet charge(s)</Text>
+                  <Ionicons name={vetBannerExpanded ? 'chevron-up' : 'chevron-down'} size={16} color="#1B5E20" />
+                </Pressable>
+                {vetBannerExpanded && vetCharges
+                  .filter((c) => !dismissedCharges.has(c.merchantName + c.date))
+                  .map((charge, i) => {
+                    const chargeKey = charge.merchantName + charge.date;
+                    return (
+                      <View key={i} style={styles.vetChargeRow}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.vetChargeMerchant}>{charge.merchantName}</Text>
+                          <Text style={styles.vetChargeDetail}>${charge.amount} · {charge.date}</Text>
+                        </View>
+                        {pets.length > 0 && (
+                          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ maxWidth: 120 }}>
+                            {pets.map((p) => (
+                              <Pressable
+                                key={p.id}
+                                onPress={() => setSelectedPetForCharge((prev) => ({ ...prev, [chargeKey]: p.id }))}
+                                style={[styles.vetPetChip, selectedPetForCharge[chargeKey] === p.id && styles.vetPetChipActive]}
+                              >
+                                <Text style={styles.vetPetChipText}>{p.emoji}</Text>
+                              </Pressable>
+                            ))}
+                          </ScrollView>
+                        )}
+                        <Pressable
+                          onPress={() => {
+                            const petId = selectedPetForCharge[chargeKey] ?? (pets[0]?.id ?? '');
+                            if (!petId) {
+                              Alert.alert('No Pet', 'Add a pet first.');
+                              return;
+                            }
+                            addEvent({
+                              petId,
+                              type: 'vet',
+                              title: charge.merchantName,
+                              date: charge.date,
+                              cost: charge.amount,
+                              isDone: true,
+                            });
+                            setDismissedCharges((prev) => new Set([...prev, chargeKey]));
+                            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                          }}
+                          style={styles.vetLogBtn}
+                        >
+                          <Text style={styles.vetLogBtnText}>Log</Text>
+                        </Pressable>
+                        <Pressable onPress={() => setDismissedCharges((prev) => new Set([...prev, chargeKey]))} style={styles.vetDismissBtn}>
+                          <Ionicons name="close" size={14} color={colors.textMuted} />
+                        </Pressable>
+                      </View>
+                    );
+                  })}
+              </View>
+            )}
+
+            <View style={styles.tabs}>
+              {(['pets', 'events', 'health'] as const).map((tab) => (
+                <Pressable
+                  key={tab}
+                  onPress={() => setActiveTab(tab)}
+                  style={[styles.tab, activeTab === tab && styles.tabActive]}
+                >
+                  <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
+                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+
             {activeTab === 'pets' && renderPetsTab()}
             {activeTab === 'events' && renderEventsTab()}
             {activeTab === 'health' && renderHealthTab()}
@@ -718,8 +719,12 @@ const styles = StyleSheet.create({
   tabs: {
     flexDirection: 'row',
     backgroundColor: colors.card,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderRadius: 16,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
   },
   tab: {
     flex: 1,

@@ -155,7 +155,13 @@ export function ShoppingListScreen({ navigation }: any) {
 
       <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
         {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
-          <ScrollView contentContainerStyle={[s.content, { paddingBottom: 100 }]} showsVerticalScrollIndicator={false} onScroll={onScroll} onScrollEndDrag={onScrollEndDrag} onMomentumScrollEnd={onMomentumScrollEnd} scrollEventThrottle={scrollEventThrottle}>
+          <ScrollView contentContainerStyle={[
+  s.content,
+  {
+    paddingTop: contentPaddingTop + 16,
+    paddingBottom: 100,
+  },
+]} showsVerticalScrollIndicator={false} onScroll={onScroll} onScrollEndDrag={onScrollEndDrag} onMomentumScrollEnd={onMomentumScrollEnd} scrollEventThrottle={scrollEventThrottle}>
         {/* Pantry low-stock suggestions */}
         {lowStockSuggestions.length > 0 && (
           <View style={s.suggestSection}>
@@ -349,7 +355,7 @@ function makeStyles(colors: any) {
     budgetCenter: { flex: 1 },
     budgetHint: { fontSize: 10, color: 'rgba(255,255,255,0.6)', marginTop: 5 },
     budgetRight: { alignItems: 'flex-end' },
-    content: { padding: 16 },
+    content: { paddingHorizontal: 16,},
     suggestSection: { marginBottom: 16 },
     suggestLabel: { fontSize: 12, fontWeight: '700', color: colors.text, marginBottom: 8 },
     suggestChip: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#D5F5E3', borderRadius: 20, paddingVertical: 8, paddingHorizontal: 12 },

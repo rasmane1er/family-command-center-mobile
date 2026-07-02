@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Modal,
-  TextInput, Switch, Alert, ActivityIndicator,
+  TextInput, Switch, Alert, ActivityIndicator, Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,7 +11,7 @@ import { format, differenceInDays } from 'date-fns';
 import * as Haptics from 'expo-haptics';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Sharing from 'expo-sharing';
-import * as FileSystem from 'expo-file-system/legacy';
+import * as FileSystem from 'expo-file-system';
 import { useTheme } from '../../theme/ThemeContext';
 import { shadows } from '../../theme/spacing';
 import { Card } from '../../components/common/Card';
@@ -61,6 +61,31 @@ function getFileIcon(name?: string) {
   return 'attach-outline';
 }
 
+// Explicit MM/DD/YYYY parsing rather than trusting `new Date(freeTextInput)` —
+// native Date parsing of ambiguous/partial strings silently produces an
+// Invalid Date, which date-fns then throws RangeError on the next render.
+// Returns an ISO date string (matching how expiryDate is stored everywhere
+// else in this data model), or null if the input isn't a real MM/DD/YYYY date.
+function parseExpiryDateInput(input: string): string | null {
+  const match = input.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!match) return null;
+  const [, mm, dd, yyyy] = match;
+  const month = Number(mm), day = Number(dd), year = Number(yyyy);
+  const date = new Date(year, month - 1, day);
+  // Catches e.g. 02/31 — JS Date rolls invalid days into the next month
+  // instead of rejecting them, so round-trip and compare the components.
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return null;
+  return date.toISOString();
+}
+
+// Defensive counterpart for every render site that formats a stored
+// expiryDate — never throw on already-bad data (from before the fix above,
+// or any other source), just treat it as "no date" instead of crashing.
+function isValidDate(value: unknown): value is string {
+  if (typeof value !== 'string' || !value) return false;
+  return !Number.isNaN(new Date(value).getTime());
+}
+
 // ─── screen ───────────────────────────────────────────────────────────────────
 
 export function DocumentsScreen({ navigation, route }: any) {
@@ -106,7 +131,7 @@ export function DocumentsScreen({ navigation, route }: any) {
     CATEGORIES_CONFIG.find((c) => c.key === key) ?? CATEGORIES_CONFIG[0];
 
   const getExpiryBadge = (expiryDate?: string) => {
-    if (!expiryDate) return null;
+    if (!isValidDate(expiryDate)) return null;
     const days = differenceInDays(new Date(expiryDate), new Date());
     if (days < 0)   return <Badge label="Expired!" variant="danger" size="sm" />;
     if (days <= 30) return <Badge label={`${days}d left`} variant="danger" size="sm" />;
@@ -139,6 +164,13 @@ export function DocumentsScreen({ navigation, route }: any) {
       Alert.alert('Required', 'Please enter a document title.');
       return;
     }
+
+    const expiryDate = newExpiry.trim() ? parseExpiryDateInput(newExpiry) : null;
+    if (newExpiry.trim() && !expiryDate) {
+      Alert.alert('Invalid Date', 'Please enter the expiry date as MM/DD/YYYY, e.g. 03/15/2029.');
+      return;
+    }
+
     setUploading(true);
 
     let savedUri = pickedFile?.uri;
@@ -161,7 +193,7 @@ export function DocumentsScreen({ navigation, route }: any) {
       title: newTitle.trim(),
       category: newCategory,
       issuer: newIssuer.trim() || undefined,
-      expiryDate: newExpiry.trim() || undefined,
+      expiryDate: expiryDate ?? undefined,
       memberId: newMemberId || undefined,
       isSensitive: newSensitive,
       isShared: newShared,
@@ -324,7 +356,7 @@ export function DocumentsScreen({ navigation, route }: any) {
                       </Text>
                     )}
                     {doc.issuer && <Text style={s.docMeta}>Issued by {doc.issuer}</Text>}
-                    {doc.expiryDate && <Text style={s.docMeta}>Expires {format(new Date(doc.expiryDate), 'MMM d, yyyy')}</Text>}
+                    {isValidDate(doc.expiryDate) && <Text style={s.docMeta}>Expires {format(new Date(doc.expiryDate), 'MMM d, yyyy')}</Text>}
                   </View>
 
                   <View style={s.docActions}>
@@ -403,7 +435,7 @@ export function DocumentsScreen({ navigation, route }: any) {
                   <Text style={s.viewRowValue}>{viewDoc.issuer}</Text>
                 </View>
               )}
-              {viewDoc.expiryDate && (
+              {isValidDate(viewDoc.expiryDate) && (
                 <View style={s.viewRow}>
                   <Ionicons name="calendar-outline" size={16} color={colors.textMuted} />
                   <Text style={s.viewRowLabel}>Expires</Text>
@@ -492,9 +524,10 @@ export function DocumentsScreen({ navigation, route }: any) {
             placeholderTextColor={colors.textMuted} />
 
           <Text style={s.modalLabel}>Expiry Date (MM/DD/YYYY)</Text>
-          <TextInput style={s.modalInput} placeholder="Optional"
+          <TextInput style={s.modalInput} placeholder="e.g. 03/15/2029 — optional"
             value={newExpiry} onChangeText={setNewExpiry}
-            placeholderTextColor={colors.textMuted} keyboardType="numeric" />
+            placeholderTextColor={colors.textMuted}
+            keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'default'} />
 
           <Text style={s.modalLabel}>Category</Text>
           <View style={s.catGrid}>

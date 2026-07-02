@@ -8,8 +8,7 @@ import type {
   DebtPayoffPlan,
   PayoffPlanMonth,
 } from '../types';
-
-const API_BASE_URL = 'http://localhost:3000';
+import { API_BASE_URL } from '../config/api';
 
 async function authFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = await SecureStore.getItemAsync('access_token');

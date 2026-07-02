@@ -2,6 +2,7 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { RoleGuard } from '../components/auth/RoleGuard';
+import { SubscriptionGate } from '../components/common/SubscriptionGate';
 
 import { OperationsDashboardScreen } from '../screens/operations/OperationsDashboardScreen';
 import { VehiclesScreen } from '../screens/operations/VehiclesScreen';
@@ -37,22 +38,83 @@ export function OperationsNavigator() {
         <Stack.Screen name="OperationsDashboard" component={OperationsDashboardScreen} />
         <Stack.Screen name="Vehicles" component={VehiclesScreen} />
         <Stack.Screen name="Pantry" component={PantryScreen} />
-        <Stack.Screen name="MealPlanning" component={MealPlanningScreen} />
-        <Stack.Screen name="Documents" component={DocumentsScreen} />
+
+        <Stack.Screen name="MealPlanning">
+          {(props) => (
+            <SubscriptionGate requiredTier="premium" featureName="Meal Planning">
+              <MealPlanningScreen {...props} />
+            </SubscriptionGate>
+          )}
+        </Stack.Screen>
+
+        <Stack.Screen name="Documents">
+          {(props) => (
+            <SubscriptionGate requiredTier="premium" featureName="Document Vault">
+              <DocumentsScreen {...props} />
+            </SubscriptionGate>
+          )}
+        </Stack.Screen>
+
         <Stack.Screen name="Emergency" component={EmergencyScreen} />
         <Stack.Screen name="EmergencyMode" component={EmergencyModeScreen} />
         <Stack.Screen name="Rewards" component={RewardsScreen} />
-        <Stack.Screen name="Automation" component={AutomationScreen} />
+
+        <Stack.Screen name="Automation">
+          {(props) => (
+            <SubscriptionGate requiredTier="family_pro" featureName="Smart Automation">
+              <AutomationScreen {...props} />
+            </SubscriptionGate>
+          )}
+        </Stack.Screen>
+
         <Stack.Screen name="Marketplace" component={MarketplaceScreen} />
         <Stack.Screen name="TimeEconomy" component={TimeEconomyScreen} />
         <Stack.Screen name="SmartHome" component={SmartHomeScreen} />
-        <Stack.Screen name="ShoppingList" component={ShoppingListScreen} />
+
+        <Stack.Screen name="ShoppingList">
+          {(props) => (
+            <SubscriptionGate requiredTier="premium" featureName="Shopping Intelligence">
+              <ShoppingListScreen {...props} />
+            </SubscriptionGate>
+          )}
+        </Stack.Screen>
+
         <Stack.Screen name="Recipes" component={RecipesScreen} />
-        <Stack.Screen name="TravelPlanning" component={TravelPlanningScreen} />
-        <Stack.Screen name="PetTracker" component={PetTrackerScreen} />
+
+        <Stack.Screen name="TravelPlanning">
+          {(props) => (
+            <SubscriptionGate requiredTier="family_pro" featureName="Travel Planning">
+              <TravelPlanningScreen {...props} />
+            </SubscriptionGate>
+          )}
+        </Stack.Screen>
+
+        <Stack.Screen name="PetTracker">
+          {(props) => (
+            <SubscriptionGate requiredTier="premium" featureName="Pet Tracker">
+              <PetTrackerScreen {...props} />
+            </SubscriptionGate>
+          )}
+        </Stack.Screen>
+
         <Stack.Screen name="HomeMaintenance" component={HomeMaintenanceScreen} />
-        <Stack.Screen name="ChildcareManager" component={ChildcareManagerScreen} />
-        <Stack.Screen name="HomeInventory" component={HomeInventoryScreen} />
+
+        <Stack.Screen name="ChildcareManager">
+          {(props) => (
+            <SubscriptionGate requiredTier="family_pro" featureName="Childcare Manager">
+              <ChildcareManagerScreen {...props} />
+            </SubscriptionGate>
+          )}
+        </Stack.Screen>
+
+        <Stack.Screen name="HomeInventory">
+          {(props) => (
+            <SubscriptionGate requiredTier="premium" featureName="Home Inventory">
+              <HomeInventoryScreen {...props} />
+            </SubscriptionGate>
+          )}
+        </Stack.Screen>
+
         <Stack.Screen name="CarpoolManager" component={CarpoolManagerScreen} />
       </Stack.Navigator>
     </RoleGuard>

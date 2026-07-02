@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { mmkvStorage } from '../storage/mmkvStorage';
 import * as SecureStore from 'expo-secure-store';
+import { secureStorage } from '../storage/secureStorage';
+import { awsConfig } from '../config/aws';
 
 export interface AuthUser {
   id: string;
@@ -33,6 +35,11 @@ export interface AuthUser {
 interface AuthState {
   isAuthenticated: boolean;
   user: AuthUser | null;
+  // Populated once the account is synced with the backend (see syncWithBackend
+  // below). Null until then — features that need it (live chat, subscriptions)
+  // should treat null as "not yet backend-linked" rather than an error.
+  familyId: string | null;
+  backendUserId: string | null;
 
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signUp: (data: SignUpData) => Promise<{ success: boolean; error?: string }>;
@@ -40,6 +47,11 @@ interface AuthState {
   signOut: () => void;
   resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
   updateProfile: (updates: Partial<AuthUser>) => void;
+  // Verifies a password against the currently signed-in account without
+  // touching auth state — used to gate device-lock changes (see
+  // ProfileSwitcherScreen) so a child can't bypass a locked device just by
+  // knowing the lightweight per-profile switch PIN.
+  verifyPassword: (password: string) => Promise<boolean>;
 }
 
 export interface SignUpData {
@@ -93,11 +105,83 @@ async function saveCredentials(data: Record<string, { displayName: string; hash:
   await SecureStore.setItemAsync(CREDENTIALS_KEY, JSON.stringify(data));
 }
 
+interface BackendAuthResult {
+  accessToken: string;
+  refreshToken: string;
+  user: { id: string; email: string; role: string; familyId: string; familyName: string | null };
+}
+
+async function persistBackendSession(result: BackendAuthResult): Promise<{ familyId: string; backendUserId: string }> {
+  await secureStorage.setToken('access_token', result.accessToken);
+  await secureStorage.setToken('refresh_token', result.refreshToken);
+  return { familyId: result.user.familyId, backendUserId: result.user.id };
+}
+
+// Best-effort link to the real backend so server-backed features (live chat,
+// subscriptions) work. Never throws — the app is local-first, so an
+// unreachable server or a pre-existing account must not block sign-up/sign-in.
+//
+// Always tries login first, then falls back to registering a new backend
+// account (using familyName/memberName if given) if login fails. This one
+// order correctly handles both:
+//  - brand-new sign-ups (login fails since no backend account exists yet →
+//    register creates it)
+//  - legacy local-only accounts signing in for the first time since backend
+//    auth was wired up (same thing — no backend account yet → register
+//    bootstraps one from their current session, backend-linking them)
+async function syncWithBackend(params: {
+  email: string;
+  password: string;
+  familyName?: string;
+  memberName?: string;
+}): Promise<{ familyId: string; backendUserId: string } | null> {
+  const { email, password, familyName, memberName } = params;
+
+  try {
+    console.log('[auth] syncWithBackend: trying login at', `${awsConfig.apiBaseUrl}/auth/login`);
+    const loginRes = await fetch(`${awsConfig.apiBaseUrl}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    if (loginRes.ok) {
+      console.log('[auth] syncWithBackend: login succeeded, familyId linked');
+      return persistBackendSession(await loginRes.json());
+    }
+    console.warn('[auth] syncWithBackend: login failed', loginRes.status, await loginRes.text().catch(() => ''));
+
+    if (!familyName || !memberName) {
+      console.warn('[auth] syncWithBackend: no familyName/memberName to fall back to register with — giving up');
+      return null;
+    }
+
+    console.log('[auth] syncWithBackend: trying register at', `${awsConfig.apiBaseUrl}/auth/register`);
+    const registerRes = await fetch(`${awsConfig.apiBaseUrl}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, familyName, memberName }),
+    });
+    if (!registerRes.ok) {
+      console.warn('[auth] syncWithBackend: register failed', registerRes.status, await registerRes.text().catch(() => ''));
+      return null;
+    }
+
+    console.log('[auth] syncWithBackend: register succeeded, familyId linked');
+    return persistBackendSession(await registerRes.json());
+  } catch (err) {
+    // Offline or backend unreachable — local account still works.
+    console.warn('[auth] syncWithBackend: network error, could not reach backend at', awsConfig.apiBaseUrl, err);
+    return null;
+  }
+}
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       isAuthenticated: false,
       user: null,
+      familyId: null,
+      backendUserId: null,
 
       signUp: async (data) => {
         const normalizedEmail = data.email.toLowerCase().trim();
@@ -142,6 +226,15 @@ export const useAuthStore = create<AuthState>()(
         };
 
         set({ isAuthenticated: true, user });
+
+        const backend = await syncWithBackend({
+          email: normalizedEmail,
+          password: data.password,
+          familyName: data.familyName?.trim() || `${data.lastName.trim()} Family`,
+          memberName: user.displayName,
+        });
+        if (backend) set({ familyId: backend.familyId, backendUserId: backend.backendUserId });
+
         return { success: true };
       },
 
@@ -173,6 +266,18 @@ export const useAuthStore = create<AuthState>()(
         };
 
         set({ isAuthenticated: true, user });
+
+        const backend = await syncWithBackend({
+          email: normalizedEmail,
+          password,
+          // Fallback for legacy local-only accounts that never went through
+          // the backend — bootstraps a backend family/account from whatever
+          // profile info exists locally so this session becomes backend-linked.
+          familyName: existing?.familyName?.trim() || `${stored.displayName}'s Family`,
+          memberName: stored.displayName,
+        });
+        if (backend) set({ familyId: backend.familyId, backendUserId: backend.backendUserId });
+
         return { success: true };
       },
 
@@ -185,7 +290,9 @@ export const useAuthStore = create<AuthState>()(
       },
 
       signOut: () => {
-        set({ isAuthenticated: false, user: null });
+        set({ isAuthenticated: false, user: null, familyId: null, backendUserId: null });
+        secureStorage.removeToken('access_token').catch(() => {});
+        secureStorage.removeToken('refresh_token').catch(() => {});
       },
 
       resetPassword: async (email) => {
@@ -202,6 +309,16 @@ export const useAuthStore = create<AuthState>()(
         if (!current) return;
         set({ user: { ...current, ...updates } });
       },
+
+      verifyPassword: async (password) => {
+        const email = get().user?.email;
+        if (!email) return false;
+        const credentials = (await getStoredCredentials()) ?? {};
+        const stored = credentials[email];
+        if (!stored) return false;
+        const hash = await hashPassword(password);
+        return hash === stored.hash;
+      },
     }),
     {
       name: 'family-command-center-auth',
@@ -209,6 +326,8 @@ export const useAuthStore = create<AuthState>()(
       partialize: (state) => ({
         isAuthenticated: state.isAuthenticated,
         user: state.user,
+        familyId: state.familyId,
+        backendUserId: state.backendUserId,
       }),
     }
   )

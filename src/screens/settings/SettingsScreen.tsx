@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  Alert, Linking, Modal, Platform, Pressable, ScrollView, Share, StyleSheet,
+  ActivityIndicator, Alert, Linking, Modal, Platform, Pressable, ScrollView, Share, StyleSheet,
   Switch, Text, TextInput, TouchableOpacity, View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,6 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+import * as StoreReview from 'expo-store-review';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { i18n } from '../../i18n';
 
@@ -39,11 +40,32 @@ import { useWealthStore } from '../../store/useWealthStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useTheme } from '../../theme/ThemeContext';
 import { useSubscription, SubscriptionTier, TIER_LABELS, TIER_PRICES, TIER_FEATURES } from '../../hooks/useSubscription';
+import { usePurchases } from '../../hooks/usePurchases';
+import { PAYWALL_RESULT } from 'react-native-purchases-ui';
 
 const SUBSCRIPTION_TIERS = [
-  { key: 'free',       label: 'Free',       price: '$0',       colorKey: 'textSecondary' as const, features: ['5 family members', 'Basic tasks & calendar', 'Limited AI queries'] },
-  { key: 'premium',    label: 'Premium',    price: '$9.99/mo', colorKey: 'primary' as const,       features: ['Unlimited members', 'All finance tools', '50 AI queries/mo', 'Document vault'] },
-  { key: 'family_pro', label: 'Family Pro', price: '$19.99/mo',colorKey: 'secondary' as const,     features: ['Everything in Premium', 'Unlimited AI', 'Military mode', 'Priority support', 'Family Digital Twin'] },
+  {
+    key: 'free', label: 'Free', price: '$0', yearlyPrice: null, yearlySavingsPct: 0,
+    colorKey: 'textSecondary' as const,
+    features: ['Up to 2 family members', 'Basic tasks & calendar', 'Limited AI queries'],
+  },
+  {
+    key: 'premium', label: 'Premium', price: '$12.99/mo', yearlyPrice: '$99/yr', yearlySavingsPct: 36,
+    colorKey: 'primary' as const,
+    features: [
+      'Unlimited members', 'All finance tools', '100 AI queries/mo', 'Document vault',
+      'Pet tracker', 'Shopping intelligence', 'Home inventory', 'Meal planning',
+    ],
+  },
+  {
+    key: 'family_pro', label: 'Family Pro', price: '$19.99/mo', yearlyPrice: '$179/yr', yearlySavingsPct: 25,
+    colorKey: 'secondary' as const,
+    features: [
+      'Everything in Premium', 'Unlimited AI', 'Military mode', 'Emergency mode',
+      'Family Digital Twin', 'Predictive budgeting', 'Smart automation',
+      'Childcare manager', 'Travel planning', 'Priority support', 'Advanced analytics',
+    ],
+  },
 ];
 
 const LANGUAGES = [
@@ -68,6 +90,10 @@ export function SettingsScreen({ navigation }: any) {
   const { tier: currentTier, canAccess } = useSubscription();
   const { user, signOut } = useAuthStore();
   const militaryMode = settings?.militaryMode || false;
+
+  const { restore, showPaywall, showCustomerCenter, error: purchasesError } = usePurchases();
+  const [purchasingTier, setPurchasingTier] = useState<SubscriptionTier | null>(null);
+  const [isRestoring, setIsRestoring] = useState(false);
 
   const family        = useFamilyStore((s) => s.family);
   const members       = useFamilyStore((s) => s.members);
@@ -153,7 +179,29 @@ export function SettingsScreen({ navigation }: any) {
     Alert.alert(t('settings.demoLoaded'), t('settings.demoLoadedMsg'));
   };
 
-  const handleUpgrade = (tierKey: SubscriptionTier) => {
+  // Manage/cancel/change-plan and restore all live in RevenueCat's Customer
+  // Center now — it's the dashboard-configured, best-practice replacement for
+  // a hand-rolled "open App Store subscription settings" deep link.
+  const handleManageSubscription = async () => {
+    try {
+      await showCustomerCenter();
+    } catch {
+      // Fallback if Customer Center isn't reachable (e.g. RevenueCat not yet
+      // configured for this account) — still gets the user to a working flow.
+      const url = Platform.OS === 'ios'
+        ? 'itms-apps://apps.apple.com/account/subscriptions'
+        : 'https://play.google.com/store/account/subscriptions';
+      Linking.openURL(url).catch(() =>
+        Alert.alert(t('common.error'), 'Unable to open subscription management.'),
+      );
+    }
+  };
+
+  // Each paid tier maps to its own RevenueCat entitlement (see
+  // src/config/revenuecat.ts) — RevenueCat's dashboard-configured Paywall UI
+  // handles tier + billing period (monthly/yearly) selection, pricing, and
+  // the purchase itself.
+  const handleUpgrade = async (tierKey: SubscriptionTier) => {
     if (tierKey === currentTier) {
       Alert.alert('Current Plan', `You are already on the ${TIER_LABELS[tierKey]} plan.`);
       return;
@@ -161,22 +209,43 @@ export function SettingsScreen({ navigation }: any) {
     if (tierKey === 'free') {
       Alert.alert(
         'Downgrade to Free',
-        'You will lose access to premium features at the end of your current billing period.',
+        'To cancel your subscription, you\'ll be taken to subscription management. You will keep access to premium features until the end of your current billing period.',
         [
           { text: 'Cancel', style: 'cancel' },
-          { text: 'Downgrade', style: 'destructive', onPress: () => updateSettings({ subscriptionTier: 'free' }) },
+          { text: 'Manage Subscription', style: 'destructive', onPress: handleManageSubscription },
         ],
       );
       return;
     }
-    Alert.alert(
-      `Upgrade to ${TIER_LABELS[tierKey]}`,
-      `${TIER_PRICES[tierKey]} — In-app purchases coming soon. For now, activating ${TIER_LABELS[tierKey]} for demo purposes.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Activate', onPress: () => updateSettings({ subscriptionTier: tierKey }) },
-      ],
-    );
+
+    setPurchasingTier(tierKey);
+    try {
+      const result = await showPaywall(tierKey as 'premium' | 'family_pro');
+      if (result === PAYWALL_RESULT.PURCHASED || result === PAYWALL_RESULT.RESTORED) {
+        Alert.alert('Success', `You are now on the ${TIER_LABELS[tierKey]} plan!`);
+      } else if (result === PAYWALL_RESULT.ERROR) {
+        Alert.alert('Purchase Failed', purchasesError ?? 'Something went wrong loading the paywall. Please try again.');
+      }
+      // CANCELLED / NOT_PRESENTED: user closed the paywall or already has Pro — no alert needed.
+    } catch {
+      // Defense in depth — showPaywall() already catches internally and
+      // resolves to PAYWALL_RESULT.ERROR rather than throwing, but never let
+      // a purchase-flow exception escape an onPress handler unhandled.
+      Alert.alert('Purchase Failed', purchasesError ?? 'Something went wrong. Please try again.');
+    } finally {
+      setPurchasingTier(null);
+    }
+  };
+
+  const handleRestorePurchases = async () => {
+    setIsRestoring(true);
+    const result = await restore();
+    setIsRestoring(false);
+    if (result.success) {
+      Alert.alert('Restored', 'Your purchases have been restored.');
+    } else {
+      Alert.alert('Restore Failed', result.error ?? 'No purchases found to restore.');
+    }
   };
 
   const handleSelectLanguage = (code: string) => {
@@ -197,14 +266,25 @@ export function SettingsScreen({ navigation }: any) {
     navigation.navigate('HelpSupport');
   };
 
-  const handleRateApp = () => {
-    const appStoreUrl = 'https://apps.apple.com/app/id000000000';
-    const playStoreUrl = 'market://details?id=com.familycommandcenter';
+  const handleRateApp = async () => {
+    // Prefer the native in-app review prompt (SKStoreReviewController / Play in-app review).
+    // The OS throttles how often this can actually appear — that's expected platform behavior.
+    try {
+      if (await StoreReview.isAvailableAsync()) {
+        await StoreReview.requestReview();
+        return;
+      }
+    } catch {
+      // fall through to a direct store link
+    }
+
+    const appStoreUrl = 'https://apps.apple.com/app/id000000000?action=write-review';
+    const playStoreUrl = 'https://play.google.com/store/apps/details?id=com.familycommandcenter.app';
     const url = Platform.OS === 'ios' ? appStoreUrl : playStoreUrl;
     Linking.openURL(url).catch(() => {
       Alert.alert(
         'Rate Family Command Center',
-        'Thank you for your support! Rating will be available once the app is published on the App Store.',
+        'Thank you for your support! Rating will be available once the app is published on the app stores.',
         [{ text: 'OK' }],
       );
     });
@@ -326,6 +406,16 @@ export function SettingsScreen({ navigation }: any) {
                   <View>
                     <Text style={[s.tierName, { color: colors[tier.colorKey] }]}>{tier.label}</Text>
                     <Text style={s.tierPrice}>{tier.price}</Text>
+                    {tier.yearlyPrice && (
+                      <View style={s.yearlyRow}>
+                        <Text style={s.yearlyPriceText}>or {tier.yearlyPrice}</Text>
+                        <View style={[s.savingsBadge, { backgroundColor: colors[tier.colorKey] + '18' }]}>
+                          <Text style={[s.savingsBadgeText, { color: colors[tier.colorKey] }]}>
+                            Save {tier.yearlySavingsPct}%
+                          </Text>
+                        </View>
+                      </View>
+                    )}
                   </View>
                   {tier.key === currentTier ? (
                     <View style={[s.currentBadge, { backgroundColor: colors.success + '20' }]}>
@@ -337,8 +427,16 @@ export function SettingsScreen({ navigation }: any) {
                       <Text style={[s.downgradeBtnText, { color: colors.textMuted }]}>Downgrade</Text>
                     </Pressable>
                   ) : (
-                    <Pressable style={[s.upgradeBtn, { backgroundColor: colors[tier.colorKey as keyof typeof colors] as string }]} onPress={() => handleUpgrade(tier.key as SubscriptionTier)}>
-                      <Text style={s.upgradeBtnText}>{t('settings.upgrade')}</Text>
+                    <Pressable
+                      style={[s.upgradeBtn, { backgroundColor: colors[tier.colorKey as keyof typeof colors] as string }, purchasingTier === tier.key && s.upgradeBtnDisabled]}
+                      disabled={purchasingTier !== null}
+                      onPress={() => handleUpgrade(tier.key as SubscriptionTier)}
+                    >
+                      {purchasingTier === tier.key ? (
+                        <ActivityIndicator size="small" color="#fff" />
+                      ) : (
+                        <Text style={s.upgradeBtnText}>{t('settings.upgrade')}</Text>
+                      )}
                     </Pressable>
                   )}
                 </View>
@@ -350,6 +448,20 @@ export function SettingsScreen({ navigation }: any) {
                 ))}
               </Card>
             ))}
+
+            <TouchableOpacity
+              style={s.restoreBtn}
+              activeOpacity={0.7}
+              disabled={isRestoring}
+              onPress={handleRestorePurchases}
+            >
+              {isRestoring ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Ionicons name="refresh-outline" size={16} color={colors.primary} />
+              )}
+              <Text style={s.restoreBtnText}>{isRestoring ? 'Restoring…' : 'Restore Purchases'}</Text>
+            </TouchableOpacity>
 
             {/* ── AI CONFIG ── */}
             <Text style={s.sectionTitle}>{t('settings.aiConfig')}</Text>
@@ -607,11 +719,18 @@ function makeStyles(colors: ReturnType<typeof useTheme>['colors'], isDark: boole
     tierHeader:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 },
     tierName:        { fontSize: 16, fontWeight: '800' },
     tierPrice:       { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
+    yearlyRow:       { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 },
+    yearlyPriceText: { fontSize: 12, color: colors.textMuted },
+    savingsBadge:    { borderRadius: 6, paddingVertical: 2, paddingHorizontal: 6 },
+    savingsBadgeText:{ fontSize: 11, fontWeight: '700' },
     currentBadge:    { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.background, borderRadius: 8, paddingVertical: 4, paddingHorizontal: 10 },
     currentBadgeText:{ fontSize: 12, fontWeight: '700', color: colors.textSecondary },
-    upgradeBtn:      { borderRadius: 10, paddingVertical: 7, paddingHorizontal: 16 },
+    upgradeBtn:      { borderRadius: 10, paddingVertical: 7, paddingHorizontal: 16, minWidth: 64, alignItems: 'center', justifyContent: 'center' },
+    upgradeBtnDisabled: { opacity: 0.6 },
     upgradeBtnText:  { fontSize: 13, fontWeight: '700', color: '#fff' },
     downgradeBtnSmall: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: colors.border },
+    restoreBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12, marginTop: 4, marginBottom: 4 },
+    restoreBtnText: { fontSize: 14, fontWeight: '700', color: colors.primary },
     downgradeBtnText: { fontSize: 12, fontWeight: '600' },
     featureRow:      { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
     featureText:     { fontSize: 13, color: colors.textSecondary },

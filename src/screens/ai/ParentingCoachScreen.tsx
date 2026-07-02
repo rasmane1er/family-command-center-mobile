@@ -16,6 +16,7 @@ import { useMemoryStore } from '../../store/useMemoryStore';
 import { chatWithParentingCoach, AIMessage } from '../../services/aiService';
 import { computeAge } from '../../utils/buildFamilyContext';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
+import { useTabBarInset } from '../../hooks/useTabBarInset';
 
 const COACHING_MODULES = [
   { id: 'm1', title: 'Positive Discipline', icon: 'heart', color: '#E74C3C', bg: '#FDEDEC', desc: 'Science-backed strategies that build connection while setting boundaries', sessions: 8, completed: 5, rating: 4.9 },
@@ -33,7 +34,6 @@ const DAILY_TIPS = [
   { tip: "Set up a family meeting once a week. Kids who have voice in family decisions show 40% better behavioral outcomes.", category: 'Communication', icon: 'people', color: '#27AE60' },
 ];
 
-const BOTTOM_MENU_HEIGHT = 78;
 const CHAT_INPUT_HEIGHT = 104;
 
 const AGE_ADVICE: Record<string, { range: string; tips: string[] }> = {
@@ -44,6 +44,7 @@ const AGE_ADVICE: Record<string, { range: string; tips: string[] }> = {
 
 export function ParentingCoachScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
+  const tabBarInset = useTabBarInset();
   const [activeTab, setActiveTab] = useState<'modules' | 'tips' | 'advice' | 'chat'>('modules');
   const [tipIndex, setTipIndex] = useState(0);
   const [chatInput, setChatInput] = useState('');
@@ -193,8 +194,8 @@ export function ParentingCoachScreen({ navigation }: any) {
                   paddingTop: contentPaddingTop,
                   paddingBottom:
                     activeTab === 'chat'
-                      ? BOTTOM_MENU_HEIGHT + Math.max(insets.bottom, 10) + CHAT_INPUT_HEIGHT
-                      : BOTTOM_MENU_HEIGHT + Math.max(insets.bottom, 10) + 24,
+                      ? tabBarInset + CHAT_INPUT_HEIGHT
+                      : tabBarInset + 24,
                 },
               ]}
             >
@@ -412,8 +413,8 @@ export function ParentingCoachScreen({ navigation }: any) {
                 style={[
                   styles.chatInputDock,
                   {
-                    paddingBottom: Math.max(insets.bottom, 10),
-                    bottom: BOTTOM_MENU_HEIGHT,
+                    paddingBottom: 8,
+                    bottom: tabBarInset,
                   },
                 ]}
               >

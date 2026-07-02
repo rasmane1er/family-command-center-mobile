@@ -15,6 +15,8 @@ import { useTheme } from '../../theme/ThemeContext';
 import type { ThemeColors } from '../../theme/ThemeContext';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
+import { UpgradePrompt } from '../../components/common/UpgradePrompt';
+import { useSubscription } from '../../hooks/useSubscription';
 import { defaultPermissionsForRole } from '../../types';
 import type { FamilyMember, MemberRole } from '../../types';
 
@@ -37,6 +39,9 @@ export function AddMemberScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const family = useFamilyStore((s) => s.family);
   const addMember = useFamilyStore((s) => s.addMember);
+  const members = useFamilyStore((s) => s.members);
+  const { features } = useSubscription();
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   const [step, setStep] = useState<Step>(1);
   const [memberType, setMemberType] = useState<MemberType>('local');
@@ -81,6 +86,11 @@ export function AddMemberScreen({ navigation }: any) {
   const handleSave = () => {
     if (!validate()) return;
     if (!family) return;
+
+    if (members.length >= features.maxFamilyMembers) {
+      setShowUpgrade(true);
+      return;
+    }
 
     const now = new Date().toISOString();
     const member: FamilyMember = {
@@ -312,6 +322,14 @@ export function AddMemberScreen({ navigation }: any) {
           </Pressable>
         </ScrollView>
       )}
+
+      <UpgradePrompt
+        visible={showUpgrade}
+        onClose={() => setShowUpgrade(false)}
+        featureName="Additional family members"
+        requiredTier="premium"
+        description={`The Free plan supports up to ${features.maxFamilyMembers} family members. Upgrade to Premium for unlimited members.`}
+      />
     </View>
   );
 }

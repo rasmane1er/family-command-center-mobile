@@ -14,9 +14,16 @@ export interface SubscriptionFeatures {
   advancedFinance: boolean;
 }
 
+// Pricing reviewed 2026-07 against competitors (Cozi, FamCal, OurHome, Life360,
+// Cubtale, YNAB) — this app spans far more categories (ops, finance, tasks, AI,
+// documents, pets, emergency, inventory, childcare, meal planning, travel,
+// vehicles, automation) than any single competitor, which supports pricing at
+// the upper end of the comparable range rather than the middle.
 export const TIER_FEATURES: Record<SubscriptionTier, SubscriptionFeatures> = {
   free: {
-    maxFamilyMembers: 5,
+    // Deliberately tight (was 5) — creates real upgrade pressure for any
+    // household beyond a couple, rather than being a purely cosmetic limit.
+    maxFamilyMembers: 2,
     aiQueriesPerMonth: 10,
     documentVault: false,
     cloudSync: false,
@@ -27,8 +34,8 @@ export const TIER_FEATURES: Record<SubscriptionTier, SubscriptionFeatures> = {
     advancedFinance: false,
   },
   premium: {
-    maxFamilyMembers: 15,
-    aiQueriesPerMonth: 50,
+    maxFamilyMembers: Infinity,
+    aiQueriesPerMonth: 100, // was 50 — felt restrictive at that depth of feature set
     documentVault: true,
     cloudSync: true,
     militaryMode: false,
@@ -38,7 +45,7 @@ export const TIER_FEATURES: Record<SubscriptionTier, SubscriptionFeatures> = {
     advancedFinance: true,
   },
   family_pro: {
-    maxFamilyMembers: 20,
+    maxFamilyMembers: Infinity,
     aiQueriesPerMonth: Infinity,
     documentVault: true,
     cloudSync: true,
@@ -56,10 +63,27 @@ export const TIER_LABELS: Record<SubscriptionTier, string> = {
   family_pro: 'Family Pro',
 };
 
+// Monthly price — shown as the primary/default price everywhere in the app.
 export const TIER_PRICES: Record<SubscriptionTier, string> = {
   free: '$0',
-  premium: '$9.99/mo',
+  premium: '$12.99/mo',
   family_pro: '$19.99/mo',
+};
+
+// Annual price, shown alongside monthly as the discounted option — annual
+// plans convert better and improve cash flow, so surface them prominently
+// wherever TIER_PRICES is shown, not just as a footnote.
+export const TIER_YEARLY_PRICES: Record<SubscriptionTier, string> = {
+  free: '$0',
+  premium: '$99/yr',
+  family_pro: '$179/yr',
+};
+
+// Rounded savings vs. paying monthly for 12 months — used for the "Save X%" badge.
+export const TIER_YEARLY_SAVINGS_PCT: Record<SubscriptionTier, number> = {
+  free: 0,
+  premium: 36,
+  family_pro: 25,
 };
 
 export function useSubscription() {
