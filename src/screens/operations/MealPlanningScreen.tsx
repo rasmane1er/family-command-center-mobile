@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Modal, TextInput, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -27,29 +27,8 @@ interface PlannedMeal {
 const MEAL_TYPES = ['Breakfast', 'Lunch', 'Dinner', 'Snack'] as const;
 const MEAL_TAGS = ['Quick', 'Healthy', 'Kids Fav', 'Family Fav', 'Protein', 'Low-carb', 'Easy', 'Vegetarian'];
 
-const INITIAL_MEALS: Record<string, Record<string, PlannedMeal>> = {
-  Monday: {
-    Breakfast: { name: 'Avocado Toast & Eggs', calories: 420, prep: 10, tags: ['Quick', 'Protein'] },
-    Lunch: { name: 'Grilled Chicken Salad', calories: 380, prep: 15, tags: ['Healthy', 'Low-carb'] },
-    Dinner: { name: 'Spaghetti Bolognese', calories: 650, prep: 30, tags: ['Family Fav'] },
-  },
-  Tuesday: {
-    Breakfast: { name: 'Greek Yogurt Parfait', calories: 320, prep: 5, tags: ['Quick'] },
-    Lunch: { name: 'Turkey Sandwich', calories: 420, prep: 10, tags: ['Easy'] },
-    Dinner: { name: 'Stir-Fry Chicken & Rice', calories: 580, prep: 25, tags: ['Healthy'] },
-  },
-  Wednesday: {
-    Breakfast: { name: 'Pancakes', calories: 480, prep: 20, tags: ['Kids Fav'] },
-    Dinner: { name: 'Grilled Salmon', calories: 540, prep: 20, tags: ['Healthy', 'Protein'] },
-  },
-  Thursday: {
-    Dinner: { name: 'Taco Night', calories: 620, prep: 25, tags: ['Family Fav'] },
-  },
-  Friday: {
-    Dinner: { name: 'Pizza Night', calories: 780, prep: 5, tags: ['Family Fav'] },
-  },
-  Saturday: {},
-  Sunday: {},
+const EMPTY_WEEK: Record<string, Record<string, PlannedMeal>> = {
+  Monday: {}, Tuesday: {}, Wednesday: {}, Thursday: {}, Friday: {}, Saturday: {}, Sunday: {},
 };
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -58,7 +37,10 @@ export function MealPlanningScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const tabBarInset = useTabBarInset();
   const [selectedDay, setSelectedDay] = useState('Monday');
-  const [weekMeals, setWeekMeals] = useState(INITIAL_MEALS);
+  // Starts empty, not with fabricated meals — the mount effect below loads
+  // any real saved plan; a first-time user should see a blank week, not
+  // fake meals silently written into their real meal-plan store.
+  const [weekMeals, setWeekMeals] = useState(EMPTY_WEEK);
   const [addingMeal, setAddingMeal] = useState<{ day: string; type: string } | null>(null);
   const [newMealName, setNewMealName] = useState('');
   const [newMealCals, setNewMealCals] = useState('');
@@ -67,6 +49,12 @@ export function MealPlanningScreen({ navigation }: any) {
 
   const { mealPlans, setMealPlan } = useOperationsStore();
   const { addItem } = useShoppingStore();
+
+  // Guards the persist effect below from firing with stale initial state
+  // before this load effect's setWeekMeals has taken effect — without it,
+  // a real stored plan gets overwritten by the initial (empty) state on
+  // every mount, since both effects run in the same pass on first render.
+  const hydratedRef = useRef(false);
 
   // Load from store on mount
   useEffect(() => {
@@ -94,11 +82,13 @@ export function MealPlanningScreen({ navigation }: any) {
       }
       setWeekMeals(converted);
     }
+    hydratedRef.current = true;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Persist to store on change
   useEffect(() => {
+    if (!hydratedRef.current) return;
     const weekStartDate = startOfWeek(new Date(), { weekStartsOn: 1 });
     const weekKey = format(weekStartDate, 'yyyy-MM-dd');
     const meals: Record<string, Record<string, { name: string; calories: number; prepTime: number; tags: string[] }>> = {};

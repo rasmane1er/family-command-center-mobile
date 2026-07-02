@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
 import { Card } from '../../components/common/Card';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { useEmergencyStore } from '../../store/useEmergencyStore';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 
 const EMERGENCY_NUMBERS = [
@@ -52,19 +53,12 @@ const FIRST_AID_STEPS: { title: string; icon: string; steps: string[] }[] = [
   },
 ];
 
-const SAFETY_CHECKLIST = [
-  { label: 'Smoke detectors tested', done: true },
-  { label: 'Fire extinguisher charged', done: true },
-  { label: 'Family meeting point agreed', done: true },
-  { label: 'Emergency kit stocked', done: false },
-  { label: 'Gas shutoff valve location known', done: false },
-  { label: 'Evacuation route practiced', done: false },
-];
-
 export function EmergencyScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const [expandedGuide, setExpandedGuide] = useState<string | null>(null);
   const members = useFamilyStore((s) => s.members);
+  const checklist = useEmergencyStore((s) => s.checklist);
+  const toggleCheckItem = useEmergencyStore((s) => s.toggleCheckItem);
 
   const callNumber = (number: string) => {
     Alert.alert(
@@ -77,7 +71,7 @@ export function EmergencyScreen({ navigation }: any) {
     );
   };
 
-  const completedChecks = SAFETY_CHECKLIST.filter((c) => c.done).length;
+  const completedChecks = checklist.filter((c) => c.done).length;
 
   const screenHeader = (
     <LinearGradient colors={['#C0392B', '#96281B']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
@@ -92,11 +86,11 @@ export function EmergencyScreen({ navigation }: any) {
       <View style={styles.safetyScore}>
         <Ionicons name="shield-checkmark" size={28} color="#fff" />
         <View style={{ marginLeft: 12 }}>
-          <Text style={styles.safetyScoreValue}>{completedChecks}/{SAFETY_CHECKLIST.length}</Text>
+          <Text style={styles.safetyScoreValue}>{completedChecks}/{checklist.length}</Text>
           <Text style={styles.safetyScoreLabel}>Safety checks complete</Text>
         </View>
         <View style={styles.safetyRing}>
-          <Text style={styles.safetyPct}>{Math.round((completedChecks / SAFETY_CHECKLIST.length) * 100)}%</Text>
+          <Text style={styles.safetyPct}>{Math.round((completedChecks / checklist.length) * 100)}%</Text>
         </View>
       </View>
     </LinearGradient>
@@ -109,7 +103,7 @@ export function EmergencyScreen({ navigation }: any) {
     >
       <View style={styles.headerPlaceholder} />
       <Text style={styles.headerTitle}>Emergency</Text>
-      <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: '600' }}>{Math.round((completedChecks / SAFETY_CHECKLIST.length) * 100)}% safe</Text>
+      <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: '600' }}>{Math.round((completedChecks / checklist.length) * 100)}% safe</Text>
     </LinearGradient>
   );
 
@@ -214,8 +208,12 @@ export function EmergencyScreen({ navigation }: any) {
         {/* Safety Checklist */}
         <Text style={styles.sectionTitle}>Home Safety Checklist</Text>
         <Card style={styles.checklistCard} variant="elevated">
-          {SAFETY_CHECKLIST.map((item, i) => (
-            <View key={i} style={[styles.checkItem, i < SAFETY_CHECKLIST.length - 1 && styles.checkItemBorder]}>
+          {checklist.map((item, i) => (
+            <Pressable
+              key={item.id}
+              style={[styles.checkItem, i < checklist.length - 1 && styles.checkItemBorder]}
+              onPress={() => toggleCheckItem(item.id)}
+            >
               <Ionicons
                 name={item.done ? 'checkmark-circle' : 'ellipse-outline'}
                 size={22}
@@ -224,7 +222,7 @@ export function EmergencyScreen({ navigation }: any) {
               <Text style={[styles.checkItemText, item.done && styles.checkItemTextDone]}>
                 {item.label}
               </Text>
-            </View>
+            </Pressable>
           ))}
         </Card>
 

@@ -126,7 +126,12 @@ export function PantryScreen({ navigation }: any) {
   const lowStock = pantryItems.filter((i) => i.minQuantity && i.quantity <= i.minQuantity).length;
   const expiring = pantryItems.filter((i) => {
     if (!i.expiryDate) return false;
-    return differenceInDays(new Date(i.expiryDate), new Date()) <= 3;
+    // "Expiring soon" is distinct from already-expired (see getExpiryStatus
+    // above, which already treats them as separate states) — without the
+    // days >= 0 bound this silently counted expired items too, disagreeing
+    // with both its own per-item badges and OperationsDashboardScreen's count.
+    const days = differenceInDays(new Date(i.expiryDate), new Date());
+    return days <= 3 && days >= 0;
   }).length;
 
   const s = makeStyles(colors);

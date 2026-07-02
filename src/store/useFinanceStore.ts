@@ -210,6 +210,20 @@ export const useFinanceStore = create<FinanceState>()(
       { id: generateId(), familyId, name: 'New Family Car', targetAmount: 45000, savedAmount: 12000, deadline: '2027-01-01', category: 'home', color: '#F5A623', icon: 'car', isCompleted: false, createdAt: now },
     ];
 
+    // Was previously always empty here — DebtDetailScreen/DebtPayoffScreen
+    // correctly read from this store's `debts`, but demo mode never had
+    // anything to show. A separate, unused useDebtStore had this same demo
+    // data sitting dead since nothing ever read it — ported over here
+    // (converting interestRate from a percentage to the decimal this
+    // store's real Debt type expects, and fixing 'car_loan' → 'auto_loan'
+    // to match the real DebtType union).
+    const debts: Debt[] = [
+      { id: generateId(), familyId, name: 'Chase Visa', type: 'credit_card', balance: 4200, originalBalance: 4200, interestRate: 0.1999, minimumPayment: 84, dueDate: 15, isAutoPay: false, createdAt: now, updatedAt: now },
+      { id: generateId(), familyId, name: 'Student Loan', type: 'student_loan', balance: 18500, originalBalance: 25000, interestRate: 0.055, minimumPayment: 195, dueDate: 5, isAutoPay: true, notes: 'Sallie Mae', createdAt: now, updatedAt: now },
+      { id: generateId(), familyId, name: 'Car Loan', type: 'auto_loan', balance: 12000, originalBalance: 24000, interestRate: 0.069, minimumPayment: 380, dueDate: 10, isAutoPay: true, notes: 'Wells Fargo', createdAt: now, updatedAt: now },
+      { id: generateId(), familyId, name: 'Medical Bill', type: 'medical', balance: 890, originalBalance: 890, interestRate: 0, minimumPayment: 50, dueDate: 20, isAutoPay: false, createdAt: now, updatedAt: now },
+    ];
+
     const totalNetWorth = accounts.reduce((sum, a) => sum + a.balance, 0);
     const monthlyIncome = transactions.filter((t) => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
     const monthlyExpenses = transactions.filter((t) => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
@@ -221,6 +235,7 @@ export const useFinanceStore = create<FinanceState>()(
       bills,
       subscriptions,
       financialGoals,
+      debts,
       totalNetWorth,
       monthlyIncome,
       monthlyExpenses,

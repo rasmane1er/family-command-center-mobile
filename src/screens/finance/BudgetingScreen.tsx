@@ -110,6 +110,28 @@ export function BudgetingScreen({ navigation, route }: any) {
 
   const financialInsight = insights.find((i) => i.type === 'financial');
 
+  // Real fallback when there's no AI insight yet — previously a hardcoded
+  // "Your spending is tracking well..." shown unconditionally regardless of
+  // actual budget state. Computed from real budgets: flags the category
+  // closest to (or over) its limit, or an honest empty message if there's
+  // no budget data to compute from at all.
+  const fallbackInsight = (() => {
+    if (budgets.length === 0) {
+      return { title: 'Add a Budget', text: 'Create a budget category to start seeing personalized insights here.' };
+    }
+    const tightest = budgets.reduce((worst, b) =>
+      b.monthlyLimit > 0 && b.spent / b.monthlyLimit > (worst.monthlyLimit > 0 ? worst.spent / worst.monthlyLimit : 0) ? b : worst
+    , budgets[0]);
+    const ratio = tightest.monthlyLimit > 0 ? tightest.spent / tightest.monthlyLimit : 0;
+    if (ratio >= 1) {
+      return { title: 'Over Budget', text: `${tightest.category} is $${(tightest.spent - tightest.monthlyLimit).toFixed(0)} over its $${tightest.monthlyLimit.toFixed(0)} monthly limit.` };
+    }
+    if (ratio >= 0.8) {
+      return { title: 'Budget Alert', text: `${tightest.category} is at ${Math.round(ratio * 100)}% of its monthly limit — keep an eye on it.` };
+    }
+    return { title: 'On Track', text: 'Your spending is tracking well across all budget categories this month.' };
+  })();
+
   const handleAddBudget = () => {
     const limit = parseFloat(newLimit);
     if (!newCategory.trim() || isNaN(limit) || limit <= 0) {
@@ -288,9 +310,9 @@ export function BudgetingScreen({ navigation, route }: any) {
           <View style={s.insightRow}>
             <Ionicons name="bulb" size={24} color={colors.secondary} />
             <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={s.insightTitle}>{financialInsight?.title ?? 'AI Budget Insight'}</Text>
+              <Text style={s.insightTitle}>{financialInsight?.title ?? fallbackInsight.title}</Text>
               <Text style={s.insightText}>
-                {financialInsight?.summary ?? 'Your spending is tracking well. Review your top categories for savings opportunities.'}
+                {financialInsight?.summary ?? fallbackInsight.text}
               </Text>
             </View>
           </View>

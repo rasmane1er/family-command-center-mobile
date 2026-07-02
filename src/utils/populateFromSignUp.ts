@@ -29,7 +29,6 @@ export function populateFromSignUp(user: AuthUser) {
     currency: 'USD',
     militaryMode: false,
     premiumTier: 'free',
-    healthScore: 75,
     createdAt: now,
     ...(user.city ? { homeAddress: user.city } : {}),
   };

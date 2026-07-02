@@ -17,6 +17,7 @@ interface FamilyState {
   activeMemberId: string | null;
 
   setFamily: (f: Family) => void;
+  updateFamily: (updates: Partial<Family>) => void;
   addMember: (m: FamilyMember) => void;
   addLocalProfile: (m: FamilyMember) => void;
   updateMember: (id: string, updates: Partial<FamilyMember>) => void;
@@ -58,6 +59,7 @@ export const useFamilyStore = create<FamilyState>()(
   activeMemberId: null,
 
   setFamily: (f) => set({ family: f }),
+  updateFamily: (updates) => set((s) => (s.family ? { family: { ...s.family, ...updates } } : s)),
   addMember: (m) => {
     set((s) => ({ members: [...s.members, m] }));
     enqueueSync({
@@ -165,7 +167,6 @@ export const useFamilyStore = create<FamilyState>()(
       currency: 'USD',
       militaryMode: false,
       premiumTier: 'pro',
-      healthScore: 78,
       createdAt: now,
     };
 

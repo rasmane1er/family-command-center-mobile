@@ -14,7 +14,13 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.familycommandcenter.app"
+      "bundleIdentifier": "com.familycommandcenter.app",
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsLocalNetworking": true
+        },
+        "NSLocalNetworkUsageDescription": "Family Command Center connects to your Philips Hue Bridge on your home WiFi network to control your smart lights."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -48,8 +54,22 @@
           "iCloudContainerEnvironment": "Production"
         }
       ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow Family Command Center to use your current location to center a new geofence zone."
+        }
+      ],
       "expo-secure-store",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
     ],
     "extra": {
       "eas": {

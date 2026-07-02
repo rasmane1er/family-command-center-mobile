@@ -44,7 +44,7 @@ const generateId = () => Math.random().toString(36).substring(2, 11);
 export function AssetsScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
-  const { assets, vehicles, addAsset, deleteAsset } = useOperationsStore();
+  const { assets, addAsset, deleteAsset } = useOperationsStore();
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [newName, setNewName] = useState('');
@@ -65,16 +65,11 @@ export function AssetsScreen({ navigation }: any) {
       .catch(() => {/* silent */ });
   }, []);
 
-  const vehicleAssets = vehicles.map((v) => ({
-    id: v.id,
-    familyId: v.familyId,
-    name: `${v.year} ${v.make} ${v.model}`,
-    category: 'Vehicle',
-    value: 25000,
-    createdAt: new Date().toISOString(),
-  }));
-
-  const allAssets: Asset[] = [...assets, ...vehicleAssets];
+  // Vehicles aren't auto-merged in with a guessed value — there's no real
+  // valuation data source (Vehicle has no value field, VIN lookup isn't
+  // integrated). A user who wants a vehicle counted here can add it as a
+  // real Asset (category: Vehicle) with a value they actually know.
+  const allAssets: Asset[] = assets;
   const totalAssets = allAssets.reduce((sum, a) => sum + a.value, 0);
 
   const grouped = allAssets.reduce((acc, a) => {

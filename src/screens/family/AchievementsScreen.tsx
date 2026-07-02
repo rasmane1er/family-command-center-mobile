@@ -8,6 +8,14 @@ import { colors } from '../../theme/colors';
 import { Card } from '../../components/common/Card';
 import { ProgressBar } from '../../components/common/ProgressBar';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { useFinanceStore } from '../../store/useFinanceStore';
+import { useWealthStore } from '../../store/useWealthStore';
+import { useHealthStore } from '../../store/useHealthStore';
+import { useLegacyStore } from '../../store/useLegacyStore';
+import { useHabitsStore } from '../../store/useHabitsStore';
+import { useOperationsStore } from '../../store/useOperationsStore';
+import { useTimelineStore } from '../../store/useTimelineStore';
+import { useFamilyMeetingsStore } from '../../store/useFamilyMeetingsStore';
 import { Avatar } from '../../components/common/Avatar';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 
@@ -26,20 +34,65 @@ interface Achievement {
   memberId?: string;
 }
 
-const ACHIEVEMENTS: Achievement[] = [
-  { id: 'a1', title: 'Task Master', desc: 'Complete 10 tasks in a row without missing one', icon: 'checkmark-circle', color: '#2980B9', bg: '#EBF5FB', category: 'Tasks', progress: 10, goal: 10, unlocked: true, points: 100, memberId: 'member-3' },
-  { id: 'a2', title: 'Budget Hero', desc: 'Stay under budget for 3 consecutive months', icon: 'wallet', color: '#27AE60', bg: '#D5F5E3', category: 'Finance', progress: 2, goal: 3, unlocked: false, points: 150 },
-  { id: 'a3', title: 'Savings Champion', desc: 'Save $10,000 in family savings', icon: 'trophy', color: '#F5A623', bg: '#FEF3E2', category: 'Finance', progress: 7800, goal: 10000, unlocked: false, points: 200 },
-  { id: 'a4', title: 'Health Warrior', desc: 'Log health metrics for 30 days straight', icon: 'heart', color: '#E74C3C', bg: '#FDEDEC', category: 'Health', progress: 14, goal: 30, unlocked: false, points: 120, memberId: 'member-1' },
-  { id: 'a5', title: 'Legacy Builder', desc: 'Add 10 memories to the Legacy Vault', icon: 'library', color: '#7B2D8B', bg: '#F3E5F5', category: 'Family', progress: 6, goal: 10, unlocked: false, points: 80 },
-  { id: 'a6', title: 'Communication Champion', desc: 'Hold 4 weekly family meetings', icon: 'people', color: '#16A085', bg: '#D1F2EB', category: 'Family', progress: 3, goal: 4, unlocked: false, points: 100 },
-  { id: 'a7', title: 'Habit Streak King', desc: 'Maintain any habit for 30 days', icon: 'flame', color: '#E67E22', bg: '#FEF0E2', category: 'Habits', progress: 21, goal: 30, unlocked: false, points: 180 },
-  { id: 'a8', title: 'Debt Slayer', desc: 'Pay off one debt completely', icon: 'cut', color: '#8E44AD', bg: '#F5EEF8', category: 'Finance', progress: 1, goal: 1, unlocked: true, points: 200 },
-  { id: 'a9', title: 'Emergency Ready', desc: 'Complete your emergency kit checklist', icon: 'shield-checkmark', color: '#E74C3C', bg: '#FDEDEC', category: 'Safety', progress: 8, goal: 12, unlocked: false, points: 100 },
-  { id: 'a10', title: 'Family Fitness Buff', desc: 'Exercise together 20 times this month', icon: 'fitness', color: '#27AE60', bg: '#D5F5E3', category: 'Health', progress: 13, goal: 20, unlocked: false, points: 130 },
-  { id: 'a11', title: 'Pantry Pro', desc: 'Keep pantry stocked with zero waste for 2 weeks', icon: 'nutrition', color: '#E67E22', bg: '#FEF0E2', category: 'Operations', progress: 9, goal: 14, unlocked: false, points: 90 },
-  { id: 'a12', title: 'Memory Maker', desc: 'Record 5 family milestones', icon: 'camera', color: '#F5A623', bg: '#FEF3E2', category: 'Family', progress: 5, goal: 5, unlocked: true, points: 75 },
-];
+// Achievement definitions (title/desc/points/category/icon) are static —
+// like any game's trophy list — but progress/unlocked/memberId used to be
+// hardcoded fake VALUES (e.g. "member-3" hardcoded as Task Master with a
+// perfect 10/10, regardless of who's actually in this family or what they
+// actually did). Those are now computed from real store data below.
+function useRealAchievements(): Achievement[] {
+  const tasks = useFamilyStore((s) => s.tasks);
+  const members = useFamilyStore((s) => s.members);
+  const budgets = useFinanceStore((s) => s.budgets);
+  const wealthEntries = useWealthStore((s) => s.entries);
+  const healthRecords = useHealthStore((s) => s.records);
+  const legacyItems = useLegacyStore((s) => s.items);
+  const habits = useHabitsStore((s) => s.habits);
+  const debts = useFinanceStore((s) => s.debts);
+  const pantryItems = useOperationsStore((s) => s.pantryItems);
+  const timelineEntries = useTimelineStore((s) => s.entries);
+  const meetings = useFamilyMeetingsStore((s) => s.meetings);
+
+  // Task Master — real completed-task count per member (a true "streak
+  // without missing" isn't derivable from completion timestamps alone, so
+  // total completions is the closest honest, real proxy).
+  const completedByMember = members.map((m) => ({
+    member: m,
+    count: tasks.filter((t) => t.status === 'completed' && t.assignedTo?.includes(m.id)).length,
+  })).sort((a, b) => b.count - a.count);
+  const taskLeader = completedByMember[0];
+
+  // Health Warrior — distinct days with a health record in the last 30
+  // days, per member.
+  const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  const healthByMember = members.map((m) => ({
+    member: m,
+    days: new Set(healthRecords.filter((r) => r.memberId === m.id && new Date(r.date).getTime() >= thirtyDaysAgo).map((r) => r.date)).size,
+  })).sort((a, b) => b.days - a.days);
+  const healthLeader = healthByMember[0];
+
+  const savingsTotal = wealthEntries.filter((e) => e.category === 'savings').reduce((s, e) => s + e.currentValue, 0);
+  const budgetsUnderLimit = budgets.filter((b) => b.spent <= b.monthlyLimit).length;
+  const longestHabitStreak = habits.reduce((max, h) => Math.max(max, h.longestStreak), 0);
+  const paidOffDebts = debts.filter((d) => d.balance === 0 && d.originalBalance > 0).length;
+  const readyMembers = members.filter((m) => !!m.medicalInfo && ((m.medicalInfo.allergies?.length ?? 0) > 0 || !!m.medicalInfo.bloodType || !!m.medicalInfo.doctorName)).length;
+  const exerciseThisMonth = healthRecords.filter((r) => r.metric === 'exercise' && new Date(r.date).getMonth() === new Date().getMonth() && new Date(r.date).getFullYear() === new Date().getFullYear()).length;
+  const pantryStocked = pantryItems.filter((p) => !(p.minQuantity !== undefined && p.quantity <= p.minQuantity)).length;
+
+  return [
+    { id: 'a1', title: 'Task Master', desc: 'Complete tasks — real per-member completion count', icon: 'checkmark-circle', color: '#2980B9', bg: '#EBF5FB', category: 'Tasks', progress: Math.min(taskLeader?.count ?? 0, 10), goal: 10, unlocked: (taskLeader?.count ?? 0) >= 10, points: 100, memberId: (taskLeader?.count ?? 0) > 0 ? taskLeader?.member.id : undefined },
+    { id: 'a2', title: 'Budget Hero', desc: 'Keep every budget category under its limit this month', icon: 'wallet', color: '#27AE60', bg: '#D5F5E3', category: 'Finance', progress: budgetsUnderLimit, goal: Math.max(1, budgets.length), unlocked: budgets.length > 0 && budgetsUnderLimit === budgets.length, points: 150 },
+    { id: 'a3', title: 'Savings Champion', desc: 'Save $10,000 in family savings', icon: 'trophy', color: '#F5A623', bg: '#FEF3E2', category: 'Finance', progress: Math.min(savingsTotal, 10000), goal: 10000, unlocked: savingsTotal >= 10000, points: 200 },
+    { id: 'a4', title: 'Health Warrior', desc: 'Log health metrics on 30 distinct days', icon: 'heart', color: '#E74C3C', bg: '#FDEDEC', category: 'Health', progress: Math.min(healthLeader?.days ?? 0, 30), goal: 30, unlocked: (healthLeader?.days ?? 0) >= 30, points: 120, memberId: (healthLeader?.days ?? 0) > 0 ? healthLeader?.member.id : undefined },
+    { id: 'a5', title: 'Legacy Builder', desc: 'Add 10 memories to the Legacy Vault', icon: 'library', color: '#7B2D8B', bg: '#F3E5F5', category: 'Family', progress: Math.min(legacyItems.length, 10), goal: 10, unlocked: legacyItems.length >= 10, points: 80 },
+    { id: 'a6', title: 'Communication Champion', desc: 'Hold 4 family meetings', icon: 'people', color: '#16A085', bg: '#D1F2EB', category: 'Family', progress: Math.min(meetings.length, 4), goal: 4, unlocked: meetings.length >= 4, points: 100 },
+    { id: 'a7', title: 'Habit Streak King', desc: 'Maintain any habit for 30 days', icon: 'flame', color: '#E67E22', bg: '#FEF0E2', category: 'Habits', progress: Math.min(longestHabitStreak, 30), goal: 30, unlocked: longestHabitStreak >= 30, points: 180 },
+    { id: 'a8', title: 'Debt Slayer', desc: 'Pay off one debt completely', icon: 'cut', color: '#8E44AD', bg: '#F5EEF8', category: 'Finance', progress: Math.min(paidOffDebts, 1), goal: 1, unlocked: paidOffDebts >= 1, points: 200 },
+    { id: 'a9', title: 'Emergency Ready', desc: 'Have emergency medical info on file for every family member', icon: 'shield-checkmark', color: '#E74C3C', bg: '#FDEDEC', category: 'Safety', progress: readyMembers, goal: Math.max(1, members.length), unlocked: members.length > 0 && readyMembers === members.length, points: 100 },
+    { id: 'a10', title: 'Family Fitness Buff', desc: 'Log 20 exercise entries this month', icon: 'fitness', color: '#27AE60', bg: '#D5F5E3', category: 'Health', progress: Math.min(exerciseThisMonth, 20), goal: 20, unlocked: exerciseThisMonth >= 20, points: 130 },
+    { id: 'a11', title: 'Pantry Pro', desc: 'Keep every pantry item above its minimum quantity', icon: 'nutrition', color: '#E67E22', bg: '#FEF0E2', category: 'Operations', progress: pantryStocked, goal: Math.max(1, pantryItems.length), unlocked: pantryItems.length > 0 && pantryStocked === pantryItems.length, points: 90 },
+    { id: 'a12', title: 'Memory Maker', desc: 'Record 5 family milestones', icon: 'camera', color: '#F5A623', bg: '#FEF3E2', category: 'Family', progress: Math.min(timelineEntries.length, 5), goal: 5, unlocked: timelineEntries.length >= 5, points: 75 },
+  ];
+}
 
 const CATEGORIES = ['All', 'Tasks', 'Finance', 'Health', 'Family', 'Habits', 'Safety', 'Operations'];
 
@@ -48,6 +101,7 @@ export function AchievementsScreen({ navigation }: any) {
   const [activeTab, setActiveTab] = useState<'all' | 'unlocked' | 'progress'>('all');
   const [category, setCategory] = useState('All');
   const members = useFamilyStore((s) => s.members);
+  const ACHIEVEMENTS = useRealAchievements();
 
   const filtered = ACHIEVEMENTS.filter((a) => {
     if (activeTab === 'unlocked') return a.unlocked;

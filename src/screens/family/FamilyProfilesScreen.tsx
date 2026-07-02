@@ -26,6 +26,7 @@ import { Button } from '../../components/common/Button';
 import { Card } from '../../components/common/Card';
 import { ProgressBar } from '../../components/common/ProgressBar';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { useFinancialHealth } from '../../hooks/useFinancialHealth';
 import { useTheme } from '../../theme/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { shadows } from '../../theme/spacing';
@@ -154,14 +155,20 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
   const activeMember = members.find((member) => member.id === activeMemberId);
   const family = useFamilyStore((s) => s.family);
   const tasks = useFamilyStore((s) => s.tasks);
+  const events = useFamilyStore((s) => s.events);
   const addMember = useFamilyStore((s) => s.addMember);
   const requests = useJoinRequestsStore((s) => s.requests);
+  const familyHealth = useFinancialHealth();
 
   const pendingRequestsCount = requests.filter((request) => request.status === 'pending').length;
 
-  const todayEvents = 0; // placeholder — no events store in scope
+  const todayEvents = events.filter((event) => {
+    const eventDate = new Date(event.startDate);
+    const today = new Date();
+    return eventDate.toDateString() === today.toDateString();
+  }).length;
   const totalPoints = members.reduce((sum, m) => sum + m.points, 0);
-  const healthScore = family?.healthScore ?? 72;
+  const healthScore = familyHealth.overall;
   const pendingTasks = tasks.filter((t) => t.status === 'pending').length;
 
   useEffect(() => {

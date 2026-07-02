@@ -14,6 +14,7 @@ import { useFinanceStore } from '../../store/useFinanceStore';
 import { useAIStore } from '../../store/useAIStore';
 import { useAutomationStore } from '../../store/useAutomationStore';
 import { useWealthStore } from '../../store/useWealthStore';
+import { useTotalNetWorth } from '../../hooks/useTotalNetWorth';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 
 const { width } = Dimensions.get('window');
@@ -45,7 +46,7 @@ const isGrandparent = activeMember?.role === 'grandparent';
   const bills = useFinanceStore((s) => s.bills);
   const insights = useAIStore((s) => s.insights);
   const { rules, listings, conflicts } = useAutomationStore();
-  const { reputationScores, getTotalNetWorth, seedDemoData: seedWealth } = useWealthStore();
+  const { reputationScores, seedDemoData: seedWealth } = useWealthStore();
 
   if (reputationScores.length === 0) seedWealth();
 
@@ -69,7 +70,7 @@ const todayEvents = visibleEvents.filter(
   const topInsight = insights.filter((i) => !i.isRead)[0];
   const openConflicts = conflicts.filter((c) => c.status !== 'resolved').length;
   const activeAutomations = rules.filter((r) => r.isActive).length;
-  const netWorth = getTotalNetWorth();
+  const netWorth = useTotalNetWorth();
   const availableListings = listings.filter((l) => l.isAvailable).length;
 
   const topMember = [...reputationScores].sort((a, b) => b.overall - a.overall)[0];

@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions, Modal, TextInput, FlatList } from 'react-native';
+import React, { useState, useCallback, useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions, Modal, TextInput, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
+import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { format } from 'date-fns';
+import { format, addMonths, differenceInDays } from 'date-fns';
 import * as Haptics from 'expo-haptics';
 import Svg, { Circle, Defs, LinearGradient as SvgGrad, Stop } from 'react-native-svg';
 import { colors } from '../../theme/colors';
@@ -13,9 +14,15 @@ import { ProgressBar } from '../../components/common/ProgressBar';
 import { Button } from '../../components/common/Button';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useFinanceStore } from '../../store/useFinanceStore';
+import { useOperationsStore } from '../../store/useOperationsStore';
 import { useFinancialHealth } from '../../hooks/useFinancialHealth';
-import { getAccounts } from '../../services/plaidService';
-import type { AccountType, PlaidAccount } from '../../types';
+import { useTotalNetWorth } from '../../hooks/useTotalNetWorth';
+import { getAccounts, getSpendingByCategory } from '../../services/plaidService';
+import { getDetectedBills, getInvestmentAccounts } from '../../services/autoFillService';
+import type { DetectedBill, PlaidInvestmentAccount } from '../../services/autoFillService';
+import { getDetectedSubscriptions, confirmSubscription } from '../../services/subscriptionDetectionService';
+import type { DetectedSubscription } from '../../services/subscriptionDetectionService';
+import type { AccountType, PlaidAccount, Bill, Subscription } from '../../types';
 
 const { width } = Dimensions.get('window');
 const generateId = () => Math.random().toString(36).substring(2, 11);
@@ -60,6 +67,48 @@ const FINANCE_TOOLS = [
   { key: 'ReceiptScanner',   icon: 'camera-outline',   label: 'Scan Receipt', color: '#8B5CF6', bg: '#F5F3FF' },
 ];
 
+// Mirrors the category/icon/color choices used by the standalone
+// BudgetingScreen / BillsScreen / SubscriptionsScreen / AssetsScreen — the
+// in-place Budget/Bills/Subs/Assets tabs below write through the same
+// store actions those screens use, so staying consistent here means a
+// budget/bill/sub/asset looks the same whether it was added from a tab or
+// from its dedicated screen.
+const BUDGET_COLORS = ['#FF6B6B', '#4ECDC4', '#F5A623', '#27AE60', '#2980B9', '#8E44AD', '#E91E63', '#95A5A6'];
+const BUDGET_ICONS = ['restaurant', 'car', 'tv', 'medkit', 'shirt', 'flash', 'home', 'school', 'gift', 'airplane', 'fitness', 'wallet'];
+// Maps a Plaid spending category to the budget category it should overlay
+// with a live "actual" figure — mirrors BudgetingScreen.tsx's mapping so a
+// budget looks the same whether viewed from this tab or that screen.
+const PLAID_TO_BUDGET: Record<string, string> = {
+  FOOD_AND_DRINK: 'Food',
+  SHOPPING: 'Shopping',
+  TRANSPORTATION: 'Transport',
+  BILLS: 'Bills & Utilities',
+};
+
+const BILL_CATEGORIES = ['Housing', 'Utilities', 'Insurance', 'Internet', 'Phone', 'Health', 'Education', 'Subscriptions', 'Other'];
+const BILL_CATEGORY_ICONS: Record<string, string> = {
+  Housing: 'home', Utilities: 'flash', Insurance: 'shield-checkmark', Internet: 'wifi',
+  Phone: 'phone-portrait', Health: 'medical', Education: 'school', Subscriptions: 'reload', Other: 'receipt',
+};
+
+const SUB_CATEGORIES = ['Entertainment', 'Music', 'Software', 'News', 'Fitness', 'Education', 'Gaming', 'Other'];
+const SUB_ICONS: Record<string, string> = {
+  Entertainment: 'tv-outline', Music: 'musical-notes-outline', Software: 'code-slash-outline',
+  News: 'newspaper-outline', Fitness: 'fitness-outline', Education: 'school-outline',
+  Gaming: 'game-controller-outline', Other: 'apps-outline',
+};
+const SUB_COLORS: Record<string, string> = {
+  Entertainment: '#E74C3C', Music: '#9B59B6', Software: '#2980B9', News: '#E67E22',
+  Fitness: '#27AE60', Education: '#16A085', Gaming: '#8E44AD', Other: '#7F8C8D',
+};
+const BILLING_CYCLES = ['monthly', 'quarterly', 'annual'] as const;
+
+const ASSET_CATEGORIES = ['Real Estate', 'Vehicle', 'Electronics', 'Furniture', 'Jewelry', 'Investments', 'Collectibles', 'Other'];
+const ASSET_CATEGORY_ICONS: Record<string, string> = {
+  'Real Estate': 'home', 'Vehicle': 'car', 'Electronics': 'laptop', 'Furniture': 'bed',
+  'Jewelry': 'diamond', 'Investments': 'trending-up', 'Collectibles': 'star', 'Other': 'cube',
+};
+
 /* ── Mini arc ring for budget % ── */
 function BudgetRing({ ratio, color, size = 44 }: { ratio: number; color: string; size?: number }) {
   const sw = 4;
@@ -90,15 +139,151 @@ export function FinanceDashboardScreen({ navigation }: any) {
   const [newGoalColor, setNewGoalColor] = useState('#2980B9');
   const [newGoalIcon, setNewGoalIcon] = useState('trophy');
 
+  const [showBudgetModal, setShowBudgetModal] = useState(false);
+  const [newBudgetCategory, setNewBudgetCategory] = useState('');
+  const [newBudgetLimit, setNewBudgetLimit] = useState('');
+  const [newBudgetColor, setNewBudgetColor] = useState(BUDGET_COLORS[0]);
+  const [newBudgetIcon, setNewBudgetIcon] = useState(BUDGET_ICONS[0]);
+
+  const [showBillModal, setShowBillModal] = useState(false);
+  const [newBillName, setNewBillName] = useState('');
+  const [newBillAmount, setNewBillAmount] = useState('');
+  const [newBillCategory, setNewBillCategory] = useState(BILL_CATEGORIES[0]);
+  const [newBillDueDays, setNewBillDueDays] = useState('14');
+  const [newBillAutoPay, setNewBillAutoPay] = useState(false);
+
+  const [showSubModal, setShowSubModal] = useState(false);
+  const [newSubName, setNewSubName] = useState('');
+  const [newSubAmount, setNewSubAmount] = useState('');
+  const [newSubCategory, setNewSubCategory] = useState(SUB_CATEGORIES[0]);
+  const [newSubCycle, setNewSubCycle] = useState<typeof BILLING_CYCLES[number]>('monthly');
+
+  const [showAssetModal, setShowAssetModal] = useState(false);
+  const [newAssetName, setNewAssetName] = useState('');
+  const [newAssetValue, setNewAssetValue] = useState('');
+  const [newAssetCategory, setNewAssetCategory] = useState(ASSET_CATEGORIES[0]);
+
+  // Live Plaid-derived data — same services the standalone Budgeting/Bills/
+  // Subscriptions/Assets screens use, so connecting a bank once keeps all
+  // of these tabs in sync, not just the ones you happen to visit directly.
+  const [plaidActuals, setPlaidActuals] = useState<Record<string, number>>({});
+  const [detectedBills, setDetectedBills] = useState<DetectedBill[]>([]);
+  const [detectedBillsLoading, setDetectedBillsLoading] = useState(false);
+  const [detectedSubs, setDetectedSubs] = useState<DetectedSubscription[]>([]);
+  const [dismissedSubMerchants, setDismissedSubMerchants] = useState<Set<string>>(new Set());
+  const [investmentAccounts, setInvestmentAccounts] = useState<PlaidInvestmentAccount[]>([]);
+
   const {
     accounts, transactions, budgets, bills, subscriptions, financialGoals,
-    totalNetWorth, monthlyIncome, monthlyExpenses, monthlySavings,
-    addAccount, addFinancialGoal,
+    totalNetWorth: accountsNetWorth, monthlyIncome, monthlyExpenses, monthlySavings,
+    addAccount, addFinancialGoal, addBudget, addBill, markBillPaid, addSubscription, deleteSubscription,
   } = useFinanceStore();
+  const { assets, addAsset } = useOperationsStore();
+  // The real single-source-of-truth total (accounts + wealth entries +
+  // physical assets − debts), not just Plaid account balances — see
+  // useTotalNetWorth.ts for why this replaced three separately-computed
+  // "net worth" figures across different Finance screens.
+  const totalNetWorth = useTotalNetWorth();
 
-  useEffect(() => {
-    getAccounts().then((res) => setPlaidAccounts(res.accounts)).catch(() => {});
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const refreshPlaidAccounts = useCallback(async () => {
+    try {
+      const res = await getAccounts();
+      setPlaidAccounts(res.accounts);
+    } catch {
+      // no backend / not connected — leave last-known state as-is
+    }
   }, []);
+
+  const refreshBudgetActuals = useCallback(async () => {
+    try {
+      const now = new Date();
+      const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const res = await getSpendingByCategory(month);
+      const map: Record<string, number> = {};
+      for (const item of res.categories) {
+        const budgetCat = PLAID_TO_BUDGET[item.category];
+        if (budgetCat) map[budgetCat] = (map[budgetCat] ?? 0) + item.total;
+      }
+      setPlaidActuals(map);
+    } catch {
+      // silent
+    }
+  }, []);
+
+  const refreshDetectedBills = useCallback(async () => {
+    setDetectedBillsLoading(true);
+    try {
+      const res = await getDetectedBills();
+      setDetectedBills(res.bills);
+    } catch {
+      // silent
+    } finally {
+      setDetectedBillsLoading(false);
+    }
+  }, []);
+
+  const refreshDetectedSubs = useCallback(async () => {
+    try {
+      const res = await getDetectedSubscriptions();
+      setDetectedSubs(res.subscriptions);
+    } catch {
+      // silent
+    }
+  }, []);
+
+  const refreshInvestmentAccounts = useCallback(async () => {
+    try {
+      const res = await getInvestmentAccounts();
+      setInvestmentAccounts(res.accounts);
+    } catch {
+      // silent
+    }
+  }, []);
+
+  const refreshAllPlaidData = useCallback(async () => {
+    await Promise.all([
+      refreshPlaidAccounts(),
+      refreshBudgetActuals(),
+      refreshDetectedBills(),
+      refreshDetectedSubs(),
+      refreshInvestmentAccounts(),
+    ]);
+  }, [refreshPlaidAccounts, refreshBudgetActuals, refreshDetectedBills, refreshDetectedSubs, refreshInvestmentAccounts]);
+
+  // Refetches every time this screen gains focus — not just on first
+  // mount — so reconnecting a bank, adding something via receipt scan or
+  // another screen, or simply switching back to the Finance tab always
+  // shows current data instead of a stale snapshot from app launch.
+  useFocusEffect(
+    useCallback(() => {
+      refreshAllPlaidData();
+    }, [refreshAllPlaidData])
+  );
+
+  const handlePullRefresh = async () => {
+    setIsRefreshing(true);
+    await refreshAllPlaidData();
+    setIsRefreshing(false);
+  };
+
+  // Real 30-day net worth trend, approximated from real transactions
+  // (income minus expense/investment outflow in the window) rather than a
+  // hardcoded "+2.4% this month" — the previous number didn't move no
+  // matter what the user's actual accounts/transactions looked like.
+  // Baselined off accounts-only net worth (not the unified total) since
+  // transactions only explain account-balance flows, not changes in wealth
+  // entries or physical asset values.
+  const netWorthTrend = useMemo(() => {
+    const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    const netChange = transactions
+      .filter((t) => new Date(t.date).getTime() >= thirtyDaysAgo)
+      .reduce((sum, t) => sum + (t.type === 'income' ? t.amount : t.type === 'expense' ? -t.amount : 0), 0);
+    const priorNetWorth = accountsNetWorth - netChange;
+    const pct = priorNetWorth !== 0 ? (netChange / Math.abs(priorNetWorth)) * 100 : 0;
+    return { amount: netChange, pct };
+  }, [transactions, accountsNetWorth]);
 
   const plaidNetWorth = plaidAccounts.reduce((sum, acc) => {
     if (acc.accountType === 'credit') return sum - acc.balance;
@@ -108,6 +293,102 @@ export function FinanceDashboardScreen({ navigation }: any) {
   const savingsRate = monthlyIncome > 0 ? Math.round((monthlySavings / monthlyIncome) * 100) : 0;
   const overdueBills = bills.filter((b) => b.status === 'overdue');
   const fh = useFinancialHealth();
+
+  // Real per-tab header stats — computed from the same store data the
+  // panels below render, not separate hardcoded numbers, so the hero and
+  // the list underneath it can never disagree.
+  const totalBudgeted = useMemo(() => budgets.reduce((sum, b) => sum + b.monthlyLimit, 0), [budgets]);
+  // Uses the live Plaid "actual" for a category when one's available (same
+  // effectiveSpent logic as BudgetingScreen.tsx), falling back to the
+  // manually-tracked budget.spent otherwise — so this total always matches
+  // what the Budget tab's rows show underneath it.
+  const totalBudgetSpent = useMemo(() => budgets.reduce((sum, b) => sum + (plaidActuals[b.category] ?? b.spent), 0), [budgets, plaidActuals]);
+  const budgetRemaining = totalBudgeted - totalBudgetSpent;
+  const budgetPctUsed = totalBudgeted > 0 ? Math.round((totalBudgetSpent / totalBudgeted) * 100) : 0;
+
+  const billsUpcoming = useMemo(() => bills.filter((b) => b.status === 'upcoming' || b.status === 'due_soon'), [bills]);
+  const billsOverdueTotal = useMemo(() => overdueBills.reduce((sum, b) => sum + b.amount, 0), [overdueBills]);
+  const billsUpcomingTotal = useMemo(() => billsUpcoming.reduce((sum, b) => sum + b.amount, 0), [billsUpcoming]);
+  const billsPaidTotal = useMemo(() => bills.filter((b) => b.status === 'paid').reduce((sum, b) => sum + b.amount, 0), [bills]);
+
+  const activeSubs = useMemo(() => subscriptions.filter((sub) => sub.isActive), [subscriptions]);
+  const subsMonthlyTotal = useMemo(() => activeSubs.reduce((sum, sub) => {
+    const monthly = sub.billingCycle === 'monthly' ? sub.amount : sub.billingCycle === 'quarterly' ? sub.amount / 3 : sub.amount / 12;
+    return sum + monthly;
+  }, 0), [activeSubs]);
+  const subsHighest = useMemo(() => activeSubs.reduce<Subscription | null>((max, sub) => (!max || sub.amount > max.amount ? sub : max), null), [activeSubs]);
+  const subsNext = useMemo(() => activeSubs.reduce<Subscription | null>((soonest, sub) => (
+    !soonest || new Date(sub.nextBillingDate).getTime() < new Date(soonest.nextBillingDate).getTime() ? sub : soonest
+  ), null), [activeSubs]);
+  const subsNextDays = subsNext ? Math.max(0, Math.ceil((new Date(subsNext.nextBillingDate).getTime() - Date.now()) / 86400000)) : null;
+
+  const totalAssetValue = useMemo(() => assets.reduce((sum, a) => sum + a.value, 0), [assets]);
+  const assetsByCategory = useMemo(() => {
+    const map = new Map<string, number>();
+    assets.forEach((a) => map.set(a.category, (map.get(a.category) ?? 0) + a.value));
+    return Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
+  }, [assets]);
+
+  const visibleDetectedSubs = useMemo(
+    () => detectedSubs.filter((d) => !dismissedSubMerchants.has(d.merchantName)),
+    [detectedSubs, dismissedSubMerchants],
+  );
+  const availableInvestmentAccounts = useMemo(
+    () => investmentAccounts.filter((acct) => !assets.some((a) => a.name === acct.name)),
+    [investmentAccounts, assets],
+  );
+
+  const heroContent = useMemo(() => {
+    switch (activeTab) {
+      case 'budget':
+        return {
+          label: 'TOTAL BUDGETED', value: totalBudgeted,
+          trendText: `${budgetPctUsed}% used this month`,
+          stats: [
+            { label: 'Spent',      value: `$${totalBudgetSpent.toLocaleString()}`, color: '#F87171', icon: 'trending-up' },
+            { label: 'Remaining',  value: `$${Math.max(0, budgetRemaining).toLocaleString()}`, color: '#34D399', icon: 'wallet' },
+            { label: 'Categories', value: `${budgets.length}`, color: '#A78BFA', icon: 'grid' },
+          ],
+        };
+      case 'bills':
+        return {
+          label: 'DUE THIS MONTH', value: billsOverdueTotal + billsUpcomingTotal,
+          trendText: `${overdueBills.length} overdue · ${billsUpcoming.length} upcoming`,
+          stats: [
+            { label: 'Overdue',  value: `$${billsOverdueTotal.toLocaleString()}`, color: '#F87171', icon: 'warning' },
+            { label: 'Upcoming', value: `$${billsUpcomingTotal.toLocaleString()}`, color: '#FBBF24', icon: 'time' },
+            { label: 'Paid',     value: `$${billsPaidTotal.toLocaleString()}`, color: '#34D399', icon: 'checkmark-circle' },
+          ],
+        };
+      case 'subs':
+        return {
+          label: 'MONTHLY SUBSCRIPTIONS', value: subsMonthlyTotal,
+          trendText: subsNext && subsNextDays !== null ? `${activeSubs.length} active · next in ${subsNextDays}d` : `${activeSubs.length} active`,
+          stats: [
+            { label: 'Active',       value: `${activeSubs.length}`, color: '#34D399', icon: 'repeat' },
+            { label: 'Highest',      value: subsHighest ? `$${subsHighest.amount.toLocaleString()}` : '$0', color: '#A78BFA', icon: 'trending-up' },
+            { label: 'Next charge',  value: subsNextDays !== null ? `${subsNextDays}d` : '—', color: '#FBBF24', icon: 'calendar' },
+          ],
+        };
+      case 'assets':
+        return {
+          label: 'TOTAL ASSET VALUE', value: totalAssetValue,
+          trendText: `${assets.length} item${assets.length !== 1 ? 's' : ''} tracked`,
+          stats: [
+            { label: assetsByCategory[0]?.[0] ?? 'Top category',  value: `$${(assetsByCategory[0]?.[1] ?? 0).toLocaleString()}`, color: '#A78BFA', icon: 'pricetag' },
+            { label: assetsByCategory[1]?.[0] ?? 'Next category', value: `$${(assetsByCategory[1]?.[1] ?? 0).toLocaleString()}`, color: '#34D399', icon: 'pricetag-outline' },
+            { label: 'Items', value: `${assets.length}`, color: '#93C5FD', icon: 'cube' },
+          ],
+        };
+      default:
+        return null;
+    }
+  }, [
+    activeTab, totalBudgeted, totalBudgetSpent, budgetRemaining, budgetPctUsed, budgets.length,
+    billsOverdueTotal, billsUpcomingTotal, billsPaidTotal, overdueBills.length, billsUpcoming.length,
+    subsMonthlyTotal, activeSubs.length, subsHighest, subsNext, subsNextDays,
+    totalAssetValue, assets.length, assetsByCategory,
+  ]);
 
   const handleAddAccount = () => {
     if (!newAccName.trim()) return;
@@ -135,12 +416,108 @@ export function FinanceDashboardScreen({ navigation }: any) {
     setShowGoalModal(false);
   };
 
+  const handleAddBudget = () => {
+    const limit = parseFloat(newBudgetLimit);
+    if (!newBudgetCategory.trim() || isNaN(limit) || limit <= 0) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const today = new Date();
+    addBudget({
+      id: generateId(), familyId: 'demo-family', category: newBudgetCategory.trim(),
+      monthlyLimit: limit, spent: 0,
+      month: `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`,
+      color: newBudgetColor, icon: newBudgetIcon,
+    });
+    setNewBudgetCategory(''); setNewBudgetLimit(''); setNewBudgetColor(BUDGET_COLORS[0]); setNewBudgetIcon(BUDGET_ICONS[0]);
+    setShowBudgetModal(false);
+  };
+
+  const handleAddBill = () => {
+    const amount = parseFloat(newBillAmount);
+    if (!newBillName.trim() || isNaN(amount) || amount <= 0) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const daysUntil = parseInt(newBillDueDays || '14', 10);
+    const dueDate = new Date(Date.now() + daysUntil * 86400000).toISOString();
+    const status: Bill['status'] = daysUntil < 0 ? 'overdue' : daysUntil <= 5 ? 'due_soon' : 'upcoming';
+    addBill({
+      id: generateId(), familyId: 'demo-family', name: newBillName.trim(), amount, dueDate,
+      category: newBillCategory, status, isAutoPay: newBillAutoPay, isRecurring: true, recurrence: 'monthly',
+      icon: BILL_CATEGORY_ICONS[newBillCategory] ?? 'receipt',
+    });
+    setNewBillName(''); setNewBillAmount(''); setNewBillCategory(BILL_CATEGORIES[0]); setNewBillDueDays('14'); setNewBillAutoPay(false);
+    setShowBillModal(false);
+  };
+
+  const handleMarkBillPaid = (id: string) => {
+    markBillPaid(id);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const handleAddSubscription = () => {
+    const amount = parseFloat(newSubAmount);
+    if (!newSubName.trim() || isNaN(amount) || amount <= 0) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const nextBillingDate = addMonths(new Date(), newSubCycle === 'monthly' ? 1 : newSubCycle === 'quarterly' ? 3 : 12);
+    const sub: Subscription = {
+      id: generateId(), familyId: 'demo-family', name: newSubName.trim(), amount,
+      billingCycle: newSubCycle, nextBillingDate: nextBillingDate.toISOString(), category: newSubCategory,
+      isActive: true, sharedMembers: [], icon: SUB_ICONS[newSubCategory] ?? 'apps-outline', color: SUB_COLORS[newSubCategory] ?? colors.primary,
+    };
+    addSubscription(sub);
+    setNewSubName(''); setNewSubAmount(''); setNewSubCategory(SUB_CATEGORIES[0]); setNewSubCycle('monthly');
+    setShowSubModal(false);
+  };
+
+  const handleCancelSubscription = (id: string) => {
+    deleteSubscription(id);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  };
+
+  const handleAddAsset = () => {
+    const value = parseFloat(newAssetValue);
+    if (!newAssetName.trim() || isNaN(value) || value <= 0) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    addAsset({
+      id: generateId(), familyId: 'demo-family', name: newAssetName.trim(),
+      category: newAssetCategory, value, createdAt: new Date().toISOString(),
+    });
+    setNewAssetName(''); setNewAssetValue(''); setNewAssetCategory(ASSET_CATEGORIES[0]);
+    setShowAssetModal(false);
+  };
+
+  const handleAddDetectedBill = (detected: DetectedBill) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const dueDate = new Date(detected.nextDueDate).toISOString();
+    const daysUntil = differenceInDays(new Date(detected.nextDueDate), new Date());
+    const status: Bill['status'] = daysUntil < 0 ? 'overdue' : daysUntil <= 5 ? 'due_soon' : 'upcoming';
+    addBill({
+      id: generateId(), familyId: 'demo-family', name: detected.merchantName, amount: detected.amount,
+      dueDate, category: detected.category, status, isAutoPay: false, isRecurring: true, recurrence: 'monthly',
+      icon: BILL_CATEGORY_ICONS[detected.category] ?? 'receipt',
+    });
+    setDetectedBills((prev) => prev.filter((d) => d.merchantName !== detected.merchantName));
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const handleConfirmDetectedSub = (detected: DetectedSubscription) => {
+    confirmSubscription(detected);
+    setDismissedSubMerchants((prev) => new Set([...prev, detected.merchantName]));
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const handleDismissDetectedSub = (merchantName: string) => {
+    setDismissedSubMerchants((prev) => new Set([...prev, merchantName]));
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const handlePrefillAssetFromPlaid = (acct: PlaidInvestmentAccount) => {
+    setNewAssetName(acct.name);
+    setNewAssetCategory('Investments');
+    setNewAssetValue(String(acct.balance));
+    setShowAssetModal(true);
+  };
+
   const handleTabPress = (key: string) => {
-    if (key === 'budget') navigation.navigate('Budgeting');
-    else if (key === 'bills') navigation.navigate('Bills');
-    else if (key === 'subs') navigation.navigate('Subscriptions');
-    else if (key === 'assets') navigation.navigate('Assets');
-    else setActiveTab(key);
+    setActiveTab(key);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
@@ -157,20 +534,34 @@ export function FinanceDashboardScreen({ navigation }: any) {
           {/* Top row */}
           <View style={s.headerTopRow}>
             <View>
-              <Text style={s.netWorthLabel}>TOTAL NET WORTH</Text>
-              <Text style={s.netWorthValue}>
-                ${totalNetWorth.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </Text>
-              <View style={s.trendRow}>
-                <View style={s.trendPill}>
-                  <Ionicons name="arrow-up" size={11} color="#34D399" />
-                  <Text style={s.trendPillText}>+2.4% this month</Text>
-                </View>
-                <Text style={s.trendAmount}>+$1,240</Text>
-              </View>
+              {activeTab === 'overview' ? (
+                <>
+                  <Text style={s.netWorthLabel}>TOTAL NET WORTH</Text>
+                  <Text style={s.netWorthValue}>
+                    ${totalNetWorth.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </Text>
+                  <View style={s.trendRow}>
+                    <View style={s.trendPill}>
+                      <Ionicons name={netWorthTrend.amount >= 0 ? 'arrow-up' : 'arrow-down'} size={11} color={netWorthTrend.amount >= 0 ? '#34D399' : '#F87171'} />
+                      <Text style={s.trendPillText}>{netWorthTrend.pct >= 0 ? '+' : ''}{netWorthTrend.pct.toFixed(1)}% this month</Text>
+                    </View>
+                    <Text style={s.trendAmount}>{netWorthTrend.amount >= 0 ? '+' : '-'}${Math.abs(netWorthTrend.amount).toLocaleString('en-US', { maximumFractionDigits: 0 })}</Text>
+                  </View>
+                </>
+              ) : heroContent && (
+                <>
+                  <Text style={s.netWorthLabel}>{heroContent.label}</Text>
+                  <Text style={s.netWorthValue}>
+                    ${heroContent.value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </Text>
+                  <View style={s.trendRow}>
+                    <Text style={s.heroTrendText}>{heroContent.trendText}</Text>
+                  </View>
+                </>
+              )}
             </View>
             {overdueBills.length > 0 && (
-              <Pressable onPress={() => navigation.navigate('Bills')} style={s.urgentPill}>
+              <Pressable onPress={() => handleTabPress('bills')} style={s.urgentPill}>
                 <Ionicons name="warning" size={12} color="#fff" />
                 <Text style={s.urgentPillText}>{overdueBills.length} overdue</Text>
               </Pressable>
@@ -179,11 +570,14 @@ export function FinanceDashboardScreen({ navigation }: any) {
 
           {/* Stats strip */}
           <View style={s.statsStrip}>
-            {[
-              { label: 'Income',   value: `$${monthlyIncome.toLocaleString()}`,   color: '#34D399', icon: 'arrow-down-circle' },
-              { label: 'Expenses', value: `$${monthlyExpenses.toLocaleString()}`,  color: '#F87171', icon: 'arrow-up-circle' },
-              { label: 'Saved',    value: `${savingsRate}%`,                       color: '#A78BFA', icon: 'shield-checkmark' },
-            ].map((item, i) => (
+            {(activeTab === 'overview'
+              ? [
+                  { label: 'Income',   value: `$${monthlyIncome.toLocaleString()}`,   color: '#34D399', icon: 'arrow-down-circle' },
+                  { label: 'Expenses', value: `$${monthlyExpenses.toLocaleString()}`,  color: '#F87171', icon: 'arrow-up-circle' },
+                  { label: 'Saved',    value: `${savingsRate}%`,                       color: '#A78BFA', icon: 'shield-checkmark' },
+                ]
+              : heroContent?.stats ?? []
+            ).map((item, i) => (
               <View key={i} style={[s.statItem, i < 2 && s.statBorder]}>
                 <View style={[s.statIconBg, { backgroundColor: item.color + '20' }]}>
                   <Ionicons name={item.icon as any} size={14} color={item.color} />
@@ -242,8 +636,13 @@ export function FinanceDashboardScreen({ navigation }: any) {
             scrollEventThrottle={scrollEventThrottle}
             onScrollEndDrag={onScrollEndDrag}
             onMomentumScrollEnd={onMomentumScrollEnd}
+            refreshControl={
+              <RefreshControl refreshing={isRefreshing} onRefresh={handlePullRefresh} tintColor={colors.primary} colors={[colors.primary]} />
+            }
           >
 
+        {activeTab === 'overview' && (
+        <>
         {/* ── PLAID BANK ACCOUNTS ── */}
         {plaidAccounts.length > 0 && (
           <>
@@ -364,7 +763,7 @@ export function FinanceDashboardScreen({ navigation }: any) {
             <View style={s.sectionDot} />
             <Text style={s.sectionTitle}>Budget Status</Text>
           </View>
-          <Pressable onPress={() => navigation.navigate('Budgeting')}>
+          <Pressable onPress={() => handleTabPress('budget')}>
             <Text style={s.seeAll}>View All →</Text>
           </Pressable>
         </View>
@@ -570,6 +969,243 @@ export function FinanceDashboardScreen({ navigation }: any) {
             </Pressable>
           ))}
         </View>
+        </>
+        )}
+
+        {/* ── BUDGET TAB ── */}
+        {activeTab === 'budget' && (
+          <>
+            <View style={s.sectionRow}>
+              <View style={s.sectionLeft}>
+                <View style={s.sectionDot} />
+                <Text style={s.sectionTitle}>All Budgets</Text>
+              </View>
+              <Pressable onPress={() => setShowBudgetModal(true)} style={s.addBtn}>
+                <Ionicons name="add" size={14} color={colors.primary} />
+                <Text style={s.addBtnText}>Add</Text>
+              </Pressable>
+            </View>
+            {budgets.length === 0 && (
+              <Text style={s.emptyHint}>No budget categories yet. Add one to start tracking.</Text>
+            )}
+            {budgets.map((budget) => {
+              const plaidActual = plaidActuals[budget.category];
+              const effectiveSpent = plaidActual !== undefined ? plaidActual : budget.spent;
+              const ratio = budget.monthlyLimit > 0 ? effectiveSpent / budget.monthlyLimit : 0;
+              const pct = Math.round(ratio * 100);
+              const barColor = ratio > 0.9 ? '#EF4444' : ratio > 0.7 ? '#F59E0B' : '#10B981';
+              return (
+                <View key={budget.id} style={s.budgetRow}>
+                  <View style={[s.budgetStrip, { backgroundColor: budget.color }]} />
+                  <View style={s.budgetBody}>
+                    <View style={[s.budgetIconWrap, { backgroundColor: budget.color + '18' }]}>
+                      <Ionicons name={budget.icon as any} size={20} color={budget.color} />
+                    </View>
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                      <View style={s.budgetTopRow}>
+                        <Text style={s.budgetName}>{budget.category}</Text>
+                        <Text style={s.budgetAmt}>
+                          <Text style={{ color: ratio > 0.9 ? '#EF4444' : s.budgetAmt.color }}>${effectiveSpent.toFixed(0)}</Text>
+                          <Text style={s.budgetOf}> / ${budget.monthlyLimit}</Text>
+                        </Text>
+                      </View>
+                      <View style={s.budgetBarRow}>
+                        <ProgressBar progress={ratio} color={barColor} height={7} style={{ flex: 1, borderRadius: 4 }} />
+                        <View style={[s.pctBadge, { backgroundColor: barColor + '1A' }]}>
+                          <Text style={[s.pctBadgeText, { color: barColor }]}>{pct}%</Text>
+                        </View>
+                      </View>
+                      <Text style={s.budgetLeft}>${(budget.monthlyLimit - effectiveSpent).toFixed(0)} remaining</Text>
+                      {plaidActual !== undefined && (
+                        <Text style={[s.budgetActualLabel, { color: barColor }]}>Live from bank: ${plaidActual.toFixed(2)}</Text>
+                      )}
+                    </View>
+                  </View>
+                </View>
+              );
+            })}
+          </>
+        )}
+
+        {/* ── BILLS TAB ── */}
+        {activeTab === 'bills' && (
+          <>
+            {(detectedBillsLoading || detectedBills.length > 0) && (
+              <View style={s.smartBanner}>
+                <View style={s.smartBannerHeader}>
+                  <Ionicons name="sparkles" size={16} color="#4A90D9" />
+                  <Text style={s.smartBannerTitle}>Detected from your bank</Text>
+                  {detectedBillsLoading && <ActivityIndicator size="small" color="#4A90D9" style={{ marginLeft: 6 }} />}
+                </View>
+                {detectedBills.map((d) => (
+                  <View key={d.merchantName} style={s.detectedRow}>
+                    <View style={s.detectedIcon}>
+                      <Ionicons name={(BILL_CATEGORY_ICONS[d.category] ?? 'receipt') as any} size={16} color="#4A90D9" />
+                    </View>
+                    <View style={{ flex: 1, marginLeft: 10 }}>
+                      <Text style={s.detectedName}>{d.merchantName}</Text>
+                      <Text style={s.detectedMeta}>Due {d.nextDueDate} · ${d.amount.toFixed(2)}</Text>
+                    </View>
+                    <Pressable style={s.detectedAddBtn} onPress={() => handleAddDetectedBill(d)}>
+                      <Ionicons name="add" size={14} color="#fff" />
+                      <Text style={s.detectedAddBtnText}>Add</Text>
+                    </Pressable>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            <View style={s.sectionRow}>
+              <View style={s.sectionLeft}>
+                <View style={s.sectionDot} />
+                <Text style={s.sectionTitle}>All Bills</Text>
+              </View>
+              <Pressable onPress={() => setShowBillModal(true)} style={s.addBtn}>
+                <Ionicons name="add" size={14} color={colors.primary} />
+                <Text style={s.addBtnText}>Add</Text>
+              </Pressable>
+            </View>
+            {bills.length === 0 && <Text style={s.emptyHint}>No bills tracked yet.</Text>}
+            {bills.map((bill) => {
+              const statusColor = bill.status === 'overdue' ? '#EF4444' : bill.status === 'due_soon' ? '#F59E0B' : bill.status === 'paid' ? '#10B981' : colors.textSecondary;
+              const statusLabel = bill.status === 'overdue' ? 'Overdue' : bill.status === 'due_soon' ? 'Due soon' : bill.status === 'paid' ? 'Paid' : 'Upcoming';
+              return (
+                <View key={bill.id} style={s.finRow}>
+                  <View style={[s.finIconWrap, { backgroundColor: statusColor + '18' }]}>
+                    <Ionicons name={(bill.icon ?? 'receipt') as any} size={20} color={statusColor} />
+                  </View>
+                  <View style={{ flex: 1, marginLeft: 12 }}>
+                    <Text style={s.finName}>{bill.name}</Text>
+                    <Text style={[s.finMeta, { color: statusColor }]}>
+                      {statusLabel} · {format(new Date(bill.dueDate), 'MMM d')} · ${bill.amount.toLocaleString()}
+                    </Text>
+                  </View>
+                  {bill.status !== 'paid' && (
+                    <Pressable onPress={() => handleMarkBillPaid(bill.id)} style={s.finActionBtn}>
+                      <Text style={s.finActionBtnText}>Mark paid</Text>
+                    </Pressable>
+                  )}
+                </View>
+              );
+            })}
+          </>
+        )}
+
+        {/* ── SUBS TAB ── */}
+        {activeTab === 'subs' && (
+          <>
+            {visibleDetectedSubs.length > 0 && (
+              <View style={s.smartBanner}>
+                <View style={s.smartBannerHeader}>
+                  <Ionicons name="sparkles" size={16} color="#4A90D9" />
+                  <Text style={s.smartBannerTitle}>Detected from your bank</Text>
+                </View>
+                {visibleDetectedSubs.map((d) => (
+                  <View key={d.merchantName} style={s.detectedRow}>
+                    <View style={s.detectedIcon}>
+                      <Ionicons name="apps-outline" size={16} color="#4A90D9" />
+                    </View>
+                    <View style={{ flex: 1, marginLeft: 10 }}>
+                      <Text style={s.detectedName}>{d.merchantName}</Text>
+                      <Text style={s.detectedMeta}>${d.amount.toFixed(2)} / {d.frequency}</Text>
+                    </View>
+                    <Pressable onPress={() => handleDismissDetectedSub(d.merchantName)} style={s.detectedDismissBtn}>
+                      <Ionicons name="close" size={14} color={colors.textMuted} />
+                    </Pressable>
+                    <Pressable style={s.detectedAddBtn} onPress={() => handleConfirmDetectedSub(d)}>
+                      <Ionicons name="add" size={14} color="#fff" />
+                      <Text style={s.detectedAddBtnText}>Add</Text>
+                    </Pressable>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            <View style={s.sectionRow}>
+              <View style={s.sectionLeft}>
+                <View style={s.sectionDot} />
+                <Text style={s.sectionTitle}>Subscriptions</Text>
+              </View>
+              <Pressable onPress={() => setShowSubModal(true)} style={s.addBtn}>
+                <Ionicons name="add" size={14} color={colors.primary} />
+                <Text style={s.addBtnText}>Add</Text>
+              </Pressable>
+            </View>
+            {subscriptions.length === 0 && <Text style={s.emptyHint}>No subscriptions tracked yet.</Text>}
+            {subscriptions.map((sub) => (
+              <View key={sub.id} style={s.finRow}>
+                <View style={[s.finIconWrap, { backgroundColor: (sub.color ?? colors.primary) + '18' }]}>
+                  <Ionicons name={(sub.icon ?? 'apps-outline') as any} size={20} color={sub.color ?? colors.primary} />
+                </View>
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={s.finName}>{sub.name}</Text>
+                  <Text style={s.finMeta}>
+                    ${sub.amount.toLocaleString()} / {sub.billingCycle} · Renews {format(new Date(sub.nextBillingDate), 'MMM d')}
+                  </Text>
+                </View>
+                <Pressable onPress={() => handleCancelSubscription(sub.id)} style={s.finCancelBtn}>
+                  <Text style={s.finCancelBtnText}>Cancel</Text>
+                </Pressable>
+              </View>
+            ))}
+          </>
+        )}
+
+        {/* ── ASSETS TAB ── */}
+        {activeTab === 'assets' && (
+          <>
+            {availableInvestmentAccounts.length > 0 && (
+              <View style={s.plaidLinkCard}>
+                <View style={s.plaidLinkHeader}>
+                  <Ionicons name="link" size={16} color="#8E44AD" />
+                  <Text style={s.plaidLinkTitle}>Link Plaid Accounts</Text>
+                </View>
+                <Text style={s.plaidLinkSub}>
+                  {availableInvestmentAccounts.length} investment account{availableInvestmentAccounts.length > 1 ? 's' : ''} found
+                </Text>
+                {availableInvestmentAccounts.map((acct) => (
+                  <View key={acct.plaidAccountId} style={s.plaidLinkRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.finName}>{acct.name}</Text>
+                      {acct.mask && <Text style={s.finMeta}>••••{acct.mask}</Text>}
+                    </View>
+                    <Text style={[s.finValueText, { marginRight: 10 }]}>
+                      ${acct.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    </Text>
+                    <Pressable style={s.detectedAddBtn} onPress={() => handlePrefillAssetFromPlaid(acct)}>
+                      <Ionicons name="add" size={14} color="#fff" />
+                      <Text style={s.detectedAddBtnText}>Import</Text>
+                    </Pressable>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            <View style={s.sectionRow}>
+              <View style={s.sectionLeft}>
+                <View style={s.sectionDot} />
+                <Text style={s.sectionTitle}>Assets</Text>
+              </View>
+              <Pressable onPress={() => setShowAssetModal(true)} style={s.addBtn}>
+                <Ionicons name="add" size={14} color={colors.primary} />
+                <Text style={s.addBtnText}>Add</Text>
+              </Pressable>
+            </View>
+            {assets.length === 0 && <Text style={s.emptyHint}>No assets tracked yet.</Text>}
+            {assets.map((asset) => (
+              <View key={asset.id} style={s.finRow}>
+                <View style={[s.finIconWrap, { backgroundColor: colors.primary + '18' }]}>
+                  <Ionicons name={(ASSET_CATEGORY_ICONS[asset.category] ?? 'cube') as any} size={20} color={colors.primary} />
+                </View>
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={s.finName}>{asset.name}</Text>
+                  <Text style={s.finMeta}>{asset.category}</Text>
+                </View>
+                <Text style={s.finValueText}>${asset.value.toLocaleString()}</Text>
+              </View>
+            ))}
+          </>
+        )}
 
           </ScrollView>
         )}
@@ -634,6 +1270,116 @@ export function FinanceDashboardScreen({ navigation }: any) {
           </View>
           <Button title="Add Goal" onPress={handleAddGoal} fullWidth size="lg" disabled={!newGoalName.trim() || !newGoalTarget.trim()} />
           <Button title="Cancel" onPress={() => setShowGoalModal(false)} variant="ghost" fullWidth style={{ marginTop: 8 }} />
+        </ScrollView>
+      </Modal>
+
+      {/* ── ADD BUDGET MODAL ── */}
+      <Modal visible={showBudgetModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowBudgetModal(false)}>
+        <ScrollView style={s.modal} contentContainerStyle={{ paddingBottom: 40 }}>
+          <View style={s.modalHandle} />
+          <Text style={s.modalTitle}>Add Budget Category</Text>
+          <Text style={s.modalLabel}>Category Name *</Text>
+          <TextInput style={s.modalInput} placeholder="e.g. Groceries" value={newBudgetCategory} onChangeText={setNewBudgetCategory} placeholderTextColor={colors.textMuted} autoFocus />
+          <Text style={s.modalLabel}>Monthly Limit ($) *</Text>
+          <TextInput style={s.modalInput} placeholder="500" value={newBudgetLimit} onChangeText={setNewBudgetLimit} keyboardType="decimal-pad" placeholderTextColor={colors.textMuted} />
+          <Text style={s.modalLabel}>Icon</Text>
+          <View style={s.iconGrid}>
+            {BUDGET_ICONS.map((icon) => (
+              <Pressable key={icon} onPress={() => setNewBudgetIcon(icon)}
+                style={[s.iconBtn, newBudgetIcon === icon && { backgroundColor: newBudgetColor, borderColor: 'transparent' }]}>
+                <Ionicons name={icon as any} size={22} color={newBudgetIcon === icon ? '#fff' : colors.textSecondary} />
+              </Pressable>
+            ))}
+          </View>
+          <Text style={s.modalLabel}>Color</Text>
+          <View style={[s.colorRow, { marginBottom: 24 }]}>
+            {BUDGET_COLORS.map((c) => (
+              <Pressable key={c} onPress={() => setNewBudgetColor(c)}
+                style={[s.colorSwatch, { backgroundColor: c }, newBudgetColor === c && s.colorSwatchSelected]} />
+            ))}
+          </View>
+          <Button title="Add Budget" onPress={handleAddBudget} fullWidth size="lg" disabled={!newBudgetCategory.trim() || !newBudgetLimit.trim()} />
+          <Button title="Cancel" onPress={() => setShowBudgetModal(false)} variant="ghost" fullWidth style={{ marginTop: 8 }} />
+        </ScrollView>
+      </Modal>
+
+      {/* ── ADD BILL MODAL ── */}
+      <Modal visible={showBillModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowBillModal(false)}>
+        <ScrollView style={s.modal} contentContainerStyle={{ paddingBottom: 40 }}>
+          <View style={s.modalHandle} />
+          <Text style={s.modalTitle}>Add Bill</Text>
+          <Text style={s.modalLabel}>Bill Name *</Text>
+          <TextInput style={s.modalInput} placeholder="e.g. Electric Bill" value={newBillName} onChangeText={setNewBillName} placeholderTextColor={colors.textMuted} autoFocus />
+          <Text style={s.modalLabel}>Amount ($) *</Text>
+          <TextInput style={s.modalInput} placeholder="145.00" value={newBillAmount} onChangeText={setNewBillAmount} keyboardType="decimal-pad" placeholderTextColor={colors.textMuted} />
+          <Text style={s.modalLabel}>Category</Text>
+          <View style={s.typeGrid}>
+            {BILL_CATEGORIES.map((c) => (
+              <Pressable key={c} onPress={() => setNewBillCategory(c)} style={[s.typeChip, newBillCategory === c && s.typeChipActive]}>
+                <Text style={[s.typeChipText, newBillCategory === c && s.typeChipTextActive]}>{c}</Text>
+              </Pressable>
+            ))}
+          </View>
+          <Text style={s.modalLabel}>Due In (days)</Text>
+          <TextInput style={s.modalInput} placeholder="14" value={newBillDueDays} onChangeText={setNewBillDueDays} keyboardType="number-pad" placeholderTextColor={colors.textMuted} />
+          <Pressable onPress={() => setNewBillAutoPay(!newBillAutoPay)} style={s.autoPayRow}>
+            <Ionicons name={newBillAutoPay ? 'checkbox' : 'square-outline'} size={22} color={newBillAutoPay ? colors.primary : colors.textMuted} />
+            <Text style={s.autoPayText}>Auto-pay enabled</Text>
+          </Pressable>
+          <Button title="Add Bill" onPress={handleAddBill} fullWidth size="lg" disabled={!newBillName.trim() || !newBillAmount.trim()} style={{ marginTop: 20 }} />
+          <Button title="Cancel" onPress={() => setShowBillModal(false)} variant="ghost" fullWidth style={{ marginTop: 8 }} />
+        </ScrollView>
+      </Modal>
+
+      {/* ── ADD SUBSCRIPTION MODAL ── */}
+      <Modal visible={showSubModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowSubModal(false)}>
+        <ScrollView style={s.modal} contentContainerStyle={{ paddingBottom: 40 }}>
+          <View style={s.modalHandle} />
+          <Text style={s.modalTitle}>Add Subscription</Text>
+          <Text style={s.modalLabel}>Name *</Text>
+          <TextInput style={s.modalInput} placeholder="e.g. Netflix" value={newSubName} onChangeText={setNewSubName} placeholderTextColor={colors.textMuted} autoFocus />
+          <Text style={s.modalLabel}>Amount ($) *</Text>
+          <TextInput style={s.modalInput} placeholder="15.99" value={newSubAmount} onChangeText={setNewSubAmount} keyboardType="decimal-pad" placeholderTextColor={colors.textMuted} />
+          <Text style={s.modalLabel}>Billing Cycle</Text>
+          <View style={s.typeGrid}>
+            {BILLING_CYCLES.map((c) => (
+              <Pressable key={c} onPress={() => setNewSubCycle(c)} style={[s.typeChip, newSubCycle === c && s.typeChipActive]}>
+                <Text style={[s.typeChipText, newSubCycle === c && s.typeChipTextActive]}>{c.charAt(0).toUpperCase() + c.slice(1)}</Text>
+              </Pressable>
+            ))}
+          </View>
+          <Text style={s.modalLabel}>Category</Text>
+          <View style={[s.typeGrid, { marginBottom: 24 }]}>
+            {SUB_CATEGORIES.map((c) => (
+              <Pressable key={c} onPress={() => setNewSubCategory(c)} style={[s.typeChip, newSubCategory === c && s.typeChipActive]}>
+                <Text style={[s.typeChipText, newSubCategory === c && s.typeChipTextActive]}>{c}</Text>
+              </Pressable>
+            ))}
+          </View>
+          <Button title="Add Subscription" onPress={handleAddSubscription} fullWidth size="lg" disabled={!newSubName.trim() || !newSubAmount.trim()} />
+          <Button title="Cancel" onPress={() => setShowSubModal(false)} variant="ghost" fullWidth style={{ marginTop: 8 }} />
+        </ScrollView>
+      </Modal>
+
+      {/* ── ADD ASSET MODAL ── */}
+      <Modal visible={showAssetModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowAssetModal(false)}>
+        <ScrollView style={s.modal} contentContainerStyle={{ paddingBottom: 40 }}>
+          <View style={s.modalHandle} />
+          <Text style={s.modalTitle}>Add Asset</Text>
+          <Text style={s.modalLabel}>Asset Name *</Text>
+          <TextInput style={s.modalInput} placeholder="e.g. 2019 Honda Accord" value={newAssetName} onChangeText={setNewAssetName} placeholderTextColor={colors.textMuted} autoFocus />
+          <Text style={s.modalLabel}>Value ($) *</Text>
+          <TextInput style={s.modalInput} placeholder="18000" value={newAssetValue} onChangeText={setNewAssetValue} keyboardType="decimal-pad" placeholderTextColor={colors.textMuted} />
+          <Text style={s.modalLabel}>Category</Text>
+          <View style={[s.typeGrid, { marginBottom: 24 }]}>
+            {ASSET_CATEGORIES.map((c) => (
+              <Pressable key={c} onPress={() => setNewAssetCategory(c)} style={[s.typeChip, newAssetCategory === c && s.typeChipActive]}>
+                <Text style={[s.typeChipText, newAssetCategory === c && s.typeChipTextActive]}>{c}</Text>
+              </Pressable>
+            ))}
+          </View>
+          <Button title="Add Asset" onPress={handleAddAsset} fullWidth size="lg" disabled={!newAssetName.trim() || !newAssetValue.trim()} />
+          <Button title="Cancel" onPress={() => setShowAssetModal(false)} variant="ghost" fullWidth style={{ marginTop: 8 }} />
         </ScrollView>
       </Modal>
     </View>
@@ -724,6 +1470,23 @@ const s = StyleSheet.create({
   },
   addBtnText: { fontSize: 13, color: colors.primary, fontWeight: '700' },
 
+  /* ── Non-overview tab hero text ── */
+  heroTrendText: { fontSize: 12, color: 'rgba(255,255,255,0.6)', fontWeight: '500' },
+
+  /* ── In-place Bills / Subs / Assets rows (Budget tab reuses budgetRow below) ── */
+  emptyHint: { fontSize: 13, color: colors.textMuted, textAlign: 'center', paddingVertical: 24 },
+  finRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, padding: 14, marginBottom: 10, ...SHADOW },
+  finIconWrap: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  finName: { fontSize: 14, fontWeight: '700', color: '#0D1B2A', marginBottom: 3 },
+  finMeta: { fontSize: 12, color: colors.textSecondary },
+  finActionBtn: { backgroundColor: colors.primary + '12', borderRadius: 20, paddingVertical: 7, paddingHorizontal: 12 },
+  finActionBtnText: { fontSize: 12, fontWeight: '700', color: colors.primary },
+  finCancelBtn: { backgroundColor: '#FEF2F2', borderRadius: 20, paddingVertical: 7, paddingHorizontal: 12 },
+  finCancelBtnText: { fontSize: 12, fontWeight: '700', color: '#DC2626' },
+  finValueText: { fontSize: 15, fontWeight: '800', color: '#0D1B2A' },
+  autoPayRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 },
+  autoPayText: { fontSize: 14, color: colors.text, fontWeight: '600' },
+
   /* ── Plaid bank account cards ── */
   netWorthSmall: { fontSize: 13, fontWeight: '700', color: colors.primary },
   plaidScroll: { marginBottom: 16, marginHorizontal: -16 },
@@ -798,6 +1561,26 @@ const s = StyleSheet.create({
   pctBadge: { borderRadius: 20, paddingVertical: 2, paddingHorizontal: 8 },
   pctBadgeText: { fontSize: 11, fontWeight: '800' },
   budgetLeft: { fontSize: 11, color: colors.textSecondary, marginTop: 5 },
+  budgetActualLabel: { fontSize: 11, fontWeight: '700', marginTop: 3 },
+
+  /* ── Smart detection banners (Plaid-derived bills/subscriptions) ── */
+  smartBanner: { backgroundColor: '#EEF5FC', borderRadius: 16, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: '#CFE3F7' },
+  smartBannerHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+  smartBannerTitle: { fontSize: 13, fontWeight: '700', color: '#1A5276' },
+  detectedRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderTopWidth: 1, borderTopColor: '#CFE3F7' },
+  detectedIcon: { width: 34, height: 34, borderRadius: 10, backgroundColor: '#D6EAF8', alignItems: 'center', justifyContent: 'center' },
+  detectedName: { fontSize: 13, fontWeight: '700', color: '#0D1B2A' },
+  detectedMeta: { fontSize: 11, color: colors.textSecondary, marginTop: 1 },
+  detectedAddBtn: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#4A90D9', borderRadius: 20, paddingVertical: 6, paddingHorizontal: 10, marginLeft: 8 },
+  detectedAddBtnText: { fontSize: 11, fontWeight: '700', color: '#fff' },
+  detectedDismissBtn: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+
+  /* ── Plaid investment account import card (Assets tab) ── */
+  plaidLinkCard: { backgroundColor: '#F3E8FD', borderRadius: 16, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: '#E5D0F8' },
+  plaidLinkHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 },
+  plaidLinkTitle: { fontSize: 13, fontWeight: '700', color: '#8E44AD' },
+  plaidLinkSub: { fontSize: 12, color: colors.textSecondary, marginBottom: 6 },
+  plaidLinkRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderTopWidth: 1, borderTopColor: '#E5D0F8' },
 
   /* ── Goals ── */
   goalCard: {

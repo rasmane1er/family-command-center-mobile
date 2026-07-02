@@ -11,9 +11,10 @@ import { useFamilyStore } from '../../store/useFamilyStore';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { useOperationsStore } from '../../store/useOperationsStore';
 import { useAIStore } from '../../store/useAIStore';
+import { useFamilyGoalsStore, type GoalCategory } from '../../store/useFamilyGoalsStore';
 
-const suggestedGoals = [
-  { icon: 'shield', color: '#27AE60', bg: '#D5F5E3', title: 'Build Emergency Fund', desc: '3-6 months of expenses', category: 'savings' },
+const suggestedGoals: { icon: string; color: string; bg: string; title: string; desc: string; category: GoalCategory }[] = [
+  { icon: 'shield', color: '#27AE60', bg: '#D5F5E3', title: 'Build Emergency Fund', desc: '3-6 months of expenses', category: 'finance' },
   { icon: 'airplane', color: '#45B7D1', bg: '#D6EAF8', title: 'Family Vacation', desc: 'Plan your next adventure', category: 'travel' },
   { icon: 'school', color: '#F5A623', bg: '#FEF3E2', title: "Kids' Education Fund", desc: '529 savings plan', category: 'education' },
   { icon: 'home', color: '#DDA0DD', bg: '#F5E6FF', title: 'Home Improvement', desc: 'Renovations & upgrades', category: 'home' },
@@ -29,6 +30,7 @@ export function GoalsSetupScreen({ navigation }: any) {
   const seedDemoOps = useOperationsStore((s) => s.seedDemoData);
   const seedDemoAI = useAIStore((s) => s.seedDemoInsights);
   const family = useFamilyStore((s) => s.family);
+  const addGoal = useFamilyGoalsStore((s) => s.addGoal);
 
   const toggleGoal = (title: string) => {
     setSelectedGoals((prev) =>
@@ -43,6 +45,28 @@ export function GoalsSetupScreen({ navigation }: any) {
       seedDemoOps();
       seedDemoAI();
     }
+
+    // Previously discarded — selecting a goal card did nothing beyond
+    // toggling its own checkmark. Now actually creates a real FamilyGoal
+    // for each one picked.
+    selectedGoals.forEach((title) => {
+      const goal = suggestedGoals.find((g) => g.title === title);
+      if (!goal) return;
+      addGoal({
+        familyId: family?.id ?? 'demo-family',
+        title: goal.title,
+        description: goal.desc,
+        category: goal.category,
+        progress: 0,
+        milestones: [],
+        membersInvolved: [],
+        priority: 'medium',
+        isCompleted: false,
+        color: goal.color,
+        icon: goal.icon,
+      });
+    });
+
     setOnboarded(true);
   };
 

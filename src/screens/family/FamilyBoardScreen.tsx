@@ -230,7 +230,8 @@ function AddPostModal({
   onAdd: (p: Omit<BoardPost, 'id' | 'createdAt' | 'reactions'>) => void;
 }) {
   const members = useFamilyStore((s) => s.members);
-  const [authorId, setAuthorId] = useState('member-1');
+  const family = useFamilyStore((s) => s.family);
+  const [authorId, setAuthorId] = useState('');
   const [category, setCategory] = useState<PostCategory>('announcement');
   const [priority, setPriority] = useState<PostPriority>('normal');
   const [title, setTitle] = useState('');
@@ -247,8 +248,8 @@ function AddPostModal({
       expiresAt = d.toISOString();
     }
     onAdd({
-      familyId: 'demo-family',
-      authorId,
+      familyId: family?.id ?? 'demo-family',
+      authorId: effectiveAuthorId,
       category,
       priority,
       title: title.trim(),
@@ -261,12 +262,7 @@ function AddPostModal({
     onClose();
   };
 
-  const memberList = members.length > 0 ? members : [
-    { id: 'member-1', name: 'Marcus', avatarColor: '#FF6B6B' },
-    { id: 'member-2', name: 'Sarah', avatarColor: '#4ECDC4' },
-    { id: 'member-3', name: 'Aiden', avatarColor: '#45B7D1' },
-    { id: 'member-4', name: 'Lily', avatarColor: '#96CEB4' },
-  ];
+  const effectiveAuthorId = authorId || members[0]?.id || '';
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
@@ -281,14 +277,14 @@ function AddPostModal({
           <ScrollView contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">
             <Text style={styles.fieldLabel}>Author</Text>
             <View style={styles.chipRow}>
-              {memberList.map((m) => (
+              {members.map((m) => (
                 <Pressable
                   key={m.id}
                   onPress={() => setAuthorId(m.id)}
-                  style={[styles.chip, authorId === m.id && styles.chipActive]}
+                  style={[styles.chip, effectiveAuthorId === m.id && styles.chipActive]}
                 >
                   <View style={[styles.memberDot, { backgroundColor: m.avatarColor }]} />
-                  <Text style={[styles.chipText, authorId === m.id && styles.chipActiveText]}>{m.name}</Text>
+                  <Text style={[styles.chipText, effectiveAuthorId === m.id && styles.chipActiveText]}>{m.name}</Text>
                 </Pressable>
               ))}
             </View>

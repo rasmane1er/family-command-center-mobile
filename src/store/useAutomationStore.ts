@@ -1,7 +1,28 @@
 import { create } from 'zustand';
 import type { AutomationRule, MarketplaceListing, ConflictRecord, TimeBlock, SmartDevice } from '../types';
+import { secureStorage } from '../storage/secureStorage';
+import * as hueService from '../services/hueService';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
+
+const HUE_IP_KEY = 'hue_bridge_ip';
+const HUE_APP_KEY_KEY = 'hue_application_key';
+
+// Kept out of Zustand state deliberately — this store has no persist
+// middleware, so the durable copy of the secret lives in secureStorage
+// (keychain/Keystore); this is just an in-memory cache for action closures
+// within the current session, mirroring the refreshPromise module-level
+// pattern already used in src/api/client.ts.
+let cachedHueAppKey: string | null = null;
+
+const briToPercent = (bri: number) => Math.round((bri / 254) * 100);
+const percentToBri = (pct: number) => Math.round((pct / 100) * 254);
+
+export interface HueSceneSummary {
+  id: string;
+  name: string;
+  groupId: string;
+}
 
 interface AutomationState {
   rules: AutomationRule[];
@@ -29,19 +50,36 @@ interface AutomationState {
   addTimeBlock: (b: Omit<TimeBlock, 'id'>) => void;
   deleteTimeBlock: (id: string) => void;
 
-  // Smart Home
+  // Smart Home (generic, local-only)
   toggleDevice: (id: string) => void;
   updateDeviceValue: (id: string, value: number) => void;
+
+  // Smart Home — real Philips Hue Bridge integration
+  hueBridgeIp: string | null;
+  hueConnected: boolean;
+  hueScenes: HueSceneSummary[];
+  isRefreshingHue: boolean;
+  hydrateHueConnection: () => Promise<void>;
+  connectHueBridge: (ip: string, appKey: string) => Promise<void>;
+  disconnectHue: () => Promise<void>;
+  refreshHueDevices: () => Promise<void>;
+  setHueLightState: (deviceId: string, state: { on?: boolean; brightnessPct?: number }) => Promise<void>;
+  fetchHueScenes: () => Promise<void>;
+  recallHueScene: (sceneId: string) => Promise<void>;
 
   seedDemoData: () => void;
 }
 
-export const useAutomationStore = create<AutomationState>((set) => ({
+export const useAutomationStore = create<AutomationState>((set, get) => ({
   rules: [],
   listings: [],
   conflicts: [],
   timeBlocks: [],
   devices: [],
+  hueBridgeIp: null,
+  hueConnected: false,
+  hueScenes: [],
+  isRefreshingHue: false,
 
   addRule: (r) =>
     set((s) => ({ rules: [{ ...r, id: generateId(), runCount: 0 }, ...s.rules] })),
@@ -73,10 +111,150 @@ export const useAutomationStore = create<AutomationState>((set) => ({
   deleteTimeBlock: (id) =>
     set((s) => ({ timeBlocks: s.timeBlocks.filter((b) => b.id !== id) })),
 
-  toggleDevice: (id) =>
-    set((s) => ({ devices: s.devices.map((d) => (d.id === id ? { ...d, isOn: !d.isOn } : d)) })),
-  updateDeviceValue: (id, value) =>
-    set((s) => ({ devices: s.devices.map((d) => (d.id === id ? { ...d, value } : d)) })),
+  toggleDevice: (id) => {
+    const device = get().devices.find((d) => d.id === id);
+    if (device?.brand === 'Philips Hue') {
+      get().setHueLightState(id, { on: !device.isOn });
+      return;
+    }
+    set((s) => ({ devices: s.devices.map((d) => (d.id === id ? { ...d, isOn: !d.isOn } : d)) }));
+  },
+  updateDeviceValue: (id, value) => {
+    const device = get().devices.find((d) => d.id === id);
+    if (device?.brand === 'Philips Hue') {
+      get().setHueLightState(id, { brightnessPct: value });
+      return;
+    }
+    set((s) => ({ devices: s.devices.map((d) => (d.id === id ? { ...d, value } : d)) }));
+  },
+
+  hydrateHueConnection: async () => {
+    const [ip, appKey] = await Promise.all([
+      secureStorage.getToken(HUE_IP_KEY),
+      secureStorage.getToken(HUE_APP_KEY_KEY),
+    ]);
+    if (!ip || !appKey) return;
+    cachedHueAppKey = appKey;
+    set({ hueBridgeIp: ip, hueConnected: true });
+    await get().refreshHueDevices();
+    await get().fetchHueScenes();
+  },
+
+  connectHueBridge: async (ip, appKey) => {
+    await secureStorage.setToken(HUE_IP_KEY, ip);
+    await secureStorage.setToken(HUE_APP_KEY_KEY, appKey);
+    cachedHueAppKey = appKey;
+    set({ hueBridgeIp: ip, hueConnected: true });
+    await get().refreshHueDevices();
+    await get().fetchHueScenes();
+  },
+
+  disconnectHue: async () => {
+    await secureStorage.removeToken(HUE_IP_KEY);
+    await secureStorage.removeToken(HUE_APP_KEY_KEY);
+    cachedHueAppKey = null;
+    set((s) => ({
+      hueBridgeIp: null,
+      hueConnected: false,
+      hueScenes: [],
+      devices: s.devices.filter((d) => d.brand !== 'Philips Hue'),
+    }));
+  },
+
+  refreshHueDevices: async () => {
+    const { hueBridgeIp } = get();
+    if (!hueBridgeIp || !cachedHueAppKey) return;
+
+    set({ isRefreshingHue: true });
+    try {
+      const [lights, groups] = await Promise.all([
+        hueService.getLights(hueBridgeIp, cachedHueAppKey),
+        hueService.getGroups(hueBridgeIp, cachedHueAppKey),
+      ]);
+
+      const roomForLight = (lightId: string): string => {
+        for (const group of Object.values(groups)) {
+          if (group.class && group.lights.includes(lightId)) return group.name;
+        }
+        return 'Other';
+      };
+
+      const now = new Date().toISOString();
+      const hueDevices: SmartDevice[] = Object.entries(lights).map(([id, light]) => ({
+        id: `hue-${id}`,
+        familyId: 'local',
+        name: light.name,
+        type: 'light',
+        room: roomForLight(id),
+        isOnline: light.state.reachable ?? true,
+        isOn: light.state.on,
+        value: light.state.bri !== undefined ? briToPercent(light.state.bri) : undefined,
+        unit: light.state.bri !== undefined ? '%' : undefined,
+        brand: 'Philips Hue',
+        lastSeen: now,
+      }));
+
+      set((s) => ({
+        devices: [...s.devices.filter((d) => d.brand !== 'Philips Hue'), ...hueDevices],
+        isRefreshingHue: false,
+      }));
+    } catch {
+      set({ isRefreshingHue: false });
+    }
+  },
+
+  setHueLightState: async (deviceId, state) => {
+    const { hueBridgeIp, devices } = get();
+    if (!hueBridgeIp || !cachedHueAppKey) return;
+    const device = devices.find((d) => d.id === deviceId);
+    if (!device || !deviceId.startsWith('hue-')) return;
+    const lightId = deviceId.replace(/^hue-/, '');
+    const previous = { ...device };
+
+    set((s) => ({
+      devices: s.devices.map((d) =>
+        d.id === deviceId
+          ? {
+              ...d,
+              ...(state.on !== undefined && { isOn: state.on }),
+              ...(state.brightnessPct !== undefined && { value: state.brightnessPct }),
+            }
+          : d
+      ),
+    }));
+
+    try {
+      await hueService.setLightState(hueBridgeIp, cachedHueAppKey, lightId, {
+        ...(state.on !== undefined && { on: state.on }),
+        ...(state.brightnessPct !== undefined && { bri: percentToBri(state.brightnessPct) }),
+      });
+    } catch {
+      set((s) => ({ devices: s.devices.map((d) => (d.id === deviceId ? previous : d)) }));
+    }
+  },
+
+  fetchHueScenes: async () => {
+    const { hueBridgeIp } = get();
+    if (!hueBridgeIp || !cachedHueAppKey) return;
+    try {
+      const scenes = await hueService.getScenes(hueBridgeIp, cachedHueAppKey);
+      const summaries: HueSceneSummary[] = Object.entries(scenes)
+        .filter(([, scene]) => !!scene.group)
+        .map(([id, scene]) => ({ id, name: scene.name, groupId: scene.group as string }));
+      set({ hueScenes: summaries });
+    } catch {
+      // best-effort
+    }
+  },
+
+  recallHueScene: async (sceneId) => {
+    const { hueBridgeIp, hueScenes } = get();
+    if (!hueBridgeIp || !cachedHueAppKey) return;
+    const scene = hueScenes.find((s) => s.id === sceneId);
+    if (!scene) return;
+    await hueService.recallScene(hueBridgeIp, cachedHueAppKey, scene.groupId, sceneId);
+    await get().refreshHueDevices();
+  },
 
   seedDemoData: () => {
     const now = new Date().toISOString();

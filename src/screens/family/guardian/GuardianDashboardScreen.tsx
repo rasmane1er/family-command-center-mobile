@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   Alert,
   Pressable,
@@ -17,7 +17,6 @@ import { colors } from '../../../theme/colors';
 import { shadows } from '../../../theme/spacing';
 import { CollapsibleHeader } from '../../../components/common/CollapsibleHeader';
 import type { ChildDevice, ChildDeviceStatus } from '../../../types';
-import { GuardianNative } from '../../../native/GuardianNative';
 
 const BOTTOM_MENU_HEIGHT = 72;
 const FAB_BOTTOM_OFFSET = BOTTOM_MENU_HEIGHT + 22;
@@ -71,8 +70,17 @@ export function GuardianDashboardScreen({ navigation }: any) {
   const sosAlerts = useGuardianStore((s) => s.sosAlerts);
   const approvalRequests = useGuardianStore((s) => s.approvalRequests);
   const sendCommand = useGuardianStore((s) => s.sendCommand);
+  const hydrate = useGuardianStore((s) => s.hydrate);
+  const thisDeviceId = useGuardianStore((s) => s.thisDeviceId);
   const members = useFamilyStore((s) => s.members);
-  const family = useFamilyStore((s) => s.family);
+  const activeMemberId = useFamilyStore((s) => s.activeMemberId);
+
+  const activeMember = members.find((m) => m.id === activeMemberId);
+  const showChildRegistrationBanner = activeMember?.role === 'child' && !thisDeviceId;
+
+  useEffect(() => {
+    hydrate();
+  }, [hydrate]);
 
   const unresolved = sosAlerts.filter((a) => !a.isResolved);
   const pendingApprovals = approvalRequests.filter((r) => r.status === 'pending');
@@ -102,11 +110,7 @@ export function GuardianDashboardScreen({ navigation }: any) {
         {
           text: 'Send',
           onPress: () => {
-            sendCommand(device.id, type, family?.id ?? 'demo-family');
-
-            if (type === 'lock') GuardianNative.lockScreen();
-            if (type === 'school_on') GuardianNative.setSchoolMode(true);
-            if (type === 'bedtime_on') GuardianNative.setBedtimeMode(true);
+            sendCommand(device.id, type);
           },
         },
       ]
@@ -303,6 +307,24 @@ export function GuardianDashboardScreen({ navigation }: any) {
               ))}
             </View>
 
+            {showChildRegistrationBanner && (
+              <Pressable
+                style={[styles.childBanner, shadows.card]}
+                onPress={() => navigation.navigate('RegisterChildDevice')}
+              >
+                <View style={styles.childBannerIcon}>
+                  <Ionicons name="phone-portrait" size={20} color="#fff" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.childBannerTitle}>Register this device</Text>
+                  <Text style={styles.childBannerDesc}>
+                    Connect this device to your family so a parent can manage it.
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.primary} />
+              </Pressable>
+            )}
+
             <Text style={styles.sectionTitle}>Paired Devices</Text>
 
             {devices.length === 0 && (
@@ -398,7 +420,7 @@ export function GuardianDashboardScreen({ navigation }: any) {
             bottom: Math.max(insets.bottom, 16) + FAB_BOTTOM_OFFSET,
           },
         ]}
-        onPress={() => navigation.navigate('PairDevice')}
+        onPress={() => navigation.navigate('EnterPairingCode')}
       >
         <Ionicons name="add" size={28} color="#fff" />
       </Pressable>
@@ -690,6 +712,38 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 12,
+  },
+
+  childBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 18,
+  },
+
+  childBannerIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  childBannerTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.text,
+  },
+
+  childBannerDesc: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 2,
+    lineHeight: 16,
   },
 
   emptyState: {

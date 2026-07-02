@@ -15,6 +15,7 @@ import { AutomationScreen } from '../screens/operations/AutomationScreen';
 import { MarketplaceScreen } from '../screens/operations/MarketplaceScreen';
 import { TimeEconomyScreen } from '../screens/operations/TimeEconomyScreen';
 import { SmartHomeScreen } from '../screens/operations/SmartHomeScreen';
+import { ConnectHueBridgeScreen } from '../screens/operations/ConnectHueBridgeScreen';
 import { EmergencyModeScreen } from '../screens/operations/EmergencyModeScreen';
 import { ShoppingListScreen } from '../screens/operations/ShoppingListScreen';
 import { RecipesScreen } from '../screens/operations/RecipesScreen';
@@ -70,6 +71,7 @@ export function OperationsNavigator() {
         <Stack.Screen name="Marketplace" component={MarketplaceScreen} />
         <Stack.Screen name="TimeEconomy" component={TimeEconomyScreen} />
         <Stack.Screen name="SmartHome" component={SmartHomeScreen} />
+        <Stack.Screen name="ConnectHueBridge" component={ConnectHueBridgeScreen} />
 
         <Stack.Screen name="ShoppingList">
           {(props) => (

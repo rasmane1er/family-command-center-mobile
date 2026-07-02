@@ -5,6 +5,8 @@ import type { ChatMessage, AIInsight } from '../types';
 import { API_BASE_URL } from '../config/api';
 import { secureStorage } from '../storage/secureStorage';
 
+const AI_UNAVAILABLE_MESSAGE = "I'm having trouble reaching the AI service right now. Please try again in a moment.";
+
 interface AIState {
   messages: ChatMessage[];
   insights: AIInsight[];
@@ -59,9 +61,13 @@ export const useAIStore = create<AIState>()(
 
       // /ai/chat requires auth — this call was missing the Authorization
       // header entirely, so every request 401'd and silently fell through
-      // to the canned getDemoResponse() below, which is why this looked
-      // like it was "working" (plausible fake answers) while actually never
-      // reaching the real model.
+      // to a canned fallback response with fabricated numbers (e.g. "Family
+      // Health Score: 78/100"), which is why this looked like it was
+      // "working" (plausible fake answers) while actually never reaching
+      // the real model. Auth is fixed now, but on any remaining failure
+      // (backend hiccup, model outage) this must show an honest
+      // unavailability message, not another fabricated answer that could
+      // be mistaken for real personalized advice.
       const token = await secureStorage.getToken('access_token');
       const response = await fetch(`${API_BASE_URL}/ai/chat`, {
         method: 'POST',
@@ -78,14 +84,13 @@ export const useAIStore = create<AIState>()(
 
       if (response.ok) {
         const data = (await response.json()) as { reply: string; suggestions?: string[]; action?: { type: string; payload: Record<string, unknown> } };
-        assistantContent = data.reply || getDemoResponse(content);
-        suggestions = data.suggestions ?? getContextSuggestions(content);
+        assistantContent = data.reply || AI_UNAVAILABLE_MESSAGE;
+        suggestions = data.reply ? (data.suggestions ?? []) : [];
         if (data.action) {
           pendingAction = data.action;
         }
       } else {
-        assistantContent = getDemoResponse(content);
-        suggestions = getContextSuggestions(content);
+        assistantContent = AI_UNAVAILABLE_MESSAGE;
       }
 
       const assistantMessage: ChatMessage = {
@@ -102,9 +107,9 @@ export const useAIStore = create<AIState>()(
       const assistantMessage: ChatMessage = {
         id: generateId(),
         role: 'assistant',
-        content: getDemoResponse(content),
+        content: AI_UNAVAILABLE_MESSAGE,
         timestamp: new Date().toISOString(),
-        suggestions: getContextSuggestions(content),
+        suggestions: [],
       };
       set((s) => ({ messages: [...s.messages, assistantMessage], isTyping: false }));
     }
@@ -133,39 +138,3 @@ export const useAIStore = create<AIState>()(
  )
 );
 
-function getDemoResponse(input: string): string {
-  const lower = input.toLowerCase();
-  if (lower.includes('budget') || lower.includes('money') || lower.includes('spend')) {
-    return `📊 **Budget Analysis**\n\nBased on your current spending patterns:\n\n• **Food**: 78% used ($378/$800) — You're on track but slightly fast-paced this month\n• **Transport**: 45% used ($180/$400) — Well managed!\n• **Utilities**: 70% used ($245/$350) — Consider energy-saving habits\n\n💡 **My Recommendation**: Try batch cooking this weekend to reduce dining-out expenses. This alone could save you $150-200 this month.`;
-  }
-  if (lower.includes('task') || lower.includes('chore') || lower.includes('todo')) {
-    return `✅ **Task Overview**\n\nYour family has **5 pending tasks** this week:\n\n🔴 **High Priority**\n• Pay electricity bill (due in 2 days)\n• Help Aiden with math homework\n\n🟡 **Medium Priority**\n• Grocery shopping\n• Car oil change\n\n🟢 **Low Priority**\n• Clean bedroom (Aiden)\n\n💡 **Tip**: Completing all tasks this week would earn your family **165 points** toward the Hawaii trip reward!`;
-  }
-  if (lower.includes('meal') || lower.includes('food') || lower.includes('dinner') || lower.includes('recipe')) {
-    return `🍽️ **Meal Planning Suggestion**\n\nBased on your pantry inventory, here's a smart meal plan:\n\n**Tonight**: Chicken pasta with tomato sauce (uses chicken breast before expiry)\n**Tomorrow**: Rice bowl with mixed vegetables\n**Wednesday**: Egg stir-fry with pasta\n\n🛒 **Shopping needed**: Fresh vegetables, cheese, bread\n\n💰 **Estimated savings**: Planning meals this way saves ~$85/week vs. spontaneous shopping!`;
-  }
-  if (lower.includes('goal') || lower.includes('vacation') || lower.includes('save') || lower.includes('hawaii')) {
-    return `🎯 **Goal Tracking Update**\n\n**Hawaii Vacation Fund** — $3,250 / $8,000 (41%)\n• At current pace, you'll reach your goal in **~9 months** ✓\n• To hit it by June: save $525/month\n\n💡 **Boost Strategy**:\n1. Redirect Netflix savings ($22.99) → vacation fund\n2. Use cashback rewards from Amazon Prime\n3. Consider a family savings challenge this month\n\nYou've got this! 🌺`;
-  }
-  if (lower.includes('health') || lower.includes('score') || lower.includes('wellness')) {
-    return `❤️ **Family Health Score: 78/100**\n\n**Breakdown:**\n• 📊 Financial Health: 68 — Room to improve budgeting\n• ✅ Task Completion: 80 — Great job this week!\n• 🎯 Goal Progress: 65 — Stay consistent\n• 💬 Communication: 88 — Family is in sync!\n\n**To improve your score:**\n1. Complete 2+ overdue tasks\n2. Set up auto-pay for recurring bills\n3. Add 1 new family goal this week`;
-  }
-  if (lower.includes('vehicle') || lower.includes('car') || lower.includes('service')) {
-    return `🚗 **Vehicle Status Report**\n\n**Toyota Camry (2021)**\n• Mileage: 35,420 miles\n• ⚠️ Oil change due — 3 months overdue!\n• Insurance expires in 6 months\n• Estimated service cost: $65-85\n\n**Honda CR-V (2022)**\n• Mileage: 22,180 miles\n• ✅ Service up to date\n• Insurance expires in 4 months\n\n💡 **Action needed**: Schedule Camry service this week. I can help you find nearby service centers.`;
-  }
-  return `👋 Hi! I'm your **Family Command Center AI** — your household Chief of Staff.\n\nI can help you with:\n• 📊 Budget analysis & financial planning\n• ✅ Task management & scheduling\n• 🍽️ Meal planning & pantry optimization\n• 🎯 Goal tracking & milestone planning\n• 🚗 Vehicle & home maintenance\n• ❤️ Family health score improvement\n• 🏆 Rewards & motivation strategies\n\nWhat would you like to tackle today?`;
-}
-
-function getContextSuggestions(input: string): string[] {
-  const lower = input.toLowerCase();
-  if (lower.includes('budget') || lower.includes('money')) {
-    return ['Show spending trends', 'Set budget alert', 'Find savings opportunities'];
-  }
-  if (lower.includes('meal') || lower.includes('food')) {
-    return ['Plan this week\'s meals', 'Generate shopping list', 'What\'s in the pantry?'];
-  }
-  if (lower.includes('task') || lower.includes('chore')) {
-    return ['Assign tasks to kids', 'Set reminders', 'View completed tasks'];
-  }
-  return ['How is our budget?', 'What tasks are due?', 'Show family health score', 'Plan this week\'s meals'];
-}

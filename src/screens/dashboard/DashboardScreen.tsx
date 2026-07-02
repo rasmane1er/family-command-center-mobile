@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
 
 import { useJoinRequestsStore } from '../../store/useJoinRequestsStore';
+import { useAppStore } from '../../store/useAppStore';
 import { useFinancialHealth } from '../../hooks/useFinancialHealth';
 import { useSubscription } from '../../hooks/useSubscription';
 import { usePurchases } from '../../hooks/usePurchases';
@@ -76,6 +77,8 @@ export function DashboardScreen({ navigation }: any) {
 
   const healthScore = useFinancialHealth();
   const { monthlyIncome, monthlyExpenses, monthlySavings, bills } = useFinanceStore();
+  const hideBalances = useAppStore((s) => s.settings.hideBalances);
+  const maskAmount = (n: number) => (hideBalances ? '••••' : `$${n.toLocaleString()}`);
 
   const insights = useAIStore((s) => s.insights);
   const notifications = useNotificationsStore((s) => s.notifications);
@@ -725,15 +728,15 @@ export function DashboardScreen({ navigation }: any) {
                   <View style={dynStyles.financeMetricRow}>
                     <View style={dynStyles.financeMetric}>
                       <Text style={dynStyles.financeMetricLabel}>Income</Text>
-                      <Text style={dynStyles.financeMetricValue}>${monthlyIncome.toLocaleString()}</Text>
+                      <Text style={dynStyles.financeMetricValue}>{maskAmount(monthlyIncome)}</Text>
                     </View>
                     <View style={dynStyles.financeMetric}>
                       <Text style={dynStyles.financeMetricLabel}>Expenses</Text>
-                      <Text style={dynStyles.financeMetricValue}>${monthlyExpenses.toLocaleString()}</Text>
+                      <Text style={dynStyles.financeMetricValue}>{maskAmount(monthlyExpenses)}</Text>
                     </View>
                     <View style={dynStyles.financeMetric}>
                       <Text style={dynStyles.financeMetricLabel}>Savings</Text>
-                      <Text style={dynStyles.financeMetricValue}>${monthlySavings.toLocaleString()}</Text>
+                      <Text style={dynStyles.financeMetricValue}>{maskAmount(monthlySavings)}</Text>
                     </View>
                   </View>
 

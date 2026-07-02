@@ -37,7 +37,8 @@ import { ChildDeviceDetailScreen } from '../screens/family/guardian/ChildDeviceD
 import { ScreenTimeScreen } from '../screens/family/guardian/ScreenTimeScreen';
 import { SOSAlertsScreen } from '../screens/family/guardian/SOSAlertsScreen';
 import { ApprovalRequestsScreen } from '../screens/family/guardian/ApprovalRequestsScreen';
-import { PairDeviceScreen } from '../screens/family/guardian/PairDeviceScreen';
+import { RegisterChildDeviceScreen } from '../screens/family/guardian/RegisterChildDeviceScreen';
+import { EnterPairingCodeScreen } from '../screens/family/guardian/EnterPairingCodeScreen';
 import { RewardsScreen } from '../screens/operations/RewardsScreen';
 
 
@@ -230,7 +231,8 @@ export function FamilyNavigator() {
       <Stack.Screen name="ScreenTime" component={ScreenTimeScreen} />
       <Stack.Screen name="SOSAlerts" component={SOSAlertsScreen} />
       <Stack.Screen name="ApprovalRequests" component={ApprovalRequestsScreen} />
-      <Stack.Screen name="PairDevice" component={PairDeviceScreen} />
+      <Stack.Screen name="RegisterChildDevice" component={RegisterChildDeviceScreen} />
+      <Stack.Screen name="EnterPairingCode" component={EnterPairingCodeScreen} />
 
       {/* Child-specific */}
       <Stack.Screen name="KidsMode">

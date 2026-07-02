@@ -11,6 +11,8 @@ import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { colors } from '../../theme/colors';
 
+const LOVE_LANGUAGES = ['Words of Affirmation', 'Acts of Service', 'Receiving Gifts', 'Quality Time', 'Physical Touch'];
+
 export function MemberDetailsScreen({ route, navigation: navProp }: any) {
   const navHook = useNavigation<any>();
   const navigation = navProp ?? navHook;
@@ -20,6 +22,7 @@ export function MemberDetailsScreen({ route, navigation: navProp }: any) {
   const members = useFamilyStore((s) => s.members);
   const allTasks = useFamilyStore((s) => s.tasks);
   const allEvents = useFamilyStore((s) => s.events);
+  const updateMember = useFamilyStore((s) => s.updateMember);
 
   const member = members.find((m) => m.id === memberId);
   const tasks = allTasks.filter((t) => t.assignedTo?.includes(memberId));
@@ -121,6 +124,28 @@ export function MemberDetailsScreen({ route, navigation: navProp }: any) {
         </Card>
 
         <Card style={styles.card}>
+          <Text style={styles.cardTitle}>Love Language</Text>
+          <Text style={styles.loveLanguageHint}>
+            How {member.name} best feels appreciated. Tap to set.
+          </Text>
+          <View style={styles.loveLanguageChips}>
+            {LOVE_LANGUAGES.map((ll) => {
+              const selected = member.loveLanguage === ll;
+              return (
+                <Pressable
+                  key={ll}
+                  onPress={() => updateMember(member.id, { loveLanguage: ll })}
+                  style={[styles.llChip, selected && { backgroundColor: member.avatarColor + '18', borderColor: member.avatarColor }]}
+                >
+                  {selected && <Ionicons name="checkmark-circle" size={14} color={member.avatarColor} />}
+                  <Text style={[styles.llChipText, selected && { color: member.avatarColor, fontWeight: '800' }]}>{ll}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </Card>
+
+        <Card style={styles.card}>
           <Text style={styles.cardTitle}>Assigned Tasks</Text>
           {tasks.length === 0 ? (
             <Text style={styles.empty}>No tasks assigned.</Text>
@@ -209,6 +234,21 @@ const styles = StyleSheet.create({
   overviewIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
   overviewValue: { fontSize: 20, fontWeight: '800' },
   overviewLabel: { fontSize: 11, color: colors.textSecondary, marginTop: 2, textAlign: 'center' },
+
+  loveLanguageHint: { fontSize: 12, color: colors.textSecondary, marginBottom: 12, marginTop: -6 },
+  loveLanguageChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  llChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    borderRadius: 18,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
+  },
+  llChipText: { fontSize: 12.5, fontWeight: '600', color: colors.textSecondary },
 
   item: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
   prioDot: { width: 8, height: 8, borderRadius: 4, marginTop: 5 },

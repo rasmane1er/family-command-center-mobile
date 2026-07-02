@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   LayoutAnimation,
   Linking,
@@ -20,6 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../theme/ThemeContext';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
+import { useChatStore } from '../../store/useChatStore';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -442,6 +444,8 @@ export default function HelpSupportScreen({ navigation }: { navigation: any }) {
   const [subject, setSubject] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('General');
   const [message, setMessage] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  const createThread = useChatStore((s) => s.createThread);
 
   // ── Filtering FAQ ──────────────────────────────────────────────────────────
   const query = searchText.trim().toLowerCase();
@@ -459,19 +463,36 @@ export default function HelpSupportScreen({ navigation }: { navigation: any }) {
   const totalResults = filteredCategories.reduce((n, c) => n + c.items.length, 0);
 
   // ── Ticket submit ──────────────────────────────────────────────────────────
-  function handleSendMessage() {
+  // Was previously fully fake — cleared the form and showed a success alert
+  // with no actual submission anywhere. Now creates a real support thread
+  // via the same backend the Live Chat screen uses (POST /chat/threads),
+  // so the message genuinely reaches the support team and the user can
+  // continue the conversation from Live Chat.
+  async function handleSendMessage() {
     if (!subject.trim() || !message.trim()) {
       Alert.alert('Missing Fields', 'Please fill in both the subject and message before sending.');
       return;
     }
-    setSubject('');
-    setMessage('');
-    setSelectedCategory('General');
-    Alert.alert(
-      'Message Sent!',
-      "We'll reply to your account email within 24 hours.",
-      [{ text: 'OK' }],
-    );
+    setIsSending(true);
+    try {
+      const threadId = await createThread({ subject: subject.trim(), category: selectedCategory, body: message.trim() });
+      if (!threadId) throw new Error('No thread created');
+      setSubject('');
+      setMessage('');
+      setSelectedCategory('General');
+      Alert.alert(
+        'Message Sent!',
+        "We'll reply to your account email within 24 hours. You can also continue this conversation in Live Chat.",
+        [
+          { text: 'View in Live Chat', onPress: () => navigation.navigate('LiveChat') },
+          { text: 'OK', style: 'cancel' },
+        ],
+      );
+    } catch {
+      Alert.alert('Couldn\'t Send', 'We couldn\'t reach the support server. Check your connection and try again.');
+    } finally {
+      setIsSending(false);
+    }
   }
 
   // ── Quick contact handlers ────────────────────────────────────────────────
@@ -652,9 +673,13 @@ export default function HelpSupportScreen({ navigation }: { navigation: any }) {
               returnKeyType="default"
             />
 
-            <TouchableOpacity activeOpacity={0.85} style={s.sendBtn} onPress={handleSendMessage}>
-              <LinearGradient colors={['#0F2952', '#1E4A8A']} style={s.sendBtnGradient}>
-                <Text style={s.sendBtnText}>Send Message</Text>
+            <TouchableOpacity activeOpacity={0.85} style={s.sendBtn} onPress={handleSendMessage} disabled={isSending}>
+              <LinearGradient colors={['#0F2952', '#1E4A8A']} style={[s.sendBtnGradient, isSending && { opacity: 0.6 }]}>
+                {isSending ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={s.sendBtnText}>Send Message</Text>
+                )}
               </LinearGradient>
             </TouchableOpacity>
           </View>

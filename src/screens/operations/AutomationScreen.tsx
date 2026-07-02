@@ -102,8 +102,12 @@ export function AutomationScreen({ navigation }: any) {
         </View>
         <View style={styles.statDivider} />
         <View style={styles.stat}>
-          <Text style={styles.statVal}>{Math.round(totalRuns * 4.2)}m</Text>
-          <Text style={styles.statLabel}>Time Saved</Text>
+          {/* There's no real way to measure time an automation saved —
+              this is a rough estimate (4.2 min/run, a typical manual-task
+              duration), labeled "Est." rather than presented as an exact
+              figure. totalRuns itself is real (sum of real runCount). */}
+          <Text style={styles.statVal}>~{Math.round(totalRuns * 4.2)}m</Text>
+          <Text style={styles.statLabel}>Est. Time Saved</Text>
         </View>
       </View>
     

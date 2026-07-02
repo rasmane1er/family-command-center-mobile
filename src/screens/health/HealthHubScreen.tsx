@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -25,12 +25,7 @@ const METRIC_CONFIG = {
   glucose: { icon: 'medical', color: '#D35400', label: 'Glucose', goal: 100, unit: 'mg/dL' },
 } as const;
 
-const HEALTH_TIPS = [
-  { tip: 'Marcus: Schedule your annual physical — last one was 14 months ago', icon: 'medical', color: '#E74C3C', priority: 'high' },
-  { tip: "Aiden is averaging 8.5 hrs sleep — excellent for his age group!", icon: 'moon', color: '#8E44AD', priority: 'positive' },
-  { tip: 'Sarah hit her 12,000 step goal 4 days this week!', icon: 'trophy', color: '#F5A623', priority: 'positive' },
-  { tip: "Lily's next pediatric checkup is in 6 weeks — schedule soon", icon: 'calendar', color: '#2980B9', priority: 'medium' },
-];
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 export function HealthHubScreen({ navigation: navProp }: any) {
   const { colors } = useTheme();
@@ -39,7 +34,7 @@ export function HealthHubScreen({ navigation: navProp }: any) {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<'overview' | 'metrics' | 'appointments'>('overview');
   const [selectedMember, setSelectedMember] = useState<string | null>(null);
-  const { records, goals, seedDemoData } = useHealthStore();
+  const { records, goals, appointments, addAppointment, seedDemoData } = useHealthStore();
   const members = useFamilyStore((s) => s.members);
 
   if (records.length === 0) seedDemoData();
@@ -52,35 +47,95 @@ export function HealthHubScreen({ navigation: navProp }: any) {
   const getLatest = (metric: string) =>
     memberRecords.filter((r) => r.metric === metric).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
 
-  const FAMILY_HEALTH_SCORE = 78;
+  // Real score: for each member's goal, how close their latest recorded
+  // value is to that goal's target, averaged across every member/metric
+  // pair that has both a goal and at least one recorded value. Neutral
+  // baseline (50) when there's no data yet, rather than a fabricated
+  // number — matches the convention already used in useFinancialHealth.ts
+  // and useRelationshipHealth.ts for "not enough data" states.
+  const familyHealthScore = useMemo(() => {
+    const progressRatios: number[] = [];
+    members.forEach((m) => {
+      goals.filter((g) => g.memberId === m.id).forEach((goal) => {
+        const latest = records
+          .filter((r) => r.memberId === m.id && r.metric === goal.metric)
+          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+        if (latest && goal.target > 0) {
+          progressRatios.push(Math.min(1, latest.value / goal.target));
+        }
+      });
+    });
+    if (progressRatios.length === 0) return 50;
+    return Math.round((progressRatios.reduce((a, b) => a + b, 0) / progressRatios.length) * 100);
+  }, [members, goals, records]);
 
   const [showAptModal, setShowAptModal] = useState(false);
-  const [newAptMember, setNewAptMember] = useState('');
+  const [newAptMemberId, setNewAptMemberId] = useState<string>('');
   const [newAptType, setNewAptType] = useState('');
   const [newAptDate, setNewAptDate] = useState('');
   const [newAptDoctor, setNewAptDoctor] = useState('');
-  const [appointments, setAppointments] = useState([
-    { id: '1', member: 'Lily', type: 'Pediatric Checkup', date: 'July 12, 2026', doctor: 'Dr. Martinez', icon: 'medical', color: '#E91E63' },
-    { id: '2', member: 'Marcus', type: 'Annual Physical', date: 'July 28, 2026', doctor: 'Dr. Chen', icon: 'body', color: '#2980B9' },
-    { id: '3', member: 'Sarah', type: 'Dental Cleaning', date: 'August 3, 2026', doctor: 'Dr. Johnson', icon: 'happy', color: '#16A085' },
-    { id: '4', member: 'Aiden', type: 'Optometry', date: 'August 15, 2026', doctor: 'Dr. Park', icon: 'eye', color: '#8E44AD' },
-  ]);
 
   const handleAddAppointment = () => {
-    if (!newAptType.trim() || !newAptMember.trim()) return;
-    setAppointments([...appointments, {
-      id: Math.random().toString(36).substring(2, 11),
-      member: newAptMember.trim(),
+    if (!newAptType.trim() || !newAptMemberId) return;
+    const parsedDate = new Date(newAptDate.trim());
+    addAppointment({
+      memberId: newAptMemberId,
       type: newAptType.trim(),
-      date: newAptDate.trim() || 'TBD',
-      doctor: newAptDoctor.trim() || 'TBD',
+      date: isNaN(parsedDate.getTime()) ? newAptDate.trim() : parsedDate.toISOString(),
+      doctor: newAptDoctor.trim() || undefined,
       icon: 'medical',
       color: '#2980B9',
-    }]);
+    });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setNewAptMember(''); setNewAptType(''); setNewAptDate(''); setNewAptDoctor('');
+    setNewAptMemberId(''); setNewAptType(''); setNewAptDate(''); setNewAptDoctor('');
     setShowAptModal(false);
   };
+
+  // Real tips, computed from actual records/goals/appointments — replaces
+  // a previous hardcoded HEALTH_TIPS array that named invented members
+  // ("Marcus: Schedule your annual physical...") regardless of who's
+  // actually in this family.
+  const healthTips = useMemo(() => {
+    const tips: { tip: string; icon: string; color: string; priority: 'high' | 'medium' | 'positive' }[] = [];
+    const now = Date.now();
+
+    members.forEach((m) => {
+      const upcoming = appointments
+        .filter((a) => a.memberId === m.id)
+        .map((a) => ({ ...a, ts: Date.parse(a.date) }))
+        .filter((a) => !isNaN(a.ts) && a.ts > now)
+        .sort((a, b) => a.ts - b.ts)[0];
+      if (upcoming) {
+        const daysAway = Math.max(1, Math.ceil((upcoming.ts - now) / DAY_MS));
+        if (daysAway <= 45) {
+          tips.push({
+            tip: `${m.name}'s ${upcoming.type} is in ${daysAway} day${daysAway === 1 ? '' : 's'} — schedule soon`,
+            icon: 'calendar',
+            color: '#2980B9',
+            priority: daysAway <= 7 ? 'high' : 'medium',
+          });
+        }
+      }
+
+      const recentSleep = records.filter((r) => r.memberId === m.id && r.metric === 'sleep' && now - Date.parse(r.date) <= 7 * DAY_MS);
+      if (recentSleep.length > 0) {
+        const avg = recentSleep.reduce((sum, r) => sum + r.value, 0) / recentSleep.length;
+        if (avg >= 8) {
+          tips.push({ tip: `${m.name} is averaging ${avg.toFixed(1)} hrs sleep this week — great job!`, icon: 'moon', color: '#8E44AD', priority: 'positive' });
+        }
+      }
+
+      const stepGoal = goals.find((g) => g.memberId === m.id && g.metric === 'steps');
+      if (stepGoal) {
+        const daysHitGoal = records.filter((r) => r.memberId === m.id && r.metric === 'steps' && now - Date.parse(r.date) <= 7 * DAY_MS && r.value >= stepGoal.target).length;
+        if (daysHitGoal >= 3) {
+          tips.push({ tip: `${m.name} hit their ${stepGoal.target.toLocaleString()} step goal ${daysHitGoal} days this week!`, icon: 'trophy', color: '#F5A623', priority: 'positive' });
+        }
+      }
+    });
+
+    return tips.slice(0, 5);
+  }, [members, records, goals, appointments]);
 
   const s = makeStyles(colors);
 
@@ -97,7 +152,7 @@ export function HealthHubScreen({ navigation: navProp }: any) {
     >
       <View style={s.scoreRow}>
         <View style={s.scoreBlock}>
-          <Text style={s.scoreValue}>{FAMILY_HEALTH_SCORE}</Text>
+          <Text style={s.scoreValue}>{familyHealthScore}</Text>
           <Text style={s.scoreLabel}>Family Health Score</Text>
         </View>
         <View style={s.memberScores}>
@@ -154,8 +209,13 @@ export function HealthHubScreen({ navigation: navProp }: any) {
 
         {activeTab === 'overview' && (
           <>
-            <Text style={s.sectionTitle}>AI Health Tips</Text>
-            {HEALTH_TIPS.map((tip, i) => (
+            <Text style={s.sectionTitle}>Health Tips</Text>
+            {healthTips.length === 0 && (
+              <Text style={s.emptyTipsText}>
+                No tips yet — log a few days of steps or sleep, or add an appointment, to see personalized tips here.
+              </Text>
+            )}
+            {healthTips.map((tip, i) => (
               <Card key={i} style={s.tipCard} variant="elevated">
                 <View style={s.tipRow}>
                   <View style={[s.tipIcon, { backgroundColor: tip.color + '15' }]}>
@@ -268,29 +328,41 @@ export function HealthHubScreen({ navigation: navProp }: any) {
           </>
         )}
 
-        {activeTab === 'appointments' && appointments.map((apt) => (
-          <Card key={apt.id} style={s.aptCard} variant="elevated">
-            <View style={s.aptRow}>
-              <View style={[s.aptIcon, { backgroundColor: apt.color + '15' }]}>
-                <Ionicons name={apt.icon as any} size={22} color={apt.color} />
-              </View>
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={s.aptType}>{apt.type}</Text>
-                <Text style={s.aptMember}>{apt.member} • {apt.doctor}</Text>
-                <Text style={s.aptDate}>{apt.date}</Text>
-              </View>
-              <Pressable
-                onPress={() => Alert.alert(apt.type, `${apt.member}\n${apt.doctor}\n${apt.date}`, [
-                  { text: 'Dismiss', style: 'cancel' },
-                  { text: 'Add to Calendar', onPress: () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light) },
-                ])}
-                style={[s.aptBtn, { backgroundColor: apt.color }]}
-              >
-                <Text style={s.aptBtnText}>Details</Text>
-              </Pressable>
-            </View>
-          </Card>
-        ))}
+        {activeTab === 'appointments' && appointments.length === 0 && (
+          <Text style={s.emptyTipsText}>No appointments yet. Tap + to add one.</Text>
+        )}
+
+        {activeTab === 'appointments' && appointments
+          .slice()
+          .sort((a, b) => Date.parse(a.date) - Date.parse(b.date))
+          .map((apt) => {
+            const memberName = members.find((m) => m.id === apt.memberId)?.name ?? 'Family';
+            const parsed = new Date(apt.date);
+            const dateLabel = isNaN(parsed.getTime()) ? apt.date : parsed.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
+            return (
+              <Card key={apt.id} style={s.aptCard} variant="elevated">
+                <View style={s.aptRow}>
+                  <View style={[s.aptIcon, { backgroundColor: apt.color + '15' }]}>
+                    <Ionicons name={apt.icon as any} size={22} color={apt.color} />
+                  </View>
+                  <View style={{ flex: 1, marginLeft: 12 }}>
+                    <Text style={s.aptType}>{apt.type}</Text>
+                    <Text style={s.aptMember}>{memberName}{apt.doctor ? ` • ${apt.doctor}` : ''}</Text>
+                    <Text style={s.aptDate}>{dateLabel}</Text>
+                  </View>
+                  <Pressable
+                    onPress={() => Alert.alert(apt.type, `${memberName}\n${apt.doctor ?? ''}\n${dateLabel}`, [
+                      { text: 'Dismiss', style: 'cancel' },
+                      { text: 'Add to Calendar', onPress: () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light) },
+                    ])}
+                    style={[s.aptBtn, { backgroundColor: apt.color }]}
+                  >
+                    <Text style={s.aptBtnText}>Details</Text>
+                  </Pressable>
+                </View>
+              </Card>
+            );
+          })}
         </ScrollView>
         )}
       </CollapsibleHeader>
@@ -301,7 +373,17 @@ export function HealthHubScreen({ navigation: navProp }: any) {
           <Text style={s.modalTitle}>Add Appointment</Text>
 
           <Text style={s.modalLabel}>Family Member *</Text>
-          <TextInput style={s.modalInput} placeholder="e.g. Sarah" value={newAptMember} onChangeText={setNewAptMember} placeholderTextColor={colors.textMuted} autoFocus />
+          <View style={s.memberChipRow}>
+            {members.map((m) => (
+              <Pressable
+                key={m.id}
+                onPress={() => setNewAptMemberId(m.id)}
+                style={[s.memberChip, newAptMemberId === m.id && { backgroundColor: m.avatarColor + '20', borderColor: m.avatarColor }]}
+              >
+                <Text style={[s.memberChipText, newAptMemberId === m.id && { color: m.avatarColor, fontWeight: '800' }]}>{m.name}</Text>
+              </Pressable>
+            ))}
+          </View>
 
           <Text style={s.modalLabel}>Appointment Type *</Text>
           <TextInput style={s.modalInput} placeholder="e.g. Dental Cleaning" value={newAptType} onChangeText={setNewAptType} placeholderTextColor={colors.textMuted} />
@@ -312,7 +394,7 @@ export function HealthHubScreen({ navigation: navProp }: any) {
           <Text style={s.modalLabel}>Date</Text>
           <TextInput style={[s.modalInput, { marginBottom: 24 }]} placeholder="e.g. July 12, 2026" value={newAptDate} onChangeText={setNewAptDate} placeholderTextColor={colors.textMuted} />
 
-          <Button title="Add Appointment" onPress={handleAddAppointment} fullWidth size="lg" disabled={!newAptType.trim() || !newAptMember.trim()} />
+          <Button title="Add Appointment" onPress={handleAddAppointment} fullWidth size="lg" disabled={!newAptType.trim() || !newAptMemberId} />
           <Button title="Cancel" onPress={() => setShowAptModal(false)} variant="ghost" fullWidth style={{ marginTop: 8 }} />
         </ScrollView>
       </Modal>
@@ -344,6 +426,10 @@ function makeStyles(colors: any) {
     tipIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
     tipText: { flex: 1, fontSize: 13, color: colors.text, lineHeight: 18 },
     priorityDot: { width: 8, height: 8, borderRadius: 4 },
+    emptyTipsText: { fontSize: 13, color: colors.textSecondary, textAlign: 'center', paddingVertical: 20, lineHeight: 19 },
+    memberChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
+    memberChip: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 18, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.card },
+    memberChipText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
     memberCard: { marginBottom: 10, borderRadius: 14 },
     memberHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
     avatar: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },

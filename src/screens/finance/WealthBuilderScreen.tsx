@@ -11,6 +11,7 @@ import { Card } from '../../components/common/Card';
 import { ProgressBar } from '../../components/common/ProgressBar';
 import { Button } from '../../components/common/Button';
 import { useWealthStore } from '../../store/useWealthStore';
+import { useFinanceStore } from '../../store/useFinanceStore';
 import { getAccounts } from '../../services/plaidService';
 import type { PlaidAccount } from '../../types';
 import type { WealthCategory } from '../../types';
@@ -66,8 +67,7 @@ export function WealthBuilderScreen({ navigation }: any) {
   const [plaidAccounts, setPlaidAccounts] = useState<PlaidAccount[]>([]);
   const [plaidLoading, setPlaidLoading] = useState(false);
   const { entries, projections, getTotalNetWorth, addEntry, seedDemoData } = useWealthStore();
-
-  if (entries.length === 0) seedDemoData();
+  const monthlyExpenses = useFinanceStore((s) => s.monthlyExpenses);
 
   const handleAddEntry = () => {
     if (!newName.trim() || !newCurrentValue) { Alert.alert('Required', 'Please enter a name and current value.'); return; }
@@ -115,12 +115,44 @@ export function WealthBuilderScreen({ navigation }: any) {
     return acc;
   }, {} as Record<string, number>);
 
-  const WEALTH_INSIGHTS = [
-    { icon: 'trending-up', color: '#27AE60', text: "At your current savings rate, you'll reach $1M net worth in 12 years", label: 'Projection' },
-    { icon: 'warning', color: '#F5A623', text: "Your emergency fund covers 4.8 months of expenses — target is 6 months", label: 'Action Needed' },
-    { icon: 'pie-chart', color: '#8E44AD', text: "Portfolio is 38% real estate — consider diversifying into bonds for stability", label: 'Rebalance' },
-    { icon: 'school', color: '#2980B9', text: "Aiden's college fund is on track for 64% of 4-year tuition at current growth rate", label: 'Education' },
-  ];
+  // Real insights derived from actual entries/projections — replaces a
+  // previous hardcoded list (fixed "$1M in 12 years", a fixed "4.8 months"
+  // emergency fund figure, a fixed "38% real estate", and one naming a
+  // specific invented child "Aiden") that never reflected the user's real
+  // portfolio at all.
+  const wealthInsights: { icon: string; color: string; text: string; label: string }[] = [];
+
+  const millionaireYear = projections.find((p) => p.netWorth >= 1000000)?.year;
+  if (millionaireYear && totalNetWorth < 1000000) {
+    const yearsAway = millionaireYear - new Date().getFullYear();
+    wealthInsights.push({
+      icon: 'trending-up', color: '#27AE60', label: 'Projection',
+      text: `At your current pace, you'll reach $1M net worth in ${yearsAway} year${yearsAway === 1 ? '' : 's'}`,
+    });
+  }
+
+  if (monthlyExpenses > 0) {
+    const liquidSavings = entries.filter((e) => e.category === 'savings').reduce((s, e) => s + e.currentValue, 0);
+    const monthsCovered = liquidSavings / monthlyExpenses;
+    wealthInsights.push({
+      icon: monthsCovered >= 6 ? 'checkmark-circle' : 'warning',
+      color: monthsCovered >= 6 ? '#27AE60' : '#F5A623',
+      label: monthsCovered >= 6 ? 'On Track' : 'Action Needed',
+      text: `Your savings cover ${monthsCovered.toFixed(1)} months of expenses — target is 6 months`,
+    });
+  }
+
+  const topCategory = Object.entries(grouped).sort((a, b) => b[1] - a[1])[0];
+  if (topCategory && totalNetWorth > 0) {
+    const [cat, val] = topCategory;
+    const pct = (val / totalNetWorth) * 100;
+    if (pct >= 35) {
+      wealthInsights.push({
+        icon: 'pie-chart', color: '#8E44AD', label: 'Rebalance',
+        text: `Portfolio is ${pct.toFixed(0)}% ${CATEGORY_LABELS[cat] ?? cat} — consider diversifying for stability`,
+      });
+    }
+  }
 
   const screenHeader = (
         <LinearGradient colors={['#1B5E20', '#2E7D32']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
@@ -135,7 +167,14 @@ export function WealthBuilderScreen({ navigation }: any) {
           </View>
 
           <View style={styles.nwBlock}>
-            <Text style={styles.nwLabel}>Total Net Worth</Text>
+            {/* This is investment/wealth holdings only (retirement, stocks,
+                real estate equity, savings, crypto), not the family's full
+                net worth — that combined figure (also including bank
+                accounts, physical assets, debt) lives in useTotalNetWorth.ts
+                and is shown on the main Finance dashboard. Labeled distinctly
+                here so the two don't look like conflicting "net worth"
+                numbers. */}
+            <Text style={styles.nwLabel}>Investment & Wealth Holdings</Text>
             <Text style={styles.nwValue}>${totalNetWorth.toLocaleString('en-US', { maximumFractionDigits: 0 })}</Text>
             <View style={styles.gainRow}>
               <Ionicons name="trending-up" size={16} color="#A5D6A7" />
@@ -179,7 +218,19 @@ export function WealthBuilderScreen({ navigation }: any) {
       <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
         {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
           <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]} onScroll={onScroll} onScrollEndDrag={onScrollEndDrag} onMomentumScrollEnd={onMomentumScrollEnd} scrollEventThrottle={scrollEventThrottle}>
-        {activeTab === 'portfolio' && (
+        {entries.length === 0 && (
+          <View style={styles.emptyState}>
+            <Ionicons name="trending-up-outline" size={56} color={colors.textMuted} />
+            <Text style={styles.emptyTitle}>No holdings yet</Text>
+            <Text style={styles.emptyDesc}>
+              Add your real accounts and assets to track net worth, forecasts, and insights.
+            </Text>
+            <Button title="Add a Holding" onPress={() => setShowModal(true)} style={{ marginTop: 18, alignSelf: 'stretch' }} />
+            <Button title="Load Demo Data" variant="ghost" onPress={seedDemoData} style={{ marginTop: 10, alignSelf: 'stretch' }} />
+          </View>
+        )}
+
+        {entries.length > 0 && activeTab === 'portfolio' && (
           <>
             <Text style={styles.sectionTitle}>Allocation</Text>
             <Card style={styles.allocationCard} variant="elevated">
@@ -234,7 +285,7 @@ export function WealthBuilderScreen({ navigation }: any) {
           </>
         )}
 
-        {activeTab === 'forecast' && (
+        {entries.length > 0 && activeTab === 'forecast' && (
           <>
             <Card style={styles.forecastCard} variant="elevated">
               <Text style={styles.forecastTitle}>Net Worth Projection</Text>
@@ -253,23 +304,37 @@ export function WealthBuilderScreen({ navigation }: any) {
 
             <View style={styles.milestones}>
               {[
-                { amount: 600000, label: 'Half-Million Milestone', icon: '🎯', years: 4 },
-                { amount: 1000000, label: 'Millionaire Status', icon: '💎', years: 9 },
-                { amount: 2000000, label: 'Financial Independence', icon: '🏆', years: 15 },
-              ].map((m) => (
-                <Card key={m.label} style={styles.milestoneCard} variant="elevated">
-                  <Text style={styles.milestoneIcon}>{m.icon}</Text>
-                  <View>
-                    <Text style={styles.milestoneLabel}>{m.label}</Text>
-                    <Text style={styles.milestoneTarget}>${(m.amount / 1000000).toFixed(1)}M in ~{m.years} years</Text>
-                  </View>
-                </Card>
-              ))}
+                { amount: 500000, label: 'Half-Million Milestone', icon: '🎯' },
+                { amount: 1000000, label: 'Millionaire Status', icon: '💎' },
+                { amount: 2000000, label: 'Financial Independence', icon: '🏆' },
+              ]
+                .filter((m) => totalNetWorth < m.amount)
+                .map((m) => {
+                  const hit = projections.find((p) => p.netWorth >= m.amount);
+                  const years = hit ? hit.year - new Date().getFullYear() : null;
+                  return (
+                    <Card key={m.label} style={styles.milestoneCard} variant="elevated">
+                      <Text style={styles.milestoneIcon}>{m.icon}</Text>
+                      <View>
+                        <Text style={styles.milestoneLabel}>{m.label}</Text>
+                        <Text style={styles.milestoneTarget}>
+                          ${(m.amount / 1000000).toFixed(1)}M {years !== null ? `in ~${years} year${years === 1 ? '' : 's'}` : '— beyond current projection'}
+                        </Text>
+                      </View>
+                    </Card>
+                  );
+                })}
             </View>
           </>
         )}
 
-        {activeTab === 'insights' && WEALTH_INSIGHTS.map((ins, i) => (
+        {entries.length > 0 && activeTab === 'insights' && wealthInsights.length === 0 && (
+          <Text style={styles.emptyInsightsText}>
+            Add a few holdings and your monthly expenses to see personalized insights here.
+          </Text>
+        )}
+
+        {entries.length > 0 && activeTab === 'insights' && wealthInsights.map((ins, i) => (
           <Card key={i} style={styles.insightCard} variant="elevated">
             <View style={styles.insightHeader}>
               <View style={[styles.insightIcon, { backgroundColor: ins.color + '15' }]}>
@@ -380,6 +445,10 @@ const styles = StyleSheet.create({
   tabText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
   tabTextActive: { color: '#2E7D32' },
   content: { padding: 16 },
+  emptyState: { alignItems: 'center', paddingVertical: 48, paddingHorizontal: 12 },
+  emptyTitle: { fontSize: 16, fontWeight: '800', color: colors.text, marginTop: 14 },
+  emptyDesc: { fontSize: 13, color: colors.textSecondary, textAlign: 'center', marginTop: 6, lineHeight: 19 },
+  emptyInsightsText: { fontSize: 13, color: colors.textSecondary, textAlign: 'center', paddingVertical: 24, lineHeight: 19 },
   sectionTitle: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10, marginTop: 4 },
   allocationCard: { marginBottom: 16, borderRadius: 14 },
   allocationBar: { flexDirection: 'row', height: 12, borderRadius: 6, overflow: 'hidden', marginBottom: 14, gap: 2 },

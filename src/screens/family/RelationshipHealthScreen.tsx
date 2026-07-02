@@ -8,37 +8,38 @@ import { colors } from '../../theme/colors';
 import { Card } from '../../components/common/Card';
 import { ProgressBar } from '../../components/common/ProgressBar';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { useRelationshipHealth } from '../../hooks/useRelationshipHealth';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 
-const RELATIONSHIP_PAIRS = [
-  { pair: ['member-1', 'member-2'], label: 'Marcus & Sarah', score: 88, trend: 'up', icon: 'heart', color: '#E74C3C', checkIns: 12, lastActivity: 'Date night 3 days ago' },
-  { pair: ['member-1', 'member-3'], label: 'Marcus & Aiden', score: 74, trend: 'stable', icon: 'basketball', color: '#F5A623', checkIns: 8, lastActivity: 'Basketball game last week' },
-  { pair: ['member-2', 'member-4'], label: 'Sarah & Lily', score: 95, trend: 'up', icon: 'flower', color: '#E91E63', checkIns: 15, lastActivity: 'Baking session yesterday' },
-  { pair: ['member-3', 'member-4'], label: 'Aiden & Lily', score: 68, trend: 'down', icon: 'game-controller', color: '#8E44AD', checkIns: 5, lastActivity: 'Movie night 5 days ago' },
-  { pair: ['member-1', 'member-4'], label: 'Marcus & Lily', score: 91, trend: 'up', icon: 'musical-note', color: '#2980B9', checkIns: 10, lastActivity: 'Music listening session today' },
-  { pair: ['member-2', 'member-3'], label: 'Sarah & Aiden', score: 79, trend: 'up', icon: 'book', color: '#27AE60', checkIns: 9, lastActivity: 'Homework help yesterday' },
-];
-
-const LOVE_LANGUAGES = [
-  { member: 'Marcus', primary: 'Acts of Service', secondary: 'Quality Time', icon: 'construct', color: '#2980B9' },
-  { member: 'Sarah', primary: 'Words of Affirmation', secondary: 'Physical Touch', icon: 'chatbubble-ellipses', color: '#E91E63' },
-  { member: 'Aiden', primary: 'Quality Time', secondary: 'Gifts', icon: 'people', color: '#F5A623' },
-  { member: 'Lily', primary: 'Physical Touch', secondary: 'Acts of Service', icon: 'hand-left', color: '#8E44AD' },
-];
-
+// Static inspirational activity ideas — not personal data, so unlike the
+// bond scores and love languages below, these are fine to keep as generic
+// suggestions (same category as the static "Tips" lists used elsewhere in
+// the app). The "members" field for the first suggestion is filled in with
+// the real lowest-scoring pair at render time.
 const BONDING_SUGGESTIONS = [
   { activity: 'Family Game Night', duration: '2 hrs', members: 'All', icon: 'game-controller', color: '#8E44AD', points: 80 },
-  { activity: 'Marcus + Aiden: Basketball', duration: '1 hr', members: 'Marcus & Aiden', icon: 'basketball', color: '#F5A623', points: 60 },
-  { activity: 'Sarah + Lily: Art Project', duration: '1.5 hrs', members: 'Sarah & Lily', icon: 'color-palette', color: '#E91E63', points: 70 },
+  { activity: 'One-on-One Outing', duration: '1 hr', members: '', icon: 'walk', color: '#F5A623', points: 60 },
+  { activity: 'Shared Creative Project', duration: '1.5 hrs', members: 'All', icon: 'color-palette', color: '#E91E63', points: 70 },
   { activity: 'Family Walk', duration: '45 min', members: 'All', icon: 'walk', color: '#27AE60', points: 50 },
 ];
+
+const TREND_TEXT: Record<'up' | 'down' | 'stable', string> = {
+  up: 'Shared activity is up over the last two weeks.',
+  down: 'Shared activity has slowed over the last two weeks.',
+  stable: 'Shared activity is steady over the last two weeks.',
+};
+
+const TREND_ICON: Record<'up' | 'down' | 'stable', keyof typeof Ionicons.glyphMap> = {
+  up: 'trending-up',
+  down: 'trending-down',
+  stable: 'remove',
+};
 
 export function RelationshipHealthScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<'bonds' | 'languages' | 'activities'>('bonds');
   const members = useFamilyStore((s) => s.members);
-
-  const overallHealth = Math.round(RELATIONSHIP_PAIRS.reduce((s, r) => s + r.score, 0) / RELATIONSHIP_PAIRS.length);
+  const { bonds, overallHealth, overallTrend } = useRelationshipHealth();
 
   const getScoreColor = (score: number) =>
     score >= 85 ? colors.success : score >= 70 ? colors.warning : colors.danger;
@@ -58,8 +59,8 @@ export function RelationshipHealthScreen({ navigation }: any) {
         <Text style={styles.scoreLabel}>Family Bond Score</Text>
       </View>
       <View style={styles.trendRow}>
-        <Ionicons name="trending-up" size={16} color="rgba(255,255,255,0.8)" />
-        <Text style={styles.trendText}>+4 points this week — relationships are thriving!</Text>
+        <Ionicons name={TREND_ICON[overallTrend]} size={16} color="rgba(255,255,255,0.8)" />
+        <Text style={styles.trendText}>{TREND_TEXT[overallTrend]}</Text>
       </View>
     </LinearGradient>
   );
@@ -72,6 +73,11 @@ export function RelationshipHealthScreen({ navigation }: any) {
       <Text style={styles.headerTitle}>Relationship Health</Text>
       <View style={{ width: 40 }} />
     </View>
+  );
+
+  const lowestBond = bonds.length > 0 ? bonds[bonds.length - 1] : null;
+  const suggestions = BONDING_SUGGESTIONS.map((act) =>
+    act.members === '' ? { ...act, members: lowestBond ? lowestBond.label : 'Just the two of you' } : act
   );
 
   const tabs = (
@@ -100,51 +106,64 @@ export function RelationshipHealthScreen({ navigation }: any) {
               scrollEventThrottle={scrollEventThrottle}
               contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
             >
-        {activeTab === 'bonds' && RELATIONSHIP_PAIRS.map((rel, i) => (
+        {activeTab === 'bonds' && bonds.length === 0 && (
+          <Text style={styles.emptyText}>Add another family member to start tracking relationships.</Text>
+        )}
+
+        {activeTab === 'bonds' && bonds.map((bond, i) => (
           <Card key={i} style={styles.relCard} variant="elevated">
             <View style={styles.relHeader}>
-              <View style={[styles.relIcon, { backgroundColor: rel.color + '15' }]}>
-                <Ionicons name={rel.icon as any} size={20} color={rel.color} />
+              <View style={[styles.relIcon, { backgroundColor: bond.color + '15' }]}>
+                <Ionicons name="heart" size={20} color={bond.color} />
               </View>
               <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={styles.relLabel}>{rel.label}</Text>
-                <Text style={styles.relActivity}>{rel.lastActivity}</Text>
+                <Text style={styles.relLabel}>{bond.label}</Text>
+                <Text style={styles.relActivity}>{bond.lastActivity}</Text>
               </View>
               <View style={styles.relScoreBlock}>
-                <Text style={[styles.relScore, { color: getScoreColor(rel.score) }]}>{rel.score}</Text>
+                <Text style={[styles.relScore, { color: getScoreColor(bond.score) }]}>{bond.score}</Text>
                 <Ionicons
-                  name={rel.trend === 'up' ? 'trending-up' : rel.trend === 'down' ? 'trending-down' : 'remove'}
+                  name={TREND_ICON[bond.trend]}
                   size={14}
-                  color={rel.trend === 'up' ? colors.success : rel.trend === 'down' ? colors.danger : colors.textMuted}
+                  color={bond.trend === 'up' ? colors.success : bond.trend === 'down' ? colors.danger : colors.textMuted}
                 />
               </View>
             </View>
-            <ProgressBar progress={rel.score / 100} color={rel.color} height={5} />
-            <Text style={styles.checkInText}>{rel.checkIns} quality moments this month</Text>
+            <ProgressBar progress={bond.score / 100} color={bond.color} height={5} />
+            <Text style={styles.checkInText}>{bond.sharedCount} shared {bond.sharedCount === 1 ? 'moment' : 'moments'} tracked</Text>
           </Card>
         ))}
 
-        {activeTab === 'languages' && LOVE_LANGUAGES.map((ll, i) => (
-          <Card key={i} style={styles.llCard} variant="elevated">
-            <View style={styles.llHeader}>
-              <View style={[styles.llIcon, { backgroundColor: ll.color + '15' }]}>
-                <Ionicons name={ll.icon as any} size={22} color={ll.color} />
+        {activeTab === 'languages' && members.map((member) => (
+          <Card key={member.id} style={styles.llCard} variant="elevated">
+            <Pressable
+              style={styles.llHeader}
+              onPress={() => navigation.navigate('MemberDetails', { memberId: member.id })}
+            >
+              <View style={[styles.llIcon, { backgroundColor: member.avatarColor + '15' }]}>
+                <Ionicons name="person" size={22} color={member.avatarColor} />
               </View>
-              <Text style={styles.llName}>{ll.member}</Text>
-            </View>
+              <Text style={styles.llName}>{member.name}</Text>
+            </Pressable>
             <View style={styles.llBadges}>
-              <View style={[styles.llPrimary, { backgroundColor: ll.color + '15', borderColor: ll.color + '40' }]}>
-                <Ionicons name="star" size={12} color={ll.color} />
-                <Text style={[styles.llPrimaryText, { color: ll.color }]}>{ll.primary}</Text>
-              </View>
-              <View style={styles.llSecondaryBadge}>
-                <Text style={styles.llSecondaryText}>{ll.secondary}</Text>
-              </View>
+              {member.loveLanguage ? (
+                <View style={[styles.llPrimary, { backgroundColor: member.avatarColor + '15', borderColor: member.avatarColor + '40' }]}>
+                  <Ionicons name="star" size={12} color={member.avatarColor} />
+                  <Text style={[styles.llPrimaryText, { color: member.avatarColor }]}>{member.loveLanguage}</Text>
+                </View>
+              ) : (
+                <Pressable
+                  style={styles.llSecondaryBadge}
+                  onPress={() => navigation.navigate('MemberDetails', { memberId: member.id })}
+                >
+                  <Text style={styles.llSecondaryText}>Not set — tap to add</Text>
+                </Pressable>
+              )}
             </View>
           </Card>
         ))}
 
-        {activeTab === 'activities' && BONDING_SUGGESTIONS.map((act, i) => (
+        {activeTab === 'activities' && suggestions.map((act, i) => (
           <Card key={i} style={styles.actCard} variant="elevated">
             <View style={styles.actHeader}>
               <View style={[styles.actIcon, { backgroundColor: act.color + '15' }]}>
@@ -203,6 +222,7 @@ const styles = StyleSheet.create({
   relScoreBlock: { alignItems: 'center' },
   relScore: { fontSize: 18, fontWeight: '800' },
   checkInText: { fontSize: 11, color: colors.textMuted, marginTop: 6 },
+  emptyText: { fontSize: 13, color: colors.textSecondary, textAlign: 'center', paddingVertical: 24 },
   llCard: { marginBottom: 10, borderRadius: 14 },
   llHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 6 },
   llIcon: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },

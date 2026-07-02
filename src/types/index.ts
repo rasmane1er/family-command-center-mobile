@@ -49,6 +49,7 @@ export interface FamilyMember {
   permissions: MemberPermissions;
   inviteStatus?: 'none' | 'pending' | 'accepted';
   inviteToken?: string;
+  loveLanguage?: string;
 }
 
 export function defaultPermissionsForRole(role: MemberRole): MemberPermissions {
@@ -98,8 +99,15 @@ export interface Family {
   currency: string;
   militaryMode: boolean;
   premiumTier: 'free' | 'premium' | 'pro' | 'enterprise';
-  healthScore: number;
   createdAt: string;
+  homeType?: string;
+  squareFootage?: number;
+  bedrooms?: number;
+  ownsHome?: boolean;
+  // Deliberately no `healthScore` field — a family's health score is
+  // always computed live via useFinancialHealth.ts (financial/tasks/goals/
+  // wellness) or useHealthStore data, never stored/seeded here. A stored
+  // field here would just go stale immediately, as the old one did.
 }
 
 // ===================== TASKS & EVENTS =====================
@@ -574,6 +582,16 @@ export interface HealthGoal {
   deadline?: string;
 }
 
+export interface HealthAppointment {
+  id: string;
+  memberId: string;
+  type: string;
+  date: string;
+  doctor?: string;
+  icon: string;
+  color: string;
+}
+
 // ===================== AUTOMATION ENGINE =====================
 
 export type TriggerType = 'time' | 'location' | 'event' | 'condition' | 'manual';
@@ -713,6 +731,9 @@ export interface AppSettings {
   theme: 'light' | 'dark' | 'system';
   notifications: boolean;
   biometricLock: boolean;
+  hideBalances: boolean;
+  autoLock: boolean;
+  cloudBackup: boolean;
   currency: string;
   language: string;
   militaryMode: boolean;

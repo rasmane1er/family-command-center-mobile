@@ -12,9 +12,9 @@ import { ProgressBar } from '../../components/common/ProgressBar';
 import { Avatar } from '../../components/common/Avatar';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { useFinanceStore } from '../../store/useFinanceStore';
-import { useAppStore } from '../../store/useAppStore';
 import { useAIStore } from '../../store/useAIStore';
 import { useHabitsStore } from '../../store/useHabitsStore';
+import { useFinancialHealth } from '../../hooks/useFinancialHealth';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 
 const { width } = Dimensions.get('window');
@@ -27,7 +27,7 @@ export function WeeklyReportScreen({ navigation: navProp }: any) {
 
   const members = useFamilyStore((s) => s.members);
   const tasks = useFamilyStore((s) => s.tasks);
-  const healthScore = useAppStore((s) => s.healthScore);
+  const healthScore = useFinancialHealth();
   const { budgets, bills, monthlyIncome, monthlyExpenses } = useFinanceStore();
   const insights = useAIStore((s) => s.insights);
   const { habits, isCompletedToday } = useHabitsStore();

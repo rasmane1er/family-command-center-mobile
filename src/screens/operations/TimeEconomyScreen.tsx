@@ -37,12 +37,11 @@ const FAMILY_IDEAL = [
   { category: 'chores', hoursPerWeek: 5, label: 'Household' },
 ];
 
-const TIME_INSIGHTS = [
-  { icon: 'trending-down', color: '#E74C3C', text: "Marcus is spending only 14 hrs/week on family time. Consider shifting 2 work evenings to family activities.", label: 'Alert' },
-  { icon: 'trending-up', color: '#27AE60', text: "Sarah's self-care increased from 4 to 7 hrs this week — great progress!", label: 'Win' },
-  { icon: 'alert-circle', color: '#F5A623', text: "The kids have 3.5 hrs of unstructured free time on weekdays — consider a creative activity block.", label: 'Opportunity' },
-  { icon: 'bulb', color: '#8E44AD', text: "Batch errands on Saturdays could free up 4 hrs weekly for your family.", label: 'Tip' },
-];
+function blockHours(b: { startTime: string; endTime: string }): number {
+  const start = parseInt(b.startTime.split(':')[0], 10);
+  const end = parseInt(b.endTime.split(':')[0], 10);
+  return Math.max(0, end - start);
+}
 
 export function TimeEconomyScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
@@ -60,6 +59,47 @@ export function TimeEconomyScreen({ navigation }: any) {
   if (timeBlocks.length === 0) seedDemoData();
 
   const activeMemberId = selectedMember ?? members[0]?.id ?? '';
+
+  // Real family-wide hours per category, from actual scheduled blocks —
+  // used both for the allocation bars below and for the insights tab.
+  const familyHoursByCategory: Record<string, number> = {};
+  timeBlocks.forEach((b) => {
+    familyHoursByCategory[b.category] = (familyHoursByCategory[b.category] ?? 0) + blockHours(b);
+  });
+
+  // Real insights, computed from actual per-member and family-wide hours —
+  // replaces a previous hardcoded list that named invented members
+  // ("Marcus is spending only 14 hrs/week...") regardless of who's
+  // actually in this family or what their real schedule looks like.
+  const timeInsights: { icon: string; color: string; text: string; label: string }[] = [];
+
+  FAMILY_IDEAL.forEach((ideal) => {
+    const actual = familyHoursByCategory[ideal.category] ?? 0;
+    const gapPct = ideal.hoursPerWeek > 0 ? ((ideal.hoursPerWeek - actual) / ideal.hoursPerWeek) * 100 : 0;
+    if (gapPct >= 30) {
+      timeInsights.push({
+        icon: 'trending-down', color: '#E74C3C', label: 'Alert',
+        text: `Family ${ideal.label.toLowerCase()} is at ${actual}h this week, well below the ${ideal.hoursPerWeek}h target.`,
+      });
+    } else if (actual >= ideal.hoursPerWeek) {
+      timeInsights.push({
+        icon: 'trending-up', color: '#27AE60', label: 'Win',
+        text: `Family ${ideal.label.toLowerCase()} is at ${actual}h this week — meeting or beating the ${ideal.hoursPerWeek}h target!`,
+      });
+    }
+  });
+
+  members.forEach((m) => {
+    const mBlocks = timeBlocks.filter((b) => b.memberId === m.id);
+    const familyTime = mBlocks.filter((b) => b.category === 'family').reduce((s, b) => s + blockHours(b), 0);
+    const idealFamily = FAMILY_IDEAL.find((f) => f.category === 'family')?.hoursPerWeek ?? 0;
+    if (mBlocks.length > 0 && idealFamily > 0 && familyTime < idealFamily * 0.5) {
+      timeInsights.push({
+        icon: 'alert-circle', color: '#F5A623', label: 'Opportunity',
+        text: `${m.name} has only ${familyTime}h of scheduled family time — consider adding more.`,
+      });
+    }
+  });
 
   const handleAddBlock = () => {
     if (!newTitle.trim()) { Alert.alert('Required', 'Please enter a title.'); return; }
@@ -147,9 +187,10 @@ export function TimeEconomyScreen({ navigation }: any) {
         >
         {activeTab === 'overview' && (
           <>
-            <Text style={styles.sectionTitle}>Family Time Allocation</Text>
+            <Text style={styles.sectionTitle}>Family Time Allocation (Actual vs. Target)</Text>
             {FAMILY_IDEAL.map((item) => {
               const cfg = CATEGORY_CONFIG[item.category];
+              const actual = familyHoursByCategory[item.category] ?? 0;
               return (
                 <View key={item.category} style={styles.allocRow}>
                   <View style={[styles.allocIcon, { backgroundColor: cfg.color + '15' }]}>
@@ -157,9 +198,9 @@ export function TimeEconomyScreen({ navigation }: any) {
                   </View>
                   <Text style={styles.allocLabel}>{item.label}</Text>
                   <View style={styles.allocBar}>
-                    <ProgressBar progress={item.hoursPerWeek / 168} color={cfg.color} height={8} />
+                    <ProgressBar progress={Math.min(1, actual / item.hoursPerWeek)} color={cfg.color} height={8} />
                   </View>
-                  <Text style={styles.allocHours}>{item.hoursPerWeek}h</Text>
+                  <Text style={styles.allocHours}>{actual}h / {item.hoursPerWeek}h</Text>
                 </View>
               );
             })}
@@ -167,11 +208,7 @@ export function TimeEconomyScreen({ navigation }: any) {
             <Text style={[styles.sectionTitle, { marginTop: 20 }]}>Member Breakdown</Text>
             {members.map((m) => {
               const mBlocks = timeBlocks.filter((b) => b.memberId === m.id);
-              const mTotal = mBlocks.reduce((s, b) => {
-                const start = parseInt(b.startTime.split(':')[0]);
-                const end = parseInt(b.endTime.split(':')[0]);
-                return s + (end - start);
-              }, 0);
+              const mTotal = mBlocks.reduce((s, b) => s + blockHours(b), 0);
               return (
                 <Card key={m.id} style={styles.memberCard} variant="elevated">
                   <View style={styles.memberRow}>
@@ -245,7 +282,13 @@ export function TimeEconomyScreen({ navigation }: any) {
           </>
         )}
 
-        {activeTab === 'insights' && TIME_INSIGHTS.map((ins, i) => (
+        {activeTab === 'insights' && timeInsights.length === 0 && (
+          <Text style={styles.emptyInsightsText}>
+            Schedule a few time blocks to see personalized insights here.
+          </Text>
+        )}
+
+        {activeTab === 'insights' && timeInsights.map((ins, i) => (
           <Card key={i} style={styles.insightCard} variant="elevated">
             <View style={styles.insightHeader}>
               <View style={[styles.insightIcon, { backgroundColor: ins.color + '15' }]}>
@@ -329,6 +372,7 @@ const styles = StyleSheet.create({
   tabTextActive: { color: '#00796B' },
   content: { padding: 16 },
   sectionTitle: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 },
+  emptyInsightsText: { fontSize: 13, color: colors.textSecondary, textAlign: 'center', paddingVertical: 24, lineHeight: 19 },
   allocRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
   allocIcon: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   allocLabel: { width: 80, fontSize: 12, fontWeight: '600', color: colors.text },

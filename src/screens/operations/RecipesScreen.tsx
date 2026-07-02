@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, Pressable, TextInput, Modal,
+  View, Text, StyleSheet, ScrollView, Pressable, TextInput, Modal, ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -40,7 +40,14 @@ function StarRating({ rating }: { rating: number }) {
   );
 }
 
-function RecipeDetailModal({ recipe, onClose, onFavorite }: { recipe: Recipe; onClose: () => void; onFavorite: () => void }) {
+function RecipeDetailModal({ recipe, isSuggestion, onClose, onFavorite, onSave, onDismiss }: {
+  recipe: Recipe;
+  isSuggestion?: boolean;
+  onClose: () => void;
+  onFavorite?: () => void;
+  onSave?: () => void;
+  onDismiss?: () => void;
+}) {
   const diff = DIFF_CONFIG[recipe.difficulty];
   return (
     <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
@@ -49,9 +56,16 @@ function RecipeDetailModal({ recipe, onClose, onFavorite }: { recipe: Recipe; on
           <Pressable onPress={onClose} style={det.closeBtn}>
             <Ionicons name="close" size={24} color={colors.text} />
           </Pressable>
-          <Pressable onPress={onFavorite} style={det.favBtn}>
-            <Ionicons name={recipe.isFavorite ? 'heart' : 'heart-outline'} size={24} color={recipe.isFavorite ? '#E74C3C' : colors.textMuted} />
-          </Pressable>
+          {isSuggestion ? (
+            <View style={det.aiBadge}>
+              <Ionicons name="sparkles" size={13} color="#B85C00" />
+              <Text style={det.aiBadgeText}>AI Suggestion</Text>
+            </View>
+          ) : (
+            <Pressable onPress={onFavorite} style={det.favBtn}>
+              <Ionicons name={recipe.isFavorite ? 'heart' : 'heart-outline'} size={24} color={recipe.isFavorite ? '#E74C3C' : colors.textMuted} />
+            </Pressable>
+          )}
         </View>
         <ScrollView contentContainerStyle={det.content} showsVerticalScrollIndicator={false}>
           <Text style={det.emoji}>{recipe.emoji}</Text>
@@ -103,6 +117,18 @@ function RecipeDetailModal({ recipe, onClose, onFavorite }: { recipe: Recipe; on
               <Text style={det.stepText}>{step}</Text>
             </View>
           ))}
+
+          {isSuggestion && (
+            <View style={det.suggestionActions}>
+              <Pressable onPress={onSave} style={det.saveBtn}>
+                <Ionicons name="bookmark" size={16} color="#fff" />
+                <Text style={det.saveBtnText}>Save to My Recipes</Text>
+              </Pressable>
+              <Pressable onPress={onDismiss} style={det.dismissBtn}>
+                <Text style={det.dismissBtnText}>Dismiss</Text>
+              </Pressable>
+            </View>
+          )}
         </ScrollView>
       </View>
     </Modal>
@@ -111,13 +137,24 @@ function RecipeDetailModal({ recipe, onClose, onFavorite }: { recipe: Recipe; on
 
 export function RecipesScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
-  const { recipes, toggleFavorite, seedDemoData } = useRecipesStore();
+  const {
+    recipes, toggleFavorite, seedDemoData,
+    suggestedRecipes, isSuggesting, suggestionError,
+    generateSuggestions, saveSuggestion, dismissSuggestion,
+  } = useRecipesStore();
   const { pantryItems } = useOperationsStore();
   const [filter, setFilter] = useState<RecipeCategory | 'all' | 'favorites'>('all');
   const [search, setSearch] = useState('');
-  const [selected, setSelected] = useState<Recipe | null>(null);
+  const [selected, setSelected] = useState<{ recipe: Recipe; isSuggestion: boolean } | null>(null);
 
   if (recipes.length === 0) seedDemoData();
+
+  const handleGenerateSuggestions = () => {
+    const pantryNames = pantryItems.map((p) => p.name);
+    const category = filter !== 'all' && filter !== 'favorites' ? filter : undefined;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    generateSuggestions(pantryNames, category);
+  };
 
   const cookTonightRecipes = useMemo(() => {
     const pantryNames = new Set(pantryItems.map((p) => p.name.toLowerCase()));
@@ -202,6 +239,57 @@ export function RecipesScreen({ navigation }: any) {
       <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
         {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
           <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]} showsVerticalScrollIndicator={false} onScroll={onScroll} onScrollEndDrag={onScrollEndDrag} onMomentumScrollEnd={onMomentumScrollEnd} scrollEventThrottle={scrollEventThrottle}>
+        {/* AI Suggestions */}
+        <View style={styles.aiSection}>
+          <View style={styles.aiSectionHeader}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.aiSectionTitle}>✨ AI Recipe Ideas</Text>
+              <Text style={styles.aiSectionSub}>
+                {pantryItems.length > 0
+                  ? `Generated from your ${pantryItems.length} pantry item${pantryItems.length !== 1 ? 's' : ''}`
+                  : 'Add pantry items for more tailored ideas'}
+              </Text>
+            </View>
+            <Pressable onPress={handleGenerateSuggestions} disabled={isSuggesting} style={styles.aiGenerateBtn}>
+              {isSuggesting ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <>
+                  <Ionicons name="sparkles" size={14} color="#fff" />
+                  <Text style={styles.aiGenerateBtnText}>{suggestedRecipes.length > 0 ? 'More Ideas' : 'Generate'}</Text>
+                </>
+              )}
+            </Pressable>
+          </View>
+
+          {suggestionError && (
+            <Text style={styles.aiError}>{suggestionError}</Text>
+          )}
+
+          {suggestedRecipes.length > 0 && (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, marginTop: 12 }}>
+              {suggestedRecipes.map((r) => (
+                <Pressable key={r.id} onPress={() => setSelected({ recipe: r, isSuggestion: true })} style={styles.suggestionCard}>
+                  <Text style={styles.suggestionEmoji}>{r.emoji}</Text>
+                  <Text style={styles.suggestionName} numberOfLines={2}>{r.name}</Text>
+                  <Text style={styles.suggestionMeta}>{r.prepTime + r.cookTime}m · {r.cuisine}</Text>
+                  <View style={styles.suggestionActionsRow}>
+                    <Pressable
+                      onPress={() => { saveSuggestion(r.id); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); }}
+                      style={styles.suggestionSaveBtn}
+                    >
+                      <Ionicons name="bookmark" size={14} color="#fff" />
+                    </Pressable>
+                    <Pressable onPress={() => dismissSuggestion(r.id)} style={styles.suggestionDismissBtn}>
+                      <Ionicons name="close" size={14} color={colors.textMuted} />
+                    </Pressable>
+                  </View>
+                </Pressable>
+              ))}
+            </ScrollView>
+          )}
+        </View>
+
         {/* Cook Tonight */}
         {cookTonightRecipes.length > 0 && filter === 'all' && !search && (
           <View style={styles.cookSection}>
@@ -211,7 +299,7 @@ export function RecipesScreen({ navigation }: any) {
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
               {cookTonightRecipes.map(({ recipe: r, pct }) => (
-                <Pressable key={r.id} onPress={() => setSelected(r)} style={styles.cookCard}>
+                <Pressable key={r.id} onPress={() => setSelected({ recipe: r, isSuggestion: false })} style={styles.cookCard}>
                   <Text style={styles.cookCardEmoji}>{r.emoji}</Text>
                   <Text style={styles.cookCardName} numberOfLines={2}>{r.name}</Text>
                   <View style={styles.cookCardBar}>
@@ -230,7 +318,7 @@ export function RecipesScreen({ navigation }: any) {
           {filtered.map((r) => {
             const diff = DIFF_CONFIG[r.difficulty];
             return (
-              <Pressable key={r.id} onPress={() => setSelected(r)} style={styles.recipeCard}>
+              <Pressable key={r.id} onPress={() => setSelected({ recipe: r, isSuggestion: false })} style={styles.recipeCard}>
                 <View style={styles.recipeCardTop}>
                   <Text style={styles.recipeEmoji}>{r.emoji}</Text>
                   <Pressable onPress={() => { toggleFavorite(r.id); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} style={styles.favBtn}>
@@ -272,9 +360,22 @@ export function RecipesScreen({ navigation }: any) {
 
       {selected && (
         <RecipeDetailModal
-          recipe={selected}
+          recipe={selected.recipe}
+          isSuggestion={selected.isSuggestion}
           onClose={() => setSelected(null)}
-          onFavorite={() => { toggleFavorite(selected.id); setSelected({ ...selected, isFavorite: !selected.isFavorite }); }}
+          onFavorite={() => {
+            toggleFavorite(selected.recipe.id);
+            setSelected({ ...selected, recipe: { ...selected.recipe, isFavorite: !selected.recipe.isFavorite } });
+          }}
+          onSave={() => {
+            saveSuggestion(selected.recipe.id);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            setSelected(null);
+          }}
+          onDismiss={() => {
+            dismissSuggestion(selected.recipe.id);
+            setSelected(null);
+          }}
         />
       )}
     </View>
@@ -292,6 +393,20 @@ const styles = StyleSheet.create({
   filterText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
   filterTextActive: { color: '#fff' },
   content: { padding: 16 },
+  aiSection: { backgroundColor: '#FEF3E2', borderRadius: 16, padding: 14, marginBottom: 20 },
+  aiSectionHeader: { flexDirection: 'row', alignItems: 'center' },
+  aiSectionTitle: { fontSize: 15, fontWeight: '700', color: colors.text, marginBottom: 3 },
+  aiSectionSub: { fontSize: 12, color: colors.textSecondary },
+  aiGenerateBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#F5A623', borderRadius: 20, paddingVertical: 9, paddingHorizontal: 14, minWidth: 88, justifyContent: 'center' },
+  aiGenerateBtnText: { fontSize: 12, fontWeight: '700', color: '#fff' },
+  aiError: { fontSize: 12, color: colors.danger, marginTop: 10 },
+  suggestionCard: { width: 150, backgroundColor: colors.card, borderRadius: 16, padding: 14, borderWidth: 1.5, borderColor: '#F5A623', borderStyle: 'dashed' },
+  suggestionEmoji: { fontSize: 30, marginBottom: 6 },
+  suggestionName: { fontSize: 13, fontWeight: '700', color: colors.text, marginBottom: 6, lineHeight: 18, minHeight: 36 },
+  suggestionMeta: { fontSize: 10, color: colors.textMuted, marginBottom: 10 },
+  suggestionActionsRow: { flexDirection: 'row', gap: 8 },
+  suggestionSaveBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#27AE60', borderRadius: 10, paddingVertical: 7 },
+  suggestionDismissBtn: { width: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background, borderRadius: 10, borderWidth: 1, borderColor: colors.border },
   cookSection: { marginBottom: 24 },
   cookHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
   cookTitle: { fontSize: 16, fontWeight: '700', color: colors.text },
@@ -327,6 +442,8 @@ const det = StyleSheet.create({
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border },
   closeBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
   favBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
+  aiBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#FEF3E2', borderRadius: 20, paddingVertical: 8, paddingHorizontal: 12 },
+  aiBadgeText: { fontSize: 12, fontWeight: '700', color: '#B85C00' },
   content: { padding: 20, paddingBottom: 60 },
   emoji: { fontSize: 56, textAlign: 'center', marginBottom: 12 },
   name: { fontSize: 20, fontWeight: '800', color: colors.text, textAlign: 'center', marginBottom: 8 },
@@ -346,4 +463,9 @@ const det = StyleSheet.create({
   stepNum: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#E74C3C', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   stepNumText: { fontSize: 13, fontWeight: '800', color: '#fff' },
   stepText: { flex: 1, fontSize: 14, color: colors.text, lineHeight: 22 },
+  suggestionActions: { marginTop: 8, gap: 10 },
+  saveBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#27AE60', borderRadius: 14, paddingVertical: 14 },
+  saveBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
+  dismissBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: 12 },
+  dismissBtnText: { fontSize: 14, fontWeight: '600', color: colors.textMuted },
 });

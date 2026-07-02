@@ -13,6 +13,8 @@ import { useAppStore } from './src/store/useAppStore';
 import { useAuthStore } from './src/store/useAuthStore';
 import { apiRequest } from './src/api/client';
 import { configurePurchases } from './src/services/purchaseService';
+import { useGuardianCommandPolling } from './src/hooks/useGuardianCommandPolling';
+import { useNotificationTriggers } from './src/hooks/useNotificationTriggers';
 import { i18n } from './src/i18n';
 
 interface SubscriptionMeResponse {
@@ -36,6 +38,9 @@ function AppInner() {
     startNetworkSync();
     return () => stopNetworkSync();
   }, []);
+
+  useGuardianCommandPolling();
+  useNotificationTriggers();
 
   // Configure RevenueCat as soon as (and whenever) the account becomes
   // backend-linked — e.g. right after sign-up/sign-in resolves familyId.

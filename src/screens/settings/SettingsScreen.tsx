@@ -108,9 +108,9 @@ export function SettingsScreen({ navigation }: any) {
   const [showApiKey,        setShowApiKey]         = useState(false);
   const [showLanguageModal, setShowLanguageModal]  = useState(false);
   const [biometricEnabled,  setBiometricEnabled]   = useState(settings.biometricLock ?? false);
-  const [hideBalances,      setHideBalances]       = useState(false);
-  const [autoLock,          setAutoLock]           = useState(true);
-  const [cloudBackup,       setCloudBackup]        = useState(true);
+  const hideBalances = settings.hideBalances ?? false;
+  const autoLock     = settings.autoLock ?? true;
+  const cloudBackup  = settings.cloudBackup ?? true;
   const [notifState, setNotifState] = useState<Record<string, boolean>>({
     billReminders: true, taskReminders: true, lowStockAlerts: true,
     budgetAlerts: true, achievementAlerts: true, familyUpdates: true,
@@ -570,7 +570,7 @@ export function SettingsScreen({ navigation }: any) {
                 <Text style={s.toggleLabel}>{t('settings.hideBalances')}</Text>
                 <Text style={s.toggleDesc}>{t('settings.hideBalancesDesc')}</Text>
               </View>
-              <Switch value={hideBalances} onValueChange={setHideBalances}
+              <Switch value={hideBalances} onValueChange={(v) => updateSettings({ hideBalances: v })}
                 trackColor={{ false: colors.border, true: colors.primary + '60' }} thumbColor={colors.primary} />
             </View>
           )}
@@ -581,7 +581,7 @@ export function SettingsScreen({ navigation }: any) {
               <Text style={s.toggleLabel}>{t('settings.autoLock')}</Text>
               <Text style={s.toggleDesc}>{t('settings.autoLockDesc')}</Text>
             </View>
-            <Switch value={autoLock} onValueChange={setAutoLock}
+            <Switch value={autoLock} onValueChange={(v) => updateSettings({ autoLock: v })}
               trackColor={{ false: colors.border, true: colors.primary + '60' }} thumbColor={colors.primary} />
           </View>
 
@@ -592,7 +592,7 @@ export function SettingsScreen({ navigation }: any) {
                 <Text style={s.toggleLabel}>{t('settings.cloudBackup')}</Text>
                 <Text style={s.toggleDesc}>{t('settings.cloudBackupDesc')}</Text>
               </View>
-              <Switch value={cloudBackup} onValueChange={setCloudBackup}
+              <Switch value={cloudBackup} onValueChange={(v) => updateSettings({ cloudBackup: v })}
                 trackColor={{ false: colors.border, true: colors.primary + '60' }} thumbColor={colors.primary} />
             </View>
           )}

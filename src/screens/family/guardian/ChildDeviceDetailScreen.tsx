@@ -60,7 +60,6 @@ export function ChildDeviceDetailScreen({ navigation, route }: any) {
   const sendCommand = useGuardianStore((s) => s.sendCommand);
 
   const members = useFamilyStore((s) => s.members);
-  const family = useFamilyStore((s) => s.family);
 
   const device = devices.find((d) => d.id === deviceId);
   const member = members.find((m) => m.id === device?.memberId);
@@ -151,16 +150,7 @@ export function ChildDeviceDetailScreen({ navigation, route }: any) {
         {
           text: 'Send',
           onPress: () => {
-            sendCommand(device.id, type, family?.id ?? 'demo-family');
-
-            if (type === 'lock') GuardianNative.lockScreen();
-            if (type === 'school_on') GuardianNative.setSchoolMode(true);
-            if (type === 'school_off') GuardianNative.setSchoolMode(false);
-            if (type === 'bedtime_on') GuardianNative.setBedtimeMode(true);
-            if (type === 'bedtime_off') GuardianNative.setBedtimeMode(false);
-            if (type === 'location_request') {
-              GuardianNative.startLocationTracking(30000);
-            }
+            sendCommand(device.id, type);
           },
         },
       ]

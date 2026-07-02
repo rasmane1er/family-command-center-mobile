@@ -1,5 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -17,32 +19,66 @@ import { colors } from '../../../theme/colors';
 import { shadows } from '../../../theme/spacing';
 import { CollapsibleHeader } from '../../../components/common/CollapsibleHeader';
 
-export function PairDeviceScreen({ navigation }: any) {
+// Shown on a CHILD'S device: registers this physical device with the
+// backend (POST /guardian/devices/register) and displays the real,
+// server-issued pairing code/QR for a parent to scan or type in on
+// EnterPairingCodeScreen. This screen used to fabricate a random code
+// locally and show it on the PARENT's device — inverted from what the
+// backend actually expects (register is child-side, pair is parent-side).
+export function RegisterChildDeviceScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
 
-  const activePairingCode = useGuardianStore((s) => s.activePairingCode);
-  const generatePairingCode = useGuardianStore((s) => s.generatePairingCode);
-  const clearPairingCode = useGuardianStore((s) => s.clearPairingCode);
+  const thisDeviceId = useGuardianStore((s) => s.thisDeviceId);
+  const myPairingCode = useGuardianStore((s) => s.myPairingCode);
+  const devices = useGuardianStore((s) => s.devices);
+  const registerThisDevice = useGuardianStore((s) => s.registerThisDevice);
+  const activeMemberId = useFamilyStore((s) => s.activeMemberId);
+  const members = useFamilyStore((s) => s.members);
   const family = useFamilyStore((s) => s.family);
 
-  useEffect(() => {
-    generatePairingCode();
+  const activeMember = members.find((m) => m.id === activeMemberId);
+  const thisDevice = devices.find((d) => d.id === thisDeviceId);
+  const alreadyPaired = !!thisDevice?.isPaired;
 
-    return () => {
-      // Code stays active until explicitly cleared or user refreshes.
-    };
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const register = async () => {
+    if (!activeMemberId) {
+      setError('Select a profile for this device first.');
+      return;
+    }
+    setIsRegistering(true);
+    setError(null);
+    try {
+      const deviceName = `${activeMember?.name ?? 'My'}'s ${Platform.OS === 'ios' ? 'iPhone' : 'Phone'}`;
+      await registerThisDevice({
+        deviceName,
+        platform: Platform.OS === 'ios' ? 'ios' : 'android',
+        memberId: activeMemberId,
+      });
+    } catch {
+      setError('Could not reach the family server. Check your connection and try again.');
+    } finally {
+      setIsRegistering(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!thisDeviceId && !alreadyPaired) {
+      register();
+    }
   }, []);
 
   const handleRefresh = () => {
-    generatePairingCode();
+    register();
   };
 
   const handleCancel = () => {
-    clearPairingCode();
     navigation.goBack();
   };
 
-  const code = activePairingCode ?? '------';
+  const code = myPairingCode ?? '------';
 
   const formattedCode =
     code.length === 6 ? `${code.slice(0, 3)} · ${code.slice(3)}` : code;
@@ -50,7 +86,7 @@ export function PairDeviceScreen({ navigation }: any) {
   const pairingData = JSON.stringify({
     type: 'device-pair',
     familyId: family?.id,
-    pairingCode: activePairingCode,
+    pairingCode: myPairingCode,
     createdAt: new Date().toISOString(),
   });
 
@@ -70,9 +106,9 @@ export function PairDeviceScreen({ navigation }: any) {
 
         <View style={styles.headerTextBlock}>
           <Text style={styles.headerEyebrow}>Guardian Setup</Text>
-          <Text style={styles.headerTitle}>Pair Child’s Device</Text>
+          <Text style={styles.headerTitle}>Register This Device</Text>
           <Text style={styles.headerSubtitle}>
-            Connect a child device securely to your family.
+            Connect this device securely to your family.
           </Text>
         </View>
 
@@ -104,7 +140,7 @@ export function PairDeviceScreen({ navigation }: any) {
       <View style={styles.headerPill}>
         <Ionicons name="information-circle" size={14} color="#fff" />
         <Text style={styles.headerPillText}>
-          Enter this code on the child’s device to connect.
+          Show this code to a parent to connect this device.
         </Text>
       </View>
     </LinearGradient>
@@ -120,7 +156,7 @@ export function PairDeviceScreen({ navigation }: any) {
       </Pressable>
 
       <View style={styles.compactTitleBlock}>
-        <Text style={styles.compactTitle}>Pair Device</Text>
+        <Text style={styles.compactTitle}>Register Device</Text>
         <Text style={styles.compactSubtitle}>{formattedCode}</Text>
       </View>
 
@@ -153,29 +189,51 @@ export function PairDeviceScreen({ navigation }: any) {
               },
             ]}
           >
-            <View style={[styles.codeCard, shadows.md]}>
-              <View style={styles.codeHeader}>
-                <Ionicons
-                  name="phone-portrait"
-                  size={24}
-                  color={colors.primary}
-                />
-                <Text style={styles.codeCardTitle}>Pairing Code</Text>
+            {alreadyPaired ? (
+              <View style={[styles.codeCard, shadows.md]}>
+                <Ionicons name="checkmark-circle" size={40} color={colors.success} />
+                <Text style={styles.codeCardTitle}>This device is already paired</Text>
+                <Text style={styles.codeHint}>{thisDevice?.deviceName}</Text>
               </View>
-
-              <View style={styles.codeBox}>
-                <Text style={styles.codeText}>{formattedCode}</Text>
+            ) : isRegistering ? (
+              <View style={[styles.codeCard, shadows.md]}>
+                <ActivityIndicator size="large" color={colors.primary} />
+                <Text style={styles.codeHint}>Registering this device…</Text>
               </View>
+            ) : error ? (
+              <View style={[styles.codeCard, shadows.md]}>
+                <Ionicons name="alert-circle" size={32} color={colors.danger} />
+                <Text style={styles.codeCardTitle}>{error}</Text>
+                <Pressable style={styles.refreshBtn} onPress={handleRefresh}>
+                  <Ionicons name="refresh" size={16} color={colors.primary} />
+                  <Text style={styles.refreshBtnText}>Try Again</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <View style={[styles.codeCard, shadows.md]}>
+                <View style={styles.codeHeader}>
+                  <Ionicons
+                    name="phone-portrait"
+                    size={24}
+                    color={colors.primary}
+                  />
+                  <Text style={styles.codeCardTitle}>Pairing Code</Text>
+                </View>
 
-              <Text style={styles.codeHint}>
-                This code expires when you leave this screen.
-              </Text>
+                <View style={styles.codeBox}>
+                  <Text style={styles.codeText}>{formattedCode}</Text>
+                </View>
 
-              <Pressable style={styles.refreshBtn} onPress={handleRefresh}>
-                <Ionicons name="refresh" size={16} color={colors.primary} />
-                <Text style={styles.refreshBtnText}>Generate New Code</Text>
-              </Pressable>
-            </View>
+                <Text style={styles.codeHint}>
+                  Give this code to a parent, or let them scan the QR code below.
+                </Text>
+
+                <Pressable style={styles.refreshBtn} onPress={handleRefresh}>
+                  <Ionicons name="refresh" size={16} color={colors.primary} />
+                  <Text style={styles.refreshBtnText}>Generate New Code</Text>
+                </Pressable>
+              </View>
+            )}
 
             <View style={[styles.instructionsCard, shadows.card]}>
               <Text style={styles.instructionsTitle}>How to Pair</Text>
@@ -183,19 +241,19 @@ export function PairDeviceScreen({ navigation }: any) {
               {[
                 {
                   step: '1',
-                  text: 'On your child’s device, open Family Command Center.',
+                  text: 'On a parent’s device, open Family Guardian and tap “Add Device”.',
                 },
                 {
                   step: '2',
-                  text: 'Tap “Connect to Family” on the welcome screen.',
+                  text: 'They’ll scan the QR code below, or type in the code shown above.',
                 },
                 {
                   step: '3',
-                  text: `Enter the code shown above: ${formattedCode}`,
+                  text: `The code is: ${formattedCode}`,
                 },
                 {
                   step: '4',
-                  text: 'Once paired, the device will appear in your Guardian Dashboard.',
+                  text: 'Once paired, this device will appear in their Guardian Dashboard.',
                 },
               ].map((item) => (
                 <View key={item.step} style={styles.stepRow}>
@@ -213,7 +271,7 @@ export function PairDeviceScreen({ navigation }: any) {
 
               <View style={styles.qrPlaceholder}>
                 <View style={styles.qrInner}>
-                  {activePairingCode ? (
+                  {myPairingCode ? (
                     <QRCode value={pairingData} size={160} />
                   ) : (
                     <Ionicons name="qr-code" size={80} color={colors.primary} />
@@ -222,7 +280,7 @@ export function PairDeviceScreen({ navigation }: any) {
                 </View>
 
                 <Text style={styles.qrNote}>
-                  Scan this on the child’s device from the “Connect to Family” screen.
+                  A parent scans this from the “Add Device” screen.
                 </Text>
               </View>
             </View>
@@ -239,7 +297,7 @@ export function PairDeviceScreen({ navigation }: any) {
 
               {[
                 'Keep both devices on the same Wi-Fi network for faster pairing.',
-                'The child’s device must have Family Command Center installed.',
+                'The parent must have Family Command Center installed too.',
                 'Parental controls take effect immediately after pairing.',
               ].map((tip, i) => (
                 <View key={i} style={styles.tipRow}>

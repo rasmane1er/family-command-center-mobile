@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -9,74 +9,41 @@ import { colors } from '../../theme/colors';
 import { Card } from '../../components/common/Card';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { Badge } from '../../components/common/Badge';
+import { useFamilyMeetingsStore, type FamilyMeeting } from '../../store/useFamilyMeetingsStore';
+import { useFamilyStore } from '../../store/useFamilyStore';
 
-interface AgendaItem {
-  id: string;
-  text: string;
-  done: boolean;
-}
-
-interface MeetingNote {
-  id: string;
-  date: string;
-  title: string;
-  attendees: string[];
-  agenda: AgendaItem[];
-  notes: string;
-  actionItems: { text: string; assignee: string; done: boolean }[];
-  mood: string;
-  duration: number;
-}
-
-const DEMO_MEETINGS: MeetingNote[] = [
-  {
-    id: 'm1',
-    date: new Date(Date.now() - 7 * 24 * 3600000).toISOString(),
-    title: 'Weekly Family Sync #12',
-    attendees: ['Sarah', 'Marcus', 'Aiden', 'Lily'],
-    agenda: [
-      { id: 'a1', text: 'Review last week\'s goals', done: true },
-      { id: 'a2', text: 'Summer vacation planning', done: true },
-      { id: 'a3', text: 'Chore rotation update', done: true },
-      { id: 'a4', text: 'Aiden\'s school performance', done: true },
-    ],
-    notes: 'Great energy this week! Everyone excited about the Hawaii trip. Aiden got an A on his math test — family celebration dinner planned for Friday. Discussed switching Lily to swimming lessons in July.',
-    actionItems: [
-      { text: 'Book Hawaii flights for August', assignee: 'Marcus', done: true },
-      { text: 'Register Lily for summer camp', assignee: 'Sarah', done: false },
-      { text: 'Clean up garage this weekend', assignee: 'Aiden', done: false },
-    ],
-    mood: '😄',
-    duration: 35,
-  },
-  {
-    id: 'm2',
-    date: new Date(Date.now() - 14 * 24 * 3600000).toISOString(),
-    title: 'Weekly Family Sync #11',
-    attendees: ['Sarah', 'Marcus', 'Aiden'],
-    agenda: [
-      { id: 'b1', text: 'Budget review — May expenses', done: true },
-      { id: 'b2', text: 'Marcus\'s project update', done: true },
-      { id: 'b3', text: 'Discuss phone rules for Aiden', done: true },
-    ],
-    notes: "Lily wasn't feeling well — excused. Went over budget in dining by $120 — agreed to cook more at home. Aiden agreed to no phone at dinner in exchange for extra gaming time on weekends.",
-    actionItems: [
-      { text: 'Set up meal prep Sunday', assignee: 'Sarah', done: true },
-      { text: 'Set parental controls on Aiden\'s phone', assignee: 'Marcus', done: true },
-    ],
-    mood: '🙂',
-    duration: 28,
-  },
+const AGENDA_TEMPLATE = [
+  'Wins & celebrations',
+  "Review last week's action items",
+  "This week's priorities",
+  'Any concerns or celebrations?',
 ];
+
+const MOODS = ['😄', '🙂', '😐', '😕', '😣'];
 
 export function FamilyMeetingScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
-  const [meetings, setMeetings] = useState(DEMO_MEETINGS);
-  const [expandedId, setExpandedId] = useState<string | null>('m1');
+  const {
+    meetings, addMeeting, deleteMeeting, toggleAgendaItem, updateNotes,
+    setMood, setDuration, setAttendees, addActionItem, toggleActionItem,
+  } = useFamilyMeetingsStore();
+  const members = useFamilyStore((s) => s.members);
+  const family = useFamilyStore((s) => s.family);
+
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [newActionText, setNewActionText] = useState<Record<string, string>>({});
+  const [newActionAssignee, setNewActionAssignee] = useState<Record<string, string>>({});
+  const [editingAttendeesId, setEditingAttendeesId] = useState<string | null>(null);
+
+  const memberName = (id: string) => members.find((m) => m.id === id)?.name ?? 'Unknown';
 
   const totalMeetings = meetings.length;
   const totalActions = meetings.flatMap((m) => m.actionItems).length;
   const completedActions = meetings.flatMap((m) => m.actionItems).filter((a) => a.done).length;
+  const durationsRecorded = meetings.filter((m) => m.durationMinutes !== undefined);
+  const avgDuration = durationsRecorded.length > 0
+    ? Math.round(durationsRecorded.reduce((s, m) => s + (m.durationMinutes ?? 0), 0) / durationsRecorded.length)
+    : null;
 
   const handleNewMeeting = () => {
     Alert.alert('New Meeting', 'Create a new family meeting record?', [
@@ -84,26 +51,34 @@ export function FamilyMeetingScreen({ navigation }: any) {
       {
         text: 'Create',
         onPress: () => {
-          const newMeeting: MeetingNote = {
-            id: `m${Date.now()}`,
+          const id = addMeeting({
+            familyId: family?.id ?? 'demo-family',
             date: new Date().toISOString(),
             title: `Weekly Family Sync #${totalMeetings + 1}`,
-            attendees: ['Sarah', 'Marcus', 'Aiden', 'Lily'],
-            agenda: [
-              { id: 'x1', text: 'Review last week', done: false },
-              { id: 'x2', text: 'This week\'s priorities', done: false },
-              { id: 'x3', text: 'Any concerns or celebrations?', done: false },
-            ],
-            notes: 'Meeting notes will appear here...',
+            attendeeIds: members.map((m) => m.id),
+            agenda: AGENDA_TEMPLATE.map((text) => ({ id: Math.random().toString(36).slice(2), text, done: false })),
+            notes: '',
             actionItems: [],
-            mood: '😐',
-            duration: 0,
-          };
-          setMeetings([newMeeting, ...meetings]);
-          setExpandedId(newMeeting.id);
+          });
+          setExpandedId(id);
         },
       },
     ]);
+  };
+
+  const handleDelete = (meeting: FamilyMeeting) => {
+    Alert.alert('Delete Meeting', `Remove "${meeting.title}"? This can't be undone.`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => deleteMeeting(meeting.id) },
+    ]);
+  };
+
+  const handleAddAction = (meetingId: string) => {
+    const text = (newActionText[meetingId] ?? '').trim();
+    const assignee = newActionAssignee[meetingId] || members[0]?.id;
+    if (!text || !assignee) return;
+    addActionItem(meetingId, text, assignee);
+    setNewActionText((s) => ({ ...s, [meetingId]: '' }));
   };
 
   const screenHeader = (
@@ -131,7 +106,7 @@ export function FamilyMeetingScreen({ navigation }: any) {
           <Text style={styles.statLabel}>Actions Done</Text>
         </View>
         <View style={styles.statItem}>
-          <Text style={styles.statValue}>35m</Text>
+          <Text style={styles.statValue}>{avgDuration !== null ? `${avgDuration}m` : '—'}</Text>
           <Text style={styles.statLabel}>Avg Duration</Text>
         </View>
       </View>
@@ -163,23 +138,27 @@ export function FamilyMeetingScreen({ navigation }: any) {
         scrollEventThrottle={scrollEventThrottle}
         contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
       >
-        {/* Meeting cadence tip */}
         <Card variant="elevated" style={styles.tipCard}>
           <View style={styles.tipRow}>
             <Ionicons name="bulb" size={18} color={colors.secondary} />
-            <Text style={styles.tipText}>Families who meet weekly show 40% better communication and 3x faster conflict resolution.</Text>
+            <Text style={styles.tipText}>Families who meet weekly show better communication and faster conflict resolution.</Text>
           </View>
         </Card>
 
         <Text style={styles.sectionTitle}>Meeting History</Text>
 
+        {meetings.length === 0 && (
+          <Text style={styles.emptyText}>No meetings recorded yet. Tap + to start your first one.</Text>
+        )}
+
         {meetings.map((meeting) => {
           const isExpanded = expandedId === meeting.id;
           const pendingActions = meeting.actionItems.filter((a) => !a.done).length;
+          const isEditingAttendees = editingAttendeesId === meeting.id;
 
           return (
             <Card key={meeting.id} variant="elevated" style={styles.meetingCard}>
-              <Pressable onPress={() => setExpandedId(isExpanded ? null : meeting.id)}>
+              <Pressable onPress={() => setExpandedId(isExpanded ? null : meeting.id)} onLongPress={() => handleDelete(meeting)}>
                 <View style={styles.meetingHeader}>
                   <View style={styles.dateBadge}>
                     <Text style={styles.dateDay}>{format(new Date(meeting.date), 'd')}</Text>
@@ -188,7 +167,9 @@ export function FamilyMeetingScreen({ navigation }: any) {
                   <View style={{ flex: 1, marginLeft: 12 }}>
                     <Text style={styles.meetingTitle}>{meeting.title}</Text>
                     <View style={styles.meetingMeta}>
-                      <Text style={styles.meetingTime}>{meeting.mood} {meeting.duration}m • </Text>
+                      <Text style={styles.meetingTime}>
+                        {meeting.mood ? `${meeting.mood} ` : ''}{meeting.durationMinutes !== undefined ? `${meeting.durationMinutes}m • ` : ''}
+                      </Text>
                       <Text style={styles.meetingAgo}>{formatDistanceToNow(new Date(meeting.date), { addSuffix: true })}</Text>
                     </View>
                   </View>
@@ -200,13 +181,15 @@ export function FamilyMeetingScreen({ navigation }: any) {
                   </View>
                 </View>
 
-                {/* Attendees */}
                 <View style={styles.attendeeRow}>
-                  {meeting.attendees.map((name) => (
-                    <View key={name} style={styles.attendeeChip}>
-                      <Text style={styles.attendeeText}>{name.charAt(0)}</Text>
-                    </View>
-                  ))}
+                  {meeting.attendeeIds.map((id) => {
+                    const m = members.find((mm) => mm.id === id);
+                    return (
+                      <View key={id} style={[styles.attendeeChip, m && { backgroundColor: m.avatarColor }]}>
+                        <Text style={styles.attendeeText}>{memberName(id).charAt(0)}</Text>
+                      </View>
+                    );
+                  })}
                 </View>
               </Pressable>
 
@@ -214,51 +197,132 @@ export function FamilyMeetingScreen({ navigation }: any) {
                 <View style={styles.expanded}>
                   <View style={styles.divider} />
 
+                  <View style={styles.expandedLabelRow}>
+                    <Text style={styles.expandedLabel}>👥 Attendees</Text>
+                    <Pressable onPress={() => setEditingAttendeesId(isEditingAttendees ? null : meeting.id)}>
+                      <Text style={styles.editLink}>{isEditingAttendees ? 'Done' : 'Edit'}</Text>
+                    </Pressable>
+                  </View>
+                  {isEditingAttendees ? (
+                    <View style={styles.chipRow}>
+                      {members.map((m) => {
+                        const selected = meeting.attendeeIds.includes(m.id);
+                        return (
+                          <Pressable
+                            key={m.id}
+                            onPress={() => setAttendees(
+                              meeting.id,
+                              selected ? meeting.attendeeIds.filter((id) => id !== m.id) : [...meeting.attendeeIds, m.id]
+                            )}
+                            style={[styles.memberChip, selected && { backgroundColor: m.avatarColor + '25', borderColor: m.avatarColor }]}
+                          >
+                            <Text style={[styles.memberChipText, selected && { color: m.avatarColor, fontWeight: '800' }]}>{m.name}</Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  ) : (
+                    <Text style={styles.attendeeNames}>{meeting.attendeeIds.map(memberName).join(', ') || 'None yet'}</Text>
+                  )}
+
                   <Text style={styles.expandedLabel}>📋 Agenda</Text>
                   {meeting.agenda.map((item) => (
-                    <View key={item.id} style={styles.agendaItem}>
+                    <Pressable key={item.id} style={styles.agendaItem} onPress={() => toggleAgendaItem(meeting.id, item.id)}>
                       <Ionicons
                         name={item.done ? 'checkmark-circle' : 'ellipse-outline'}
                         size={16}
                         color={item.done ? colors.success : colors.textMuted}
                       />
                       <Text style={[styles.agendaText, item.done && styles.agendaTextDone]}>{item.text}</Text>
-                    </View>
+                    </Pressable>
                   ))}
 
                   <Text style={styles.expandedLabel}>📝 Notes</Text>
-                  <Text style={styles.notes}>{meeting.notes}</Text>
+                  <TextInput
+                    style={styles.notesInput}
+                    multiline
+                    placeholder="What did the family discuss?"
+                    placeholderTextColor={colors.textMuted}
+                    value={meeting.notes}
+                    onChangeText={(text) => updateNotes(meeting.id, text)}
+                  />
 
-                  {meeting.actionItems.length > 0 && (
-                    <>
-                      <Text style={styles.expandedLabel}>✅ Action Items</Text>
-                      {meeting.actionItems.map((action, i) => (
-                        <View key={i} style={styles.actionItem}>
-                          <Ionicons
-                            name={action.done ? 'checkmark-circle' : 'ellipse-outline'}
-                            size={16}
-                            color={action.done ? colors.success : colors.warning}
-                          />
-                          <Text style={[styles.actionText, action.done && styles.actionTextDone]}>{action.text}</Text>
-                          <Text style={styles.actionAssignee}>{action.assignee}</Text>
-                        </View>
-                      ))}
-                    </>
-                  )}
+                  <Text style={styles.expandedLabel}>✅ Action Items</Text>
+                  {meeting.actionItems.map((action) => (
+                    <Pressable key={action.id} style={styles.actionItem} onPress={() => toggleActionItem(meeting.id, action.id)}>
+                      <Ionicons
+                        name={action.done ? 'checkmark-circle' : 'ellipse-outline'}
+                        size={16}
+                        color={action.done ? colors.success : colors.warning}
+                      />
+                      <Text style={[styles.actionText, action.done && styles.actionTextDone]}>{action.text}</Text>
+                      <Text style={styles.actionAssignee}>{memberName(action.assigneeId)}</Text>
+                    </Pressable>
+                  ))}
+                  <View style={styles.addActionRow}>
+                    <TextInput
+                      style={styles.addActionInput}
+                      placeholder="New action item…"
+                      placeholderTextColor={colors.textMuted}
+                      value={newActionText[meeting.id] ?? ''}
+                      onChangeText={(text) => setNewActionText((s) => ({ ...s, [meeting.id]: text }))}
+                    />
+                    <Pressable style={styles.addActionBtn} onPress={() => handleAddAction(meeting.id)}>
+                      <Ionicons name="add" size={18} color="#fff" />
+                    </Pressable>
+                  </View>
+                  <View style={styles.chipRow}>
+                    {members.map((m) => (
+                      <Pressable
+                        key={m.id}
+                        onPress={() => setNewActionAssignee((s) => ({ ...s, [meeting.id]: m.id }))}
+                        style={[styles.memberChip, (newActionAssignee[meeting.id] ?? members[0]?.id) === m.id && { backgroundColor: m.avatarColor + '25', borderColor: m.avatarColor }]}
+                      >
+                        <Text style={[styles.memberChipText, (newActionAssignee[meeting.id] ?? members[0]?.id) === m.id && { color: m.avatarColor, fontWeight: '800' }]}>{m.name}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+
+                  <Text style={styles.expandedLabel}>😊 Mood</Text>
+                  <View style={styles.moodRow}>
+                    {MOODS.map((emoji) => (
+                      <Pressable
+                        key={emoji}
+                        onPress={() => setMood(meeting.id, emoji)}
+                        style={[styles.moodBtn, meeting.mood === emoji && styles.moodBtnActive]}
+                      >
+                        <Text style={styles.moodEmoji}>{emoji}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+
+                  <View style={styles.expandedLabelRow}>
+                    <Text style={styles.expandedLabel}>⏱️ Duration (minutes)</Text>
+                  </View>
+                  <TextInput
+                    style={styles.durationInput}
+                    placeholder="e.g. 30"
+                    placeholderTextColor={colors.textMuted}
+                    keyboardType="number-pad"
+                    value={meeting.durationMinutes !== undefined ? String(meeting.durationMinutes) : ''}
+                    onChangeText={(text) => {
+                      const n = parseInt(text, 10);
+                      if (!isNaN(n)) setDuration(meeting.id, n);
+                    }}
+                  />
                 </View>
               )}
             </Card>
           );
         })}
 
-        {/* Agenda Template */}
         <Text style={styles.sectionTitle}>Meeting Template</Text>
         <Card variant="elevated" style={styles.templateCard}>
           <Text style={styles.templateTitle}>✨ 30-Minute Family Meeting Formula</Text>
           {[
             { time: '0-5m', title: 'Wins & Celebrations', desc: 'Start with positives — what went well?' },
             { time: '5-15m', title: 'Review Last Week', desc: 'How did action items go? Any blockers?' },
-            { time: '15-22m', title: 'This Week\'s Plan', desc: 'Set 3 family priorities for the week' },
+            { time: '15-22m', title: "This Week's Plan", desc: 'Set 3 family priorities for the week' },
             { time: '22-28m', title: 'Any Concerns?', desc: 'Open floor — anyone need support?' },
             { time: '28-30m', title: 'Assign Actions', desc: 'Who does what by when? Be specific.' },
           ].map((step) => (
@@ -298,6 +362,7 @@ const styles = StyleSheet.create({
   tipRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   tipText: { flex: 1, fontSize: 13, color: colors.text, lineHeight: 19 },
   sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.text, marginTop: 20, marginBottom: 12 },
+  emptyText: { fontSize: 13, color: colors.textSecondary, textAlign: 'center', paddingVertical: 20, lineHeight: 19 },
   meetingCard: { borderRadius: 16, marginBottom: 12 },
   meetingHeader: { flexDirection: 'row', alignItems: 'center' },
   dateBadge: { width: 46, height: 54, backgroundColor: '#EBF5FB', borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
@@ -311,17 +376,31 @@ const styles = StyleSheet.create({
   attendeeRow: { flexDirection: 'row', gap: 6, marginTop: 10 },
   attendeeChip: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#1565C0', alignItems: 'center', justifyContent: 'center' },
   attendeeText: { fontSize: 12, fontWeight: '700', color: '#fff' },
+  attendeeNames: { fontSize: 13, color: colors.textSecondary, marginBottom: 4 },
   expanded: { marginTop: 8 },
   divider: { height: 1, backgroundColor: colors.border, marginBottom: 14 },
-  expandedLabel: { fontSize: 12, fontWeight: '800', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8, marginTop: 4 },
+  expandedLabelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  expandedLabel: { fontSize: 12, fontWeight: '800', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8, marginTop: 10 },
+  editLink: { fontSize: 12, fontWeight: '700', color: colors.primary },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
+  memberChip: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 16, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.background },
+  memberChipText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
   agendaItem: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
   agendaText: { fontSize: 13, color: colors.text },
   agendaTextDone: { color: colors.textMuted, textDecorationLine: 'line-through' },
-  notes: { fontSize: 13, color: colors.textSecondary, lineHeight: 20, marginBottom: 14 },
+  notesInput: { fontSize: 13, color: colors.text, lineHeight: 20, marginBottom: 6, minHeight: 70, textAlignVertical: 'top', backgroundColor: colors.background, borderRadius: 10, padding: 10, borderWidth: 1, borderColor: colors.border },
   actionItem: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
   actionText: { flex: 1, fontSize: 13, color: colors.text },
   actionTextDone: { textDecorationLine: 'line-through', color: colors.textMuted },
   actionAssignee: { fontSize: 11, color: colors.primary, fontWeight: '700', backgroundColor: '#EBF5FB', paddingVertical: 2, paddingHorizontal: 7, borderRadius: 8 },
+  addActionRow: { flexDirection: 'row', gap: 8, marginTop: 4, marginBottom: 8 },
+  addActionInput: { flex: 1, fontSize: 13, color: colors.text, backgroundColor: colors.background, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 10, borderWidth: 1, borderColor: colors.border },
+  addActionBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
+  moodRow: { flexDirection: 'row', gap: 10 },
+  moodBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background, borderWidth: 1.5, borderColor: colors.border },
+  moodBtnActive: { borderColor: colors.primary, backgroundColor: '#EBF5FB' },
+  moodEmoji: { fontSize: 18 },
+  durationInput: { fontSize: 13, color: colors.text, backgroundColor: colors.background, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 10, borderWidth: 1, borderColor: colors.border, width: 100 },
   templateCard: { borderRadius: 16 },
   templateTitle: { fontSize: 14, fontWeight: '800', color: colors.text, marginBottom: 14 },
   templateStep: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 12 },

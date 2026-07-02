@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import {
   Alert,
   Pressable,
@@ -8,17 +8,17 @@ import {
   Text,
   TextInput,
   View,
-  Modal,
 } from "react-native";
+import MapView, { Circle, Marker, type Region } from "react-native-maps";
+import Slider from "@react-native-community/slider";
+import * as Location from "expo-location";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useGuardianStore } from "../../../store/useGuardianStore";
 import { useFamilyStore } from "../../../store/useFamilyStore";
 import { colors } from "../../../theme/colors";
 import { shadows } from "../../../theme/spacing";
-import { CollapsibleHeader } from "../../../components/common/CollapsibleHeader";
 import type { GeofenceAction, GeofenceZone } from "../../../types";
 
 const ACTION_OPTIONS: { value: GeofenceAction; label: string }[] = [
@@ -48,71 +48,154 @@ const ZONE_ICONS = [
 ];
 
 function RadiusLabel({ radius }: { radius: number }) {
-  return radius >= 1000 ? `${(radius / 1000).toFixed(1)} km` : `${radius} m`;
+  return <>{radius >= 1000 ? `${(radius / 1000).toFixed(1)} km` : `${Math.round(radius)} m`}</>;
 }
 
-const RADIUS_STEPS = [100, 200, 300, 500, 750, 1000, 1500, 2000, 3000, 5000];
+const DEFAULT_REGION: Region = {
+  latitude: 37.7749,
+  longitude: -122.4194,
+  latitudeDelta: 0.05,
+  longitudeDelta: 0.05,
+};
+
+interface DraftZone {
+  lat: number;
+  lng: number;
+  radius: number;
+  name: string;
+  action: GeofenceAction;
+  color: string;
+  icon: string;
+  linkedMembers: string[];
+}
 
 export function GeofenceScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
+  const mapRef = useRef<MapView>(null);
+
   const zones = useGuardianStore((s) => s.geofenceZones);
   const addGeofenceZone = useGuardianStore((s) => s.addGeofenceZone);
   const updateGeofenceZone = useGuardianStore((s) => s.updateGeofenceZone);
   const removeGeofenceZone = useGuardianStore((s) => s.removeGeofenceZone);
+  const devices = useGuardianStore((s) => s.devices);
   const members = useFamilyStore((s) => s.members);
   const family = useFamilyStore((s) => s.family);
 
-  const [showModal, setShowModal] = useState(false);
-  const [name, setName] = useState("");
-  const [latStr, setLatStr] = useState("");
-  const [lngStr, setLngStr] = useState("");
-  const [radiusIdx, setRadiusIdx] = useState(3); // 500m default
-  const [action, setAction] = useState<GeofenceAction>("alert_both");
-  const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
-  const [zoneColor, setZoneColor] = useState(ZONE_COLORS[0]);
-  const [zoneIcon, setZoneIcon] = useState(ZONE_ICONS[0]);
+  const [draftZone, setDraftZone] = useState<DraftZone | null>(null);
+  const [editingZoneId, setEditingZoneId] = useState<string | null>(null);
+  const [showZonesList, setShowZonesList] = useState(false);
+  const [locating, setLocating] = useState(false);
 
   const childMembers = members.filter((m) => m.role === "child");
 
-  const resetForm = () => {
-    setName("");
-    setLatStr("");
-    setLngStr("");
-    setRadiusIdx(3);
-    setAction("alert_both");
-    setSelectedMembers([]);
-    setZoneColor(ZONE_COLORS[0]);
-    setZoneIcon(ZONE_ICONS[0]);
+  const childMarkers = useMemo(() => {
+    return devices
+      .map((d) => {
+        const loc = d.location ?? (d.lat != null && d.lng != null ? { lat: d.lat, lng: d.lng } : null);
+        if (!loc) return null;
+        const member = members.find((m) => m.id === d.memberId);
+        return { deviceId: d.id, lat: loc.lat, lng: loc.lng, member };
+      })
+      .filter((x): x is { deviceId: string; lat: number; lng: number; member: (typeof members)[number] | undefined } => x !== null);
+  }, [devices, members]);
+
+  const initialRegion = useMemo<Region>(() => {
+    const points = [
+      ...childMarkers.map((c) => ({ latitude: c.lat, longitude: c.lng })),
+      ...zones.map((z) => ({ latitude: z.lat, longitude: z.lng })),
+    ];
+    if (points.length === 0) return DEFAULT_REGION;
+    const lats = points.map((p) => p.latitude);
+    const lngs = points.map((p) => p.longitude);
+    const minLat = Math.min(...lats);
+    const maxLat = Math.max(...lats);
+    const minLng = Math.min(...lngs);
+    const maxLng = Math.max(...lngs);
+    return {
+      latitude: (minLat + maxLat) / 2,
+      longitude: (minLng + maxLng) / 2,
+      latitudeDelta: Math.max(0.02, (maxLat - minLat) * 1.8),
+      longitudeDelta: Math.max(0.02, (maxLng - minLng) * 1.8),
+    };
+    // Intentionally computed once for the initial mount only — MapView's
+    // initialRegion isn't meant to be kept in sync after that.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const startNewZone = () => {
+    const center = childMarkers[0]
+      ? { lat: childMarkers[0].lat, lng: childMarkers[0].lng }
+      : { lat: initialRegion.latitude, lng: initialRegion.longitude };
+    setEditingZoneId(null);
+    setShowZonesList(false);
+    setDraftZone({
+      lat: center.lat,
+      lng: center.lng,
+      radius: 500,
+      name: "",
+      action: "alert_both",
+      color: ZONE_COLORS[0],
+      icon: ZONE_ICONS[0],
+      linkedMembers: [],
+    });
   };
 
-  const handleAdd = () => {
-    const lat = parseFloat(latStr);
-    const lng = parseFloat(lngStr);
-    if (!name.trim()) {
+  const startEditZone = (zone: GeofenceZone) => {
+    setEditingZoneId(zone.id);
+    setShowZonesList(false);
+    setDraftZone({
+      lat: zone.lat,
+      lng: zone.lng,
+      radius: zone.radius,
+      name: zone.name,
+      action: zone.action,
+      color: zone.color,
+      icon: zone.icon,
+      linkedMembers: [...zone.linkedMembers],
+    });
+  };
+
+  const cancelDraft = () => {
+    setDraftZone(null);
+    setEditingZoneId(null);
+  };
+
+  const saveDraft = () => {
+    if (!draftZone) return;
+    if (!draftZone.name.trim()) {
       Alert.alert("Validation", "Please enter a zone name.");
       return;
     }
-    if (isNaN(lat) || isNaN(lng)) {
-      Alert.alert("Validation", "Please enter valid latitude and longitude.");
-      return;
+
+    if (editingZoneId) {
+      updateGeofenceZone(editingZoneId, {
+        name: draftZone.name.trim(),
+        lat: draftZone.lat,
+        lng: draftZone.lng,
+        radius: draftZone.radius,
+        action: draftZone.action,
+        color: draftZone.color,
+        icon: draftZone.icon,
+        linkedMembers: draftZone.linkedMembers,
+      });
+    } else {
+      const zone: GeofenceZone = {
+        id: `geo-${Date.now()}`,
+        familyId: family?.id ?? "demo-family",
+        name: draftZone.name.trim(),
+        lat: draftZone.lat,
+        lng: draftZone.lng,
+        radius: draftZone.radius,
+        action: draftZone.action,
+        icon: draftZone.icon,
+        color: draftZone.color,
+        isActive: true,
+        linkedMembers: draftZone.linkedMembers,
+        createdAt: new Date().toISOString(),
+      };
+      addGeofenceZone(zone);
     }
-    const zone: GeofenceZone = {
-      id: `geo-${Date.now()}`,
-      familyId: family?.id ?? "demo-family",
-      name: name.trim(),
-      lat,
-      lng,
-      radius: RADIUS_STEPS[radiusIdx],
-      action,
-      icon: zoneIcon,
-      color: zoneColor,
-      isActive: true,
-      linkedMembers: selectedMembers,
-      createdAt: new Date().toISOString(),
-    };
-    addGeofenceZone(zone);
-    resetForm();
-    setShowModal(false);
+    cancelDraft();
   };
 
   const handleDelete = (zone: GeofenceZone) => {
@@ -121,373 +204,316 @@ export function GeofenceScreen({ navigation }: any) {
       {
         text: "Delete",
         style: "destructive",
-        onPress: () => removeGeofenceZone(zone.id),
+        onPress: () => {
+          removeGeofenceZone(zone.id);
+          cancelDraft();
+        },
       },
     ]);
   };
 
   const toggleMember = (memberId: string) => {
-    setSelectedMembers((prev) =>
-      prev.includes(memberId)
-        ? prev.filter((id) => id !== memberId)
-        : [...prev, memberId],
+    if (!draftZone) return;
+    setDraftZone({
+      ...draftZone,
+      linkedMembers: draftZone.linkedMembers.includes(memberId)
+        ? draftZone.linkedMembers.filter((id) => id !== memberId)
+        : [...draftZone.linkedMembers, memberId],
+    });
+  };
+
+  const useMyLocation = async () => {
+    if (!draftZone) return;
+    setLocating(true);
+    try {
+      const perm = await Location.requestForegroundPermissionsAsync();
+      if (perm.status !== "granted") {
+        Alert.alert(
+          "Permission Needed",
+          "Enable location access to center a zone on your current position — or drag the pin on the map instead.",
+        );
+        return;
+      }
+      const pos = await Location.getCurrentPositionAsync({});
+      const next = { ...draftZone, lat: pos.coords.latitude, lng: pos.coords.longitude };
+      setDraftZone(next);
+      mapRef.current?.animateToRegion(
+        { latitude: next.lat, longitude: next.lng, latitudeDelta: 0.01, longitudeDelta: 0.01 },
+        400,
+      );
+    } catch {
+      Alert.alert("Error", "Could not get your current location.");
+    } finally {
+      setLocating(false);
+    }
+  };
+
+  const flyToZone = (zone: GeofenceZone) => {
+    setShowZonesList(false);
+    mapRef.current?.animateToRegion(
+      { latitude: zone.lat, longitude: zone.lng, latitudeDelta: 0.01, longitudeDelta: 0.01 },
+      400,
     );
   };
 
   const activeZones = zones.filter((zone) => zone.isActive).length;
-  const watchedMembers = new Set(zones.flatMap((zone) => zone.linkedMembers))
-    .size;
-
-  const openAddZoneModal = () => {
-    resetForm();
-    setShowModal(true);
-  };
-
-  const screenHeader = (
-    <LinearGradient
-      colors={["#0F2952", "#163D73", "#1E4A8A"]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={[styles.header, { paddingTop: insets.top + 8 }]}
-    >
-      <View style={styles.headerRow}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={22} color="#fff" />
-        </Pressable>
-
-        <View style={styles.headerTextBlock}>
-          <Text style={styles.headerEyebrow}>Family Guardian</Text>
-          <Text style={styles.headerTitle}>Geofence Zones</Text>
-          <Text style={styles.headerSubtitle}>
-            Monitor safe places and movement alerts
-          </Text>
-        </View>
-
-        <Pressable onPress={openAddZoneModal} style={styles.addBtn}>
-          <Ionicons name="add" size={22} color="#fff" />
-        </Pressable>
-      </View>
-
-      <View style={styles.headerStatsCard}>
-        <View style={styles.headerStatItem}>
-          <Text style={styles.headerStatValue}>{zones.length}</Text>
-          <Text style={styles.headerStatLabel}>Zones</Text>
-        </View>
-        <View style={styles.headerStatDivider} />
-        <View style={styles.headerStatItem}>
-          <Text style={styles.headerStatValue}>{activeZones}</Text>
-          <Text style={styles.headerStatLabel}>Active</Text>
-        </View>
-        <View style={styles.headerStatDivider} />
-        <View style={styles.headerStatItem}>
-          <Text style={styles.headerStatValue}>{watchedMembers}</Text>
-          <Text style={styles.headerStatLabel}>Watched</Text>
-        </View>
-      </View>
-    </LinearGradient>
-  );
-
-  const screenCompact = (
-    <LinearGradient
-      colors={["#0F2952", "#1E4A8A"]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={[styles.compactHeader, { paddingTop: insets.top }]}
-    >
-      <Pressable
-        onPress={() => navigation.goBack()}
-        style={styles.compactBackBtn}
-      >
-        <Ionicons name="arrow-back" size={21} color="#fff" />
-      </Pressable>
-
-      <Text style={styles.compactTitle}>Geofence Zones</Text>
-
-      <Pressable onPress={openAddZoneModal} style={styles.compactAddBtn}>
-        <Ionicons name="add" size={21} color="#fff" />
-      </Pressable>
-    </LinearGradient>
-  );
 
   return (
     <View style={styles.container}>
-      <CollapsibleHeader
-        fullHeader={screenHeader}
-        compactHeader={screenCompact}
-      >
-        {({
-          onScroll,
-          onScrollEndDrag,
-          onMomentumScrollEnd,
-          scrollEventThrottle,
-          contentPaddingTop,
-        }) => (
-          <ScrollView
-            contentContainerStyle={[
-              styles.content,
-              {
-                paddingTop: contentPaddingTop,
-                paddingBottom: 100,
-              },
-            ]}
-            onScroll={onScroll}
-            onScrollEndDrag={onScrollEndDrag}
-            onMomentumScrollEnd={onMomentumScrollEnd}
-            scrollEventThrottle={scrollEventThrottle}
-          >
+      <MapView ref={mapRef} style={StyleSheet.absoluteFill} initialRegion={initialRegion}>
+        {zones.map((zone) => (
+          <React.Fragment key={zone.id}>
+            <Circle
+              center={{ latitude: zone.lat, longitude: zone.lng }}
+              radius={zone.radius}
+              strokeColor={zone.color}
+              fillColor={zone.color + "22"}
+              strokeWidth={2}
+            />
+            <Marker coordinate={{ latitude: zone.lat, longitude: zone.lng }} onPress={() => startEditZone(zone)}>
+              <View style={[styles.zoneMarker, { backgroundColor: zone.color }]}>
+                <Ionicons name={zone.icon as any} size={16} color="#fff" />
+              </View>
+            </Marker>
+          </React.Fragment>
+        ))}
+
+        {childMarkers.map(({ deviceId, lat, lng, member }) => (
+          <Marker key={deviceId} coordinate={{ latitude: lat, longitude: lng }} zIndex={10}>
+            <View style={[styles.childMarker, { borderColor: member?.avatarColor ?? colors.primary }]}>
+              <Text style={styles.childMarkerText}>{(member?.name ?? "?").charAt(0)}</Text>
+            </View>
+            <Text style={styles.childMarkerLabel}>{member?.name ?? "Unknown"}</Text>
+          </Marker>
+        ))}
+
+        {draftZone && (
+          <>
+            <Circle
+              center={{ latitude: draftZone.lat, longitude: draftZone.lng }}
+              radius={draftZone.radius}
+              strokeColor={draftZone.color}
+              fillColor={draftZone.color + "33"}
+              strokeWidth={2}
+            />
+            <Marker
+              coordinate={{ latitude: draftZone.lat, longitude: draftZone.lng }}
+              draggable
+              zIndex={20}
+              onDragEnd={(e) =>
+                setDraftZone((prev) =>
+                  prev
+                    ? { ...prev, lat: e.nativeEvent.coordinate.latitude, lng: e.nativeEvent.coordinate.longitude }
+                    : prev,
+                )
+              }
+            >
+              <View style={[styles.zoneMarker, styles.zoneMarkerDraft, { backgroundColor: draftZone.color }]}>
+                <Ionicons name={draftZone.icon as any} size={16} color="#fff" />
+              </View>
+            </Marker>
+          </>
+        )}
+      </MapView>
+
+      {/* Floating header — a CollapsibleHeader doesn't fit a full-map layout
+          (nothing scrolls behind the map), so this is a simple overlay
+          instead, matching the standard map-app pattern. */}
+      <View style={[styles.floatingHeader, { paddingTop: insets.top + 8 }]} pointerEvents="box-none">
+        <Pressable onPress={() => navigation.goBack()} style={[styles.floatingBtn, shadows.card]}>
+          <Ionicons name="arrow-back" size={22} color={colors.text} />
+        </Pressable>
+        <View style={[styles.headerStatsPill, shadows.card]}>
+          <Ionicons name="shield-checkmark" size={14} color={colors.primary} />
+          <Text style={styles.headerStatsText}>
+            {zones.length} zone{zones.length === 1 ? "" : "s"} · {activeZones} active
+          </Text>
+        </View>
+        <Pressable
+          onPress={() => setShowZonesList((v) => !v)}
+          style={[styles.floatingBtn, shadows.card, showZonesList && styles.floatingBtnActive]}
+        >
+          <Ionicons name="list" size={20} color={showZonesList ? "#fff" : colors.text} />
+        </Pressable>
+      </View>
+
+      {!draftZone && (
+        <Pressable style={[styles.fab, { bottom: insets.bottom + 24 }, shadows.card]} onPress={startNewZone}>
+          <Ionicons name="add" size={26} color="#fff" />
+        </Pressable>
+      )}
+
+      {showZonesList && !draftZone && (
+        <View style={[styles.zonesSheet, { paddingBottom: insets.bottom + 16 }, shadows.card]}>
+          <View style={styles.sheetHandle} />
+          <Text style={styles.sheetTitle}>Geofence Zones</Text>
+
+          <ScrollView contentContainerStyle={{ paddingBottom: 12 }}>
             {zones.length === 0 && (
               <View style={styles.emptyState}>
-                <Ionicons
-                  name="location-outline"
-                  size={64}
-                  color={colors.textMuted}
-                />
+                <Ionicons name="location-outline" size={48} color={colors.textMuted} />
                 <Text style={styles.emptyTitle}>No geofence zones</Text>
-                <Text style={styles.emptyDesc}>
-                  Tap + to create a zone and get notified when your child enters
-                  or leaves
-                </Text>
+                <Text style={styles.emptyDesc}>Tap + to draw a zone on the map</Text>
               </View>
             )}
 
             {zones.map((zone) => (
-              <View key={zone.id} style={[styles.zoneCard, shadows.card]}>
-                <View style={styles.zoneCardHeader}>
-                  <View
-                    style={[
-                      styles.zoneIcon,
-                      { backgroundColor: zone.color + "22" },
-                    ]}
-                  >
-                    <Ionicons
-                      name={zone.icon as any}
-                      size={22}
-                      color={zone.color}
-                    />
-                  </View>
-
-                  <View style={styles.zoneInfo}>
-                    <Text style={styles.zoneName}>{zone.name}</Text>
-                    <Text style={styles.zoneMeta}>
-                      {zone.lat.toFixed(4)}, {zone.lng.toFixed(4)} ·{" "}
-                      <RadiusLabel radius={zone.radius} />
-                    </Text>
-                    <Text style={styles.zoneAction}>
-                      {ACTION_OPTIONS.find((a) => a.value === zone.action)
-                        ?.label ?? zone.action}
-                    </Text>
-                    {zone.linkedMembers.length > 0 && (
-                      <Text style={styles.zoneMembers}>
-                        Watching:{" "}
-                        {zone.linkedMembers
-                          .map(
-                            (id) =>
-                              members.find((m) => m.id === id)?.name ?? id,
-                          )
-                          .join(", ")}
-                      </Text>
-                    )}
-                  </View>
-
-                  <View style={styles.zoneRight}>
-                    <Switch
-                      value={zone.isActive}
-                      onValueChange={(val) =>
-                        updateGeofenceZone(zone.id, { isActive: val })
-                      }
-                      trackColor={{ false: colors.border, true: zone.color }}
-                      thumbColor="#fff"
-                    />
-                    <Pressable
-                      onPress={() => handleDelete(zone)}
-                      style={styles.deleteBtn}
-                    >
-                      <Ionicons
-                        name="trash-outline"
-                        size={18}
-                        color={colors.danger}
-                      />
-                    </Pressable>
-                  </View>
+              <Pressable key={zone.id} style={styles.zoneCard} onPress={() => flyToZone(zone)}>
+                <View style={[styles.zoneIcon, { backgroundColor: zone.color + "22" }]}>
+                  <Ionicons name={zone.icon as any} size={22} color={zone.color} />
                 </View>
-              </View>
+
+                <View style={styles.zoneInfo}>
+                  <Text style={styles.zoneName}>{zone.name}</Text>
+                  <Text style={styles.zoneMeta}>
+                    <RadiusLabel radius={zone.radius} /> ·{" "}
+                    {ACTION_OPTIONS.find((a) => a.value === zone.action)?.label ?? zone.action}
+                  </Text>
+                  {zone.linkedMembers.length > 0 && (
+                    <Text style={styles.zoneMembers}>
+                      Watching: {zone.linkedMembers.map((id) => members.find((m) => m.id === id)?.name ?? id).join(", ")}
+                    </Text>
+                  )}
+                </View>
+
+                <View style={styles.zoneRight}>
+                  <Switch
+                    value={zone.isActive}
+                    onValueChange={(val) => updateGeofenceZone(zone.id, { isActive: val })}
+                    trackColor={{ false: colors.border, true: zone.color }}
+                    thumbColor="#fff"
+                  />
+                  <Pressable onPress={() => startEditZone(zone)} style={styles.editBtn}>
+                    <Ionicons name="create-outline" size={16} color={colors.primary} />
+                  </Pressable>
+                  <Pressable onPress={() => handleDelete(zone)} style={styles.deleteBtn}>
+                    <Ionicons name="trash-outline" size={16} color={colors.danger} />
+                  </Pressable>
+                </View>
+              </Pressable>
             ))}
           </ScrollView>
-        )}
-      </CollapsibleHeader>
+        </View>
+      )}
 
-      <Modal
-        visible={showModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowModal(false)}
-      >
-        <ScrollView
-          style={styles.modal}
-          contentContainerStyle={{ paddingBottom: 60 }}
-        >
-          <View style={styles.modalHandle} />
-          <Text style={styles.modalTitle}>Add Geofence Zone</Text>
+      {draftZone && (
+        <View style={[styles.draftPanel, { paddingBottom: insets.bottom + 16 }, shadows.card]}>
+          <ScrollView contentContainerStyle={{ paddingBottom: 12 }}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>{editingZoneId ? "Edit Zone" : "New Zone"}</Text>
 
-          <Text style={styles.fieldLabel}>Zone Name *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="e.g. Home, School, Park"
-            value={name}
-            onChangeText={setName}
-            placeholderTextColor={colors.textMuted}
-          />
+            <TextInput
+              style={styles.input}
+              placeholder="Zone name (e.g. Home, School, Park)"
+              value={draftZone.name}
+              onChangeText={(t) => setDraftZone({ ...draftZone, name: t })}
+              placeholderTextColor={colors.textMuted}
+            />
 
-          <Text style={styles.fieldLabel}>Latitude *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="e.g. 37.7749"
-            value={latStr}
-            onChangeText={setLatStr}
-            keyboardType="decimal-pad"
-            placeholderTextColor={colors.textMuted}
-          />
-
-          <Text style={styles.fieldLabel}>Longitude *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="e.g. -122.4194"
-            value={lngStr}
-            onChangeText={setLngStr}
-            keyboardType="decimal-pad"
-            placeholderTextColor={colors.textMuted}
-          />
-
-          <Text style={styles.fieldLabel}>
-            Radius: <RadiusLabel radius={RADIUS_STEPS[radiusIdx]} />
-          </Text>
-          <View style={styles.radiusRow}>
-            <Pressable
-              onPress={() => setRadiusIdx((i) => Math.max(0, i - 1))}
-              style={styles.radiusBtn}
-            >
-              <Ionicons name="remove" size={20} color={colors.primary} />
+            <Pressable style={styles.locateBtn} onPress={useMyLocation} disabled={locating}>
+              <Ionicons name="locate" size={16} color={colors.primary} />
+              <Text style={styles.locateBtnText}>{locating ? "Locating…" : "Use My Current Location"}</Text>
             </Pressable>
-            <View style={styles.radiusBarOuter}>
-              <View
-                style={[
-                  styles.radiusBarFill,
-                  {
-                    width: `${((radiusIdx + 1) / RADIUS_STEPS.length) * 100}%`,
-                  },
-                ]}
-              />
-            </View>
-            <Pressable
-              onPress={() =>
-                setRadiusIdx((i) => Math.min(RADIUS_STEPS.length - 1, i + 1))
-              }
-              style={styles.radiusBtn}
-            >
-              <Ionicons name="add" size={20} color={colors.primary} />
-            </Pressable>
-          </View>
+            <Text style={styles.hint}>Or drag the pin on the map to position this zone</Text>
 
-          <Text style={styles.fieldLabel}>Alert Trigger</Text>
-          <View style={styles.optionRow}>
-            {ACTION_OPTIONS.map((opt) => (
-              <Pressable
-                key={opt.value}
-                onPress={() => setAction(opt.value)}
-                style={[
-                  styles.optionChip,
-                  action === opt.value && styles.optionChipActive,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.optionChipText,
-                    action === opt.value && styles.optionChipTextActive,
-                  ]}
+            <Text style={styles.fieldLabel}>
+              Radius: <RadiusLabel radius={draftZone.radius} />
+            </Text>
+            <Slider
+              style={{ marginBottom: 16 }}
+              minimumValue={100}
+              maximumValue={5000}
+              step={50}
+              value={draftZone.radius}
+              onValueChange={(v) => setDraftZone({ ...draftZone, radius: v })}
+              minimumTrackTintColor={draftZone.color}
+              maximumTrackTintColor={colors.border}
+              thumbTintColor={draftZone.color}
+            />
+
+            <Text style={styles.fieldLabel}>Alert Trigger</Text>
+            <View style={styles.optionRow}>
+              {ACTION_OPTIONS.map((opt) => (
+                <Pressable
+                  key={opt.value}
+                  onPress={() => setDraftZone({ ...draftZone, action: opt.value })}
+                  style={[styles.optionChip, draftZone.action === opt.value && styles.optionChipActive]}
                 >
-                  {opt.label}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
+                  <Text style={[styles.optionChipText, draftZone.action === opt.value && styles.optionChipTextActive]}>
+                    {opt.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
 
-          <Text style={styles.fieldLabel}>Color</Text>
-          <View style={styles.colorRow}>
-            {ZONE_COLORS.map((c) => (
-              <Pressable
-                key={c}
-                onPress={() => setZoneColor(c)}
-                style={[
-                  styles.colorSwatch,
-                  { backgroundColor: c },
-                  zoneColor === c && styles.colorSwatchSelected,
-                ]}
-              />
-            ))}
-          </View>
-
-          <Text style={styles.fieldLabel}>Icon</Text>
-          <View style={styles.iconRow}>
-            {ZONE_ICONS.map((ic) => (
-              <Pressable
-                key={ic}
-                onPress={() => setZoneIcon(ic)}
-                style={[
-                  styles.iconSwatch,
-                  zoneIcon === ic && { backgroundColor: zoneColor + "33" },
-                ]}
-              >
-                <Ionicons
-                  name={ic as any}
-                  size={22}
-                  color={zoneIcon === ic ? zoneColor : colors.textMuted}
+            <Text style={styles.fieldLabel}>Color</Text>
+            <View style={styles.colorRow}>
+              {ZONE_COLORS.map((c) => (
+                <Pressable
+                  key={c}
+                  onPress={() => setDraftZone({ ...draftZone, color: c })}
+                  style={[styles.colorSwatch, { backgroundColor: c }, draftZone.color === c && styles.colorSwatchSelected]}
                 />
-              </Pressable>
-            ))}
-          </View>
+              ))}
+            </View>
 
-          {childMembers.length > 0 && (
-            <>
-              <Text style={styles.fieldLabel}>Watch Members</Text>
-              <View style={styles.memberChips}>
-                {childMembers.map((m) => (
-                  <Pressable
-                    key={m.id}
-                    onPress={() => toggleMember(m.id)}
-                    style={[
-                      styles.memberChip,
-                      selectedMembers.includes(m.id) && {
-                        backgroundColor: colors.primary,
-                        borderColor: colors.primary,
-                      },
-                    ]}
-                  >
-                    <Text
+            <Text style={styles.fieldLabel}>Icon</Text>
+            <View style={styles.iconRow}>
+              {ZONE_ICONS.map((ic) => (
+                <Pressable
+                  key={ic}
+                  onPress={() => setDraftZone({ ...draftZone, icon: ic })}
+                  style={[styles.iconSwatch, draftZone.icon === ic && { backgroundColor: draftZone.color + "33" }]}
+                >
+                  <Ionicons name={ic as any} size={22} color={draftZone.icon === ic ? draftZone.color : colors.textMuted} />
+                </Pressable>
+              ))}
+            </View>
+
+            {childMembers.length > 0 && (
+              <>
+                <Text style={styles.fieldLabel}>Watch Members</Text>
+                <View style={styles.memberChips}>
+                  {childMembers.map((m) => (
+                    <Pressable
+                      key={m.id}
+                      onPress={() => toggleMember(m.id)}
                       style={[
-                        styles.memberChipText,
-                        selectedMembers.includes(m.id) && { color: "#fff" },
+                        styles.memberChip,
+                        draftZone.linkedMembers.includes(m.id) && { backgroundColor: colors.primary, borderColor: colors.primary },
                       ]}
                     >
-                      {m.name}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-            </>
-          )}
+                      <Text style={[styles.memberChipText, draftZone.linkedMembers.includes(m.id) && { color: "#fff" }]}>
+                        {m.name}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </>
+            )}
 
-          <Pressable style={styles.saveBtn} onPress={handleAdd}>
-            <Text style={styles.saveBtnText}>Add Zone</Text>
-          </Pressable>
+            <Pressable style={styles.saveBtn} onPress={saveDraft}>
+              <Text style={styles.saveBtnText}>{editingZoneId ? "Save Changes" : "Add Zone"}</Text>
+            </Pressable>
 
-          <Pressable
-            style={styles.cancelBtn}
-            onPress={() => setShowModal(false)}
-          >
-            <Text style={styles.cancelBtnText}>Cancel</Text>
-          </Pressable>
-        </ScrollView>
-      </Modal>
+            {editingZoneId && (
+              <Pressable
+                style={styles.deleteZoneBtn}
+                onPress={() => {
+                  const zone = zones.find((z) => z.id === editingZoneId);
+                  if (zone) handleDelete(zone);
+                }}
+              >
+                <Text style={styles.deleteZoneBtnText}>Delete Zone</Text>
+              </Pressable>
+            )}
+
+            <Pressable style={styles.cancelBtn} onPress={cancelDraft}>
+              <Text style={styles.cancelBtnText}>Cancel</Text>
+            </Pressable>
+          </ScrollView>
+        </View>
+      )}
     </View>
   );
 }
@@ -495,225 +521,164 @@ export function GeofenceScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
 
-  header: {
-    paddingHorizontal: 20,
-    paddingBottom: 14,
-  },
-
-  headerRow: {
+  floatingHeader: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-  },
-
-  backBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 14,
-    backgroundColor: "rgba(255,255,255,0.15)",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
-  },
-
-  headerTextBlock: {
-    flex: 1,
-  },
-
-  headerEyebrow: {
-    fontSize: 9,
-    fontWeight: "800",
-    color: "rgba(255,255,255,0.62)",
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-    marginBottom: 2,
-  },
-
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: "900",
-    color: "#fff",
-    letterSpacing: -0.5,
-  },
-
-  headerSubtitle: {
-    fontSize: 10,
-    color: "rgba(255,255,255,0.68)",
-    marginTop: 3,
-  },
-
-  addBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 14,
-    backgroundColor: "rgba(255,255,255,0.16)",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.14)",
-  },
-
-  headerStatsCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 5,
-    paddingVertical: 2,
-    paddingHorizontal: 10,
-    borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.10)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.10)",
-  },
-
-  headerStatItem: {
-    flex: 1,
-    alignItems: "center",
-  },
-
-  headerStatValue: {
-    fontSize: 13,
-    fontWeight: "900",
-    color: "#fff",
-  },
-
-  headerStatLabel: {
-    fontSize: 9,
-    fontWeight: "700",
-    color: "rgba(255,255,255,0.62)",
-    marginTop: 2,
-  },
-
-  headerStatDivider: {
-    width: 1,
-    height: 28,
-    backgroundColor: "rgba(255,255,255,0.16)",
-  },
-
-  compactHeader: {
-    paddingBottom: 10,
+    gap: 10,
     paddingHorizontal: 16,
+  },
+
+  floatingBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  floatingBtnActive: { backgroundColor: colors.primary },
+
+  headerStatsPill: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "center",
+    gap: 6,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#fff",
+    paddingHorizontal: 12,
   },
 
-  compactBackBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: "rgba(255,255,255,0.15)",
+  headerStatsText: { fontSize: 12, fontWeight: "700", color: colors.text },
+
+  fab: {
+    position: "absolute",
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
   },
 
-  compactTitle: {
-    color: "#fff",
-    fontSize: 17,
-    fontWeight: "900",
-    letterSpacing: -0.3,
-  },
-
-  compactAddBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: "rgba(255,255,255,0.15)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  content: { padding: 16 },
-
-  emptyState: {
-    alignItems: "center",
-    paddingVertical: 60,
-    paddingHorizontal: 24,
-  },
-
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: colors.text,
-    marginTop: 16,
-  },
-
-  emptyDesc: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    marginTop: 6,
-    textAlign: "center",
-  },
-
-  zoneCard: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-  },
-
-  zoneCardHeader: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
-
-  zoneIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  zoneInfo: { flex: 1 },
-
-  zoneName: { fontSize: 16, fontWeight: "700", color: colors.text },
-
-  zoneMeta: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
-
-  zoneAction: {
-    fontSize: 12,
-    color: colors.info,
-    marginTop: 2,
-    fontWeight: "600",
-  },
-
-  zoneMembers: { fontSize: 11, color: colors.textMuted, marginTop: 4 },
-
-  zoneRight: { alignItems: "center", gap: 8 },
-
-  deleteBtn: {
+  zoneMarker: {
     width: 32,
     height: 32,
-    borderRadius: 8,
-    backgroundColor: colors.dangerLight,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "#fff",
   },
 
-  modal: { flex: 1, padding: 24, backgroundColor: colors.background },
+  zoneMarkerDraft: { borderColor: "#fff", borderWidth: 3 },
 
-  modalHandle: {
+  childMarker: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.card,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 3,
+  },
+
+  childMarkerText: { fontSize: 15, fontWeight: "800", color: colors.text },
+
+  childMarkerLabel: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: colors.text,
+    backgroundColor: "#fff",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    marginTop: 2,
+    textAlign: "center",
+    overflow: "hidden",
+  },
+
+  sheetHandle: {
     width: 40,
     height: 4,
     backgroundColor: colors.border,
     borderRadius: 2,
     alignSelf: "center",
-    marginBottom: 24,
+    marginBottom: 14,
   },
 
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: colors.text,
-    marginBottom: 20,
+  sheetTitle: { fontSize: 18, fontWeight: "800", color: colors.text, marginBottom: 16, paddingHorizontal: 20 },
+
+  zonesSheet: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    maxHeight: "55%",
+    backgroundColor: colors.background,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 12,
   },
 
-  fieldLabel: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: colors.textSecondary,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    marginBottom: 8,
+  draftPanel: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    maxHeight: "72%",
+    backgroundColor: colors.background,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 12,
+    paddingHorizontal: 20,
+  },
+
+  emptyState: { alignItems: "center", paddingVertical: 40, paddingHorizontal: 24 },
+  emptyTitle: { fontSize: 16, fontWeight: "700", color: colors.text, marginTop: 12 },
+  emptyDesc: { fontSize: 13, color: colors.textSecondary, marginTop: 4, textAlign: "center" },
+
+  zoneCard: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    padding: 14,
+    marginHorizontal: 16,
+    marginBottom: 10,
+  },
+
+  zoneIcon: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  zoneInfo: { flex: 1 },
+  zoneName: { fontSize: 15, fontWeight: "700", color: colors.text },
+  zoneMeta: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
+  zoneMembers: { fontSize: 11, color: colors.textMuted, marginTop: 4 },
+  zoneRight: { alignItems: "center", gap: 6 },
+
+  editBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: colors.primary + "18",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  deleteBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: colors.dangerLight,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   input: {
@@ -724,47 +689,34 @@ const styles = StyleSheet.create({
     color: colors.text,
     borderWidth: 1.5,
     borderColor: colors.border,
-    marginBottom: 16,
+    marginBottom: 10,
   },
 
-  radiusRow: {
+  locateBtn: {
     flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    marginBottom: 16,
-  },
-
-  radiusBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: colors.card,
-    borderWidth: 1.5,
-    borderColor: colors.border,
     alignItems: "center",
     justifyContent: "center",
-  },
-
-  radiusBarOuter: {
-    flex: 1,
-    height: 10,
-    backgroundColor: colors.border,
-    borderRadius: 5,
-    overflow: "hidden",
-  },
-
-  radiusBarFill: {
-    height: "100%",
-    backgroundColor: colors.primary,
-    borderRadius: 5,
-  },
-
-  optionRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
     gap: 8,
-    marginBottom: 16,
+    backgroundColor: colors.primary + "14",
+    borderRadius: 12,
+    paddingVertical: 10,
+    marginBottom: 6,
   },
+
+  locateBtnText: { fontSize: 13, fontWeight: "700", color: colors.primary },
+
+  hint: { fontSize: 11, color: colors.textMuted, textAlign: "center", marginBottom: 16 },
+
+  fieldLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: colors.textSecondary,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+
+  optionRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 },
 
   optionChip: {
     paddingVertical: 8,
@@ -775,36 +727,15 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
   },
 
-  optionChipActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-
-  optionChipText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: colors.textSecondary,
-  },
-
+  optionChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  optionChipText: { fontSize: 12, fontWeight: "600", color: colors.textSecondary },
   optionChipTextActive: { color: "#fff" },
 
-  colorRow: {
-    flexDirection: "row",
-    gap: 10,
-    marginBottom: 16,
-    flexWrap: "wrap",
-  },
-
+  colorRow: { flexDirection: "row", gap: 10, marginBottom: 16, flexWrap: "wrap" },
   colorSwatch: { width: 32, height: 32, borderRadius: 16 },
-
   colorSwatchSelected: { borderWidth: 3, borderColor: colors.text },
 
-  iconRow: {
-    flexDirection: "row",
-    gap: 10,
-    marginBottom: 16,
-    flexWrap: "wrap",
-  },
+  iconRow: { flexDirection: "row", gap: 10, marginBottom: 16, flexWrap: "wrap" },
 
   iconSwatch: {
     width: 44,
@@ -817,12 +748,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
 
-  memberChips: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginBottom: 20,
-  },
+  memberChips: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 20 },
 
   memberChip: {
     paddingVertical: 8,
@@ -833,21 +759,19 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
   },
 
-  memberChipText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: colors.textSecondary,
-  },
+  memberChipText: { fontSize: 13, fontWeight: "600", color: colors.textSecondary },
 
-  saveBtn: {
-    backgroundColor: colors.primary,
+  saveBtn: { backgroundColor: colors.primary, borderRadius: 14, padding: 16, alignItems: "center", marginBottom: 10 },
+  saveBtnText: { fontSize: 16, fontWeight: "700", color: "#fff" },
+
+  deleteZoneBtn: {
+    backgroundColor: colors.dangerLight,
     borderRadius: 14,
     padding: 16,
     alignItems: "center",
     marginBottom: 10,
   },
-
-  saveBtnText: { fontSize: 16, fontWeight: "700", color: "#fff" },
+  deleteZoneBtnText: { fontSize: 15, fontWeight: "700", color: colors.danger },
 
   cancelBtn: {
     backgroundColor: colors.card,
@@ -857,10 +781,5 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: colors.border,
   },
-
-  cancelBtnText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: colors.textSecondary,
-  },
+  cancelBtnText: { fontSize: 15, fontWeight: "600", color: colors.textSecondary },
 });

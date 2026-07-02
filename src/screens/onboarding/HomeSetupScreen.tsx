@@ -6,14 +6,27 @@ import { StatusBar } from 'expo-status-bar';
 import { colors } from '../../theme/colors';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
+import { useFamilyStore } from '../../store/useFamilyStore';
 
 const homeTypes = ['Single Family', 'Apartment', 'Condo', 'Townhouse', 'Mobile Home', 'Other'];
 
 export function HomeSetupScreen({ navigation }: any) {
+  const updateFamily = useFamilyStore((s) => s.updateFamily);
   const [homeType, setHomeType] = useState('Single Family');
   const [sqft, setSqft] = useState('');
   const [bedrooms, setBedrooms] = useState('3');
   const [rentOrOwn, setRentOrOwn] = useState<'own' | 'rent'>('own');
+
+  const handleContinue = () => {
+    const parsedSqft = parseInt(sqft.replace(/,/g, ''), 10);
+    updateFamily({
+      homeType,
+      ...(isNaN(parsedSqft) ? {} : { squareFootage: parsedSqft }),
+      bedrooms: bedrooms === '5+' ? 5 : parseInt(bedrooms, 10),
+      ownsHome: rentOrOwn === 'own',
+    });
+    navigation.navigate('VehicleSetup');
+  };
 
   return (
     <View style={styles.container}>
@@ -101,7 +114,7 @@ export function HomeSetupScreen({ navigation }: any) {
 
         <Button
           title="Next: Add Vehicles"
-          onPress={() => navigation.navigate('VehicleSetup')}
+          onPress={handleContinue}
           fullWidth
           size="lg"
           style={{ marginTop: 8 }}

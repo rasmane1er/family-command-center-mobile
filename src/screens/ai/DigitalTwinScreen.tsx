@@ -15,6 +15,7 @@ import { useFamilyStore } from '../../store/useFamilyStore';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { useOperationsStore } from '../../store/useOperationsStore';
 import { useGuardianStore } from '../../store/useGuardianStore';
+import { useMoodStore } from '../../store/useMoodStore';
 import { chatWithDigitalTwin, AIMessage } from '../../services/aiService';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useTabBarInset } from '../../hooks/useTabBarInset';
@@ -157,19 +158,112 @@ function useDigitalTwinScores(): { dimensions: DimensionConfig[]; predictions: P
   return { dimensions, predictions };
 }
 
-const WHAT_IF_SCENARIOS = [
-  { scenario: 'Cut dining out by 50%', impact: '+$340/month', effect: 'Reach Hawaii goal 4 months early', icon: 'restaurant', color: '#27AE60', positive: true },
-  { scenario: 'Add 30min family exercise', impact: '+12 happiness points', effect: 'Reduce stress markers by 23%', icon: 'fitness', color: '#2980B9', positive: true },
-  { scenario: 'Miss 2 weekly meetings', impact: '-8 communication score', effect: 'Conflict risk increases by 35%', icon: 'people', color: '#E74C3C', positive: false },
-  { scenario: 'Automate bill payments', impact: '0 late fees ever', effect: 'Credit score up ~15 points', icon: 'card', color: '#F5A623', positive: true },
-];
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-const PATTERNS = [
-  { pattern: 'Peak Productivity', detail: 'Your family completes 73% more tasks on Tuesday & Wednesday', icon: 'trending-up', color: '#27AE60' },
-  { pattern: 'Spending Trigger', detail: 'Online spending spikes 40% on Friday evenings', icon: 'card', color: '#E74C3C' },
-  { pattern: 'Best Mood Days', detail: 'Family mood average is highest on Saturday mornings', icon: 'happy', color: '#8E44AD' },
-  { pattern: 'Communication Peak', detail: 'Most family discussions happen between 6-8 PM', icon: 'chatbubbles', color: '#2980B9' },
-];
+interface WhatIfScenario {
+  scenario: string;
+  impact: string;
+  effect: string;
+  icon: string;
+  color: string;
+  positive: boolean;
+}
+
+// Real what-if scenarios computed from actual finances — replaces a
+// previous hardcoded list that named an invented "Hawaii goal" and fixed
+// percentages ("reduce stress markers by 23%") with no real data source.
+// Only includes scenarios with a genuine computation behind them; a
+// scenario is omitted rather than shown with a made-up number.
+function useWhatIfScenarios(): WhatIfScenario[] {
+  const monthlyExpenses = useFinanceStore((s) => s.monthlyExpenses);
+  const financialGoals = useFinanceStore((s) => s.financialGoals);
+  const bills = useFinanceStore((s) => s.bills);
+
+  const scenarios: WhatIfScenario[] = [];
+
+  if (monthlyExpenses > 0) {
+    const monthlySavingsFromCut = Math.round(monthlyExpenses * 0.1);
+    const activeGoal = financialGoals.find((g) => !g.isCompleted && g.targetAmount > g.savedAmount);
+    let effect = `That's $${(monthlySavingsFromCut * 12).toLocaleString()}/year back in your pocket.`;
+    if (activeGoal) {
+      const remaining = activeGoal.targetAmount - activeGoal.savedAmount;
+      const monthsAtCurrentPace = monthlySavingsFromCut > 0 ? Math.ceil(remaining / monthlySavingsFromCut) : null;
+      if (monthsAtCurrentPace) {
+        effect = `Could reach your "${activeGoal.name}" goal about ${monthsAtCurrentPace} month${monthsAtCurrentPace === 1 ? '' : 's'} sooner.`;
+      }
+    }
+    scenarios.push({
+      scenario: 'Cut monthly spending by 10%', impact: `+$${monthlySavingsFromCut.toLocaleString()}/month`,
+      effect, icon: 'trending-down', color: '#27AE60', positive: true,
+    });
+  }
+
+  const nonAutoPayBills = bills.filter((b) => !b.isAutoPay && b.status !== 'paid');
+  if (nonAutoPayBills.length > 0) {
+    scenarios.push({
+      scenario: 'Automate bill payments', impact: `${nonAutoPayBills.length} bill${nonAutoPayBills.length === 1 ? '' : 's'} at risk of late fees`,
+      effect: 'Turning on autopay for these would remove the risk of missing a due date.',
+      icon: 'card', color: '#F5A623', positive: true,
+    });
+  }
+
+  return scenarios;
+}
+
+interface RealPattern {
+  pattern: string;
+  detail: string;
+  icon: string;
+  color: string;
+}
+
+// Real day-of-week patterns, only surfaced once there's enough data to be
+// meaningful (7+ data points) — replaces a previous hardcoded list of
+// specific-sounding percentages that never reflected actual family
+// behavior at all.
+function useRealPatterns(): RealPattern[] {
+  const tasks = useFamilyStore((s) => s.tasks);
+  const transactions = useFinanceStore((s) => s.transactions);
+  const moodEntries = useMoodStore((s) => s.entries);
+
+  const patterns: RealPattern[] = [];
+
+  const completedTasks = tasks.filter((t) => t.completedAt);
+  if (completedTasks.length >= 7) {
+    const byDay = Array(7).fill(0);
+    completedTasks.forEach((t) => byDay[new Date(t.completedAt as string).getDay()]++);
+    const avg = completedTasks.length / 7;
+    const maxDay = byDay.indexOf(Math.max(...byDay));
+    const pctAbove = avg > 0 ? Math.round(((byDay[maxDay] - avg) / avg) * 100) : 0;
+    if (pctAbove >= 15) {
+      patterns.push({ pattern: 'Peak Productivity', detail: `Your family completes ${pctAbove}% more tasks on ${DAY_NAMES[maxDay]}s`, icon: 'trending-up', color: '#27AE60' });
+    }
+  }
+
+  const expenses = transactions.filter((t) => t.type === 'expense');
+  if (expenses.length >= 7) {
+    const byDay = Array(7).fill(0);
+    expenses.forEach((t) => { byDay[new Date(t.date).getDay()] += t.amount; });
+    const avg = byDay.reduce((a, b) => a + b, 0) / 7;
+    const maxDay = byDay.indexOf(Math.max(...byDay));
+    const pctAbove = avg > 0 ? Math.round(((byDay[maxDay] - avg) / avg) * 100) : 0;
+    if (pctAbove >= 15) {
+      patterns.push({ pattern: 'Spending Trigger', detail: `Spending is ${pctAbove}% higher than average on ${DAY_NAMES[maxDay]}s`, icon: 'card', color: '#E74C3C' });
+    }
+  }
+
+  if (moodEntries.length >= 7) {
+    const byDay: number[][] = Array.from({ length: 7 }, () => []);
+    moodEntries.forEach((e) => byDay[new Date(e.date).getDay()].push(e.level));
+    const dayAverages = byDay.map((levels, i) => (levels.length > 0 ? { i, avg: levels.reduce((a, b) => a + b, 0) / levels.length } : null)).filter((d): d is { i: number; avg: number } => d !== null);
+    if (dayAverages.length >= 3) {
+      const best = dayAverages.sort((a, b) => b.avg - a.avg)[0];
+      patterns.push({ pattern: 'Best Mood Days', detail: `Family mood tends to be highest on ${DAY_NAMES[best.i]}s`, icon: 'happy', color: '#8E44AD' });
+    }
+  }
+
+  return patterns;
+}
 
 function getPolygonPoints(values: number[], centerX: number, centerY: number, radius: number): string {
   return values.map((val, i) => {
@@ -201,6 +295,8 @@ export function DigitalTwinScreen({ navigation }: { navigation: { goBack: () => 
   const { monthlyIncome, monthlyExpenses } = useFinanceStore();
 
   const { dimensions: DIMENSIONS_CONFIG, predictions: PREDICTIONS } = useDigitalTwinScores();
+  const WHAT_IF_SCENARIOS = useWhatIfScenarios();
+  const PATTERNS = useRealPatterns();
 
   const overallScore = Math.round(DIMENSIONS_CONFIG.reduce((s, d) => s + d.value, 0) / DIMENSIONS_CONFIG.length);
   const predictedScore = Math.round(DIMENSIONS_CONFIG.reduce((s, d) => s + d.prediction, 0) / DIMENSIONS_CONFIG.length);
@@ -383,6 +479,11 @@ export function DigitalTwinScreen({ navigation }: { navigation: { goBack: () => 
             ))}
 
             <Text style={styles.sectionTitle}>Behavioral Patterns</Text>
+            {PATTERNS.length === 0 && (
+              <Text style={styles.emptyStateText}>
+                Not enough data yet — log a week or two of tasks, spending, or mood to see real patterns here.
+              </Text>
+            )}
             {PATTERNS.map((p, i) => (
               <Card key={i} variant="elevated" style={styles.patternCard}>
                 <View style={styles.patternRow}>
@@ -453,6 +554,11 @@ export function DigitalTwinScreen({ navigation }: { navigation: { goBack: () => 
         {tab === 'whatif' && (
           <>
             <Text style={styles.whatIfIntro}>Explore how specific changes could impact your family's trajectory.</Text>
+            {WHAT_IF_SCENARIOS.length === 0 && (
+              <Text style={styles.emptyStateText}>
+                Add your monthly expenses or a few bills in Finance to see real what-if scenarios here.
+              </Text>
+            )}
             {WHAT_IF_SCENARIOS.map((s, i) => (
               <Card key={i} variant="elevated" style={styles.whatIfCard}>
                 <View style={styles.whatIfHeader}>
@@ -601,6 +707,7 @@ const styles = StyleSheet.create({
   tabTextActive: { color: '#2D2D8F' },
   content: { padding: 16 },
   sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.text, marginTop: 20, marginBottom: 12 },
+  emptyStateText: { fontSize: 13, color: colors.textSecondary, textAlign: 'center', paddingVertical: 16, lineHeight: 19 },
   radarCard: { borderRadius: 16, alignItems: 'center', padding: 16, marginBottom: 4 },
   radarLegend: { flexDirection: 'row', gap: 20, marginTop: 8 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },

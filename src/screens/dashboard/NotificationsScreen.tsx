@@ -48,15 +48,20 @@ export function NotificationsScreen({ navigation }: any) {
       ? roleNotifications.filter((n) => !n.isRead)
       : roleNotifications;
 
+  // Routes nested inside a tab's own stack (not bare tab names) need the
+  // `{screen: X}` form to resolve from here — NotificationsScreen sits as a
+  // sibling of the Tabs screen in MainNavigator, not inside the tab
+  // navigator itself. Bare tab names (e.g. 'Finance', 'Family') resolve
+  // fine on their own via React Navigation's action bubbling.
+  const NESTED_FAMILY_ROUTES = ['JoinRequests', 'SOSAlerts', 'ApprovalRequests'];
+
   const handlePress = (id: string, route?: string) => {
     markRead(id);
 
     if (!route) return;
 
-    if (route === 'JoinRequests') {
-      navigation.navigate('Family', {
-        screen: 'JoinRequests',
-      });
+    if (NESTED_FAMILY_ROUTES.includes(route)) {
+      navigation.navigate('Family', { screen: route });
       return;
     }
 

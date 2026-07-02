@@ -35,7 +35,6 @@ export function FamilySetupScreen({ navigation }: any) {
       currency,
       militaryMode,
       premiumTier: 'free',
-      healthScore: 50,
       createdAt: new Date().toISOString(),
     };
     setFamily(family);

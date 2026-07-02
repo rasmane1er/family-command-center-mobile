@@ -17,7 +17,6 @@ import { useBucketListStore }     from '../store/useBucketListStore';
 import { useCarpoolStore }        from '../store/useCarpoolStore';
 import { useChildcareStore }      from '../store/useChildcareStore';
 import { useChoreStore }          from '../store/useChoreStore';
-import { useDebtStore }           from '../store/useDebtStore';
 import { useFamilyBoardStore }    from '../store/useFamilyBoardStore';
 import { useFamilyGoalsStore }    from '../store/useFamilyGoalsStore';
 import { useGiftStore }           from '../store/useGiftStore';
@@ -41,6 +40,8 @@ import { useTravelStore }         from '../store/useTravelStore';
 import { useUtilityStore }        from '../store/useUtilityStore';
 import { useWealthStore }         from '../store/useWealthStore';
 import { useWorkoutStore }        from '../store/useWorkoutStore';
+import { useFamilyMeetingsStore } from '../store/useFamilyMeetingsStore';
+import { useEmergencyStore, DEFAULT_CHECKLIST } from '../store/useEmergencyStore';
 
 // MMKV keys to preserve across resets (auth + app settings)
 const PRESERVE_KEYS = new Set([
@@ -70,34 +71,40 @@ export function resetAllStores() {
 
   useFinanceStore.setState({
     accounts: [], transactions: [], budgets: [],
-    bills: [], subscriptions: [], financialGoals: [],
+    bills: [], subscriptions: [], financialGoals: [], debts: [],
   } as any);
 
   useHealthStore.setState({
-    medications: [], appointments: [], workouts: [],
-    sleepLogs: [], healthMetrics: [],
+    records: [], goals: [], appointments: [],
   } as any);
+
+  useFamilyMeetingsStore.setState({ meetings: [] } as any);
+
+  useEmergencyStore.setState({ checklist: DEFAULT_CHECKLIST } as any);
 
   useOperationsStore.setState({
-    pantryItems: [], recipes: [], documents: [],
-    shoppingLists: [], mealPlans: [],
+    pantryItems: [], documents: [], shoppingLists: [],
+    mealPlans: [], assets: [], vehicles: [],
   } as any);
 
-  useNotificationsStore.setState({ notifications: [] } as any);
+  useNotificationsStore.setState({ notifications: [], notifiedSourceKeys: [] } as any);
 
-  useAIStore.setState({ conversations: [], insights: [], memories: [] } as any);
+  useAIStore.setState({ messages: [], insights: [] } as any);
 
   useMoodStore.setState({ entries: [] } as any);
 
-  useHabitsStore.setState({ habits: [], logs: [] } as any);
+  useHabitsStore.setState({ habits: [] } as any);
 
-  useShoppingStore.setState({ lists: [], items: [] } as any);
+  useShoppingStore.setState({ items: [], budget: 0 } as any);
 
   useActivitiesStore.setState({ activities: [] } as any);
 
   useAllowanceStore.setState({ configs: [], transactions: [] } as any);
 
-  useAutomationStore.setState({ rules: [] } as any);
+  useAutomationStore.setState({
+    rules: [], listings: [], conflicts: [], timeBlocks: [], devices: [],
+    hueBridgeIp: null, hueConnected: false, hueScenes: [], isRefreshingHue: false,
+  } as any);
 
   useBirthdayStore.setState({ birthdays: [] } as any);
 
@@ -105,11 +112,9 @@ export function resetAllStores() {
 
   useCarpoolStore.setState({ routes: [] } as any);
 
-  useChildcareStore.setState({ caregivers: [] } as any);
+  useChildcareStore.setState({ caregivers: [], bookings: [] } as any);
 
   useChoreStore.setState({ chores: [] } as any);
-
-  useDebtStore.setState({ debts: [] } as any);
 
   useFamilyBoardStore.setState({ posts: [] } as any);
 
@@ -117,7 +122,11 @@ export function resetAllStores() {
 
   useGiftStore.setState({ gifts: [] } as any);
 
-  useGuardianStore.setState({ devices: [], geofenceZones: [], screenTimeRules: [] } as any);
+  useGuardianStore.setState({
+    devices: [], geofenceZones: [], screenTimeRules: [], appUsage: [],
+    sosAlerts: [], approvalRequests: [], pendingCommands: [],
+    thisDeviceId: null, myPairingCode: null, isHydrating: false,
+  } as any);
 
   useHomeInventoryStore.setState({ items: [] } as any);
 
@@ -137,13 +146,13 @@ export function resetAllStores() {
 
   useMemoryStore.setState({ memories: [] } as any);
 
-  usePetStore.setState({ pets: [] } as any);
+  usePetStore.setState({ pets: [], events: [] } as any);
 
   usePollsStore.setState({ polls: [] } as any);
 
   useRecipesStore.setState({ recipes: [] } as any);
 
-  useSchoolStore.setState({ subjects: [] } as any);
+  useSchoolStore.setState({ subjects: [], assignments: [] } as any);
 
   useSleepStore.setState({ logs: [] } as any);
 
@@ -153,7 +162,7 @@ export function resetAllStores() {
 
   useUtilityStore.setState({ bills: [] } as any);
 
-  useWealthStore.setState({ entries: [] } as any);
+  useWealthStore.setState({ entries: [], projections: [], reputationScores: [] } as any);
 
   useWorkoutStore.setState({ workouts: [] } as any);
 }
