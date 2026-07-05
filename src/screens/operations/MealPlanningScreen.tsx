@@ -12,10 +12,12 @@ import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { useOperationsStore } from '../../store/useOperationsStore';
 import { useShoppingStore } from '../../store/useShoppingStore';
+import { useFamilyStore } from '../../store/useFamilyStore';
 import type { MealPlan } from '../../types';
 import type { ShopCategory } from '../../store/useShoppingStore';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useTabBarInset } from '../../hooks/useTabBarInset';
+import { useTranslation } from 'react-i18next';
 
 interface PlannedMeal {
   name: string;
@@ -34,6 +36,7 @@ const EMPTY_WEEK: Record<string, Record<string, PlannedMeal>> = {
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 export function MealPlanningScreen({ navigation }: any) {
+  const { t } = useTranslation('ops');
   const insets = useSafeAreaInsets();
   const tabBarInset = useTabBarInset();
   const [selectedDay, setSelectedDay] = useState('Monday');
@@ -49,6 +52,7 @@ export function MealPlanningScreen({ navigation }: any) {
 
   const { mealPlans, setMealPlan } = useOperationsStore();
   const { addItem } = useShoppingStore();
+  const familyId = useFamilyStore((s) => s.family?.id) ?? 'demo-family';
 
   // Guards the persist effect below from firing with stale initial state
   // before this load effect's setWeekMeals has taken effect — without it,
@@ -107,7 +111,7 @@ export function MealPlanningScreen({ navigation }: any) {
     const existingPlan = mealPlans.find((p) => p.weekStart === weekKey);
     setMealPlan({
       id: existingPlan?.id ?? `mp-${weekKey}`,
-      familyId: 'demo-family',
+      familyId,
       weekStart: weekKey,
       meals: meals as Record<string, { breakfast?: import('../../types').Meal; lunch?: import('../../types').Meal; dinner?: import('../../types').Meal; snack?: import('../../types').Meal }>,
     });
@@ -186,7 +190,7 @@ export function MealPlanningScreen({ navigation }: any) {
   };
 
   const handleRemoveMeal = (day: string, type: string) => {
-    Alert.alert('Remove Meal', `Remove this ${type}?`, [
+    Alert.alert(t('common.removeTitle'), `Remove this ${type}?`, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Remove',
@@ -251,7 +255,7 @@ export function MealPlanningScreen({ navigation }: any) {
         <Pressable onPress={() => navigation.goBack()} style={styles.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
-        <Text style={styles.headerTitle}>Meal Planning</Text>
+        <Text style={styles.headerTitle}>{t('mealPlanning.title')}</Text>
         <Pressable onPress={handleGeneratePlan} style={styles.addBtn}>
           <Ionicons name="sparkles-outline" size={22} color="#fff" />
         </Pressable>
@@ -284,7 +288,7 @@ export function MealPlanningScreen({ navigation }: any) {
       <Pressable onPress={() => navigation.goBack()} style={styles.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
-      <Text style={styles.headerTitle}>Meal Planning</Text>
+      <Text style={styles.headerTitle}>{t('mealPlanning.title')}</Text>
       <Text style={{ fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.9)' }}>{totalCals} cal</Text>
     </LinearGradient>
   );

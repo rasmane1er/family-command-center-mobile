@@ -15,59 +15,65 @@ import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
 import { useBirthdayStore, Birthday, Relationship } from '../../store/useBirthdayStore';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
+import { useTranslation } from 'react-i18next';
 
 type Tab = 'upcoming' | 'all' | 'calendar';
 
-const RELATIONSHIP_LABELS: Record<Relationship, string> = {
-  self: 'Myself',
-  spouse: 'Spouse',
-  child: 'Child',
-  parent: 'Parent',
-  sibling: 'Sibling',
-  friend: 'Friend',
-  coworker: 'Coworker',
-  other: 'Other',
+const RELATIONSHIP_LABEL_KEYS: Record<Relationship, string> = {
+  self: 'family.screens.birthdayTracker.relationshipSelf',
+  spouse: 'family.screens.birthdayTracker.relationshipSpouse',
+  child: 'family.screens.birthdayTracker.relationshipChild',
+  parent: 'family.screens.birthdayTracker.relationshipParent',
+  sibling: 'family.screens.birthdayTracker.relationshipSibling',
+  friend: 'family.screens.birthdayTracker.relationshipFriend',
+  coworker: 'family.screens.birthdayTracker.relationshipCoworker',
+  other: 'family.screens.birthdayTracker.relationshipOther',
 };
 
 const AVATAR_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#F5A623', '#00D4AA'];
 const REMIND_OPTIONS = [1, 3, 7, 14, 30];
 const RELATIONSHIPS: Relationship[] = ['self', 'spouse', 'child', 'parent', 'sibling', 'friend', 'coworker', 'other'];
 
-const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December'];
-const SHORT_MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTH_NAME_KEYS = [
+  'family.screens.birthdayTracker.monthJanuary', 'family.screens.birthdayTracker.monthFebruary',
+  'family.screens.birthdayTracker.monthMarch', 'family.screens.birthdayTracker.monthApril',
+  'family.screens.birthdayTracker.monthMay', 'family.screens.birthdayTracker.monthJune',
+  'family.screens.birthdayTracker.monthJuly', 'family.screens.birthdayTracker.monthAugust',
+  'family.screens.birthdayTracker.monthSeptember', 'family.screens.birthdayTracker.monthOctober',
+  'family.screens.birthdayTracker.monthNovember', 'family.screens.birthdayTracker.monthDecember',
+];
 
-function formatDate(mmdd: string): string {
+function formatDate(mmdd: string, monthNames: string[]): string {
   const [mm, dd] = mmdd.split('-').map(Number);
-  return `${MONTH_NAMES[mm - 1]} ${dd}`;
+  return `${monthNames[mm - 1]} ${dd}`;
 }
 
 function CountdownBadge({ days }: { days: number }) {
+  const { t } = useTranslation('family');
   if (days === 0) {
     return (
       <View style={[styles.countdownBadge, { backgroundColor: '#FFD700' }]}>
-        <Text style={[styles.countdownText, { color: '#7B5800' }]}>Today! 🎂</Text>
+        <Text style={[styles.countdownText, { color: '#7B5800' }]}>{t('family.screens.birthdayTracker.todayBadge')}</Text>
       </View>
     );
   }
   if (days === 1) {
     return (
       <View style={[styles.countdownBadge, { backgroundColor: '#FCE4EC' }]}>
-        <Text style={[styles.countdownText, { color: '#C2185B' }]}>Tomorrow</Text>
+        <Text style={[styles.countdownText, { color: '#C2185B' }]}>{t('family.screens.birthdayTracker.tomorrowBadge')}</Text>
       </View>
     );
   }
   if (days <= 30) {
     return (
       <View style={[styles.countdownBadge, { backgroundColor: '#E3F2FD' }]}>
-        <Text style={[styles.countdownText, { color: '#1565C0' }]}>{days} days</Text>
+        <Text style={[styles.countdownText, { color: '#1565C0' }]}>{t('family.screens.birthdayTracker.daysBadge', { count: days })}</Text>
       </View>
     );
   }
   return (
     <View style={[styles.countdownBadge, { backgroundColor: colors.border }]}>
-      <Text style={[styles.countdownText, { color: colors.textSecondary }]}>Next month</Text>
+      <Text style={[styles.countdownText, { color: colors.textSecondary }]}>{t('family.screens.birthdayTracker.nextMonthBadge')}</Text>
     </View>
   );
 }
@@ -77,6 +83,8 @@ function BirthdayCard({ birthday, daysUntil, onPress }: {
   daysUntil: number;
   onPress: () => void;
 }) {
+  const { t } = useTranslation('family');
+  const monthNames = MONTH_NAME_KEYS.map((k) => t(k));
   const initial = birthday.name.charAt(0).toUpperCase();
   const age = birthday.birthYear
     ? new Date().getFullYear() - birthday.birthYear + (daysUntil === 0 ? 0 : 0)
@@ -102,15 +110,15 @@ function BirthdayCard({ birthday, daysUntil, onPress }: {
           </View>
           <View style={styles.bCardMetaRow}>
             <Badge
-              label={RELATIONSHIP_LABELS[birthday.relationship]}
+              label={t(RELATIONSHIP_LABEL_KEYS[birthday.relationship])}
               variant="primary"
               size="sm"
             />
-            <Text style={styles.bCardDate}>{formatDate(birthday.date)}</Text>
+            <Text style={styles.bCardDate}>{formatDate(birthday.date, monthNames)}</Text>
           </View>
           {turningAge !== null && (
             <Text style={styles.bCardAge}>
-              {daysUntil === 0 ? `Turning ${age}` : `Turning ${turningAge}`}
+              {t('family.screens.birthdayTracker.turningAge', { age: daysUntil === 0 ? age : turningAge })}
             </Text>
           )}
           {birthday.giftIdeas && birthday.giftIdeas.length > 0 && (
@@ -129,6 +137,8 @@ function BirthdayCard({ birthday, daysUntil, onPress }: {
 }
 
 function CalendarTab({ birthdays, getDaysUntil }: { birthdays: Birthday[]; getDaysUntil: (d: string) => number }) {
+  const { t } = useTranslation('family');
+  const monthNames = MONTH_NAME_KEYS.map((k) => t(k));
   const today = new Date();
   const year = today.getFullYear();
   const month = today.getMonth();
@@ -181,7 +191,7 @@ function CalendarTab({ birthdays, getDaysUntil }: { birthdays: Birthday[]; getDa
         <Pressable onPress={prevMonth} style={styles.calNavBtn}>
           <Ionicons name="chevron-back" size={20} color={colors.text} />
         </Pressable>
-        <Text style={styles.calMonthTitle}>{MONTH_NAMES[viewMonth]} {viewYear}</Text>
+        <Text style={styles.calMonthTitle}>{monthNames[viewMonth]} {viewYear}</Text>
         <Pressable onPress={nextMonth} style={styles.calNavBtn}>
           <Ionicons name="chevron-forward" size={20} color={colors.text} />
         </Pressable>
@@ -228,7 +238,7 @@ function CalendarTab({ birthdays, getDaysUntil }: { birthdays: Birthday[]; getDa
       {selectedBirthdays.length > 0 && (
         <View style={styles.calSelectedBirthdays}>
           <Text style={styles.calSelectedTitle}>
-            {MONTH_NAMES[viewMonth]} {selectedDay} Birthdays
+            {t('family.screens.birthdayTracker.calMonthBirthdays', { month: monthNames[viewMonth], day: selectedDay })}
           </Text>
           {selectedBirthdays.map((b) => (
             <View key={b.id} style={styles.calBirthdayRow}>
@@ -239,11 +249,11 @@ function CalendarTab({ birthdays, getDaysUntil }: { birthdays: Birthday[]; getDa
                 <Text style={styles.calBirthdayName}>{b.name}</Text>
                 {b.birthYear && (
                   <Text style={styles.calBirthdayAge}>
-                    Turning {viewYear - b.birthYear}
+                    {t('family.screens.birthdayTracker.turningAge', { age: viewYear - b.birthYear })}
                   </Text>
                 )}
               </View>
-              <Badge label={RELATIONSHIP_LABELS[b.relationship]} variant="primary" size="sm" />
+              <Badge label={t(RELATIONSHIP_LABEL_KEYS[b.relationship])} variant="primary" size="sm" />
             </View>
           ))}
         </View>
@@ -251,7 +261,7 @@ function CalendarTab({ birthdays, getDaysUntil }: { birthdays: Birthday[]; getDa
 
       {birthdaysInMonth.length === 0 && (
         <View style={styles.calEmpty}>
-          <Text style={styles.calEmptyText}>No birthdays this month</Text>
+          <Text style={styles.calEmptyText}>{t('family.screens.birthdayTracker.calNoBirthdaysMonth')}</Text>
         </View>
       )}
     </View>
@@ -267,6 +277,7 @@ function AddBirthdayModal({
   onClose: () => void;
   onAdd: (b: Omit<Birthday, 'id'>) => void;
 }) {
+  const { t } = useTranslation('family');
   const [name, setName] = useState('');
   const [relationship, setRelationship] = useState<Relationship>('friend');
   const [date, setDate] = useState('');
@@ -280,13 +291,19 @@ function AddBirthdayModal({
     if (!name.trim() || !date.trim()) return;
     const parts = date.trim().split('-');
     if (parts.length !== 2) {
-      Alert.alert('Invalid Date', 'Enter date as MM-DD (e.g. 07-04)');
+      Alert.alert(
+        t('family.screens.birthdayTracker.invalidDateTitle'),
+        t('family.screens.birthdayTracker.invalidDateMsgFormat')
+      );
       return;
     }
     const mm = parseInt(parts[0], 10);
     const dd = parseInt(parts[1], 10);
     if (isNaN(mm) || isNaN(dd) || mm < 1 || mm > 12 || dd < 1 || dd > 31) {
-      Alert.alert('Invalid Date', 'Enter a valid date (MM-DD)');
+      Alert.alert(
+        t('family.screens.birthdayTracker.invalidDateTitle'),
+        t('family.screens.birthdayTracker.invalidDateMsgValid')
+      );
       return;
     }
     onAdd({
@@ -310,23 +327,23 @@ function AddBirthdayModal({
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <View style={styles.modal}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Add Birthday</Text>
+            <Text style={styles.modalTitle}>{t('family.screens.birthdayTracker.addBirthday')}</Text>
             <Pressable onPress={onClose}>
               <Ionicons name="close" size={24} color={colors.text} />
             </Pressable>
           </View>
           <ScrollView contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">
-            <Text style={styles.fieldLabel}>Name *</Text>
+            <Text style={styles.fieldLabel}>{t('family.screens.birthdayTracker.fieldName')}</Text>
             <TextInput
               style={styles.input}
               value={name}
               onChangeText={setName}
-              placeholder="Full name"
+              placeholder={t('family.screens.birthdayTracker.placeholderName')}
               placeholderTextColor={colors.textMuted}
               autoFocus
             />
 
-            <Text style={styles.fieldLabel}>Relationship</Text>
+            <Text style={styles.fieldLabel}>{t('family.screens.birthdayTracker.fieldRelationship')}</Text>
             <View style={styles.chipRow}>
               {RELATIONSHIPS.map((r) => (
                 <Pressable
@@ -335,35 +352,35 @@ function AddBirthdayModal({
                   style={[styles.chip, relationship === r && styles.chipActive]}
                 >
                   <Text style={[styles.chipText, relationship === r && styles.chipTextActive]}>
-                    {RELATIONSHIP_LABELS[r]}
+                    {t(RELATIONSHIP_LABEL_KEYS[r])}
                   </Text>
                 </Pressable>
               ))}
             </View>
 
-            <Text style={styles.fieldLabel}>Date (MM-DD) *</Text>
+            <Text style={styles.fieldLabel}>{t('family.screens.birthdayTracker.fieldDate')}</Text>
             <TextInput
               style={styles.input}
               value={date}
               onChangeText={setDate}
-              placeholder="07-04"
+              placeholder={t('family.screens.birthdayTracker.placeholderDate')}
               placeholderTextColor={colors.textMuted}
               keyboardType="numbers-and-punctuation"
               maxLength={5}
             />
 
-            <Text style={styles.fieldLabel}>Birth Year (optional)</Text>
+            <Text style={styles.fieldLabel}>{t('family.screens.birthdayTracker.fieldBirthYear')}</Text>
             <TextInput
               style={styles.input}
               value={birthYear}
               onChangeText={setBirthYear}
-              placeholder="1990"
+              placeholder={t('family.screens.birthdayTracker.placeholderBirthYear')}
               placeholderTextColor={colors.textMuted}
               keyboardType="numeric"
               maxLength={4}
             />
 
-            <Text style={styles.fieldLabel}>Remind Days Before</Text>
+            <Text style={styles.fieldLabel}>{t('family.screens.birthdayTracker.fieldRemindDays')}</Text>
             <View style={styles.chipRow}>
               {REMIND_OPTIONS.map((d) => (
                 <Pressable
@@ -371,31 +388,31 @@ function AddBirthdayModal({
                   onPress={() => setRemindDays(d)}
                   style={[styles.chip, remindDays === d && styles.chipActive]}
                 >
-                  <Text style={[styles.chipText, remindDays === d && styles.chipTextActive]}>{d}d</Text>
+                  <Text style={[styles.chipText, remindDays === d && styles.chipTextActive]}>{t('family.screens.birthdayTracker.daysSuffix', { count: d })}</Text>
                 </Pressable>
               ))}
             </View>
 
-            <Text style={styles.fieldLabel}>Gift Ideas (comma-separated)</Text>
+            <Text style={styles.fieldLabel}>{t('family.screens.birthdayTracker.fieldGiftIdeas')}</Text>
             <TextInput
               style={styles.input}
               value={giftIdeas}
               onChangeText={setGiftIdeas}
-              placeholder="Watch, Golf clubs, Book"
+              placeholder={t('family.screens.birthdayTracker.placeholderGiftIdeas')}
               placeholderTextColor={colors.textMuted}
             />
 
-            <Text style={styles.fieldLabel}>Notes</Text>
+            <Text style={styles.fieldLabel}>{t('family.screens.birthdayTracker.fieldNotes')}</Text>
             <TextInput
               style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
               value={notes}
               onChangeText={setNotes}
-              placeholder="Any special notes..."
+              placeholder={t('family.screens.birthdayTracker.placeholderNotes')}
               placeholderTextColor={colors.textMuted}
               multiline
             />
 
-            <Text style={styles.fieldLabel}>Avatar Color</Text>
+            <Text style={styles.fieldLabel}>{t('family.screens.birthdayTracker.fieldAvatarColor')}</Text>
             <View style={styles.colorRow}>
               {AVATAR_COLORS.map((c) => (
                 <Pressable
@@ -420,7 +437,7 @@ function AddBirthdayModal({
               style={[styles.submitBtn, (!name.trim() || !date.trim()) && { opacity: 0.4 }]}
             >
               <Ionicons name="gift-outline" size={18} color="#fff" />
-              <Text style={styles.submitBtnText}>Add Birthday</Text>
+              <Text style={styles.submitBtnText}>{t('family.screens.birthdayTracker.addBirthday')}</Text>
             </Pressable>
           </ScrollView>
         </View>
@@ -430,6 +447,8 @@ function AddBirthdayModal({
 }
 
 export function BirthdayTrackerScreen({ navigation }: any) {
+  const { t } = useTranslation('family');
+  const monthNames = MONTH_NAME_KEYS.map((k) => t(k));
   const insets = useSafeAreaInsets();
   const { birthdays, addBirthday, deleteBirthday, getDaysUntil, getUpcoming, seedDemoData } = useBirthdayStore();
   const [activeTab, setActiveTab] = useState<Tab>('upcoming');
@@ -448,25 +467,29 @@ export function BirthdayTrackerScreen({ navigation }: any) {
   const hasTodayBirthdays = todayBirthdays.length > 0;
 
   const handleDelete = (b: Birthday) => {
-    Alert.alert('Delete Birthday', `Remove ${b.name}'s birthday?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete', style: 'destructive', onPress: () => {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-          deleteBirthday(b.id);
-        }
-      },
-    ]);
+    Alert.alert(
+      t('family.screens.birthdayTracker.deleteBirthdayTitle'),
+      t('family.screens.birthdayTracker.deleteBirthdayMsg', { name: b.name }),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.delete'), style: 'destructive', onPress: () => {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+            deleteBirthday(b.id);
+          }
+        },
+      ]
+    );
   };
 
   const handleCardPress = (b: Birthday) => {
     const days = getDaysUntil(b.date);
     Alert.alert(
       b.name,
-      `${formatDate(b.date)} ${b.birthYear ? `(${new Date().getFullYear() - b.birthYear + (days > 0 ? 1 : 0)} years old)` : ''}\n\nRelationship: ${RELATIONSHIP_LABELS[b.relationship]}\n${b.notes ? `\nNotes: ${b.notes}` : ''}${b.giftIdeas?.length ? `\n\nGift Ideas:\n${b.giftIdeas.map((g) => `• ${g}`).join('\n')}` : ''}`,
+      `${formatDate(b.date, monthNames)} ${b.birthYear ? t('family.screens.birthdayTracker.yearsOld', { age: new Date().getFullYear() - b.birthYear + (days > 0 ? 1 : 0) }) : ''}\n\n${t('family.screens.birthdayTracker.detailRelationship', { relationship: t(RELATIONSHIP_LABEL_KEYS[b.relationship]) })}\n${b.notes ? t('family.screens.birthdayTracker.detailNotes', { notes: b.notes }) : ''}${b.giftIdeas?.length ? t('family.screens.birthdayTracker.detailGiftIdeas', { giftIdeas: b.giftIdeas.map((g) => `• ${g}`).join('\n') }) : ''}`,
       [
-        { text: 'Delete', style: 'destructive', onPress: () => handleDelete(b) },
-        { text: 'Close', style: 'cancel' },
+        { text: t('common.delete'), style: 'destructive', onPress: () => handleDelete(b) },
+        { text: t('common.close'), style: 'cancel' },
       ]
     );
   };
@@ -481,8 +504,8 @@ export function BirthdayTrackerScreen({ navigation }: any) {
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>Birthday Tracker 🎂</Text>
-          <Text style={styles.headerSub}>Never forget a birthday</Text>
+          <Text style={styles.headerTitle}>{t('family.screens.birthdayTracker.headerTitle')}</Text>
+          <Text style={styles.headerSub}>{t('family.screens.birthdayTracker.headerSub')}</Text>
         </View>
         <Pressable onPress={() => setShowAdd(true)} style={styles.addBtn}>
           <Ionicons name="add" size={22} color="#fff" />
@@ -491,9 +514,9 @@ export function BirthdayTrackerScreen({ navigation }: any) {
 
       <View style={styles.statsRow}>
         {[
-          { label: 'Tracked', value: birthdays.length, icon: 'calendar' },
-          { label: 'This Month', value: thisMonthBirthdays.length, icon: 'gift' },
-          { label: 'Today', value: todayBirthdays.length, icon: 'cake' },
+          { label: t('family.screens.birthdayTracker.statTracked'), value: birthdays.length, icon: 'calendar' },
+          { label: t('family.screens.birthdayTracker.statThisMonth'), value: thisMonthBirthdays.length, icon: 'gift' },
+          { label: t('family.screens.birthdayTracker.statToday'), value: todayBirthdays.length, icon: 'cake' },
         ].map((s, i) => (
           <View key={i} style={[styles.statItem, i < 2 && styles.statBorder]}>
             <Text style={styles.statVal}>{s.value}</Text>
@@ -509,8 +532,8 @@ export function BirthdayTrackerScreen({ navigation }: any) {
       <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
-      <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>Birthday Tracker</Text>
-      <Text style={{ fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.8)' }}>{birthdays.length} tracked</Text>
+      <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>{t('family.screens.birthdayTracker.headerTitle')}</Text>
+      <Text style={{ fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.8)' }}>{t('family.screens.birthdayTracker.compactTracked', { count: birthdays.length })}</Text>
     </LinearGradient>
   );
 
@@ -524,8 +547,10 @@ export function BirthdayTrackerScreen({ navigation }: any) {
             {hasTodayBirthdays && (
               <LinearGradient colors={['#FFD700', '#FFA000']} style={styles.celebrationBanner}>
                 <Text style={styles.celebrationText}>
-                  🎉 Today is {todayBirthdays.map((b) => b.name).join(' & ')}
-                  {todayBirthdays.length === 1 ? "'s" : "'"} Birthday! 🎂🎊
+                  {t('family.screens.birthdayTracker.celebrationText', {
+                    names: todayBirthdays.map((b) => b.name).join(' & '),
+                    suffix: todayBirthdays.length === 1 ? "'s" : "'",
+                  })}
                 </Text>
               </LinearGradient>
             )}
@@ -538,7 +563,11 @@ export function BirthdayTrackerScreen({ navigation }: any) {
                   style={[styles.tab, activeTab === tab && styles.tabActive]}
                 >
                   <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-                    {tab === 'upcoming' ? 'Upcoming' : tab === 'all' ? 'All' : 'Calendar'}
+                    {tab === 'upcoming'
+                      ? t('family.screens.birthdayTracker.tabUpcoming')
+                      : tab === 'all'
+                      ? t('family.screens.birthdayTracker.tabAll')
+                      : t('family.screens.birthdayTracker.tabCalendar')}
                   </Text>
                 </Pressable>
               ))}
@@ -556,13 +585,13 @@ export function BirthdayTrackerScreen({ navigation }: any) {
           {birthdays.length === 0 && (
             <View style={styles.emptyState}>
               <Text style={{ fontSize: 60 }}>🎂</Text>
-              <Text style={styles.emptyTitle}>No Birthdays Yet</Text>
-              <Text style={styles.emptyDesc}>Add family and friends to never miss a birthday!</Text>
+              <Text style={styles.emptyTitle}>{t('family.screens.birthdayTracker.emptyTitleNoBirthdays')}</Text>
+              <Text style={styles.emptyDesc}>{t('family.screens.birthdayTracker.emptyDescNoBirthdays')}</Text>
               <Pressable
                 onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); seedDemoData(); }}
                 style={styles.demoBtn}
               >
-                <Text style={styles.demoBtnText}>Load Demo Data</Text>
+                <Text style={styles.demoBtnText}>{t('family.screens.birthdayTracker.loadDemoData')}</Text>
               </Pressable>
             </View>
           )}
@@ -572,8 +601,8 @@ export function BirthdayTrackerScreen({ navigation }: any) {
               {upcomingBirthdays.length === 0 && birthdays.length > 0 && (
                 <View style={styles.emptyState}>
                   <Text style={{ fontSize: 48 }}>📅</Text>
-                  <Text style={styles.emptyTitle}>No Upcoming Birthdays</Text>
-                  <Text style={styles.emptyDesc}>No birthdays in the next 90 days</Text>
+                  <Text style={styles.emptyTitle}>{t('family.screens.birthdayTracker.emptyTitleNoUpcoming')}</Text>
+                  <Text style={styles.emptyDesc}>{t('family.screens.birthdayTracker.emptyDescNoUpcoming')}</Text>
                 </View>
               )}
               {upcomingBirthdays.map((b) => (
@@ -607,12 +636,12 @@ export function BirthdayTrackerScreen({ navigation }: any) {
           {birthdays.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={{ fontSize: 60 }}>🎂</Text>
-              <Text style={styles.emptyTitle}>No Birthdays Yet</Text>
+              <Text style={styles.emptyTitle}>{t('family.screens.birthdayTracker.emptyTitleNoBirthdays')}</Text>
               <Pressable
                 onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); seedDemoData(); }}
                 style={styles.demoBtn}
               >
-                <Text style={styles.demoBtnText}>Load Demo Data</Text>
+                <Text style={styles.demoBtnText}>{t('family.screens.birthdayTracker.loadDemoData')}</Text>
               </Pressable>
             </View>
           ) : (

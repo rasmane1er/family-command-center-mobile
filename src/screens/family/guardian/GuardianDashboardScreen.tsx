@@ -10,6 +10,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { useGuardianStore } from '../../../store/useGuardianStore';
 import { useFamilyStore } from '../../../store/useFamilyStore';
@@ -17,6 +18,7 @@ import { colors } from '../../../theme/colors';
 import { shadows } from '../../../theme/spacing';
 import { CollapsibleHeader } from '../../../components/common/CollapsibleHeader';
 import type { ChildDevice, ChildDeviceStatus } from '../../../types';
+import { SubscriptionGate } from '../../../components/common/SubscriptionGate';
 
 const BOTTOM_MENU_HEIGHT = 72;
 const FAB_BOTTOM_OFFSET = BOTTOM_MENU_HEIGHT + 22;
@@ -27,14 +29,6 @@ const statusColors: Record<ChildDeviceStatus, string> = {
   school_mode: '#2980B9',
   bedtime: '#6A1B9A',
   restricted: colors.danger,
-};
-
-const statusLabels: Record<ChildDeviceStatus, string> = {
-  online: 'Online',
-  offline: 'Offline',
-  school_mode: 'School Mode',
-  bedtime: 'Bedtime',
-  restricted: 'Restricted',
 };
 
 function BatteryIcon({ level }: { level: number }) {
@@ -49,22 +43,31 @@ function BatteryIcon({ level }: { level: number }) {
   );
 }
 
-function formatLastSeen(iso: string): string {
+function formatLastSeen(iso: string, t: (key: string, options?: any) => string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diff / 60000);
 
-  if (mins < 1) return 'Just now';
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1) return t('family.screens.guardianDashboard.lastSeenJustNow');
+  if (mins < 60) return t('family.screens.guardianDashboard.lastSeenMinutesAgo', { count: mins });
 
   const hours = Math.floor(mins / 60);
 
-  if (hours < 24) return `${hours}h ago`;
+  if (hours < 24) return t('family.screens.guardianDashboard.lastSeenHoursAgo', { count: hours });
 
-  return `${Math.floor(hours / 24)}d ago`;
+  return t('family.screens.guardianDashboard.lastSeenDaysAgo', { count: Math.floor(hours / 24) });
 }
+
+const statusLabelKeys: Record<ChildDeviceStatus, string> = {
+  online: 'statusOnline',
+  offline: 'statusOffline',
+  school_mode: 'statusSchoolMode',
+  bedtime: 'statusBedtime',
+  restricted: 'statusRestricted',
+};
 
 export function GuardianDashboardScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation('family');
 
   const devices = useGuardianStore((s) => s.devices);
   const sosAlerts = useGuardianStore((s) => s.sosAlerts);
@@ -249,6 +252,7 @@ export function GuardianDashboardScreen({ navigation }: any) {
   );
 
   return (
+    <SubscriptionGate requiredTier="premium" featureName="Guardian Dashboard">
     <View style={styles.container}>
       <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
         {({
@@ -355,7 +359,7 @@ export function GuardianDashboardScreen({ navigation }: any) {
                       <View style={[styles.statusBadge, { backgroundColor: statusColors[device.status] + '22' }]}>
                         <View style={[styles.statusDot, { backgroundColor: statusColors[device.status] }]} />
                         <Text style={[styles.statusLabel, { color: statusColors[device.status] }]}>
-                          {statusLabels[device.status]}
+                          {t(`family.screens.guardianDashboard.${statusLabelKeys[device.status]}`)}
                         </Text>
                       </View>
                       <Ionicons
@@ -369,7 +373,7 @@ export function GuardianDashboardScreen({ navigation }: any) {
 
                   <View style={styles.deviceRight}>
                     <BatteryIcon level={device.batteryLevel} />
-                    <Text style={styles.lastSeen}>{formatLastSeen(device.lastSeen)}</Text>
+                    <Text style={styles.lastSeen}>{formatLastSeen(device.lastSeen, t)}</Text>
                   </View>
                 </View>
 
@@ -425,6 +429,7 @@ export function GuardianDashboardScreen({ navigation }: any) {
         <Ionicons name="add" size={28} color="#fff" />
       </Pressable>
     </View>
+    </SubscriptionGate>
   );
 }
 

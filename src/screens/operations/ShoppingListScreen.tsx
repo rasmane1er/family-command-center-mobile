@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, TextInput,
   Alert, Modal, KeyboardAvoidingView, Platform,
@@ -17,13 +17,15 @@ import {
 } from '../../store/useShoppingStore';
 import { useOperationsStore } from '../../store/useOperationsStore';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
+import { useTranslation } from 'react-i18next';
 
 const UNITS = ['ea', 'lbs', 'oz', 'g', 'kg', 'cup', 'tbsp', 'tsp', 'bag', 'box', 'bottle', 'can', 'pack', 'bunch', 'carton', 'gallon', 'loaf', 'jar', 'pint', 'block'];
 
 export function ShoppingListScreen({ navigation }: any) {
   const { colors } = useTheme();
+  const { t } = useTranslation('ops');
   const insets = useSafeAreaInsets();
-  const { items, budget, addItem, toggleItem, deleteItem, clearChecked, seedDemoData } = useShoppingStore();
+  const { items, budget, isLoaded, addItem, toggleItem, deleteItem, clearChecked, fetchFromServer } = useShoppingStore();
   const { pantryItems } = useOperationsStore();
   const [showAdd, setShowAdd] = useState(false);
   const [showChecked, setShowChecked] = useState(true);
@@ -35,7 +37,10 @@ export function ShoppingListScreen({ navigation }: any) {
   const [newUnit, setNewUnit] = useState('ea');
   const [newPrice, setNewPrice] = useState('');
 
-  if (items.length === 0) seedDemoData();
+  useEffect(() => {
+    if (!isLoaded) fetchFromServer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const unchecked = useMemo(() => items.filter((i) => !i.checked), [items]);
   const checked = useMemo(() => items.filter((i) => i.checked), [items]);
@@ -71,7 +76,7 @@ export function ShoppingListScreen({ navigation }: any) {
   };
 
   const handleDelete = (id: string, name: string) => {
-    Alert.alert('Remove item?', `Remove "${name}" from your list?`, [
+    Alert.alert(t('common.removeTitle'), `Remove "${name}" from your list?`, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Remove', style: 'destructive',
@@ -103,7 +108,7 @@ export function ShoppingListScreen({ navigation }: any) {
 
   const screenHeader = (
         <PremiumHeader
-          title="Shopping List"
+          title={t('ops.shopping')}
           colors={['#1A6B3C', '#27AE60']}
           onBack={() => navigation.goBack()}
           rightAction={

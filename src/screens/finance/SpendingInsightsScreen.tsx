@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { getSpendingByCategory, getMonthlySpending, getTransactions } from '../../services/plaidService';
 import type { PlaidTransaction } from '../../types';
+import { useTranslation } from 'react-i18next';
 
 const CATEGORY_COLORS: Record<string, string> = {
   FOOD_AND_DRINK: '#FF6B6B',
@@ -29,6 +30,7 @@ function monthShort(ym: string): string {
 }
 
 export function SpendingInsightsScreen({ navigation }: { navigation: any }) {
+  const { t } = useTranslation('finance');
   const insets = useSafeAreaInsets();
   const [month, setMonth] = useState(() => {
     const now = new Date();
@@ -100,7 +102,7 @@ export function SpendingInsightsScreen({ navigation }: { navigation: any }) {
         <Pressable onPress={() => navigation.goBack()} style={s.backBtn}>
           <Ionicons name="chevron-back" size={22} color="#1E3A5F" />
         </Pressable>
-        <Text style={s.headerTitle}>Spending Insights</Text>
+        <Text style={s.headerTitle}>{t('spending.title')}</Text>
         <View style={{ width: 36 }} />
       </View>
 

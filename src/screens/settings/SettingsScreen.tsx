@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator, Alert, Linking, Modal, Platform, Pressable, ScrollView, Share, StyleSheet,
-  Switch, Text, TextInput, TouchableOpacity, View,
+  ActivityIndicator, Alert, I18nManager, Linking, Modal, Platform, Pressable, ScrollView, Share,
+  StyleSheet, Switch, Text, TextInput, TouchableOpacity, View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -9,6 +9,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import * as StoreReview from 'expo-store-review';
+import * as LocalAuthentication from 'expo-local-authentication';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { i18n } from '../../i18n';
 
@@ -16,27 +17,17 @@ import { Card } from '../../components/common/Card';
 import { clearLocalAppData } from '../../storage/resetLocalData';
 import { resetAllStores } from '../../storage/resetAllStores';
 import { useAIStore } from '../../store/useAIStore';
-import { useAllowanceStore } from '../../store/useAllowanceStore';
 import { useAppStore } from '../../store/useAppStore';
 import { useAutomationStore } from '../../store/useAutomationStore';
-import { useChoreStore } from '../../store/useChoreStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
-import { useFinanceStore } from '../../store/useFinanceStore';
-import { useHabitsStore } from '../../store/useHabitsStore';
 import { useHealthStore } from '../../store/useHealthStore';
-import { useJournalStore } from '../../store/useJournalStore';
 import { useLegacyStore } from '../../store/useLegacyStore';
 import { useMemoryStore } from '../../store/useMemoryStore';
 import { useMoodStore } from '../../store/useMoodStore';
 import { useNotificationsStore } from '../../store/useNotificationsStore';
-import { useOperationsStore } from '../../store/useOperationsStore';
-import { usePollsStore } from '../../store/usePollsStore';
 import { useRecipesStore } from '../../store/useRecipesStore';
 import { useSchoolStore } from '../../store/useSchoolStore';
-import { useShoppingStore } from '../../store/useShoppingStore';
 import { useTimelineStore } from '../../store/useTimelineStore';
-import { useTravelStore } from '../../store/useTravelStore';
-import { useWealthStore } from '../../store/useWealthStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useTheme } from '../../theme/ThemeContext';
 import { useSubscription, SubscriptionTier, TIER_LABELS, TIER_PRICES, TIER_FEATURES } from '../../hooks/useSubscription';
@@ -83,7 +74,7 @@ const LANGUAGES = [
 
 export function SettingsScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
-  const { t } = useTranslation();
+  const { t } = useTranslation('settings');
   const { colors, isDark } = useTheme();
 
   const { settings, updateSettings, setOnboarded, toggleMilitaryMode } = useAppStore();
@@ -108,6 +99,8 @@ export function SettingsScreen({ navigation }: any) {
   const [showApiKey,        setShowApiKey]         = useState(false);
   const [showLanguageModal, setShowLanguageModal]  = useState(false);
   const [biometricEnabled,  setBiometricEnabled]   = useState(settings.biometricLock ?? false);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [biometricLabel,    setBiometricLabel]     = useState('Biometric');
   const hideBalances = settings.hideBalances ?? false;
   const autoLock     = settings.autoLock ?? true;
   const cloudBackup  = settings.cloudBackup ?? true;
@@ -119,31 +112,48 @@ export function SettingsScreen({ navigation }: any) {
 
   const setAIKey = useAIStore((s) => s.setApiKey);
   const { seedDemoData: seedFamily }        = useFamilyStore();
-  const { seedDemoData: seedFinance }       = useFinanceStore();
-  const { seedDemoData: seedOps }           = useOperationsStore();
   const { seedDemoInsights }                = useAIStore();
   const { seedDemoData: seedMemory }        = useMemoryStore();
   const { seedDemoData: seedLegacy }        = useLegacyStore();
   const { seedDemoData: seedHealth }        = useHealthStore();
   const { seedDemoData: seedAutomation }    = useAutomationStore();
-  const { seedDemoData: seedWealth }        = useWealthStore();
   const { seedDemoData: seedNotifications, clearAll: clearNotifications } = useNotificationsStore();
   const { seedDemoData: seedMood }          = useMoodStore();
-  const { seedDemoData: seedHabits }        = useHabitsStore();
-  const { seedDemoData: seedShopping }      = useShoppingStore();
   const { seedDemoData: seedRecipes }       = useRecipesStore();
   const { seedDemoData: seedTimeline }      = useTimelineStore();
-  const { seedDemoData: seedPolls }         = usePollsStore();
-  const { seedDemoData: seedChores }        = useChoreStore();
-  const { seedDemoData: seedAllowance }     = useAllowanceStore();
-  const { seedDemoData: seedTravel }        = useTravelStore();
-  const { seedDemoData: seedJournal }       = useJournalStore();
   const { seedDemoData: seedSchool }        = useSchoolStore();
 
   const currentLanguage = LANGUAGES.find((l) => l.code === (settings.language || 'en')) || LANGUAGES[0];
 
+  // Reflect the device's actual biometric capability rather than trusting the
+  // stored preference blindly — e.g. if biometrics were removed from the
+  // device after the setting was turned on, don't keep claiming it's active.
+  useEffect(() => {
+    (async () => {
+      const hasHardware = await LocalAuthentication.hasHardwareAsync();
+      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+      const available = hasHardware && isEnrolled;
+      setBiometricAvailable(available);
+
+      if (hasHardware) {
+        const types = await LocalAuthentication.supportedAuthenticationTypesAsync();
+        if (types.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)) {
+          setBiometricLabel('Face ID');
+        } else if (types.includes(LocalAuthentication.AuthenticationType.FINGERPRINT)) {
+          setBiometricLabel('Touch ID');
+        }
+      }
+
+      if (!available && settings.biometricLock) {
+        setBiometricEnabled(false);
+        updateSettings({ biometricLock: false });
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleSaveApiKey = () => {
-    if (!apiKeyInput.trim()) { Alert.alert(t('common.error'), 'Please enter a valid API key.'); return; }
+    if (!apiKeyInput.trim()) { Alert.alert(t('common.error'), t('settings.apiKeyInvalid')); return; }
     setAIKey(apiKeyInput.trim());
     Alert.alert(t('settings.apiKeySaved'), t('settings.apiKeySavedMsg'));
     setApiKeyInput('');
@@ -164,18 +174,17 @@ export function SettingsScreen({ navigation }: any) {
   };
 
   const handleSignOut = () => {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+    Alert.alert(t('settings.signOutTitle'), t('settings.signOutMsg'), [
       { text: t('common.cancel'), style: 'cancel' },
-      { text: 'Sign Out', style: 'destructive', onPress: () => signOut() },
+      { text: t('settings.signOutConfirm'), style: 'destructive', onPress: () => signOut() },
     ]);
   };
 
   const handleLoadDemo = () => {
-    seedFamily(); seedFinance(); seedOps(); seedDemoInsights();
+    seedFamily(); seedDemoInsights();
     seedMemory(); seedLegacy(); seedHealth(); seedAutomation();
-    seedWealth(); seedNotifications(); seedMood(); seedHabits();
-    seedShopping(); seedRecipes(); seedTimeline(); seedPolls();
-    seedChores(); seedAllowance(); seedTravel(); seedJournal(); seedSchool();
+    seedNotifications(); seedMood();
+    seedRecipes(); seedTimeline(); seedSchool();
     Alert.alert(t('settings.demoLoaded'), t('settings.demoLoadedMsg'));
   };
 
@@ -203,16 +212,16 @@ export function SettingsScreen({ navigation }: any) {
   // the purchase itself.
   const handleUpgrade = async (tierKey: SubscriptionTier) => {
     if (tierKey === currentTier) {
-      Alert.alert('Current Plan', `You are already on the ${TIER_LABELS[tierKey]} plan.`);
+      Alert.alert(t('settings.currentPlanTitle'), t('settings.currentPlanMsg', { plan: TIER_LABELS[tierKey] }));
       return;
     }
     if (tierKey === 'free') {
       Alert.alert(
-        'Downgrade to Free',
-        'To cancel your subscription, you\'ll be taken to subscription management. You will keep access to premium features until the end of your current billing period.',
+        t('settings.signOutTitle'),
+        t('settings.purchaseFailedGeneric'),
         [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Manage Subscription', style: 'destructive', onPress: handleManageSubscription },
+          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('settings.subscription'), style: 'destructive', onPress: handleManageSubscription },
         ],
       );
       return;
@@ -222,16 +231,12 @@ export function SettingsScreen({ navigation }: any) {
     try {
       const result = await showPaywall(tierKey as 'premium' | 'family_pro');
       if (result === PAYWALL_RESULT.PURCHASED || result === PAYWALL_RESULT.RESTORED) {
-        Alert.alert('Success', `You are now on the ${TIER_LABELS[tierKey]} plan!`);
+        Alert.alert(t('settings.upgradeSuccessTitle'), t('settings.upgradeSuccessMsg', { plan: TIER_LABELS[tierKey] }));
       } else if (result === PAYWALL_RESULT.ERROR) {
-        Alert.alert('Purchase Failed', purchasesError ?? 'Something went wrong loading the paywall. Please try again.');
+        Alert.alert(t('settings.purchaseFailedTitle'), purchasesError ?? t('settings.purchaseFailedMsg'));
       }
-      // CANCELLED / NOT_PRESENTED: user closed the paywall or already has Pro — no alert needed.
     } catch {
-      // Defense in depth — showPaywall() already catches internally and
-      // resolves to PAYWALL_RESULT.ERROR rather than throwing, but never let
-      // a purchase-flow exception escape an onPress handler unhandled.
-      Alert.alert('Purchase Failed', purchasesError ?? 'Something went wrong. Please try again.');
+      Alert.alert(t('settings.purchaseFailedTitle'), purchasesError ?? t('settings.purchaseFailedGeneric'));
     } finally {
       setPurchasingTier(null);
     }
@@ -242,9 +247,9 @@ export function SettingsScreen({ navigation }: any) {
     const result = await restore();
     setIsRestoring(false);
     if (result.success) {
-      Alert.alert('Restored', 'Your purchases have been restored.');
+      Alert.alert(t('settings.restoredTitle'), t('settings.restoredMsg'));
     } else {
-      Alert.alert('Restore Failed', result.error ?? 'No purchases found to restore.');
+      Alert.alert(t('settings.restoreFailedTitle'), result.error ?? t('settings.restoreFailedMsg'));
     }
   };
 
@@ -252,14 +257,26 @@ export function SettingsScreen({ navigation }: any) {
     updateSettings({ language: code });
     i18n.changeLanguage(code);
     setShowLanguageModal(false);
-    Alert.alert(t('settings.languageUpdated'), t('settings.languageUpdatedMsg'));
-  };
 
-  const handleOpenLink = (url: string, title: string) => {
-    Alert.alert(title, `Open ${title} in your browser?`, [
-      { text: t('common.cancel'), style: 'cancel' },
-      { text: t('common.ok'), onPress: () => Linking.openURL(url).catch(() => Alert.alert(t('common.error'), 'Unable to open link.')) },
-    ]);
+    const isRTL = code === 'ar';
+    if (I18nManager.isRTL !== isRTL) {
+      I18nManager.forceRTL(isRTL);
+      // RTL/LTR layout changes require a full process restart to take effect.
+      // RCTReloadCommand triggers the same reload as shaking the device → Reload.
+      Alert.alert(
+        t('settings.languageUpdated'),
+        t('settings.languageUpdatedMsg') + '\n\nThe app will restart to apply the layout direction.',
+        [{
+          text: 'OK',
+          onPress: () => {
+            const { DevSettings } = require('react-native');
+            DevSettings?.reload?.();
+          },
+        }]
+      );
+    } else {
+      Alert.alert(t('settings.languageUpdated'), t('settings.languageUpdatedMsg'));
+    }
   };
 
   const handleHelpSupport = () => {
@@ -298,7 +315,29 @@ export function SettingsScreen({ navigation }: any) {
     }).catch(() => {});
   };
 
-  const handleBiometricToggle = (value: boolean) => {
+  const handleBiometricToggle = async (value: boolean) => {
+    if (value) {
+      const hasHardware = await LocalAuthentication.hasHardwareAsync();
+      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+      if (!hasHardware || !isEnrolled) {
+        Alert.alert(
+          'Biometrics Unavailable',
+          !hasHardware
+            ? 'This device does not support Face ID or fingerprint authentication.'
+            : `No biometrics are enrolled. Set up ${biometricLabel} in your device settings first.`,
+        );
+        return;
+      }
+      // Confirm the device's biometrics actually work before committing to the setting.
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: `Confirm ${biometricLabel} to enable biometric lock`,
+      });
+      if (!result.success) {
+        return;
+      }
+      setBiometricAvailable(true);
+    }
+
     setBiometricEnabled(value);
     updateSettings({ biometricLock: value });
     Alert.alert(
@@ -463,6 +502,32 @@ export function SettingsScreen({ navigation }: any) {
               <Text style={s.restoreBtnText}>{isRestoring ? 'Restoring…' : 'Restore Purchases'}</Text>
             </TouchableOpacity>
 
+            {/* ── DEV-ONLY TIER SWITCH ──
+                Real upgrades go through RevenueCat's paywall (handleUpgrade
+                above), which needs a signed build + sandbox purchase setup
+                to actually complete — that doesn't work from a bare dev
+                client on a simulator/emulator. This lets tier-gated features
+                (Military Hub, Digital Twin, etc.) be tested locally without
+                a real purchase. __DEV__ keeps it out of production builds. */}
+            {__DEV__ && (
+              <View style={s.devTierRow}>
+                <Text style={s.devTierLabel}>DEV: Set Tier (bypasses paywall)</Text>
+                <View style={s.devTierChips}>
+                  {(['free', 'premium', 'family_pro'] as SubscriptionTier[]).map((key) => (
+                    <Pressable
+                      key={key}
+                      onPress={() => updateSettings({ subscriptionTier: key })}
+                      style={[s.devTierChip, currentTier === key && s.devTierChipActive]}
+                    >
+                      <Text style={[s.devTierChipText, currentTier === key && s.devTierChipTextActive]}>
+                        {TIER_LABELS[key]}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            )}
+
             {/* ── AI CONFIG ── */}
             <Text style={s.sectionTitle}>{t('settings.aiConfig')}</Text>
             <Card style={s.settingCard} variant="elevated">
@@ -529,7 +594,7 @@ export function SettingsScreen({ navigation }: any) {
           </Pressable>
 
           {isParent && (
-            <View style={s.toggleRow}>
+            <View style={[s.toggleRow, militaryMode && s.toggleRowBorder]}>
               <Ionicons name="shield-outline" size={20} color="#4A7C59" />
               <View style={{ flex: 1, marginLeft: 12 }}>
                 <Text style={s.toggleLabel}>{t('settings.militaryMode')}</Text>
@@ -537,9 +602,9 @@ export function SettingsScreen({ navigation }: any) {
               </View>
               <Switch value={militaryMode} onValueChange={(v) => {
                 if (v && !canAccess('militaryMode')) {
-                  Alert.alert('Family Pro Feature', 'Military Mode is available on the Family Pro plan.', [
-                    { text: 'Cancel', style: 'cancel' },
-                    { text: 'Upgrade', onPress: () => handleUpgrade('family_pro') },
+                  Alert.alert(t('settings.militaryProTitle'), t('settings.militaryProMsg'), [
+                    { text: t('common.cancel'), style: 'cancel' },
+                    { text: t('settings.upgrade'), onPress: () => handleUpgrade('family_pro') },
                   ]);
                   return;
                 }
@@ -548,18 +613,31 @@ export function SettingsScreen({ navigation }: any) {
                 trackColor={{ false: colors.border, true: '#4A7C5960' }} thumbColor="#4A7C59" />
             </View>
           )}
+
+          {isParent && militaryMode && (
+            <Pressable style={s.toggleRow} onPress={() => navigation.navigate('MilitaryHub')}>
+              <Ionicons name="ribbon-outline" size={20} color="#4A7C59" />
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={s.toggleLabel}>Military Hub</Text>
+                <Text style={s.toggleDesc}>Deployment tracker, PCS checklist, and family readiness card</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+            </Pressable>
+          )}
         </Card>
 
         {/* ── PRIVACY & SECURITY ── */}
         <Text style={s.sectionTitle}>{t('settings.privacy')}</Text>
         <Card style={s.settingCard} variant="elevated">
           <View style={[s.toggleRow, s.toggleRowBorder]}>
-            <Ionicons name="finger-print" size={20} color={colors.primary} />
+            <Ionicons name="finger-print" size={20} color={biometricAvailable ? colors.primary : colors.textMuted} />
             <View style={{ flex: 1, marginLeft: 12 }}>
               <Text style={s.toggleLabel}>{t('settings.biometric')}</Text>
-              <Text style={s.toggleDesc}>{t('settings.biometricDesc')}</Text>
+              <Text style={s.toggleDesc}>
+                {biometricAvailable ? `Use ${biometricLabel} to lock the app` : `${biometricLabel} is not set up on this device`}
+              </Text>
             </View>
-            <Switch value={biometricEnabled} onValueChange={handleBiometricToggle}
+            <Switch value={biometricEnabled && biometricAvailable} onValueChange={handleBiometricToggle}
               trackColor={{ false: colors.border, true: colors.primary + '60' }} thumbColor={colors.primary} />
           </View>
 
@@ -602,8 +680,8 @@ export function SettingsScreen({ navigation }: any) {
         <Text style={s.sectionTitle}>{t('settings.about')}</Text>
         <Card style={s.settingCard} variant="elevated">
           {[
-            { icon: 'document-text-outline' as const, label: t('settings.privacyPolicy'), onPress: () => handleOpenLink('https://familycommandcenter.app/privacy', 'Privacy Policy') },
-            { icon: 'shield-checkmark-outline' as const, label: t('settings.terms'), onPress: () => handleOpenLink('https://familycommandcenter.app/terms', 'Terms of Service') },
+            { icon: 'document-text-outline' as const, label: t('settings.privacyPolicy'), onPress: () => navigation.navigate('PrivacyPolicy') },
+            { icon: 'shield-checkmark-outline' as const, label: t('settings.terms'), onPress: () => navigation.navigate('TermsOfService') },
             { icon: 'help-circle-outline' as const, label: t('settings.helpSupport'), onPress: handleHelpSupport },
             { icon: 'star-outline' as const, label: t('settings.rateApp'), onPress: handleRateApp },
             { icon: 'share-outline' as const, label: t('settings.shareApp'), onPress: handleShareApp },
@@ -731,6 +809,13 @@ function makeStyles(colors: ReturnType<typeof useTheme>['colors'], isDark: boole
     downgradeBtnSmall: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: colors.border },
     restoreBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12, marginTop: 4, marginBottom: 4 },
     restoreBtnText: { fontSize: 14, fontWeight: '700', color: colors.primary },
+    devTierRow: { backgroundColor: colors.card, borderRadius: 12, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: colors.border, borderStyle: 'dashed' },
+    devTierLabel: { fontSize: 11, fontWeight: '700', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
+    devTierChips: { flexDirection: 'row', gap: 8 },
+    devTierChip: { flex: 1, paddingVertical: 8, borderRadius: 10, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.background, alignItems: 'center' },
+    devTierChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+    devTierChipText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
+    devTierChipTextActive: { color: '#fff' },
     downgradeBtnText: { fontSize: 12, fontWeight: '600' },
     featureRow:      { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
     featureText:     { fontSize: 13, color: colors.textSecondary },

@@ -30,6 +30,7 @@ try {
   // Not linked yet
 }
 import { useTheme } from '../../theme/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 // Native social-auth modules are loaded lazily so the app works without a
 // full native rebuild. They become functional once you run `npx expo run:ios`.
@@ -50,6 +51,7 @@ interface Props {
 }
 
 export default function SignInScreen({ navigation }: Props) {
+  const { t } = useTranslation('auth');
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const { signIn, signInWithSocial } = useAuthStore();
@@ -89,15 +91,15 @@ export default function SignInScreen({ navigation }: Props) {
         }
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       })
-      .catch(() => Alert.alert('Error', 'Could not fetch Google profile.'));
+      .catch(() => Alert.alert(t('auth.screens.signIn.googleProfileErrorTitle'), t('auth.screens.signIn.googleProfileErrorMsg')));
   }, [googleResponse]);
 
   const handleGoogleSignIn = () => {
     if (!promptGoogleAsync) {
       Alert.alert(
-        'Native Build Required',
-        'Google Sign In needs a development build.\nRun: npx expo run:ios',
-        [{ text: 'OK' }],
+        t('auth.screens.signIn.nativeBuildRequiredTitle'),
+        t('auth.screens.signIn.googleNativeBuildMsg'),
+        [{ text: t('auth.screens.signIn.ok') }],
       );
       return;
     }
@@ -107,9 +109,9 @@ export default function SignInScreen({ navigation }: Props) {
   const handleAppleSignIn = async () => {
     if (!AppleAuthentication) {
       Alert.alert(
-        'Native Build Required',
-        'Apple Sign In needs a development build.\nRun: npx expo run:ios',
-        [{ text: 'OK' }],
+        t('auth.screens.signIn.nativeBuildRequiredTitle'),
+        t('auth.screens.signIn.appleNativeBuildMsg'),
+        [{ text: t('auth.screens.signIn.ok') }],
       );
       return;
     }
@@ -142,7 +144,7 @@ export default function SignInScreen({ navigation }: Props) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (e: any) {
       if (e.code !== 'ERR_REQUEST_CANCELED') {
-        Alert.alert('Apple Sign In Failed', 'Could not sign in with Apple. Please try email/password.');
+        Alert.alert(t('auth.screens.signIn.appleSignInFailedTitle'), t('auth.screens.signIn.appleSignInFailedMsg'));
       }
     }
   };
@@ -174,7 +176,7 @@ export default function SignInScreen({ navigation }: Props) {
     if (!LocalAuthentication) return;
     try {
       const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: 'Sign in to Family Command Center',
+        promptMessage: t('auth.screens.signIn.biometricPrompt'),
       });
       if (result.success) {
         const storedCredentials = await SecureStore.getItemAsync('stored_credentials');
@@ -187,7 +189,7 @@ export default function SignInScreen({ navigation }: Props) {
           setLoading(false);
           if (!signInResult.success) {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-            Alert.alert('Sign In Failed', signInResult.error ?? 'An unexpected error occurred.');
+            Alert.alert(t('auth.screens.signIn.signInFailedTitle'), signInResult.error ?? t('auth.screens.signIn.genericError'));
           } else {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           }
@@ -208,8 +210,8 @@ export default function SignInScreen({ navigation }: Props) {
 
   const handleSignIn = async () => {
     const newErrors: { email?: string; password?: string } = {};
-    if (!email.trim()) newErrors.email = 'Email is required.';
-    if (!password) newErrors.password = 'Password is required.';
+    if (!email.trim()) newErrors.email = t('auth.screens.signIn.emailRequired');
+    if (!password) newErrors.password = t('auth.screens.signIn.passwordRequired');
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -220,7 +222,7 @@ export default function SignInScreen({ navigation }: Props) {
     setLoading(false);
     if (!result.success) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Sign In Failed', result.error ?? 'An unexpected error occurred.');
+      Alert.alert(t('auth.screens.signIn.signInFailedTitle'), result.error ?? t('auth.screens.signIn.genericError'));
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       // Navigation handled automatically by AppNavigator watching isAuthenticated
@@ -263,15 +265,15 @@ export default function SignInScreen({ navigation }: Props) {
             <View style={styles.logoCircle}>
               <Ionicons name="shield-checkmark" size={48} color="#FFFFFF" />
             </View>
-            <Text style={styles.logoTitle}>Family Command Center</Text>
-            <Text style={styles.logoSubtitle}>Your household, elevated.</Text>
+            <Text style={styles.logoTitle}>{t('auth.screens.signIn.logoTitle')}</Text>
+            <Text style={styles.logoSubtitle}>{t('auth.screens.signIn.logoSubtitle')}</Text>
           </View>
 
           {/* Card */}
           <View style={[styles.card, { backgroundColor: colors.card }]}>
-            <Text style={[styles.cardTitle, { color: colors.text }]}>Welcome back</Text>
+            <Text style={[styles.cardTitle, { color: colors.text }]}>{t('auth.welcomeBack')}</Text>
             <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
-              Sign in to your family account
+              {t('auth.screens.signIn.cardSubtitle')}
             </Text>
 
             {/* Biometric sign in button */}
@@ -282,14 +284,14 @@ export default function SignInScreen({ navigation }: Props) {
               >
                 <Ionicons name="finger-print-outline" size={20} color={colors.primary} />
                 <Text style={[styles.biometricButtonText, { color: colors.primary }]}>
-                  Sign in with Face ID / Touch ID
+                  {t('auth.screens.signIn.biometricButton')}
                 </Text>
               </Pressable>
             )}
 
             {/* Email field */}
             <View style={styles.fieldGroup}>
-              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Email</Text>
+              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>{t('auth.email')}</Text>
               <View
                 style={[
                   styles.inputRow,
@@ -307,7 +309,7 @@ export default function SignInScreen({ navigation }: Props) {
                 />
                 <TextInput
                   style={[styles.textInput, { color: colors.text }]}
-                  placeholder="you@example.com"
+                  placeholder={t('auth.screens.signIn.emailPlaceholder')}
                   placeholderTextColor={colors.textSecondary}
                   value={email}
                   onChangeText={(t) => {
@@ -329,9 +331,9 @@ export default function SignInScreen({ navigation }: Props) {
             {/* Password field */}
             <View style={styles.fieldGroup}>
               <View style={styles.labelRow}>
-                <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Password</Text>
+                <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>{t('auth.password')}</Text>
                 <Pressable onPress={() => navigation.navigate('ForgotPassword')}>
-                  <Text style={[styles.forgotLink, { color: colors.primary }]}>Forgot Password?</Text>
+                  <Text style={[styles.forgotLink, { color: colors.primary }]}>{t('auth.forgotPassword')}</Text>
                 </Pressable>
               </View>
               <View
@@ -352,7 +354,7 @@ export default function SignInScreen({ navigation }: Props) {
                 <TextInput
                   ref={passwordRef}
                   style={[styles.textInput, { color: colors.text }]}
-                  placeholder="••••••••"
+                  placeholder={t('auth.screens.signIn.passwordPlaceholder')}
                   placeholderTextColor={colors.textSecondary}
                   value={password}
                   onChangeText={(t) => {
@@ -396,7 +398,7 @@ export default function SignInScreen({ navigation }: Props) {
                   {loading ? (
                     <ActivityIndicator color="#FFFFFF" size="small" />
                   ) : (
-                    <Text style={styles.primaryButtonText}>Sign In</Text>
+                    <Text style={styles.primaryButtonText}>{t('auth.signIn')}</Text>
                   )}
                 </LinearGradient>
               </Pressable>
@@ -405,7 +407,7 @@ export default function SignInScreen({ navigation }: Props) {
             {/* Divider */}
             <View style={styles.dividerRow}>
               <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-              <Text style={[styles.dividerText, { color: colors.textSecondary }]}>or</Text>
+              <Text style={[styles.dividerText, { color: colors.textSecondary }]}>{t('auth.screens.signIn.or')}</Text>
               <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
             </View>
 
@@ -424,7 +426,7 @@ export default function SignInScreen({ navigation }: Props) {
                 onPress={handleAppleSignIn}
               >
                 <Ionicons name="logo-apple" size={20} color="#fff" />
-                <Text style={[styles.outlineButtonText, { color: '#fff' }]}>Continue with Apple</Text>
+                <Text style={[styles.outlineButtonText, { color: '#fff' }]}>{t('auth.screens.signIn.continueWithApple')}</Text>
               </Pressable>
             )}
 
@@ -435,15 +437,15 @@ export default function SignInScreen({ navigation }: Props) {
               disabled={!googleRequest}
             >
               <Ionicons name="globe-outline" size={20} color={colors.text} />
-              <Text style={[styles.outlineButtonText, { color: colors.text }]}>Continue with Google</Text>
+              <Text style={[styles.outlineButtonText, { color: colors.text }]}>{t('auth.screens.signIn.continueWithGoogle')}</Text>
             </Pressable>
           </View>
 
           {/* Bottom link */}
           <View style={styles.bottomRow}>
-            <Text style={styles.bottomText}>New to Family Command Center? </Text>
+            <Text style={styles.bottomText}>{t('auth.screens.signIn.newToApp')}</Text>
             <Pressable onPress={() => navigation.navigate('SignUp')}>
-              <Text style={[styles.bottomLink, { color: '#7EB8F7' }]}>Create Account</Text>
+              <Text style={[styles.bottomLink, { color: '#7EB8F7' }]}>{t('auth.createAccount')}</Text>
             </Pressable>
           </View>
         </ScrollView>

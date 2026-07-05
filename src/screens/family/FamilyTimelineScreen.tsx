@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput, Switch,
 } from 'react-native';
@@ -8,6 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format, formatDistanceToNow, isSameMonth } from 'date-fns';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
@@ -20,25 +21,25 @@ import { useFamilyStore } from '../../store/useFamilyStore';
 const ENTRY_TYPES: TimelineType[] = ['achievement', 'milestone', 'memory', 'event', 'goal', 'family'];
 const QUICK_EMOJIS = ['🏆', '🎉', '❤️', '🌟', '🎂', '🏠', '✈️', '🎓', '👶', '💑', '🌱', '🔥'];
 
-const TYPE_CONFIG: Record<TimelineType, { icon: string; color: string; label: string }> = {
-  achievement: { icon: 'trophy',           color: '#F5A623', label: 'Achievement' },
-  milestone:   { icon: 'flag',             color: '#8E44AD', label: 'Milestone'   },
-  memory:      { icon: 'heart',            color: '#E91E63', label: 'Memory'      },
-  event:       { icon: 'calendar',         color: '#2980B9', label: 'Event'       },
-  goal:        { icon: 'checkmark-circle', color: '#27AE60', label: 'Goal'        },
-  streak:      { icon: 'flame',            color: '#E67E22', label: 'Streak'      },
-  family:      { icon: 'people',           color: '#0F2952', label: 'Family'      },
+const TYPE_CONFIG: Record<TimelineType, { icon: string; color: string; labelKey: string }> = {
+  achievement: { icon: 'trophy',           color: '#F5A623', labelKey: 'typeAchievement' },
+  milestone:   { icon: 'flag',             color: '#8E44AD', labelKey: 'typeMilestone'   },
+  memory:      { icon: 'heart',            color: '#E91E63', labelKey: 'typeMemory'      },
+  event:       { icon: 'calendar',         color: '#2980B9', labelKey: 'typeEvent'       },
+  goal:        { icon: 'checkmark-circle', color: '#27AE60', labelKey: 'typeGoal'        },
+  streak:      { icon: 'flame',            color: '#E67E22', labelKey: 'typeStreak'      },
+  family:      { icon: 'people',           color: '#0F2952', labelKey: 'typeFamily'      },
 };
 
-const TYPE_FILTERS: { key: TimelineType | 'all' | 'highlights'; label: string; emoji: string }[] = [
-  { key: 'all',         label: 'All',        emoji: '📖' },
-  { key: 'highlights',  label: 'Highlights', emoji: '⭐' },
-  { key: 'achievement', label: 'Wins',       emoji: '🏆' },
-  { key: 'milestone',   label: 'Milestones', emoji: '🚩' },
-  { key: 'memory',      label: 'Memories',   emoji: '💝' },
-  { key: 'goal',        label: 'Goals',      emoji: '✅' },
-  { key: 'streak',      label: 'Streaks',    emoji: '🔥' },
-  { key: 'family',      label: 'Family',     emoji: '👨‍👩‍👧‍👦' },
+const TYPE_FILTERS: { key: TimelineType | 'all' | 'highlights'; labelKey: string; emoji: string }[] = [
+  { key: 'all',         labelKey: 'filterAll',        emoji: '📖' },
+  { key: 'highlights',  labelKey: 'filterHighlights', emoji: '⭐' },
+  { key: 'achievement', labelKey: 'filterWins',       emoji: '🏆' },
+  { key: 'milestone',   labelKey: 'filterMilestones', emoji: '🚩' },
+  { key: 'memory',      labelKey: 'filterMemories',   emoji: '💝' },
+  { key: 'goal',        labelKey: 'filterGoals',      emoji: '✅' },
+  { key: 'streak',      labelKey: 'filterStreaks',    emoji: '🔥' },
+  { key: 'family',      labelKey: 'filterFamily',     emoji: '👨‍👩‍👧‍👦' },
 ];
 
 function MonthHeader({ date }: { date: string }) {
@@ -52,6 +53,7 @@ function MonthHeader({ date }: { date: string }) {
 }
 
 export function FamilyTimelineScreen({ navigation }: any) {
+  const { t } = useTranslation('family');
   const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<TimelineType | 'all' | 'highlights'>('all');
   const [showModal, setShowModal] = useState(false);
@@ -62,8 +64,12 @@ export function FamilyTimelineScreen({ navigation }: any) {
   const [newMemberId, setNewMemberId] = useState<string | null>(null);
   const [newHighlight, setNewHighlight] = useState(false);
 
-  const { entries, deleteEntry, addEntry, seedDemoData } = useTimelineStore();
+  const { entries, deleteEntry, addEntry, seedDemoData, hasSeeded } = useTimelineStore();
   const members = useFamilyStore((s) => s.members);
+
+  useEffect(() => {
+    if (!hasSeeded) seedDemoData();
+  }, [hasSeeded, seedDemoData]);
 
   const handleAdd = () => {
     if (!newTitle.trim()) return;
@@ -72,7 +78,7 @@ export function FamilyTimelineScreen({ navigation }: any) {
       date: new Date().toISOString().split('T')[0],
       type: newType,
       title: newTitle.trim(),
-      description: newDesc.trim() || 'A meaningful moment in the family story.',
+      description: newDesc.trim() || t('family.screens.familyTimeline.defaultDescription'),
       memberId: newMemberId || undefined,
       emoji: newEmoji,
       color: cfg.color,
@@ -84,8 +90,6 @@ export function FamilyTimelineScreen({ navigation }: any) {
     setShowModal(false);
   };
 
-  if (entries.length === 0) seedDemoData();
-
   const getMember = (id?: string) => members.find((m) => m.id === id);
 
   const filtered = useMemo(() => {
@@ -95,10 +99,14 @@ export function FamilyTimelineScreen({ navigation }: any) {
   }, [entries, filter]);
 
   const handleDelete = (entry: TimelineEntry) => {
-    Alert.alert('Delete Entry', `Remove "${entry.title}" from your family timeline?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => deleteEntry(entry.id) },
-    ]);
+    Alert.alert(
+      t('family.screens.familyTimeline.deleteEntryTitle'),
+      t('family.screens.familyTimeline.deleteEntryMsg', { title: entry.title }),
+      [
+        { text: t('family.screens.familyTimeline.cancel'), style: 'cancel' },
+        { text: t('family.screens.familyTimeline.delete'), style: 'destructive', onPress: () => deleteEntry(entry.id) },
+      ],
+    );
   };
 
   const highlights = entries.filter((e) => e.isHighlight).length;
@@ -110,8 +118,8 @@ export function FamilyTimelineScreen({ navigation }: any) {
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>Family Story</Text>
-          <Text style={styles.headerSub}>{entries.length} moments · {highlights} highlights</Text>
+          <Text style={styles.headerTitle}>{t('family.screens.familyTimeline.headerTitle')}</Text>
+          <Text style={styles.headerSub}>{t('family.screens.familyTimeline.headerSub', { count: entries.length, highlights })}</Text>
         </View>
         <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
           <Ionicons name="add" size={22} color="#fff" />
@@ -126,7 +134,7 @@ export function FamilyTimelineScreen({ navigation }: any) {
             style={[styles.filterChip, filter === f.key && styles.filterChipActive]}
           >
             <Text style={styles.filterEmoji}>{f.emoji}</Text>
-            <Text style={[styles.filterText, filter === f.key && styles.filterTextActive]}>{f.label}</Text>
+            <Text style={[styles.filterText, filter === f.key && styles.filterTextActive]}>{t(`family.screens.familyTimeline.${f.labelKey}`)}</Text>
           </Pressable>
         ))}
       </ScrollView>
@@ -138,7 +146,7 @@ export function FamilyTimelineScreen({ navigation }: any) {
       <Pressable onPress={() => navigation.goBack()} style={styles.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
-      <Text style={styles.headerTitle}>Family Story</Text>
+      <Text style={styles.headerTitle}>{t('family.screens.familyTimeline.headerTitle')}</Text>
       <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
         <Ionicons name="add" size={22} color="#fff" />
       </Pressable>
@@ -162,8 +170,8 @@ export function FamilyTimelineScreen({ navigation }: any) {
         {filtered.length === 0 && (
           <View style={styles.empty}>
             <Text style={{ fontSize: 56 }}>📖</Text>
-            <Text style={styles.emptyTitle}>No moments yet</Text>
-            <Text style={styles.emptyDesc}>Your family story is waiting to be written. Tap + to add your first moment!</Text>
+            <Text style={styles.emptyTitle}>{t('family.screens.familyTimeline.emptyTitle')}</Text>
+            <Text style={styles.emptyDesc}>{t('family.screens.familyTimeline.emptyDesc')}</Text>
           </View>
         )}
 
@@ -196,7 +204,7 @@ export function FamilyTimelineScreen({ navigation }: any) {
                     {entry.isHighlight && (
                       <View style={[styles.highlightBadge, { backgroundColor: cfg.color }]}>
                         <Ionicons name="star" size={10} color="#fff" />
-                        <Text style={styles.highlightText}>HIGHLIGHT</Text>
+                        <Text style={styles.highlightText}>{t('family.screens.familyTimeline.highlightBadge')}</Text>
                       </View>
                     )}
                     <View style={styles.entryTop}>
@@ -205,7 +213,7 @@ export function FamilyTimelineScreen({ navigation }: any) {
                         <Text style={styles.entryTitle}>{entry.title}</Text>
                         <View style={styles.entryMeta}>
                           <View style={[styles.typeBadge, { backgroundColor: cfg.color + '15' }]}>
-                            <Text style={[styles.typeText, { color: cfg.color }]}>{cfg.label}</Text>
+                            <Text style={[styles.typeText, { color: cfg.color }]}>{t(`family.screens.familyTimeline.${cfg.labelKey}`)}</Text>
                           </View>
                           {member && (
                             <View style={styles.memberBadge}>
@@ -235,16 +243,16 @@ export function FamilyTimelineScreen({ navigation }: any) {
       <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowModal(false)}>
         <ScrollView style={styles.modal} contentContainerStyle={{ paddingBottom: 40 }}>
           <View style={styles.modalHandle} />
-          <Text style={styles.modalTitle}>Add Moment</Text>
+          <Text style={styles.modalTitle}>{t('family.screens.familyTimeline.modalTitle')}</Text>
 
-          <Text style={styles.modalLabel}>Type</Text>
+          <Text style={styles.modalLabel}>{t('family.screens.familyTimeline.modalLabelType')}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
-            {ENTRY_TYPES.map((t) => {
-              const cfg = TYPE_CONFIG[t];
+            {ENTRY_TYPES.map((entryType) => {
+              const cfg = TYPE_CONFIG[entryType];
               return (
-                <Pressable key={t} onPress={() => setNewType(t)} style={[styles.typeChip, newType === t && { backgroundColor: cfg.color + '20', borderColor: cfg.color }]}>
-                  <Ionicons name={cfg.icon as any} size={14} color={newType === t ? cfg.color : colors.textSecondary} />
-                  <Text style={[styles.typeChipText, newType === t && { color: cfg.color }]}>{cfg.label}</Text>
+                <Pressable key={entryType} onPress={() => setNewType(entryType)} style={[styles.typeChip, newType === entryType && { backgroundColor: cfg.color + '20', borderColor: cfg.color }]}>
+                  <Ionicons name={cfg.icon as any} size={14} color={newType === entryType ? cfg.color : colors.textSecondary} />
+                  <Text style={[styles.typeChipText, newType === entryType && { color: cfg.color }]}>{t(`family.screens.familyTimeline.${cfg.labelKey}`)}</Text>
                 </Pressable>
               );
             })}

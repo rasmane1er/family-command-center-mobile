@@ -1,0 +1,48 @@
+export default {
+  headerTitle: 'Family Health Hub',
+  scoreLabel: 'Family Health Score',
+  tabOverview: 'Overview',
+  tabMetrics: 'Metrics',
+  tabAppointments: 'Appointments',
+
+  sectionHealthTips: 'Health Tips',
+  emptyTips: 'No tips yet — log a few days of steps or sleep, or add an appointment, to see personalized tips here.',
+
+  sectionHealthTools: 'Health Tools',
+  toolMedications: 'Medications',
+  toolSleep: 'Sleep',
+  toolWorkouts: 'Workouts',
+
+  sectionFamilyMedicalInfo: 'Family Medical Info',
+  allergiesLabel: 'Allergies:',
+  medsLabel: 'Meds:',
+  doctorLabel: 'Doctor:',
+
+  metricSteps: 'Steps',
+  metricSleep: 'Sleep',
+  metricWater: 'Water',
+  metricWeight: 'Weight',
+  metricMood: 'Mood',
+  metricExercise: 'Exercise',
+  metricBloodPressure: 'Blood Pressure',
+  metricGlucose: 'Glucose',
+  noData: 'No data',
+  goalLabel: 'Goal: {{target}} {{unit}}',
+
+  emptyAppointments: 'No appointments yet. Tap + to add one.',
+  fallbackFamilyName: 'Family',
+  detailsButton: 'Details',
+  dismiss: 'Dismiss',
+  addToCalendar: 'Add to Calendar',
+
+  addAppointmentTitle: 'Add Appointment',
+  familyMemberLabel: 'Family Member *',
+  appointmentTypeLabel: 'Appointment Type *',
+  appointmentTypePlaceholder: 'e.g. Dental Cleaning',
+  doctorProviderLabel: 'Doctor / Provider',
+  doctorPlaceholder: 'e.g. Dr. Martinez',
+  dateLabel: 'Date',
+  datePlaceholder: 'e.g. July 12, 2026',
+  addAppointmentButton: 'Add Appointment',
+  cancelButton: 'Cancel',
+};

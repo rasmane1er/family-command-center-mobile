@@ -8,6 +8,7 @@ import { colors } from '../../theme/colors';
 import { Card } from '../../components/common/Card';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
+import { useTranslation } from 'react-i18next';
 
 type EmergencyType = 'medical' | 'fire' | 'earthquake' | 'flood' | 'break_in' | 'power';
 
@@ -81,6 +82,7 @@ const EMERGENCY_KIT = [
 ];
 
 export function EmergencyModeScreen({ navigation }: any) {
+  const { t } = useTranslation('ops');
   const insets = useSafeAreaInsets();
   const [selectedType, setSelectedType] = useState<EmergencyType>('medical');
   const [sosActive, setSosActive] = useState(false);
@@ -156,7 +158,7 @@ export function EmergencyModeScreen({ navigation }: any) {
         <Pressable onPress={() => navigation.goBack()} style={styles.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
-        <Text style={styles.headerTitle}>Emergency Mode</Text>
+        <Text style={styles.headerTitle}>{t('emergency.title')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -202,7 +204,7 @@ export function EmergencyModeScreen({ navigation }: any) {
       <Pressable onPress={() => navigation.goBack()} style={styles.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
-      <Text style={styles.headerTitle}>Emergency Mode</Text>
+      <Text style={styles.headerTitle}>{t('emergency.title')}</Text>
       <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: '600' }}>SOS Ready</Text>
     </LinearGradient>
   );
@@ -267,7 +269,7 @@ export function EmergencyModeScreen({ navigation }: any) {
           <>
             <Text style={styles.sectionLabel}>Emergency Numbers</Text>
             {EMERGENCY_CONTACTS.map((contact, i) => (
-              <Pressable key={i} onPress={() => Alert.alert('Call', `Call ${contact.name} at ${contact.number}?`, [{ text: 'Cancel', style: 'cancel' }, { text: 'Call', style: 'destructive', onPress: () => Linking.openURL(`tel:${contact.number.replace(/-/g, '')}`) }])}>
+              <Pressable key={i} onPress={() => Alert.alert(t('common.callTitle', { name: contact.name }), t('common.callMsg', { name: contact.number }), [{ text: t('common.cancel'), style: 'cancel' }, { text: t('common.call'), style: 'destructive', onPress: () => Linking.openURL(`tel:${contact.number.replace(/-/g, '')}`) }])}>
                 <Card variant="elevated" style={styles.contactCard}>
                   <View style={styles.contactRow}>
                     <View style={[styles.contactIcon, { backgroundColor: contact.color + '20' }]}>

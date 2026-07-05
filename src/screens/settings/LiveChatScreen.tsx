@@ -21,8 +21,11 @@ import { ChatInputBar } from '../../components/ai/ChatInputBar';
 import { useTheme } from '../../theme/ThemeContext';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useChatStore, type ChatThread } from '../../store/useChatStore';
+import { useVoiceInput } from '../../hooks/useVoiceInput';
+import { useTranslation } from 'react-i18next';
 
 export function LiveChatScreen({ navigation }: { navigation: { goBack: () => void } }) {
+  const { t } = useTranslation('settings');
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const s = makeStyles(colors);
@@ -47,8 +50,12 @@ export function LiveChatScreen({ navigation }: { navigation: { goBack: () => voi
   const [showHistory, setShowHistory] = useState(false);
   const hasAutoOpened = useRef(false);
   const scrollRef = useRef<ScrollView>(null);
+  // Populates the input for review before sending, rather than auto-sending
+  // like the AI Assistant's voice input — misheard words matter more in a
+  // real support conversation with a person than in a one-shot AI query.
+  const voice = useVoiceInput({ onResult: (text) => setInput((prev) => (prev ? `${prev} ${text}` : text)) });
 
-  const activeThread = threads.find((t) => t.id === activeThreadId) ?? null;
+  const activeThread = threads.find((th) => th.id === activeThreadId) ?? null;
   const activeMessages = activeThreadId ? messagesByThread[activeThreadId] ?? [] : [];
 
   useEffect(() => {
@@ -100,11 +107,11 @@ export function LiveChatScreen({ navigation }: { navigation: { goBack: () => voi
         </TouchableOpacity>
         <View style={s.headerTitleBlock}>
           <Text style={s.headerTitle} numberOfLines={1}>
-            {activeThread?.subject ?? 'Live Chat'}
+            {activeThread?.subject ?? t('settings.screens.liveChat.defaultTitle')}
           </Text>
           <View style={s.statusRow}>
             <View style={[s.statusDot, { backgroundColor: isOnline ? '#2ECC71' : '#94A3B8' }]} />
-            <Text style={s.statusText}>{isOnline ? 'Connected' : 'Connecting…'}</Text>
+            <Text style={s.statusText}>{isOnline ? t('settings.screens.liveChat.statusConnected') : t('settings.screens.liveChat.statusConnecting')}</Text>
           </View>
         </View>
         {familyId && (
@@ -127,7 +134,7 @@ export function LiveChatScreen({ navigation }: { navigation: { goBack: () => voi
         <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
       </TouchableOpacity>
       <Text style={[s.headerTitle, { flex: 1, marginLeft: 8 }]} numberOfLines={1}>
-        {activeThread?.subject ?? 'Live Chat'}
+        {activeThread?.subject ?? t('settings.screens.liveChat.defaultTitle')}
       </Text>
     </View>
   );
@@ -143,7 +150,7 @@ export function LiveChatScreen({ navigation }: { navigation: { goBack: () => voi
               <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
             </TouchableOpacity>
             <View style={s.headerTitleBlock}>
-              <Text style={s.headerTitle}>Live Chat</Text>
+              <Text style={s.headerTitle}>{t('liveChat.title')}</Text>
             </View>
           </View>
         </LinearGradient>
@@ -151,9 +158,9 @@ export function LiveChatScreen({ navigation }: { navigation: { goBack: () => voi
           <View style={s.notLinkedIcon}>
             <Ionicons name="cloud-offline-outline" size={36} color={colors.primary} />
           </View>
-          <Text style={s.notLinkedTitle}>Connecting your account</Text>
+          <Text style={s.notLinkedTitle}>{t('settings.screens.liveChat.connectingAccountTitle')}</Text>
           <Text style={s.notLinkedText}>
-            We're still linking your account to our support system. Please try again in a moment.
+            {t('settings.screens.liveChat.connectingAccountText')}
           </Text>
         </View>
       </View>
@@ -187,9 +194,9 @@ export function LiveChatScreen({ navigation }: { navigation: { goBack: () => voi
                   <View style={s.emptyChatIcon}>
                     <Ionicons name="chatbubble-ellipses-outline" size={40} color={colors.primary} />
                   </View>
-                  <Text style={s.emptyChatTitle}>Chat with our support team</Text>
+                  <Text style={s.emptyChatTitle}>{t('settings.screens.liveChat.emptyChatTitle')}</Text>
                   <Text style={s.emptyChatSubtitle}>
-                    Send a message below to start a new conversation. A real support agent will reply here.
+                    {t('settings.screens.liveChat.emptyChatSubtitle')}
                   </Text>
                 </View>
               ) : isLoadingMessages && activeMessages.length === 0 ? (
@@ -224,7 +231,7 @@ export function LiveChatScreen({ navigation }: { navigation: { goBack: () => voi
         {isSending && (
           <View style={s.sendingRow}>
             <ActivityIndicator size="small" color={colors.textMuted} />
-            <Text style={s.sendingText}>Sending…</Text>
+            <Text style={s.sendingText}>{t('settings.screens.liveChat.sendingText')}</Text>
           </View>
         )}
 
@@ -232,11 +239,12 @@ export function LiveChatScreen({ navigation }: { navigation: { goBack: () => voi
           value={input}
           onChangeText={setInput}
           onSend={() => handleSend()}
-          onMicPressIn={() => {}}
-          onMicPressOut={() => {}}
-          onMicCancel={() => {}}
-          isListening={false}
-          placeholder="Type a message…"
+          onMicPressIn={voice.start}
+          onMicPressOut={voice.stop}
+          onMicCancel={voice.cancel}
+          isListening={voice.isListening}
+          partialTranscript={voice.partial}
+          placeholder={t('settings.screens.liveChat.placeholder')}
           disabled={isSending}
           bottomPadding={Math.max(insets.bottom, 8)}
           accentColor={colors.primary}
@@ -247,14 +255,14 @@ export function LiveChatScreen({ navigation }: { navigation: { goBack: () => voi
       <Modal visible={showHistory} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowHistory(false)}>
         <View style={s.modalContainer}>
           <View style={s.modalHeader}>
-            <Text style={s.modalTitle}>Conversations</Text>
+            <Text style={s.modalTitle}>{t('settings.screens.liveChat.conversationsTitle')}</Text>
             <Pressable onPress={() => setShowHistory(false)} style={s.modalClose}>
               <Ionicons name="close" size={24} color={colors.text} />
             </Pressable>
           </View>
           <ScrollView contentContainerStyle={s.threadList}>
             {threads.length === 0 ? (
-              <Text style={s.notLinkedText}>No conversations yet.</Text>
+              <Text style={s.notLinkedText}>{t('settings.screens.liveChat.noConversations')}</Text>
             ) : (
               threads.map((thread) => (
                 <TouchableOpacity
@@ -268,7 +276,7 @@ export function LiveChatScreen({ navigation }: { navigation: { goBack: () => voi
                   </View>
                   <View style={{ flex: 1, marginLeft: 12 }}>
                     <Text style={s.threadSubject} numberOfLines={1}>
-                      {thread.subject ?? 'Support request'}
+                      {thread.subject ?? t('settings.screens.liveChat.defaultSubject')}
                     </Text>
                     <Text style={s.threadMeta}>
                       {thread.status} • {format(new Date(thread.lastMessageAt), 'MMM d, h:mm a')}

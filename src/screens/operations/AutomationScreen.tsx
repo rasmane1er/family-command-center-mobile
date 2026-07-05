@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,6 +10,8 @@ import { colors } from '../../theme/colors';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { useAutomationStore } from '../../store/useAutomationStore';
+import { useFamilyStore } from '../../store/useFamilyStore';
+import { useTranslation } from 'react-i18next';
 
 const TRIGGER_LABELS: Record<string, string> = {
   time: 'Time-based',
@@ -27,21 +29,58 @@ const ACTION_ICONS: Record<string, string> = {
   reminder: 'alarm',
 };
 
-const TEMPLATES = [
-  { name: 'School Morning Routine', desc: 'Alerts + reminders every school day at 7am', icon: 'school', color: '#2980B9' },
-  { name: 'Bill Payment Reminder', desc: 'Auto-remind 3 days before each bill is due', icon: 'card', color: '#E74C3C' },
-  { name: 'Weekly Chore Assignment', desc: 'Auto-assign and notify kids every Friday', icon: 'checkbox', color: '#27AE60' },
-  { name: 'Pantry Low Alert', desc: 'Alert when grocery items run below minimum', icon: 'nutrition', color: '#F5A623' },
-  { name: 'Bedtime Wind-Down', desc: 'Dim lights and screen-off alerts at bedtime', icon: 'moon', color: '#8E44AD' },
-  { name: 'Family Weekly Report', desc: 'AI-generated family health summary on Sundays', icon: 'document-text', color: '#16A085' },
+// Each template's trigger/action actually matches what its name and
+// description promise — these used to all share one hardcoded 8am/notify-
+// everyone shape regardless of the template, so e.g. adding "Bedtime
+// Wind-Down" silently created a rule that would fire at 8am, not bedtime.
+const TEMPLATES: {
+  name: string; desc: string; icon: string; color: string;
+  trigger: { type: 'time' | 'condition'; value: string; condition?: string };
+  action: { type: 'notify' | 'task' | 'message' | 'device'; value: string; target: string };
+}[] = [
+  {
+    name: 'School Morning Routine', desc: 'Alerts + reminders every school day at 7am', icon: 'school', color: '#2980B9',
+    trigger: { type: 'time', value: '07:00', condition: 'weekdays' },
+    action: { type: 'notify', value: 'Pack your backpack! Time to get ready for school 🎒', target: 'children' },
+  },
+  {
+    name: 'Bill Payment Reminder', desc: 'Auto-remind 3 days before each bill is due', icon: 'card', color: '#E74C3C',
+    trigger: { type: 'condition', value: 'bill_due_in_3_days' },
+    action: { type: 'notify', value: 'Bill payment reminder sent to parents', target: 'parents' },
+  },
+  {
+    name: 'Weekly Chore Assignment', desc: 'Auto-assign and notify kids every Friday', icon: 'checkbox', color: '#27AE60',
+    trigger: { type: 'time', value: '18:00', condition: 'friday' },
+    action: { type: 'task', value: 'Assign weekend chores', target: 'all' },
+  },
+  {
+    name: 'Pantry Low Alert', desc: 'Alert when grocery items run below minimum', icon: 'nutrition', color: '#F5A623',
+    trigger: { type: 'condition', value: 'pantry_low' },
+    action: { type: 'notify', value: 'Add to shopping list', target: 'parents' },
+  },
+  {
+    name: 'Bedtime Wind-Down', desc: 'Dim lights and screen-off alerts at bedtime', icon: 'moon', color: '#8E44AD',
+    trigger: { type: 'time', value: '20:30', condition: 'daily' },
+    action: { type: 'device', value: 'dim_lights_kids_rooms', target: 'smart_home' },
+  },
+  {
+    name: 'Family Weekly Report', desc: 'AI-generated family health summary on Sundays', icon: 'document-text', color: '#16A085',
+    trigger: { type: 'time', value: '09:00', condition: 'sunday' },
+    action: { type: 'message', value: 'Generate weekly family health summary', target: 'ai' },
+  },
 ];
 
 export function AutomationScreen({ navigation }: any) {
+  const { t } = useTranslation('ops');
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<'rules' | 'templates'>('rules');
-  const { rules, toggleRule, deleteRule, addRule, seedDemoData } = useAutomationStore();
+  const { rules, hasSeeded, toggleRule, deleteRule, addRule, seedDemoData } = useAutomationStore();
+  const familyId = useFamilyStore((s) => s.family?.id) ?? 'demo-family';
 
-  if (rules.length === 0) seedDemoData();
+  useEffect(() => {
+    if (!hasSeeded) seedDemoData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const activeRules = rules.filter((r) => r.isActive);
   const totalRuns = rules.reduce((s, r) => s + r.runCount, 0);
@@ -53,12 +92,12 @@ export function AutomationScreen({ navigation }: any) {
         text: 'Add',
         onPress: () => {
           addRule({
-            familyId: 'demo-family',
+            familyId,
             name: t.name,
             description: t.desc,
             isActive: true,
-            trigger: { type: 'time', value: '08:00' },
-            action: { type: 'notify', value: t.desc, target: 'all' },
+            trigger: t.trigger,
+            action: t.action,
             icon: t.icon,
             color: t.color,
           });
@@ -69,7 +108,7 @@ export function AutomationScreen({ navigation }: any) {
   };
 
   const handleDelete = (id: string, name: string) => {
-    Alert.alert(`Delete "${name}"?`, 'This automation will be permanently removed.', [
+    Alert.alert(t('common.deleteTitle'), t('common.deleteConfirmMsg'), [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: () => deleteRule(id) },
     ]);
@@ -83,7 +122,7 @@ export function AutomationScreen({ navigation }: any) {
         </Pressable>
         <Text style={styles.headerTitle}>Automation Engine</Text>
         <Pressable
-          onPress={() => Alert.alert('Add Automation', 'Switch to the Templates tab to quickly add pre-built automations to your family rules.', [{ text: 'Got It' }])}
+          onPress={() => setActiveTab('templates')}
           style={styles.addBtn}
         >
           <Ionicons name="add" size={24} color="#fff" />

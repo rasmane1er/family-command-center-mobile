@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -13,16 +13,17 @@ import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useHealthStore } from '../../store/useHealthStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 
 const METRIC_CONFIG = {
-  steps: { icon: 'walk', color: '#2980B9', label: 'Steps', goal: 10000, unit: 'steps' },
-  sleep: { icon: 'moon', color: '#8E44AD', label: 'Sleep', goal: 8, unit: 'hrs' },
-  water: { icon: 'water', color: '#16A085', label: 'Water', goal: 8, unit: 'glasses' },
-  weight: { icon: 'scale', color: '#E67E22', label: 'Weight', goal: 150, unit: 'lbs' },
-  mood: { icon: 'happy', color: '#F5A623', label: 'Mood', goal: 10, unit: '/10' },
-  exercise: { icon: 'fitness', color: '#27AE60', label: 'Exercise', goal: 30, unit: 'min' },
-  bp: { icon: 'heart', color: '#E74C3C', label: 'Blood Pressure', goal: 120, unit: 'mmHg' },
-  glucose: { icon: 'medical', color: '#D35400', label: 'Glucose', goal: 100, unit: 'mg/dL' },
+  steps: { icon: 'walk', color: '#2980B9', labelKey: 'metricSteps', goal: 10000, unit: 'steps' },
+  sleep: { icon: 'moon', color: '#8E44AD', labelKey: 'metricSleep', goal: 8, unit: 'hrs' },
+  water: { icon: 'water', color: '#16A085', labelKey: 'metricWater', goal: 8, unit: 'glasses' },
+  weight: { icon: 'scale', color: '#E67E22', labelKey: 'metricWeight', goal: 150, unit: 'lbs' },
+  mood: { icon: 'happy', color: '#F5A623', labelKey: 'metricMood', goal: 10, unit: '/10' },
+  exercise: { icon: 'fitness', color: '#27AE60', labelKey: 'metricExercise', goal: 30, unit: 'min' },
+  bp: { icon: 'heart', color: '#E74C3C', labelKey: 'metricBloodPressure', goal: 120, unit: 'mmHg' },
+  glucose: { icon: 'medical', color: '#D35400', labelKey: 'metricGlucose', goal: 100, unit: 'mg/dL' },
 } as const;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -31,13 +32,16 @@ export function HealthHubScreen({ navigation: navProp }: any) {
   const { colors } = useTheme();
   const navHook = useNavigation<any>();
   const navigation = navProp ?? navHook;
+  const { t } = useTranslation('health');
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<'overview' | 'metrics' | 'appointments'>('overview');
   const [selectedMember, setSelectedMember] = useState<string | null>(null);
-  const { records, goals, appointments, addAppointment, seedDemoData } = useHealthStore();
+  const { records, goals, appointments, addAppointment, seedDemoData, hasSeeded } = useHealthStore();
   const members = useFamilyStore((s) => s.members);
 
-  if (records.length === 0) seedDemoData();
+  useEffect(() => {
+    if (!hasSeeded) seedDemoData();
+  }, [hasSeeded, seedDemoData]);
 
   const activeMemberId = selectedMember ?? members[0]?.id ?? '';
   const activeMember = members.find((m) => m.id === activeMemberId);
@@ -141,7 +145,7 @@ export function HealthHubScreen({ navigation: navProp }: any) {
 
   const screenHeader = (
     <PremiumHeader
-      title="Family Health Hub"
+      title={t('health.screens.healthHub.headerTitle')}
       onBack={() => navigation.goBack()}
       colors={['#1A3C34', '#27AE60']}
       rightAction={
@@ -153,7 +157,7 @@ export function HealthHubScreen({ navigation: navProp }: any) {
       <View style={s.scoreRow}>
         <View style={s.scoreBlock}>
           <Text style={s.scoreValue}>{familyHealthScore}</Text>
-          <Text style={s.scoreLabel}>Family Health Score</Text>
+          <Text style={s.scoreLabel}>{t('health.screens.healthHub.scoreLabel')}</Text>
         </View>
         <View style={s.memberScores}>
           {members.slice(0, 4).map((m) => {
@@ -178,7 +182,7 @@ export function HealthHubScreen({ navigation: navProp }: any) {
       <Pressable onPress={() => navigation.goBack()} style={s.addBtn}>
         <Ionicons name="arrow-back" size={20} color="#fff" />
       </Pressable>
-      <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700', flex: 1, marginLeft: 8 }}>Family Health Hub</Text>
+      <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700', flex: 1, marginLeft: 8 }}>{t('health.screens.healthHub.headerTitle')}</Text>
       <Pressable onPress={() => setShowAptModal(true)} style={s.addBtn}>
         <Ionicons name="add" size={22} color="#fff" />
       </Pressable>
@@ -192,7 +196,7 @@ export function HealthHubScreen({ navigation: navProp }: any) {
         {(['overview', 'metrics', 'appointments'] as const).map((tab) => (
           <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[s.tab, activeTab === tab && s.tabActive]}>
             <Text style={[s.tabText, activeTab === tab && s.tabTextActive]}>
-              {tab === 'overview' ? 'Overview' : tab === 'metrics' ? 'Metrics' : 'Appointments'}
+              {tab === 'overview' ? t('health.screens.healthHub.tabOverview') : tab === 'metrics' ? t('health.screens.healthHub.tabMetrics') : t('health.screens.healthHub.tabAppointments')}
             </Text>
           </Pressable>
         ))}
@@ -209,10 +213,10 @@ export function HealthHubScreen({ navigation: navProp }: any) {
 
         {activeTab === 'overview' && (
           <>
-            <Text style={s.sectionTitle}>Health Tips</Text>
+            <Text style={s.sectionTitle}>{t('health.screens.healthHub.sectionHealthTips')}</Text>
             {healthTips.length === 0 && (
               <Text style={s.emptyTipsText}>
-                No tips yet — log a few days of steps or sleep, or add an appointment, to see personalized tips here.
+                {t('health.screens.healthHub.emptyTips')}
               </Text>
             )}
             {healthTips.map((tip, i) => (
@@ -227,12 +231,12 @@ export function HealthHubScreen({ navigation: navProp }: any) {
               </Card>
             ))}
 
-            <Text style={s.sectionTitle}>Health Tools</Text>
+            <Text style={s.sectionTitle}>{t('health.screens.healthHub.sectionHealthTools')}</Text>
             <View style={s.healthToolsRow}>
               {[
-                { key: 'MedicationManager', icon: 'medical', label: 'Medications', color: '#AD1457', bg: '#FCE4EC' },
-                { key: 'SleepTracker', icon: 'moon', label: 'Sleep', color: '#4527A0', bg: '#EDE7F6' },
-                { key: 'WorkoutTracker', icon: 'flame', label: 'Workouts', color: '#BF360C', bg: '#FBE9E7' },
+                { key: 'MedicationManager', icon: 'medical', label: t('health.screens.healthHub.toolMedications'), color: '#AD1457', bg: '#FCE4EC' },
+                { key: 'SleepTracker', icon: 'moon', label: t('health.screens.healthHub.toolSleep'), color: '#4527A0', bg: '#EDE7F6' },
+                { key: 'WorkoutTracker', icon: 'flame', label: t('health.screens.healthHub.toolWorkouts'), color: '#BF360C', bg: '#FBE9E7' },
               ].map((tool) => (
                 <Pressable key={tool.key} onPress={() => navigation.navigate(tool.key)} style={[s.healthToolCard, { backgroundColor: tool.bg }]}>
                   <Ionicons name={tool.icon as any} size={24} color={tool.color} />
@@ -241,7 +245,7 @@ export function HealthHubScreen({ navigation: navProp }: any) {
               ))}
             </View>
 
-            <Text style={s.sectionTitle}>Family Medical Info</Text>
+            <Text style={s.sectionTitle}>{t('health.screens.healthHub.sectionFamilyMedicalInfo')}</Text>
             {members.map((member) => (
               member.medicalInfo && (
                 <Card key={member.id} style={s.memberCard} variant="elevated">
@@ -259,21 +263,21 @@ export function HealthHubScreen({ navigation: navProp }: any) {
                   {member.medicalInfo.allergies && member.medicalInfo.allergies.length > 0 && (
                     <View style={s.infoRow}>
                       <Ionicons name="warning" size={13} color={colors.danger} />
-                      <Text style={s.infoLabel}>Allergies:</Text>
+                      <Text style={s.infoLabel}>{t('health.screens.healthHub.allergiesLabel')}</Text>
                       <Text style={s.infoVal}>{member.medicalInfo.allergies.join(', ')}</Text>
                     </View>
                   )}
                   {member.medicalInfo.medications && member.medicalInfo.medications.length > 0 && (
                     <View style={s.infoRow}>
                       <Ionicons name="medical" size={13} color={colors.primary} />
-                      <Text style={s.infoLabel}>Meds:</Text>
+                      <Text style={s.infoLabel}>{t('health.screens.healthHub.medsLabel')}</Text>
                       <Text style={s.infoVal}>{member.medicalInfo.medications.map((m) => m.name).join(', ')}</Text>
                     </View>
                   )}
                   {member.medicalInfo.doctorName && (
                     <View style={s.infoRow}>
                       <Ionicons name="person" size={13} color={colors.textMuted} />
-                      <Text style={s.infoLabel}>Doctor:</Text>
+                      <Text style={s.infoLabel}>{t('health.screens.healthHub.doctorLabel')}</Text>
                       <Text style={s.infoVal}>{member.medicalInfo.doctorName}</Text>
                     </View>
                   )}
@@ -309,14 +313,14 @@ export function HealthHubScreen({ navigation: navProp }: any) {
                       <Ionicons name={cfg.icon as any} size={20} color={cfg.color} />
                     </View>
                     <View style={{ flex: 1, marginLeft: 12 }}>
-                      <Text style={s.metricLabel}>{cfg.label}</Text>
+                      <Text style={s.metricLabel}>{t(`health.screens.healthHub.${cfg.labelKey}`)}</Text>
                       <Text style={s.metricValue}>
-                        {latest ? `${latest.value.toLocaleString()} ${latest.unit}` : 'No data'}
+                        {latest ? `${latest.value.toLocaleString()} ${latest.unit}` : t('health.screens.healthHub.noData')}
                         {metric === 'bp' && latest?.notes ? ` (${latest.notes})` : ''}
                       </Text>
                     </View>
                     {goal && (
-                      <Text style={s.metricGoal}>Goal: {goal.target} {cfg.unit}</Text>
+                      <Text style={s.metricGoal}>{t('health.screens.healthHub.goalLabel', { target: goal.target, unit: cfg.unit })}</Text>
                     )}
                   </View>
                   {(latest || goal) && (
@@ -329,14 +333,14 @@ export function HealthHubScreen({ navigation: navProp }: any) {
         )}
 
         {activeTab === 'appointments' && appointments.length === 0 && (
-          <Text style={s.emptyTipsText}>No appointments yet. Tap + to add one.</Text>
+          <Text style={s.emptyTipsText}>{t('health.screens.healthHub.emptyAppointments')}</Text>
         )}
 
         {activeTab === 'appointments' && appointments
           .slice()
           .sort((a, b) => Date.parse(a.date) - Date.parse(b.date))
           .map((apt) => {
-            const memberName = members.find((m) => m.id === apt.memberId)?.name ?? 'Family';
+            const memberName = members.find((m) => m.id === apt.memberId)?.name ?? t('health.screens.healthHub.fallbackFamilyName');
             const parsed = new Date(apt.date);
             const dateLabel = isNaN(parsed.getTime()) ? apt.date : parsed.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
             return (
@@ -352,12 +356,12 @@ export function HealthHubScreen({ navigation: navProp }: any) {
                   </View>
                   <Pressable
                     onPress={() => Alert.alert(apt.type, `${memberName}\n${apt.doctor ?? ''}\n${dateLabel}`, [
-                      { text: 'Dismiss', style: 'cancel' },
-                      { text: 'Add to Calendar', onPress: () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light) },
+                      { text: t('health.screens.healthHub.dismiss'), style: 'cancel' },
+                      { text: t('health.screens.healthHub.addToCalendar'), onPress: () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light) },
                     ])}
                     style={[s.aptBtn, { backgroundColor: apt.color }]}
                   >
-                    <Text style={s.aptBtnText}>Details</Text>
+                    <Text style={s.aptBtnText}>{t('health.screens.healthHub.detailsButton')}</Text>
                   </Pressable>
                 </View>
               </Card>
@@ -370,9 +374,9 @@ export function HealthHubScreen({ navigation: navProp }: any) {
       <Modal visible={showAptModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowAptModal(false)}>
         <ScrollView style={s.modal} contentContainerStyle={{ paddingBottom: 40 }}>
           <View style={s.modalHandle} />
-          <Text style={s.modalTitle}>Add Appointment</Text>
+          <Text style={s.modalTitle}>{t('health.screens.healthHub.addAppointmentTitle')}</Text>
 
-          <Text style={s.modalLabel}>Family Member *</Text>
+          <Text style={s.modalLabel}>{t('health.screens.healthHub.familyMemberLabel')}</Text>
           <View style={s.memberChipRow}>
             {members.map((m) => (
               <Pressable
@@ -385,17 +389,17 @@ export function HealthHubScreen({ navigation: navProp }: any) {
             ))}
           </View>
 
-          <Text style={s.modalLabel}>Appointment Type *</Text>
-          <TextInput style={s.modalInput} placeholder="e.g. Dental Cleaning" value={newAptType} onChangeText={setNewAptType} placeholderTextColor={colors.textMuted} />
+          <Text style={s.modalLabel}>{t('health.screens.healthHub.appointmentTypeLabel')}</Text>
+          <TextInput style={s.modalInput} placeholder={t('health.screens.healthHub.appointmentTypePlaceholder')} value={newAptType} onChangeText={setNewAptType} placeholderTextColor={colors.textMuted} />
 
-          <Text style={s.modalLabel}>Doctor / Provider</Text>
-          <TextInput style={s.modalInput} placeholder="e.g. Dr. Martinez" value={newAptDoctor} onChangeText={setNewAptDoctor} placeholderTextColor={colors.textMuted} />
+          <Text style={s.modalLabel}>{t('health.screens.healthHub.doctorProviderLabel')}</Text>
+          <TextInput style={s.modalInput} placeholder={t('health.screens.healthHub.doctorPlaceholder')} value={newAptDoctor} onChangeText={setNewAptDoctor} placeholderTextColor={colors.textMuted} />
 
-          <Text style={s.modalLabel}>Date</Text>
-          <TextInput style={[s.modalInput, { marginBottom: 24 }]} placeholder="e.g. July 12, 2026" value={newAptDate} onChangeText={setNewAptDate} placeholderTextColor={colors.textMuted} />
+          <Text style={s.modalLabel}>{t('health.screens.healthHub.dateLabel')}</Text>
+          <TextInput style={[s.modalInput, { marginBottom: 24 }]} placeholder={t('health.screens.healthHub.datePlaceholder')} value={newAptDate} onChangeText={setNewAptDate} placeholderTextColor={colors.textMuted} />
 
-          <Button title="Add Appointment" onPress={handleAddAppointment} fullWidth size="lg" disabled={!newAptType.trim() || !newAptMemberId} />
-          <Button title="Cancel" onPress={() => setShowAptModal(false)} variant="ghost" fullWidth style={{ marginTop: 8 }} />
+          <Button title={t('health.screens.healthHub.addAppointmentButton')} onPress={handleAddAppointment} fullWidth size="lg" disabled={!newAptType.trim() || !newAptMemberId} />
+          <Button title={t('health.screens.healthHub.cancelButton')} onPress={() => setShowAptModal(false)} variant="ghost" fullWidth style={{ marginTop: 8 }} />
         </ScrollView>
       </Modal>
     </View>

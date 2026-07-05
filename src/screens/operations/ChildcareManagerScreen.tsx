@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -26,7 +26,22 @@ import {
   type Caregiver,
   type Booking,
   type CaregiverType,
+  type DaycareEnrollment,
 } from '../../store/useChildcareStore';
+import { useFamilyStore } from '../../store/useFamilyStore';
+import { useTranslation } from 'react-i18next';
+
+const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+function isValidDateString(s: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  const d = new Date(s + 'T00:00:00');
+  return !isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
+}
+
+function isValidTimeString(s: string): boolean {
+  return /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.test(s.trim());
+}
 
 const CAREGIVER_TYPES: { type: CaregiverType; label: string; icon: string }[] = [
   { type: 'babysitter', label: 'Babysitter', icon: 'happy-outline' },
@@ -77,23 +92,38 @@ function StarRating({ rating, onRate }: { rating: number; onRate?: (r: number) =
 }
 
 export function ChildcareManagerScreen({ navigation }: any) {
+  const { t } = useTranslation('ops');
   const insets = useSafeAreaInsets();
 
   const {
     caregivers,
     bookings,
+    hasSeeded,
     addCaregiver,
     deleteCaregiver,
     togglePreferred,
+    setDaycareEnrollment,
     addBooking,
     completeBooking,
     cancelBooking,
     seedDemoData,
   } = useChildcareStore();
 
-  const [activeTab, setActiveTab] = useState<'caregivers' | 'schedule' | 'payments'>('caregivers');
+  const { members, updateMember } = useFamilyStore();
+  const children = useMemo(() => members.filter((m) => m.role === 'child'), [members]);
+
+  const [activeTab, setActiveTab] = useState<'caregivers' | 'schedule' | 'payments' | 'info'>('caregivers');
   const [showAddCaregiverModal, setShowAddCaregiverModal] = useState(false);
   const [showAddBookingModal, setShowAddBookingModal] = useState(false);
+  const [showEnrollmentModal, setShowEnrollmentModal] = useState<string | null>(null); // caregiverId
+  const [showCareInfoModal, setShowCareInfoModal] = useState<string | null>(null); // memberId
+
+  // Seed exactly once, ever — not "whenever the list happens to be empty,"
+  // which used to make deliberately-deleted demo caregivers reappear.
+  useEffect(() => {
+    if (!hasSeeded) seedDemoData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Caregiver modal state
   const [cgName, setCgName] = useState('');
@@ -108,6 +138,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
 
   // Booking modal state
   const [bkCaregiverId, setBkCaregiverId] = useState<string>('');
+  const [bkChildIds, setBkChildIds] = useState<string[]>([]);
   const [bkDate, setBkDate] = useState('');
   const [bkStartTime, setBkStartTime] = useState('');
   const [bkEndTime, setBkEndTime] = useState('');
@@ -115,7 +146,26 @@ export function ChildcareManagerScreen({ navigation }: any) {
   const [bkAmountPaid, setBkAmountPaid] = useState('');
   const [bkNotes, setBkNotes] = useState('');
 
-  if (caregivers.length === 0) seedDemoData();
+  const bkDateError = bkDate.length > 0 && !isValidDateString(bkDate) ? 'Use YYYY-MM-DD, e.g. 2026-07-04' : null;
+  const bkStartTimeError = bkStartTime.length > 0 && !isValidTimeString(bkStartTime) ? 'Use format like "6:00 PM"' : null;
+  const bkEndTimeError = bkEndTime.length > 0 && !isValidTimeString(bkEndTime) ? 'Use format like "10:00 PM"' : null;
+  const bkHasErrors = !!(bkDateError || bkStartTimeError || bkEndTimeError);
+
+  // Enrollment modal state
+  const [enSchedule, setEnSchedule] = useState<string[]>(['Mon', 'Tue', 'Wed', 'Thu', 'Fri']);
+  const [enStartTime, setEnStartTime] = useState('7:30 AM');
+  const [enEndTime, setEnEndTime] = useState('5:30 PM');
+  const [enTuition, setEnTuition] = useState('');
+
+  // Care info (per-child) modal state
+  const [ciAllergies, setCiAllergies] = useState('');
+  const [ciConditions, setCiConditions] = useState('');
+  const [ciBloodType, setCiBloodType] = useState('');
+  const [ciDoctorName, setCiDoctorName] = useState('');
+  const [ciDoctorPhone, setCiDoctorPhone] = useState('');
+  const [ciEcName, setCiEcName] = useState('');
+  const [ciEcPhone, setCiEcPhone] = useState('');
+  const [ciEcRelationship, setCiEcRelationship] = useState('');
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -168,8 +218,8 @@ export function ChildcareManagerScreen({ navigation }: any) {
   };
 
   const handleDeleteCaregiver = (c: Caregiver) => {
-    Alert.alert('Remove Caregiver', `Remove "${c.name}" from your caregivers?`, [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('common.removeTitle'), t('common.removeConfirmMsg'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
         text: 'Remove',
         style: 'destructive',
@@ -208,7 +258,6 @@ export function ChildcareManagerScreen({ navigation }: any) {
   const handleAddCaregiver = () => {
     if (!cgName.trim()) return;
     addCaregiver({
-      familyId: 'demo-family',
       name: cgName.trim(),
       type: cgType,
       phone: cgPhone.trim() || undefined,
@@ -263,9 +312,10 @@ export function ChildcareManagerScreen({ navigation }: any) {
   };
 
   const handleAddBooking = () => {
-    if (!bkCaregiverId || !bkDate || !bkStartTime || !bkEndTime) return;
+    if (!bkCaregiverId || !bkDate || !bkStartTime || !bkEndTime || bkHasErrors) return;
     addBooking({
       caregiverId: bkCaregiverId,
+      childIds: bkChildIds.length > 0 ? bkChildIds : undefined,
       date: bkDate,
       startTime: bkStartTime,
       endTime: bkEndTime,
@@ -275,6 +325,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
     });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setBkCaregiverId('');
+    setBkChildIds([]);
     setBkDate('');
     setBkStartTime('');
     setBkEndTime('');
@@ -282,6 +333,75 @@ export function ChildcareManagerScreen({ navigation }: any) {
     setBkAmountPaid('');
     setBkNotes('');
     setShowAddBookingModal(false);
+  };
+
+  const toggleBkChild = (id: string) =>
+    setBkChildIds((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
+
+  const getChildNames = (ids?: string[]) => {
+    if (!ids || ids.length === 0) return null;
+    const names = ids.map((id) => members.find((m) => m.id === id)?.name).filter(Boolean);
+    return names.length > 0 ? names.join(', ') : null;
+  };
+
+  const openCareInfoModal = (memberId: string) => {
+    const member = members.find((m) => m.id === memberId);
+    const info = member?.medicalInfo;
+    setCiAllergies(info?.allergies?.join(', ') ?? '');
+    setCiConditions(info?.conditions?.join(', ') ?? '');
+    setCiBloodType(info?.bloodType ?? '');
+    setCiDoctorName(info?.doctorName ?? '');
+    setCiDoctorPhone(info?.doctorPhone ?? '');
+    setCiEcName(info?.emergencyContact?.name ?? '');
+    setCiEcPhone(info?.emergencyContact?.phone ?? '');
+    setCiEcRelationship(info?.emergencyContact?.relationship ?? '');
+    setShowCareInfoModal(memberId);
+  };
+
+  const handleSaveCareInfo = () => {
+    if (!showCareInfoModal) return;
+    const member = members.find((m) => m.id === showCareInfoModal);
+    updateMember(showCareInfoModal, {
+      medicalInfo: {
+        ...member?.medicalInfo,
+        bloodType: ciBloodType.trim() || undefined,
+        allergies: ciAllergies ? ciAllergies.split(',').map((s) => s.trim()).filter(Boolean) : undefined,
+        conditions: ciConditions ? ciConditions.split(',').map((s) => s.trim()).filter(Boolean) : undefined,
+        doctorName: ciDoctorName.trim() || undefined,
+        doctorPhone: ciDoctorPhone.trim() || undefined,
+        emergencyContact: ciEcName.trim()
+          ? { name: ciEcName.trim(), phone: ciEcPhone.trim(), relationship: ciEcRelationship.trim() }
+          : undefined,
+      },
+    });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setShowCareInfoModal(null);
+  };
+
+  const openEnrollmentModal = (caregiverId: string) => {
+    const c = caregivers.find((c) => c.id === caregiverId);
+    setEnSchedule(c?.enrollment?.weeklySchedule ?? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']);
+    setEnStartTime(c?.enrollment?.startTime ?? '7:30 AM');
+    setEnEndTime(c?.enrollment?.endTime ?? '5:30 PM');
+    setEnTuition(c?.enrollment?.monthlyTuition ? String(c.enrollment.monthlyTuition) : '');
+    setShowEnrollmentModal(caregiverId);
+  };
+
+  const toggleEnDay = (day: string) =>
+    setEnSchedule((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]));
+
+  const handleSaveEnrollment = () => {
+    if (!showEnrollmentModal) return;
+    const enrollment: DaycareEnrollment = {
+      weeklySchedule: enSchedule,
+      startTime: enStartTime,
+      endTime: enEndTime,
+      monthlyTuition: enTuition ? parseFloat(enTuition) : 0,
+      enrolledSince: caregivers.find((c) => c.id === showEnrollmentModal)?.enrollment?.enrolledSince ?? today,
+    };
+    setDaycareEnrollment(showEnrollmentModal, enrollment);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setShowEnrollmentModal(null);
   };
 
   const isEmpty = caregivers.length === 0;
@@ -295,7 +415,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
         <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
-        <Text style={styles.headerTitle}>Childcare Manager</Text>
+        <Text style={styles.headerTitle}>{t('childcare.title')}</Text>
         <Pressable onPress={() => setShowAddCaregiverModal(true)} style={styles.addBtn}>
           <Ionicons name="add" size={22} color="#fff" />
         </Pressable>
@@ -317,7 +437,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
       </View>
     
     <View style={styles.tabs}>
-            {(['caregivers', 'schedule', 'payments'] as const).map((t) => (
+            {(['caregivers', 'schedule', 'payments', 'info'] as const).map((t) => (
               <Pressable key={t} onPress={() => setActiveTab(t)} style={[styles.tab, activeTab === t && styles.tabActive]}>
                 <Text style={[styles.tabText, activeTab === t && styles.tabTextActive]}>
                   {t.charAt(0).toUpperCase() + t.slice(1)}
@@ -336,7 +456,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
       <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
-      <Text style={styles.headerTitle}>Childcare Manager</Text>
+      <Text style={styles.headerTitle}>{t('childcare.title')}</Text>
       <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: '600' }}>{caregivers.length} caregivers</Text>
     </LinearGradient>
   );
@@ -419,6 +539,27 @@ export function ChildcareManagerScreen({ navigation }: any) {
                   </ScrollView>
                 )}
 
+                {c.type === 'daycare' && (
+                  <Pressable onPress={() => openEnrollmentModal(c.id)} style={styles.enrollmentBox}>
+                    {c.enrollment ? (
+                      <>
+                        <View style={styles.enrollmentRow}>
+                          <Ionicons name="calendar-outline" size={13} color="#EF6C00" />
+                          <Text style={styles.enrollmentText}>
+                            {c.enrollment.weeklySchedule.join('/')} · {c.enrollment.startTime}–{c.enrollment.endTime}
+                          </Text>
+                        </View>
+                        <View style={styles.enrollmentRow}>
+                          <Ionicons name="cash-outline" size={13} color="#EF6C00" />
+                          <Text style={styles.enrollmentText}>${c.enrollment.monthlyTuition}/mo tuition</Text>
+                        </View>
+                      </>
+                    ) : (
+                      <Text style={styles.enrollmentEmptyText}>Tap to set weekly enrollment & tuition</Text>
+                    )}
+                  </Pressable>
+                )}
+
                 <View style={styles.caregiverStats}>
                   <View style={styles.caregiverStatItem}>
                     <Text style={styles.caregiverStatValue}>{c.totalHoursWorked}h</Text>
@@ -490,6 +631,12 @@ export function ChildcareManagerScreen({ navigation }: any) {
                       <Ionicons name="time-outline" size={14} color={colors.textMuted} />
                       <Text style={styles.bookingTimeText}>{b.startTime} — {b.endTime} ({b.hoursWorked}h)</Text>
                     </View>
+                    {getChildNames(b.childIds) && (
+                      <View style={styles.bookingTime}>
+                        <Ionicons name="happy-outline" size={14} color={colors.textMuted} />
+                        <Text style={styles.bookingTimeText}>For: {getChildNames(b.childIds)}</Text>
+                      </View>
+                    )}
                     {b.notes && <Text style={styles.bookingNotes}>{b.notes}</Text>}
                     <View style={styles.bookingActions}>
                       <Pressable onPress={() => handleCompleteBooking(b)} style={styles.completeBtn}>
@@ -527,6 +674,12 @@ export function ChildcareManagerScreen({ navigation }: any) {
                         <Ionicons name="time-outline" size={14} color={colors.textMuted} />
                         <Text style={styles.bookingTimeText}>{b.startTime} — {b.endTime} ({b.hoursWorked}h)</Text>
                       </View>
+                      {getChildNames(b.childIds) && (
+                        <View style={styles.bookingTime}>
+                          <Ionicons name="happy-outline" size={14} color={colors.textMuted} />
+                          <Text style={styles.bookingTimeText}>For: {getChildNames(b.childIds)}</Text>
+                        </View>
+                      )}
                       {b.amountPaid !== undefined && b.status === 'completed' && (
                         <Text style={styles.amountPaidText}>Paid: ${b.amountPaid.toFixed(2)}</Text>
                       )}
@@ -580,6 +733,74 @@ export function ChildcareManagerScreen({ navigation }: any) {
                 </Card>
               );
             })}
+          </>
+        )}
+
+        {!isEmpty && activeTab === 'info' && (
+          <>
+            <Text style={styles.sectionTitle}>Care Sheets</Text>
+            <Text style={styles.infoTabDesc}>
+              Allergies, medications, and emergency contacts a sitter needs — kept here so you're not retyping them into every booking's notes.
+            </Text>
+            {children.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyEmoji}>🧒</Text>
+                <Text style={styles.emptyTitle}>No children on this family profile</Text>
+                <Text style={styles.emptyDesc}>Add a child in Family Profiles to build a care sheet for them.</Text>
+              </View>
+            ) : (
+              children.map((child) => {
+                const info = child.medicalInfo;
+                const hasInfo = !!(info?.allergies?.length || info?.conditions?.length || info?.emergencyContact || info?.doctorName);
+                return (
+                  <Card key={child.id} variant="elevated" style={styles.careInfoCard}>
+                    <View style={styles.careInfoTop}>
+                      <View style={[styles.avatarCircleSmall, { backgroundColor: child.avatarColor }]}>
+                        <Text style={styles.avatarInitialSmall}>{child.name.charAt(0)}</Text>
+                      </View>
+                      <Text style={[styles.payCaregiverName, { flex: 1, marginLeft: 10 }]}>{child.name}</Text>
+                      <Pressable onPress={() => openCareInfoModal(child.id)} style={styles.editCareInfoBtn}>
+                        <Ionicons name="pencil" size={13} color="#EF6C00" />
+                        <Text style={styles.editCareInfoBtnText}>{hasInfo ? 'Edit' : 'Add Info'}</Text>
+                      </Pressable>
+                    </View>
+
+                    {!hasInfo ? (
+                      <Text style={styles.enrollmentEmptyText}>No care info on file yet.</Text>
+                    ) : (
+                      <>
+                        {info?.allergies && info.allergies.length > 0 && (
+                          <View style={styles.careInfoRow}>
+                            <Ionicons name="alert-circle-outline" size={13} color={colors.danger} />
+                            <Text style={styles.careInfoText}>Allergies: {info.allergies.join(', ')}</Text>
+                          </View>
+                        )}
+                        {info?.conditions && info.conditions.length > 0 && (
+                          <View style={styles.careInfoRow}>
+                            <Ionicons name="medical-outline" size={13} color={colors.textMuted} />
+                            <Text style={styles.careInfoText}>Conditions: {info.conditions.join(', ')}</Text>
+                          </View>
+                        )}
+                        {info?.doctorName && (
+                          <View style={styles.careInfoRow}>
+                            <Ionicons name="person-outline" size={13} color={colors.textMuted} />
+                            <Text style={styles.careInfoText}>Dr. {info.doctorName}{info.doctorPhone ? ` · ${info.doctorPhone}` : ''}</Text>
+                          </View>
+                        )}
+                        {info?.emergencyContact && (
+                          <View style={styles.careInfoRow}>
+                            <Ionicons name="call-outline" size={13} color={colors.textMuted} />
+                            <Text style={styles.careInfoText}>
+                              Emergency: {info.emergencyContact.name} ({info.emergencyContact.relationship}) · {info.emergencyContact.phone}
+                            </Text>
+                          </View>
+                        )}
+                      </>
+                    )}
+                  </Card>
+                );
+              })
+            )}
           </>
         )}
       </ScrollView>
@@ -730,32 +951,54 @@ export function ChildcareManagerScreen({ navigation }: any) {
             ))}
           </ScrollView>
 
+          {children.length > 0 && (
+            <>
+              <Text style={styles.modalLabel}>Which kids? (optional)</Text>
+              <View style={[styles.typeGrid, { marginBottom: 16 }]}>
+                {children.map((child) => (
+                  <Pressable
+                    key={child.id}
+                    onPress={() => toggleBkChild(child.id)}
+                    style={[styles.typeChip, bkChildIds.includes(child.id) && styles.typeChipActive]}
+                  >
+                    <Text style={[styles.typeChipText, bkChildIds.includes(child.id) && styles.typeChipTextActive]}>
+                      {child.name}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </>
+          )}
+
           <Text style={styles.modalLabel}>Date (YYYY-MM-DD)</Text>
           <TextInput
-            style={styles.modalInput}
+            style={[styles.modalInput, bkDateError && styles.modalInputError]}
             placeholder="2026-07-04"
             value={bkDate}
             onChangeText={setBkDate}
             placeholderTextColor={colors.textMuted}
           />
+          {bkDateError && <Text style={styles.modalErrorText}>{bkDateError}</Text>}
 
           <Text style={styles.modalLabel}>Start Time</Text>
           <TextInput
-            style={styles.modalInput}
+            style={[styles.modalInput, bkStartTimeError && styles.modalInputError]}
             placeholder='e.g. "6:00 PM"'
             value={bkStartTime}
             onChangeText={setBkStartTime}
             placeholderTextColor={colors.textMuted}
           />
+          {bkStartTimeError && <Text style={styles.modalErrorText}>{bkStartTimeError}</Text>}
 
           <Text style={styles.modalLabel}>End Time</Text>
           <TextInput
-            style={styles.modalInput}
+            style={[styles.modalInput, bkEndTimeError && styles.modalInputError]}
             placeholder='e.g. "10:00 PM"'
             value={bkEndTime}
             onChangeText={handleEndTimeChange}
             placeholderTextColor={colors.textMuted}
           />
+          {bkEndTimeError && <Text style={styles.modalErrorText}>{bkEndTimeError}</Text>}
 
           <Text style={styles.modalLabel}>Hours Worked (auto-calculated)</Text>
           <TextInput
@@ -792,11 +1035,172 @@ export function ChildcareManagerScreen({ navigation }: any) {
             onPress={handleAddBooking}
             fullWidth
             size="lg"
-            disabled={!bkCaregiverId || !bkDate || !bkStartTime || !bkEndTime}
+            disabled={!bkCaregiverId || !bkDate || !bkStartTime || !bkEndTime || bkHasErrors}
           />
           <Button
             title="Cancel"
             onPress={() => setShowAddBookingModal(false)}
+            variant="ghost"
+            fullWidth
+            style={{ marginTop: 8 }}
+          />
+        </ScrollView>
+      </Modal>
+
+      {/* Daycare Enrollment Modal */}
+      <Modal
+        visible={!!showEnrollmentModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowEnrollmentModal(null)}
+      >
+        <ScrollView style={styles.modal} contentContainerStyle={{ paddingBottom: 60 }}>
+          <View style={styles.modalHandle} />
+          <Text style={styles.modalTitle}>Weekly Enrollment</Text>
+
+          <Text style={styles.modalLabel}>Days</Text>
+          <View style={[styles.typeGrid, { marginBottom: 16 }]}>
+            {WEEKDAYS.map((day) => (
+              <Pressable
+                key={day}
+                onPress={() => toggleEnDay(day)}
+                style={[styles.typeChip, enSchedule.includes(day) && styles.typeChipActive]}
+              >
+                <Text style={[styles.typeChipText, enSchedule.includes(day) && styles.typeChipTextActive]}>{day}</Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <Text style={styles.modalLabel}>Drop-off Time</Text>
+          <TextInput
+            style={styles.modalInput}
+            placeholder='e.g. "7:30 AM"'
+            value={enStartTime}
+            onChangeText={setEnStartTime}
+            placeholderTextColor={colors.textMuted}
+          />
+
+          <Text style={styles.modalLabel}>Pick-up Time</Text>
+          <TextInput
+            style={styles.modalInput}
+            placeholder='e.g. "5:30 PM"'
+            value={enEndTime}
+            onChangeText={setEnEndTime}
+            placeholderTextColor={colors.textMuted}
+          />
+
+          <Text style={styles.modalLabel}>Monthly Tuition ($)</Text>
+          <TextInput
+            style={styles.modalInput}
+            placeholder="e.g. 950"
+            value={enTuition}
+            onChangeText={setEnTuition}
+            keyboardType="numeric"
+            placeholderTextColor={colors.textMuted}
+          />
+
+          <Button title="Save Enrollment" onPress={handleSaveEnrollment} fullWidth size="lg" />
+          <Button
+            title="Cancel"
+            onPress={() => setShowEnrollmentModal(null)}
+            variant="ghost"
+            fullWidth
+            style={{ marginTop: 8 }}
+          />
+        </ScrollView>
+      </Modal>
+
+      {/* Care Info Modal */}
+      <Modal
+        visible={!!showCareInfoModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowCareInfoModal(null)}
+      >
+        <ScrollView style={styles.modal} contentContainerStyle={{ paddingBottom: 60 }}>
+          <View style={styles.modalHandle} />
+          <Text style={styles.modalTitle}>
+            Care Info{showCareInfoModal ? ` — ${members.find((m) => m.id === showCareInfoModal)?.name ?? ''}` : ''}
+          </Text>
+
+          <Text style={styles.modalLabel}>Allergies (comma-separated)</Text>
+          <TextInput
+            style={styles.modalInput}
+            placeholder="e.g. Peanuts, Bee stings"
+            value={ciAllergies}
+            onChangeText={setCiAllergies}
+            placeholderTextColor={colors.textMuted}
+          />
+
+          <Text style={styles.modalLabel}>Medical Conditions (comma-separated)</Text>
+          <TextInput
+            style={styles.modalInput}
+            placeholder="e.g. Asthma"
+            value={ciConditions}
+            onChangeText={setCiConditions}
+            placeholderTextColor={colors.textMuted}
+          />
+
+          <Text style={styles.modalLabel}>Blood Type (optional)</Text>
+          <TextInput
+            style={styles.modalInput}
+            placeholder="e.g. O+"
+            value={ciBloodType}
+            onChangeText={setCiBloodType}
+            placeholderTextColor={colors.textMuted}
+          />
+
+          <Text style={styles.modalLabel}>Doctor Name</Text>
+          <TextInput
+            style={styles.modalInput}
+            placeholder="e.g. Dr. Martinez"
+            value={ciDoctorName}
+            onChangeText={setCiDoctorName}
+            placeholderTextColor={colors.textMuted}
+          />
+
+          <Text style={styles.modalLabel}>Doctor Phone</Text>
+          <TextInput
+            style={styles.modalInput}
+            placeholder="+1 (555) 000-0000"
+            value={ciDoctorPhone}
+            onChangeText={setCiDoctorPhone}
+            keyboardType="phone-pad"
+            placeholderTextColor={colors.textMuted}
+          />
+
+          <Text style={styles.modalLabel}>Emergency Contact Name</Text>
+          <TextInput
+            style={styles.modalInput}
+            placeholder="e.g. Grandma Rosa"
+            value={ciEcName}
+            onChangeText={setCiEcName}
+            placeholderTextColor={colors.textMuted}
+          />
+
+          <Text style={styles.modalLabel}>Emergency Contact Relationship</Text>
+          <TextInput
+            style={styles.modalInput}
+            placeholder="e.g. Grandmother"
+            value={ciEcRelationship}
+            onChangeText={setCiEcRelationship}
+            placeholderTextColor={colors.textMuted}
+          />
+
+          <Text style={styles.modalLabel}>Emergency Contact Phone</Text>
+          <TextInput
+            style={styles.modalInput}
+            placeholder="+1 (555) 000-0000"
+            value={ciEcPhone}
+            onChangeText={setCiEcPhone}
+            keyboardType="phone-pad"
+            placeholderTextColor={colors.textMuted}
+          />
+
+          <Button title="Save Care Info" onPress={handleSaveCareInfo} fullWidth size="lg" />
+          <Button
+            title="Cancel"
+            onPress={() => setShowCareInfoModal(null)}
             variant="ghost"
             fullWidth
             style={{ marginTop: 8 }}
@@ -904,4 +1308,17 @@ const styles = StyleSheet.create({
   cgChipAvatar: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   cgChipAvatarText: { fontSize: 15, fontWeight: '800', color: '#fff' },
   cgChipText: { fontSize: 11, color: colors.textSecondary, fontWeight: '600' },
+  modalInputError: { borderColor: colors.danger },
+  modalErrorText: { fontSize: 12, color: colors.danger, marginTop: -12, marginBottom: 14 },
+  enrollmentBox: { backgroundColor: '#FFF3E0', borderRadius: 10, padding: 10, marginBottom: 12, gap: 4 },
+  enrollmentRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  enrollmentText: { fontSize: 12, fontWeight: '600', color: '#B05300' },
+  enrollmentEmptyText: { fontSize: 12, color: colors.textMuted, fontStyle: 'italic' },
+  infoTabDesc: { fontSize: 13, color: colors.textSecondary, marginTop: -6, marginBottom: 14, lineHeight: 18 },
+  careInfoCard: { marginBottom: 12, borderRadius: 14 },
+  careInfoTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  editCareInfoBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8, backgroundColor: '#FFF3E0' },
+  editCareInfoBtnText: { fontSize: 12, fontWeight: '700', color: '#EF6C00' },
+  careInfoRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
+  careInfoText: { fontSize: 12, color: colors.textSecondary, flex: 1 },
 });

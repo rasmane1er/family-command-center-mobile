@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { format, isToday, isYesterday, parseISO } from 'date-fns';
 import { getTransactions } from '../../services/plaidService';
 import type { PlaidTransaction } from '../../types';
+import { useTranslation } from 'react-i18next';
 
 const CATEGORIES = ['All', 'FOOD_AND_DRINK', 'SHOPPING', 'TRANSPORTATION', 'BILLS', 'INCOME', 'OTHER'];
 const CATEGORY_LABELS: Record<string, string> = {
@@ -62,6 +63,7 @@ type GroupedItem =
 const PAGE_SIZE = 30;
 
 export function TransactionsScreen({ navigation }: { navigation: any }) {
+  const { t } = useTranslation('finance');
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [category, setCategory] = useState('All');
@@ -183,7 +185,7 @@ export function TransactionsScreen({ navigation }: { navigation: any }) {
         <Pressable onPress={() => navigation.goBack()} style={s.backBtn}>
           <Ionicons name="chevron-back" size={22} color="#1E3A5F" />
         </Pressable>
-        <Text style={s.headerTitle}>Transactions</Text>
+        <Text style={s.headerTitle}>{t('transactions.title')}</Text>
         <Pressable onPress={() => navigation.navigate('ReceiptScanner')} style={s.cameraBtn}>
           <Ionicons name="camera-outline" size={22} color="#1E3A5F" />
         </Pressable>

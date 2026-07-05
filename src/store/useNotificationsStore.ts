@@ -28,7 +28,7 @@ async function fireLocalNotification(title: string, body: string) {
   }
 }
 
-export type NotificationType = 'task' | 'bill' | 'goal' | 'health' | 'family' | 'ai' | 'emergency' | 'achievement';
+export type NotificationType = 'task' | 'bill' | 'goal' | 'health' | 'family' | 'ai' | 'emergency' | 'achievement' | 'school';
 
 export interface AppNotification {
   id: string;

@@ -1,7 +1,10 @@
 import { create } from 'zustand';
-import type { AutomationRule, MarketplaceListing, ConflictRecord, TimeBlock, SmartDevice } from '../types';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import { mmkvStorage } from '../storage/mmkvStorage';
+import type { AutomationRule, MarketplaceListing, ConflictRecord, TimeBlock, SmartDevice, Task } from '../types';
 import { secureStorage } from '../storage/secureStorage';
 import * as hueService from '../services/hueService';
+import { useFamilyStore } from './useFamilyStore';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -35,11 +38,33 @@ interface AutomationState {
   addRule: (r: Omit<AutomationRule, 'id' | 'runCount'>) => void;
   toggleRule: (id: string) => void;
   deleteRule: (id: string) => void;
+  // Bookkeeping for a rule actually firing — the only place runCount/
+  // lastRun ever change, called by useAutomationEngine.ts once per real
+  // trigger-and-action cycle.
+  recordRuleRun: (id: string) => void;
 
   // Marketplace
   addListing: (l: Omit<MarketplaceListing, 'id' | 'createdAt'>) => void;
+  // Claiming creates a real Task (requiresApproval: true, linked back via
+  // marketplaceListingId) instead of running its own parallel claim →
+  // submit → approve → payout pipeline. The claimant finishes it exactly
+  // like any other task — same photo-proof submission in Tasks/Kids Mode,
+  // same parent "Needs Review" queue, same completeTask()-driven point
+  // award. Marketplace has no completion logic of its own anymore; it just
+  // reads the linked task's live status.
   claimListing: (id: string, memberId: string) => void;
-  completeListing: (id: string) => void;
+  // Removes the listing itself only — deliberately does not touch its
+  // linked Task. That task is a real record of work someone actually did
+  // (with photo proof, possibly already approved and paid out); clearing
+  // the listing from the marketplace view shouldn't retroactively erase
+  // that history or claw back points already awarded.
+  deleteListing: (id: string) => void;
+  // One-time self-heal for listings claimed before claimListing() started
+  // creating a real linked Task — those are stuck with claimedBy set and
+  // no taskId, so "Open in Tasks" has nothing to show. Idempotent (only
+  // touches listings still missing a taskId), safe to call on every
+  // Marketplace mount.
+  repairOrphanedClaims: () => void;
 
   // Conflicts
   addConflict: (c: Omit<ConflictRecord, 'id' | 'createdAt'>) => void;
@@ -67,15 +92,19 @@ interface AutomationState {
   fetchHueScenes: () => Promise<void>;
   recallHueScene: (sceneId: string) => Promise<void>;
 
+  hasSeeded: boolean;
   seedDemoData: () => void;
 }
 
-export const useAutomationStore = create<AutomationState>((set, get) => ({
+export const useAutomationStore = create<AutomationState>()(
+  persist(
+    (set, get) => ({
   rules: [],
   listings: [],
   conflicts: [],
   timeBlocks: [],
   devices: [],
+  hasSeeded: false,
   hueBridgeIp: null,
   hueConnected: false,
   hueScenes: [],
@@ -87,13 +116,74 @@ export const useAutomationStore = create<AutomationState>((set, get) => ({
     set((s) => ({ rules: s.rules.map((r) => (r.id === id ? { ...r, isActive: !r.isActive } : r)) })),
   deleteRule: (id) =>
     set((s) => ({ rules: s.rules.filter((r) => r.id !== id) })),
+  recordRuleRun: (id) =>
+    set((s) => ({
+      rules: s.rules.map((r) => (r.id === id ? { ...r, runCount: r.runCount + 1, lastRun: new Date().toISOString() } : r)),
+    })),
 
   addListing: (l) =>
     set((s) => ({ listings: [{ ...l, id: generateId(), createdAt: new Date().toISOString() }, ...s.listings] })),
-  claimListing: (id, memberId) =>
-    set((s) => ({ listings: s.listings.map((l) => (l.id === id ? { ...l, claimedBy: memberId, isAvailable: false } : l)) })),
-  completeListing: (id) =>
-    set((s) => ({ listings: s.listings.map((l) => (l.id === id ? { ...l, completedAt: new Date().toISOString() } : l)) })),
+  claimListing: (id, memberId) => {
+    const listing = get().listings.find((l) => l.id === id);
+    if (!listing) return;
+
+    const now = new Date().toISOString();
+    const taskId = generateId();
+    const task: Task = {
+      id: taskId,
+      familyId: listing.familyId,
+      title: listing.title,
+      description: listing.description,
+      assignedTo: [memberId],
+      priority: 'medium',
+      status: 'pending',
+      category: 'Marketplace',
+      recurrence: 'none',
+      points: listing.pointsValue,
+      createdAt: now,
+      createdBy: listing.createdBy,
+      requiresApproval: true,
+      marketplaceListingId: id,
+    };
+    useFamilyStore.getState().addTask(task);
+
+    set((s) => ({
+      listings: s.listings.map((l) => (l.id === id ? { ...l, claimedBy: memberId, isAvailable: false, taskId } : l)),
+    }));
+  },
+  deleteListing: (id) =>
+    set((s) => ({ listings: s.listings.filter((l) => l.id !== id) })),
+  repairOrphanedClaims: () => {
+    const orphaned = get().listings.filter((l) => l.claimedBy && !l.isAvailable && !l.taskId);
+    if (orphaned.length === 0) return;
+
+    const now = new Date().toISOString();
+    const taskIds = new Map<string, string>();
+    orphaned.forEach((l) => {
+      const taskId = generateId();
+      taskIds.set(l.id, taskId);
+      useFamilyStore.getState().addTask({
+        id: taskId,
+        familyId: l.familyId,
+        title: l.title,
+        description: l.description,
+        assignedTo: [l.claimedBy as string],
+        priority: 'medium',
+        status: 'pending',
+        category: 'Marketplace',
+        recurrence: 'none',
+        points: l.pointsValue,
+        createdAt: now,
+        createdBy: l.createdBy,
+        requiresApproval: true,
+        marketplaceListingId: l.id,
+      });
+    });
+
+    set((s) => ({
+      listings: s.listings.map((l) => (taskIds.has(l.id) ? { ...l, taskId: taskIds.get(l.id) } : l)),
+    }));
+  },
 
   addConflict: (c) =>
     set((s) => ({ conflicts: [{ ...c, id: generateId(), createdAt: new Date().toISOString() }, ...s.conflicts] })),
@@ -268,14 +358,39 @@ export const useAutomationStore = create<AutomationState>((set, get) => ({
       { id: 'aut6', familyId: 'demo-family', name: 'Weekly Family Report', description: 'Generate AI family health report every Sunday', isActive: true, trigger: { type: 'time', value: '09:00', condition: 'sunday' }, action: { type: 'message', value: 'Generate weekly family health summary', target: 'ai' }, runCount: 18, lastRun: now, icon: 'bar-chart', color: '#16A085' },
     ];
 
+    // mkt3 is seeded pre-claimed, so it needs a real linked Task too —
+    // otherwise it'd be the one demo listing whose "Open in Tasks" button
+    // leads nowhere, since every other claimed listing gets its task via
+    // the real claimListing() flow.
+    const mkt3TaskId = 'demo-mkt3-task';
     const listings: MarketplaceListing[] = [
       { id: 'mkt1', familyId: 'demo-family', createdBy: 'member-1', title: 'Mow the Lawn', description: 'Front and back yard, edge the walkways too', category: 'chores', pointsValue: 150, isAvailable: true, icon: 'leaf', tags: ['outdoor', 'weekend'], createdAt: now },
       { id: 'mkt2', familyId: 'demo-family', createdBy: 'member-2', title: 'Math Tutoring Session', description: '1 hour of algebra help for Aiden', category: 'lessons', pointsValue: 200, isAvailable: true, icon: 'school', tags: ['education', 'Aiden'], createdAt: now },
-      { id: 'mkt3', familyId: 'demo-family', createdBy: 'member-3', title: 'Clean Garage', description: 'Sweep and organize the garage shelves', category: 'chores', pointsValue: 250, isAvailable: false, claimedBy: 'member-3', icon: 'home', tags: ['indoor', 'big-job'], createdAt: now },
+      { id: 'mkt3', familyId: 'demo-family', createdBy: 'member-3', title: 'Clean Garage', description: 'Sweep and organize the garage shelves', category: 'chores', pointsValue: 250, isAvailable: false, claimedBy: 'member-3', taskId: mkt3TaskId, icon: 'home', tags: ['indoor', 'big-job'], createdAt: now },
       { id: 'mkt4', familyId: 'demo-family', createdBy: 'member-2', title: 'Teach Me to Bake', description: 'Lily wants to learn to bake cookies', category: 'skills', pointsValue: 100, isAvailable: true, icon: 'restaurant', tags: ['cooking', 'Lily', 'fun'], createdAt: now },
       { id: 'mkt5', familyId: 'demo-family', createdBy: 'member-1', title: 'Car Wash & Detail', description: 'Wash both cars inside and out', category: 'chores', pointsValue: 300, isAvailable: true, icon: 'car', tags: ['outdoor', 'vehicles'], createdAt: now },
       { id: 'mkt6', familyId: 'demo-family', createdBy: 'member-3', title: 'Tech Support', description: 'Set up Dad\'s new tablet and apps', category: 'skills', pointsValue: 175, isAvailable: true, icon: 'phone-portrait', tags: ['tech', 'Aiden'], createdAt: now },
     ];
+
+    const existingTask = useFamilyStore.getState().tasks.find((t) => t.id === mkt3TaskId);
+    if (!existingTask) {
+      useFamilyStore.getState().addTask({
+        id: mkt3TaskId,
+        familyId: 'demo-family',
+        title: 'Clean Garage',
+        description: 'Sweep and organize the garage shelves',
+        assignedTo: ['member-3'],
+        priority: 'medium',
+        status: 'pending',
+        category: 'Marketplace',
+        recurrence: 'none',
+        points: 250,
+        createdAt: now,
+        createdBy: 'member-3',
+        requiresApproval: true,
+        marketplaceListingId: 'mkt3',
+      });
+    }
 
     const conflicts: ConflictRecord[] = [
       { id: 'cf1', familyId: 'demo-family', title: 'Screen Time Dispute', description: 'Aiden wants more gaming time, parents say 2 hours is enough on school nights', partiesInvolved: ['member-1', 'member-3'], status: 'resolved', severity: 'low', aiSuggestion: 'Consider a points-based system where Aiden earns extra screen time through completed homework and chores.', resolution: 'Agreed on extra 30min for each completed chore set. Trial period 2 weeks.', resolvedAt: now, createdAt: now },
@@ -304,6 +419,28 @@ export const useAutomationStore = create<AutomationState>((set, get) => ({
       { id: 'tb6', familyId: 'demo-family', memberId: 'member-1', category: 'family', title: 'Family Dinner', startTime: '18:00', endTime: '19:30', date: today.toISOString().split('T')[0], isRecurring: true, color: '#E74C3C' },
     ];
 
-    set({ rules, listings, conflicts, devices, timeBlocks });
+    set({ rules, listings, conflicts, devices, timeBlocks, hasSeeded: true });
   },
-}));
+    }),
+    {
+      name: 'family-command-center-automation',
+      storage: createJSONStorage(() => mmkvStorage),
+      // Hue connection state is deliberately excluded — it's re-derived
+      // fresh on every SmartHomeScreen mount via hydrateHueConnection(),
+      // which reads the real credentials from secureStorage and re-fetches
+      // live device/scene state from the bridge. Persisting a second copy
+      // here would just be a stale snapshot that could conflict with that
+      // live source of truth. Non-Hue devices persist fine since
+      // refreshHueDevices() already only ever replaces the Hue-branded
+      // subset of `devices`, leaving the rest untouched.
+      partialize: (state) => ({
+        rules: state.rules,
+        listings: state.listings,
+        conflicts: state.conflicts,
+        timeBlocks: state.timeBlocks,
+        devices: state.devices,
+        hasSeeded: state.hasSeeded,
+      }),
+    }
+  )
+);

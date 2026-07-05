@@ -1,10 +1,13 @@
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import { mmkvStorage } from '../storage/mmkvStorage';
 import type { LegacyItem, LegacyItemType } from '../types';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
 interface LegacyState {
   items: LegacyItem[];
+  hasSeeded: boolean;
   addItem: (i: Omit<LegacyItem, 'id' | 'createdAt' | 'reactions'>) => void;
   toggleFeatured: (id: string) => void;
   addReaction: (id: string, memberId: string, emoji: string) => void;
@@ -13,8 +16,11 @@ interface LegacyState {
   seedDemoData: () => void;
 }
 
-export const useLegacyStore = create<LegacyState>((set, get) => ({
+export const useLegacyStore = create<LegacyState>()(
+  persist(
+    (set, get) => ({
   items: [],
+  hasSeeded: false,
 
   addItem: (i) => {
     const now = new Date().toISOString();
@@ -51,6 +57,12 @@ export const useLegacyStore = create<LegacyState>((set, get) => ({
       { id: 'leg5', familyId: 'demo-family', memberId: 'member-2', type: 'recipe', title: "Grandma Rosa's Arroz con Leche", content: "2 cups rice, 4 cups whole milk, 1 cup sugar, 2 cinnamon sticks, 1 tsp vanilla. Cook on low 45 min stirring constantly. The secret: add a pinch of salt. Serves 8. Four generations have made this recipe.", date: '1985-01-01', tags: ['recipe', 'tradition', 'dessert', 'family'], isPrivate: false, isFeatured: false, reactions: [{ memberId: 'member-3', emoji: '😋' }, { memberId: 'member-4', emoji: '❤️' }], createdAt: now },
       { id: 'leg6', familyId: 'demo-family', memberId: 'member-4', type: 'milestone', title: "Lily Learns to Read", content: "April 3, 2024 — Lily read her first full book cover to cover! 'The Very Hungry Caterpillar' — she sounded out every word. We cried. She was so proud.", date: '2024-04-03', tags: ['Lily', 'milestone', 'school', 'proud'], isPrivate: false, isFeatured: false, reactions: [{ memberId: 'member-1', emoji: '📚' }, { memberId: 'member-2', emoji: '🥰' }], createdAt: now },
     ];
-    set({ items });
+    set({ items, hasSeeded: true });
   },
-}));
+    }),
+    {
+      name: 'family-command-center-legacy',
+      storage: createJSONStorage(() => mmkvStorage),
+    }
+  )
+);

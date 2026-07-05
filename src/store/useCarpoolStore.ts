@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import { mmkvStorage } from '../storage/mmkvStorage';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -58,7 +60,9 @@ function getWeekOffset(baseDate: Date, offsetWeeks: number): string {
   return getISOWeek(d);
 }
 
-export const useCarpoolStore = create<CarpoolState>((set, get) => ({
+export const useCarpoolStore = create<CarpoolState>()(
+  persist(
+    (set, get) => ({
   routes: [],
 
   addRoute: (r) =>
@@ -153,6 +157,12 @@ export const useCarpoolStore = create<CarpoolState>((set, get) => ({
 
     set({ routes });
   },
-}));
+    }),
+    {
+      name: 'family-command-center-carpool',
+      storage: createJSONStorage(() => mmkvStorage),
+    }
+  )
+);
 
 export type { CarpoolRoute, CarpoolParticipant, CarpoolDriver, CarpoolStatus };

@@ -16,6 +16,7 @@ import type { BudgetSuggestion } from '../../services/autoFillService';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 const PLAID_TO_BUDGET: Record<string, string> = {
   FOOD_AND_DRINK: 'Food',
@@ -58,6 +59,7 @@ const PRESET_ICONS = [
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
 export function BudgetingScreen({ navigation, route }: any) {
+  const { t } = useTranslation('finance');
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const { budgets, monthlyIncome, monthlyExpenses, addBudget, deleteBudget } = useFinanceStore();

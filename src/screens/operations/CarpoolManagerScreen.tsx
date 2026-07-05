@@ -14,6 +14,8 @@ import { shadows } from '../../theme/spacing';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { useCarpoolStore, CarpoolRoute, CarpoolParticipant } from '../../store/useCarpoolStore';
+import { useFamilyStore } from '../../store/useFamilyStore';
+import { useTranslation } from 'react-i18next';
 
 type Tab = 'routes' | 'schedule' | 'history';
 
@@ -87,10 +89,12 @@ function RouteCard({
   route,
   onAdvanceDriver,
   onAddParticipant,
+  onDelete,
 }: {
   route: CarpoolRoute;
   onAdvanceDriver: () => void;
   onAddParticipant: () => void;
+  onDelete: () => void;
 }) {
   const currentDriver = route.rotation[route.currentDriverIndex];
   const nextIndex = (route.currentDriverIndex + 1) % route.rotation.length;
@@ -107,6 +111,9 @@ function RouteCard({
             variant={route.status === 'active' ? 'success' : route.status === 'paused' ? 'warning' : 'neutral'}
             size="sm"
           />
+          <Pressable onPress={onDelete} style={{ marginLeft: 8 }}>
+            <Ionicons name="trash-outline" size={18} color={colors.textMuted} />
+          </Pressable>
         </View>
 
         <View style={styles.routeDestRow}>
@@ -308,6 +315,7 @@ function AddRouteModal({
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
   const [selectedColor, setSelectedColor] = useState(ROUTE_COLORS[0]);
   const [notes, setNotes] = useState('');
+  const familyId = useFamilyStore((s) => s.family?.id) ?? 'demo-family';
 
   const toggleDay = (day: string) => {
     setSelectedDays((prev) =>
@@ -318,7 +326,7 @@ function AddRouteModal({
   const handleAdd = () => {
     if (!name.trim() || !destination.trim() || !pickupTime.trim() || selectedDays.length === 0) return;
     onAdd({
-      familyId: 'demo-family',
+      familyId,
       name: name.trim(),
       destination: destination.trim(),
       pickupTime: pickupTime.trim(),
@@ -450,8 +458,9 @@ function AddRouteModal({
 }
 
 export function CarpoolManagerScreen({ navigation }: any) {
+  const { t } = useTranslation('ops');
   const insets = useSafeAreaInsets();
-  const { routes, addRoute, advanceDriver, addParticipant, seedDemoData } = useCarpoolStore();
+  const { routes, addRoute, advanceDriver, addParticipant, deleteRoute, seedDemoData } = useCarpoolStore();
   const [activeTab, setActiveTab] = useState<Tab>('routes');
   const [showAddRoute, setShowAddRoute] = useState(false);
 
@@ -554,7 +563,7 @@ export function CarpoolManagerScreen({ navigation }: any) {
       <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
-      <Text style={styles.headerTitle}>Carpool Manager</Text>
+      <Text style={styles.headerTitle}>{t('carpool.title')}</Text>
       <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, fontWeight: '700' }}>{activeRoutes.length} routes</Text>
     </LinearGradient>
   );
@@ -595,6 +604,12 @@ export function CarpoolManagerScreen({ navigation }: any) {
             route={route}
             onAdvanceDriver={() => handleAdvanceDriver(route)}
             onAddParticipant={() => handleAddParticipant(route.id)}
+            onDelete={() => {
+              Alert.alert('Delete Route', `Remove "${route.name}"?`, [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Delete', style: 'destructive', onPress: () => deleteRoute(route.id) },
+              ]);
+            }}
           />
         ))}
 

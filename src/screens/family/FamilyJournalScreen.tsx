@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput,
 } from 'react-native';
@@ -13,6 +13,7 @@ import { Card } from '../../components/common/Card';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useJournalStore, JournalEntry, MOOD_LABELS, MOOD_EMOJIS } from '../../store/useJournalStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { useTranslation } from 'react-i18next';
 
 const MOOD_COLORS: Record<number, string> = {
   1: '#E74C3C', 2: '#E67E22', 3: '#F5A623', 4: '#27AE60', 5: '#2980B9',
@@ -21,6 +22,7 @@ const MOOD_COLORS: Record<number, string> = {
 const REACTION_OPTIONS = ['❤️', '😂', '😢', '🎉', '🔥', '👏', '💪', '🙏'];
 
 function JournalDetailModal({ entry, onClose }: { entry: JournalEntry; onClose: () => void }) {
+  const { t } = useTranslation('family');
   const insets = useSafeAreaInsets();
   const members = useFamilyStore((s) => s.members);
   const { addReaction, removeReaction } = useJournalStore();
@@ -84,7 +86,7 @@ function JournalDetailModal({ entry, onClose }: { entry: JournalEntry; onClose: 
           </View>
         )}
 
-        <Text style={styles.reactTitle}>Reactions</Text>
+        <Text style={styles.reactTitle}>{t('family.screens.familyJournal.reactions')}</Text>
         <View style={styles.reactPicker}>
           {REACTION_OPTIONS.map((emoji) => {
             const count = reactionCounts[emoji] ?? 0;
@@ -118,6 +120,7 @@ function JournalDetailModal({ entry, onClose }: { entry: JournalEntry; onClose: 
 }
 
 export function FamilyJournalScreen({ navigation }: any) {
+  const { t } = useTranslation('family');
   const insets = useSafeAreaInsets();
   const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
   const [filter, setFilter] = useState<string>('all');
@@ -127,18 +130,21 @@ export function FamilyJournalScreen({ navigation }: any) {
   const [newEmoji, setNewEmoji] = useState('✨');
   const [newMood, setNewMood] = useState<1 | 2 | 3 | 4 | 5>(4);
 
-  const { entries, addEntry, deleteEntry, seedDemoData } = useJournalStore();
+  const { entries, addEntry, deleteEntry, fetchFromServer, isLoaded } = useJournalStore();
   const members = useFamilyStore((s) => s.members);
 
-  if (entries.length === 0) seedDemoData();
+  useEffect(() => {
+    fetchFromServer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const getMember = (id: string) => members.find((m) => m.id === id);
   const currentMember = members[0];
 
   const filters = [
-    { key: 'all', label: 'All' },
+    { key: 'all', label: t('family.screens.familyJournal.filterAll') },
     ...members.map((m) => ({ key: m.id, label: m.name.split(' ')[0] })),
-    { key: 'mood-5', label: '🤩 Amazing' },
+    { key: 'mood-5', label: `🤩 ${t('family.screens.familyJournal.filterAmazing')}` },
   ];
 
   const filtered = useMemo(() => {
@@ -179,8 +185,8 @@ export function FamilyJournalScreen({ navigation }: any) {
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>Family Journal</Text>
-          <Text style={styles.headerSub}>{entries.length} entries · our story</Text>
+          <Text style={styles.headerTitle}>{t('journal.title')}</Text>
+          <Text style={styles.headerSub}>{t('family.screens.familyJournal.headerSub', { count: entries.length })}</Text>
         </View>
         <Pressable onPress={() => setShowAdd(true)} style={styles.addBtn}>
           <Ionicons name="create" size={20} color="#fff" />
@@ -202,7 +208,7 @@ export function FamilyJournalScreen({ navigation }: any) {
       <Pressable onPress={() => navigation.goBack()} style={styles.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
-      <Text style={styles.headerTitle}>Family Journal</Text>
+      <Text style={styles.headerTitle}>{t('journal.title')}</Text>
       <Pressable onPress={() => setShowAdd(true)} style={styles.addBtn}>
         <Ionicons name="create" size={20} color="#fff" />
       </Pressable>
@@ -226,8 +232,8 @@ export function FamilyJournalScreen({ navigation }: any) {
         {filtered.length === 0 && (
           <View style={styles.empty}>
             <Text style={{ fontSize: 56 }}>📖</Text>
-            <Text style={styles.emptyTitle}>Start your story</Text>
-            <Text style={styles.emptyDesc}>Write journal entries to capture family moments, thoughts, and memories together.</Text>
+            <Text style={styles.emptyTitle}>{t('family.screens.familyJournal.emptyTitle')}</Text>
+            <Text style={styles.emptyDesc}>{t('family.screens.familyJournal.emptyDesc')}</Text>
           </View>
         )}
 
@@ -239,10 +245,14 @@ export function FamilyJournalScreen({ navigation }: any) {
             <Pressable
               key={entry.id}
               onPress={() => setSelectedEntry(entry)}
-              onLongPress={() => Alert.alert('Delete Entry', `Remove "${entry.title}"?`, [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Delete', style: 'destructive', onPress: () => deleteEntry(entry.id) },
-              ])}
+              onLongPress={() => Alert.alert(
+                t('family.screens.familyJournal.deleteEntryTitle'),
+                t('family.screens.familyJournal.deleteEntryMessage', { title: entry.title }),
+                [
+                  { text: t('common.cancel'), style: 'cancel' },
+                  { text: t('common.delete'), style: 'destructive', onPress: () => deleteEntry(entry.id) },
+                ]
+              )}
             >
               <Card style={styles.entryCard} variant="elevated">
                 <View style={[styles.moodBar, { backgroundColor: MOOD_COLORS[entry.mood] }]} />
@@ -293,13 +303,13 @@ export function FamilyJournalScreen({ navigation }: any) {
       <Modal visible={showAdd} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowAdd(false)}>
         <View style={styles.modal}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>New Entry</Text>
+            <Text style={styles.modalTitle}>{t('journal.addEntry')}</Text>
             <Pressable onPress={() => setShowAdd(false)}>
               <Ionicons name="close" size={24} color={colors.text} />
             </Pressable>
           </View>
           <ScrollView contentContainerStyle={styles.modalContent}>
-            <Text style={styles.modalLabel}>How are you feeling?</Text>
+            <Text style={styles.modalLabel}>{t('family.screens.familyJournal.howAreYouFeeling')}</Text>
             <View style={styles.moodRow}>
               {([1, 2, 3, 4, 5] as const).map((m) => (
                 <Pressable key={m} onPress={() => setNewMood(m)} style={[styles.moodBtn, newMood === m && { borderColor: MOOD_COLORS[m], backgroundColor: MOOD_COLORS[m] + '15' }]}>
@@ -309,7 +319,7 @@ export function FamilyJournalScreen({ navigation }: any) {
               ))}
             </View>
 
-            <Text style={styles.modalLabel}>Pick an Emoji</Text>
+            <Text style={styles.modalLabel}>{t('family.screens.familyJournal.pickEmoji')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, marginBottom: 20 }}>
               {['✨', '🎉', '❤️', '😊', '💪', '🌟', '🏆', '🌺', '⚽', '🍿', '🌱', '📚', '🎹', '✈️', '🎂'].map((e) => (
                 <Pressable key={e} onPress={() => setNewEmoji(e)} style={[styles.emojiBtn, newEmoji === e && styles.emojiBtnActive]}>
@@ -318,28 +328,28 @@ export function FamilyJournalScreen({ navigation }: any) {
               ))}
             </ScrollView>
 
-            <Text style={styles.modalLabel}>Title</Text>
+            <Text style={styles.modalLabel}>{t('family.screens.familyJournal.titleLabel')}</Text>
             <TextInput
               style={styles.modalInput}
               value={newTitle}
               onChangeText={setNewTitle}
-              placeholder="What happened today?"
+              placeholder={t('family.screens.familyJournal.titlePlaceholder')}
               placeholderTextColor={colors.textMuted}
             />
 
-            <Text style={styles.modalLabel}>Write it down</Text>
+            <Text style={styles.modalLabel}>{t('family.screens.familyJournal.writeItDown')}</Text>
             <TextInput
               style={[styles.modalInput, { height: 160, textAlignVertical: 'top' }]}
               value={newContent}
               onChangeText={setNewContent}
-              placeholder="Tell the story..."
+              placeholder={t('family.screens.familyJournal.contentPlaceholder')}
               placeholderTextColor={colors.textMuted}
               multiline
             />
 
             <Pressable style={styles.saveBtn} onPress={handleAdd}>
               <Ionicons name="create" size={18} color="#fff" />
-              <Text style={styles.saveBtnText}>Save Entry</Text>
+              <Text style={styles.saveBtnText}>{t('family.screens.familyJournal.saveEntry')}</Text>
             </Pressable>
           </ScrollView>
         </View>

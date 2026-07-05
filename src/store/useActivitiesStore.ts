@@ -27,6 +27,7 @@ export interface Activity {
 
 interface ActivitiesState {
   activities: Activity[];
+  hasSeeded: boolean;
   addActivity: (a: Omit<Activity, 'id'>) => void;
   toggleActive: (id: string) => void;
   deleteActivity: (id: string) => void;
@@ -40,6 +41,7 @@ export const useActivitiesStore = create<ActivitiesState>()(
   persist(
     (set, get) => ({
   activities: [],
+  hasSeeded: false,
 
   addActivity: (a) => {
   const activity = { ...a, id: generateId() };
@@ -176,7 +178,7 @@ export const useActivitiesStore = create<ActivitiesState>()(
       },
     ];
 
-    set({ activities });
+    set({ activities, hasSeeded: true });
   },
     }),
     {

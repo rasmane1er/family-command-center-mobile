@@ -18,6 +18,7 @@ import { Button } from '../../components/common/Button';
 import { Card } from '../../components/common/Card';
 import { useAutomationStore } from '../../store/useAutomationStore';
 import * as hueService from '../../services/hueService';
+import { useTranslation } from 'react-i18next';
 
 const PAIR_WINDOW_SECONDS = 30;
 const POLL_INTERVAL_MS = 1500;
@@ -25,6 +26,7 @@ const POLL_INTERVAL_MS = 1500;
 type Step = 'searching' | 'found' | 'manual' | 'pairing' | 'success' | 'error';
 
 export function ConnectHueBridgeScreen({ navigation }: any) {
+  const { t } = useTranslation('ops');
   const insets = useSafeAreaInsets();
   const connectHueBridge = useAutomationStore((s) => s.connectHueBridge);
 

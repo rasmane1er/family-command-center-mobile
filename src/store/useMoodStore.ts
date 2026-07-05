@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import { mmkvStorage } from '../storage/mmkvStorage';
 
 export type MoodLevel = 1 | 2 | 3 | 4 | 5;
 
@@ -13,7 +15,9 @@ export interface MoodEntry {
 
 interface MoodState {
   entries: MoodEntry[];
+  hasSeeded: boolean;
   addMoodEntry: (entry: Omit<MoodEntry, 'id' | 'createdAt'>) => void;
+  deleteMoodEntry: (id: string) => void;
   getTodayMood: (memberId: string) => MoodEntry | undefined;
   getMemberHistory: (memberId: string, days: number) => MoodEntry[];
   getFamilyAvgToday: () => number;
@@ -23,14 +27,19 @@ interface MoodState {
 const generateId = () => Math.random().toString(36).substring(2, 11);
 const toDateStr = (d: Date) => d.toISOString().split('T')[0];
 
-export const useMoodStore = create<MoodState>((set, get) => ({
+export const useMoodStore = create<MoodState>()(
+  persist(
+    (set, get) => ({
   entries: [],
+  hasSeeded: false,
 
   addMoodEntry: (entry) => {
     const { entries } = get();
     const filtered = entries.filter((e) => !(e.memberId === entry.memberId && e.date === entry.date));
     set({ entries: [...filtered, { ...entry, id: generateId(), createdAt: new Date().toISOString() }] });
   },
+
+  deleteMoodEntry: (id) => set((s) => ({ entries: s.entries.filter((e) => e.id !== id) })),
 
   getTodayMood: (memberId) => {
     const today = toDateStr(new Date());
@@ -69,6 +78,12 @@ export const useMoodStore = create<MoodState>((set, get) => ({
         entries.push({ id: generateId(), memberId, level, date: dateStr, createdAt: date.toISOString() });
       });
     }
-    set({ entries });
+    set({ entries, hasSeeded: true });
   },
-}));
+    }),
+    {
+      name: 'family-command-center-mood',
+      storage: createJSONStorage(() => mmkvStorage),
+    }
+  )
+);

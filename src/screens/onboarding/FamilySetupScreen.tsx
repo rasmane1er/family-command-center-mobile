@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../../theme/colors';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
@@ -13,6 +14,7 @@ const timezones = ['America/New_York', 'America/Chicago', 'America/Denver', 'Ame
 const currencies = [{ code: 'USD', label: '$ USD' }, { code: 'EUR', label: '€ EUR' }, { code: 'GBP', label: '£ GBP' }, { code: 'CAD', label: 'C$ CAD' }];
 
 export function FamilySetupScreen({ navigation }: any) {
+  const { t } = useTranslation('onboarding');
   const [familyName, setFamilyName] = useState('');
   const [motto, setMotto] = useState('');
   const [address, setAddress] = useState('');
@@ -50,17 +52,17 @@ export function FamilySetupScreen({ navigation }: any) {
           <Pressable onPress={() => navigation.goBack()} style={styles.back}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </Pressable>
-          <View style={styles.stepBadge}><Text style={styles.stepText}>Step 1 of 7</Text></View>
-          <Text style={styles.headerTitle}>Your Family</Text>
-          <Text style={styles.headerSub}>Tell us about your household</Text>
+          <View style={styles.stepBadge}><Text style={styles.stepText}>{t('onboarding.screens.familySetup.stepBadge')}</Text></View>
+          <Text style={styles.headerTitle}>{t('onboarding.screens.familySetup.title')}</Text>
+          <Text style={styles.headerSub}>{t('onboarding.screens.familySetup.subtitle')}</Text>
         </LinearGradient>
         <View style={styles.progressBar}>
           <View style={[styles.progressFill, { width: '14%' }]} />
         </View>
 
         <Input
-          label="Family Name *"
-          placeholder='e.g., "The Johnson Family"'
+          label={t('onboarding.screens.familySetup.familyNameLabel')}
+          placeholder={t('onboarding.screens.familySetup.familyNamePlaceholder')}
           value={familyName}
           onChangeText={setFamilyName}
           leftIcon="home-outline"
@@ -68,23 +70,23 @@ export function FamilySetupScreen({ navigation }: any) {
         />
 
         <Input
-          label="Family Motto (optional)"
-          placeholder='e.g., "Stronger Together"'
+          label={t('onboarding.screens.familySetup.mottoLabel')}
+          placeholder={t('onboarding.screens.familySetup.mottoPlaceholder')}
           value={motto}
           onChangeText={setMotto}
           leftIcon="heart-outline"
         />
 
         <Input
-          label="Home Address (optional)"
-          placeholder="123 Main Street, City, State"
+          label={t('onboarding.screens.familySetup.addressLabel')}
+          placeholder={t('onboarding.screens.familySetup.addressPlaceholder')}
           value={address}
           onChangeText={setAddress}
           leftIcon="location-outline"
           multiline
         />
 
-        <Text style={styles.sectionLabel}>Currency</Text>
+        <Text style={styles.sectionLabel}>{t('onboarding.screens.familySetup.currencyLabel')}</Text>
         <View style={styles.chipRow}>
           {currencies.map((c) => (
             <Pressable
@@ -103,8 +105,8 @@ export function FamilySetupScreen({ navigation }: any) {
               <Ionicons name="shield-checkmark" size={20} color="#fff" />
             </View>
             <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={styles.militaryTitle}>Military Family Mode</Text>
-              <Text style={styles.militaryDesc}>Special features for active duty & veteran families</Text>
+              <Text style={styles.militaryTitle}>{t('onboarding.screens.familySetup.militaryTitle')}</Text>
+              <Text style={styles.militaryDesc}>{t('onboarding.screens.familySetup.militaryDesc')}</Text>
             </View>
           </View>
           <Pressable
@@ -116,7 +118,7 @@ export function FamilySetupScreen({ navigation }: any) {
         </View>
 
         <Button
-          title="Next: Add Family Members"
+          title={t('onboarding.screens.familySetup.nextButton')}
           onPress={handleNext}
           fullWidth
           size="lg"

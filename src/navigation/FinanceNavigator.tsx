@@ -1,5 +1,6 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import { SubscriptionGate } from '../components/common/SubscriptionGate';
 import { FinanceDashboardScreen } from '../screens/finance/FinanceDashboardScreen';
 import { BudgetingScreen } from '../screens/finance/BudgetingScreen';
@@ -20,11 +21,12 @@ import { TaxCenterScreen } from '../screens/finance/TaxCenterScreen';
 const Stack = createNativeStackNavigator();
 
 export function FinanceNavigator() {
+  const { t } = useTranslation('finance');
   return (
     <SubscriptionGate
       requiredTier="premium"
-      featureName="Finance Tools"
-      description="Budgeting, bills, debt payoff, bank sync, and every other finance tool are included in the Premium plan."
+      featureName={t('gates.financeToolsTitle')}
+      description={t('gates.financeToolsDesc')}
     >
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="FinanceDashboard" component={FinanceDashboardScreen} />
@@ -35,11 +37,11 @@ export function FinanceNavigator() {
         <Stack.Screen name="WealthBuilder" component={WealthBuilderScreen} />
         <Stack.Screen name="InsuranceManager" component={InsuranceManagerScreen} />
         <Stack.Screen name="DebtPayoff" component={DebtPayoffScreen} />
-        <Stack.Screen name="DebtDetail" component={DebtDetailScreen} options={{ title: 'Debt Details' }} />
+        <Stack.Screen name="DebtDetail" component={DebtDetailScreen} options={{ title: t('debt.detailsTitle') }} />
         <Stack.Screen name="UtilityTracker" component={UtilityTrackerScreen} />
         <Stack.Screen name="ConnectBank" component={ConnectBankScreen} />
-        <Stack.Screen name="Transactions" component={TransactionsScreen} options={{ title: 'Transactions' }} />
-        <Stack.Screen name="SpendingInsights" component={SpendingInsightsScreen} options={{ title: 'Spending Insights' }} />
+        <Stack.Screen name="Transactions" component={TransactionsScreen} options={{ title: t('transactions.title') }} />
+        <Stack.Screen name="SpendingInsights" component={SpendingInsightsScreen} options={{ title: t('spending.title') }} />
         <Stack.Screen name="ReceiptScanner" component={ReceiptScannerScreen} options={{ headerShown: false }} />
         <Stack.Screen name="TaxCenter" component={TaxCenterScreen} options={{ headerShown: false }} />
       </Stack.Navigator>

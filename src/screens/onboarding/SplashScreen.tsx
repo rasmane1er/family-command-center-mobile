@@ -3,12 +3,14 @@ import { View, Text, StyleSheet, Animated, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import * as SecureStore from 'expo-secure-store';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../../theme/colors';
 import { FamilyIllustration } from '../../assets/illustrations/FamilyIllustration';
 
 const { width, height } = Dimensions.get('window');
 
 export function SplashScreen({ navigation }: any) {
+  const { t } = useTranslation('onboarding');
   const logoScale = useRef(new Animated.Value(0.3)).current;
   const logoOpacity = useRef(new Animated.Value(0)).current;
   const textOpacity = useRef(new Animated.Value(0)).current;
@@ -73,10 +75,10 @@ export function SplashScreen({ navigation }: any) {
           <Text style={styles.logoIcon}>⌂</Text>
         </View>
         <Animated.Text style={[styles.appName, { opacity: logoOpacity }]}>
-          Family Command Center
+          {t('onboarding.screens.splash.appName')}
         </Animated.Text>
         <Animated.Text style={[styles.tagline, { opacity: textOpacity }]}>
-          The Operating System for Your Household
+          {t('onboarding.screens.splash.tagline')}
         </Animated.Text>
       </Animated.View>
 
@@ -89,7 +91,7 @@ export function SplashScreen({ navigation }: any) {
 
       {/* Version */}
       <Animated.Text style={[styles.version, { opacity: textOpacity }]}>
-        Version 1.0  •  Your Family, Empowered
+        {t('onboarding.screens.splash.version')}
       </Animated.Text>
     </LinearGradient>
   );

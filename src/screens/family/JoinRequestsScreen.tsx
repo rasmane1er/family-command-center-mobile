@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '../../components/common/Button';
 import { Card } from '../../components/common/Card';
@@ -19,6 +20,7 @@ const FILTERS: RequestFilter[] = ['pending', 'approved', 'rejected'];
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
 export function JoinRequestsScreen({ navigation, route }: any) {
+  const { t } = useTranslation('family');
   const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<RequestFilter>('pending');
 
@@ -73,20 +75,32 @@ export function JoinRequestsScreen({ navigation, route }: any) {
     addMember(member);
     approveRequest(id);
 
-    Alert.alert('Approved', `${request.requesterName} has been added to the family.`);
+    Alert.alert(
+      t('family.screens.joinRequests.approvedTitle'),
+      t('family.screens.joinRequests.approvedMsg', { name: request.requesterName })
+    );
   };
 
   const handleReject = (id: string) => {
     const request = requests.find((r) => r.id === id);
     rejectRequest(id);
-    Alert.alert('Rejected', `${request?.requesterName ?? 'Request'} was rejected.`);
+    Alert.alert(
+      t('family.screens.joinRequests.rejectedTitle'),
+      t('family.screens.joinRequests.rejectedMsg', {
+        name: request?.requesterName ?? t('family.screens.joinRequests.rejectedFallbackName'),
+      })
+    );
   };
 
   const handleClearHistory = () => {
-    Alert.alert('Clear History', 'Remove approved/rejected history?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Clear', style: 'destructive', onPress: clearHistory },
-    ]);
+    Alert.alert(
+      t('family.screens.joinRequests.clearHistoryConfirmTitle'),
+      t('family.screens.joinRequests.clearHistoryConfirmMsg'),
+      [
+        { text: t('family.screens.joinRequests.cancel'), style: 'cancel' },
+        { text: t('family.screens.joinRequests.clear'), style: 'destructive', onPress: clearHistory },
+      ]
+    );
   };
 
   const screenHeader = (
@@ -97,8 +111,8 @@ export function JoinRequestsScreen({ navigation, route }: any) {
       <View style={styles.headerIcon}>
         <Ionicons name="person-add-outline" size={34} color="#fff" />
       </View>
-      <Text style={styles.title}>Join Requests</Text>
-      <Text style={styles.subtitle}>Approve, reject, and review family join history.</Text>
+      <Text style={styles.title}>{t('family.screens.joinRequests.title')}</Text>
+      <Text style={styles.subtitle}>{t('family.screens.joinRequests.subtitle')}</Text>
     </View>
   );
 
@@ -107,7 +121,7 @@ export function JoinRequestsScreen({ navigation, route }: any) {
       <Pressable onPress={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()} style={styles.backBtnHeader}>
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </Pressable>
-      <Text style={{ fontSize: 16, fontWeight: '700', color: '#fff' }}>Join Requests</Text>
+      <Text style={{ fontSize: 16, fontWeight: '700', color: '#fff' }}>{t('family.screens.joinRequests.title')}</Text>
       <View style={{ width: 38 }} />
     </View>
   );
@@ -126,6 +140,12 @@ export function JoinRequestsScreen({ navigation, route }: any) {
       <View style={styles.filterRow}>
         {FILTERS.map((item) => {
           const active = filter === item;
+          const filterLabel =
+            item === 'pending'
+              ? t('family.screens.joinRequests.filterPending', { count: counts[item] })
+              : item === 'approved'
+                ? t('family.screens.joinRequests.filterApproved', { count: counts[item] })
+                : t('family.screens.joinRequests.filterRejected', { count: counts[item] });
 
           return (
             <Pressable
@@ -134,7 +154,7 @@ export function JoinRequestsScreen({ navigation, route }: any) {
               style={[styles.filterChip, active && styles.filterChipActive]}
             >
               <Text style={[styles.filterText, active && styles.filterTextActive]}>
-                {item.charAt(0).toUpperCase() + item.slice(1)} ({counts[item]})
+                {filterLabel}
               </Text>
             </Pressable>
           );
@@ -143,7 +163,7 @@ export function JoinRequestsScreen({ navigation, route }: any) {
 
       {filter !== 'pending' && displayedRequests.length > 0 && (
         <Button
-          title="Clear History"
+          title={t('family.screens.joinRequests.clearHistory')}
           variant="outline"
           onPress={handleClearHistory}
           fullWidth
@@ -164,11 +184,17 @@ export function JoinRequestsScreen({ navigation, route }: any) {
             size={42}
             color={colors.textMuted}
           />
-          <Text style={styles.emptyTitle}>No {filter} requests</Text>
+          <Text style={styles.emptyTitle}>
+            {filter === 'pending'
+              ? t('family.screens.joinRequests.emptyTitlePending')
+              : filter === 'approved'
+                ? t('family.screens.joinRequests.emptyTitleApproved')
+                : t('family.screens.joinRequests.emptyTitleRejected')}
+          </Text>
           <Text style={styles.emptyText}>
             {filter === 'pending'
-              ? 'New QR scan requests will appear here.'
-              : `Your ${filter} join request history will appear here.`}
+              ? t('family.screens.joinRequests.emptyTextPending')
+              : t('family.screens.joinRequests.emptyTextOther', { filter })}
           </Text>
         </Card>
       ) : (

@@ -15,6 +15,11 @@ import { apiRequest } from './src/api/client';
 import { configurePurchases } from './src/services/purchaseService';
 import { useGuardianCommandPolling } from './src/hooks/useGuardianCommandPolling';
 import { useNotificationTriggers } from './src/hooks/useNotificationTriggers';
+import { usePushRegistration } from './src/hooks/usePushRegistration';
+import { useAutomationEngine } from './src/hooks/useAutomationEngine';
+import { useBiometricLock } from './src/hooks/useBiometricLock';
+import { BiometricLockScreen } from './src/components/common/BiometricLockScreen';
+import { ErrorBoundary } from './src/components/common/ErrorBoundary';
 import { i18n } from './src/i18n';
 
 interface SubscriptionMeResponse {
@@ -41,6 +46,9 @@ function AppInner() {
 
   useGuardianCommandPolling();
   useNotificationTriggers();
+  useAutomationEngine();
+  usePushRegistration(!!familyId);
+  const { isLocked, authenticate } = useBiometricLock();
 
   // Configure RevenueCat as soon as (and whenever) the account becomes
   // backend-linked — e.g. right after sign-up/sign-in resolves familyId.
@@ -55,7 +63,15 @@ function AppInner() {
   // if it drifted. The primary sync path is usePurchases' CustomerInfo
   // listener — this is just a fallback in case a webhook landed while the
   // app was closed.
+  //
+  // Skipped entirely in __DEV__: a bare dev-client can't complete a real
+  // RevenueCat purchase, so Settings has a dev-only "Set Tier" override for
+  // testing premium features locally. Without this guard, this effect
+  // overwrote that override with the backend's real (always 'free', since
+  // there's no real purchase behind a test account) tier on every reload —
+  // "my subscription resets every time I reload" was this exact codepath.
   useEffect(() => {
+    if (__DEV__) return;
     if (!familyId) return;
     let cancelled = false;
 
@@ -81,6 +97,7 @@ function AppInner() {
     <>
       <StatusBar style="auto" />
       <AppNavigator />
+      {isLocked && <BiometricLockScreen onUnlock={authenticate} />}
     </>
   );
 }
@@ -90,7 +107,9 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <ThemeProvider>
-          <AppInner />
+          <ErrorBoundary>
+            <AppInner />
+          </ErrorBoundary>
         </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

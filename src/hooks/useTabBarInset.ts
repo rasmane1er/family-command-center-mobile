@@ -14,3 +14,16 @@ export function useTabBarInset(): number {
   const insets = useSafeAreaInsets();
   return (insets.bottom || 12) + TAB_BAR_GAP + TAB_BAR_SURFACE_HEIGHT + BREATHING_ROOM;
 }
+
+/**
+ * Distance from the screen's bottom edge to the top edge of the floating tab
+ * bar itself — no BREATHING_ROOM padding included. Use this (instead of
+ * useTabBarInset) for content that should sit flush/docked right above the
+ * tab bar, like a chat input bar — useTabBarInset's extra margin is meant
+ * for scrollable content or FABs, and leaves a large dead gap when reused
+ * for a docked input.
+ */
+export function useTabBarDockOffset(): number {
+  const insets = useSafeAreaInsets();
+  return (insets.bottom || 12) + TAB_BAR_GAP + TAB_BAR_SURFACE_HEIGHT;
+}

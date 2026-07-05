@@ -20,6 +20,7 @@ import { useOperationsStore } from '../../store/useOperationsStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { useHomeMaintenanceStore } from '../../store/useHomeMaintenanceStore';
 import type { Vehicle } from '../../types';
+import { useTranslation } from 'react-i18next';
 
 const FUEL_TYPES = ['Gasoline', 'Diesel', 'Hybrid', 'Electric', 'Plug-in Hybrid'];
 const SERVICE_TYPES = ['Oil Change', 'Tire Rotation', 'Brake Service', 'Air Filter', 'Transmission', 'Inspection', 'Detailing', 'Other'];
@@ -52,6 +53,7 @@ const parseServiceLogs = (vehicle: Vehicle): ServiceLog[] => {
 
 export function VehiclesScreen({ navigation }: any) {
   const { colors } = useTheme();
+  const { t } = useTranslation('ops');
   const insets = useSafeAreaInsets();
   const s = makeStyles(colors);
 
@@ -90,7 +92,7 @@ export function VehiclesScreen({ navigation }: any) {
 
   const handleAdd = () => {
     if (!newMake.trim() || !newModel.trim()) {
-      Alert.alert('Required', 'Please enter the vehicle make and model.');
+      Alert.alert(t('common.validationTitle'), t('common.validationMsg'));
       return;
     }
     const vehicle: Vehicle = {
@@ -122,7 +124,7 @@ export function VehiclesScreen({ navigation }: any) {
   };
 
   const handleDelete = (id: string, name: string) => {
-    Alert.alert('Remove Vehicle', `Remove "${name}" from your garage?`, [
+    Alert.alert(t('common.removeTitle'), `Remove "${name}" from your garage?`, [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Remove', style: 'destructive', onPress: () => { deleteVehicle(id); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); } },
     ]);
@@ -219,7 +221,7 @@ export function VehiclesScreen({ navigation }: any) {
         <Pressable onPress={() => navigation.goBack()} style={s.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
-        <Text style={s.headerTitle}>Vehicles</Text>
+        <Text style={s.headerTitle}>{t('vehicles.title')}</Text>
         <Pressable onPress={() => setShowAdd(true)} style={s.headerBtn}>
           <Ionicons name="add" size={26} color="#fff" />
         </Pressable>
@@ -233,7 +235,7 @@ export function VehiclesScreen({ navigation }: any) {
       <Pressable onPress={() => navigation.goBack()} style={s.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
-      <Text style={s.headerTitle}>Vehicles</Text>
+      <Text style={s.headerTitle}>{t('vehicles.title')}</Text>
       <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', fontWeight: '600' }}>{vehicles.length} vehicles</Text>
     </LinearGradient>
   );

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../../theme/colors';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
@@ -11,6 +12,7 @@ import { useOperationsStore } from '../../store/useOperationsStore';
 import type { Vehicle } from '../../types';
 
 export function VehicleSetupScreen({ navigation }: any) {
+  const { t } = useTranslation('onboarding');
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [make, setMake] = useState('');
   const [model, setModel] = useState('');
@@ -48,12 +50,12 @@ export function VehicleSetupScreen({ navigation }: any) {
               <Ionicons name="arrow-back" size={24} color="#fff" />
             </Pressable>
             <Pressable onPress={handleNext} style={styles.skipBtn}>
-              <Text style={styles.skipBtnText}>SKIP</Text>
+              <Text style={styles.skipBtnText}>{t('onboarding.screens.vehicleSetup.skipBadge')}</Text>
             </Pressable>
           </View>
-          <View style={styles.stepBadge}><Text style={styles.stepText}>Step 4 of 7</Text></View>
-          <Text style={styles.headerTitle}>Vehicles</Text>
-          <Text style={styles.headerSub}>Track maintenance, insurance & more</Text>
+          <View style={styles.stepBadge}><Text style={styles.stepText}>{t('onboarding.screens.vehicleSetup.stepBadge')}</Text></View>
+          <Text style={styles.headerTitle}>{t('onboarding.screens.vehicleSetup.title')}</Text>
+          <Text style={styles.headerSub}>{t('onboarding.screens.vehicleSetup.subtitle')}</Text>
         </LinearGradient>
         <View style={styles.progressBar}>
           <View style={[styles.progressFill, { width: '57%' }]} />
@@ -76,19 +78,19 @@ export function VehicleSetupScreen({ navigation }: any) {
           </Card>
         ))}
 
-        <Text style={styles.sectionLabel}>Add a Vehicle</Text>
+        <Text style={styles.sectionLabel}>{t('onboarding.screens.vehicleSetup.addVehicleLabel')}</Text>
 
         <View style={styles.makeModelRow}>
-          <Input label="Make" placeholder="Toyota" value={make} onChangeText={setMake} containerStyle={{ flex: 1, marginRight: 8 }} />
-          <Input label="Model" placeholder="Camry" value={model} onChangeText={setModel} containerStyle={{ flex: 1 }} />
+          <Input label={t('onboarding.screens.vehicleSetup.makeLabel')} placeholder={t('onboarding.screens.vehicleSetup.makePlaceholder')} value={make} onChangeText={setMake} containerStyle={{ flex: 1, marginRight: 8 }} />
+          <Input label={t('onboarding.screens.vehicleSetup.modelLabel')} placeholder={t('onboarding.screens.vehicleSetup.modelPlaceholder')} value={model} onChangeText={setModel} containerStyle={{ flex: 1 }} />
         </View>
         <View style={styles.makeModelRow}>
-          <Input label="Year" placeholder="2021" value={year} onChangeText={setYear} keyboardType="numeric" containerStyle={{ flex: 1, marginRight: 8 }} />
-          <Input label="License Plate" placeholder="ABC 1234" value={licensePlate} onChangeText={setLicensePlate} containerStyle={{ flex: 1 }} autoCapitalize="characters" />
+          <Input label={t('onboarding.screens.vehicleSetup.yearLabel')} placeholder={t('onboarding.screens.vehicleSetup.yearPlaceholder')} value={year} onChangeText={setYear} keyboardType="numeric" containerStyle={{ flex: 1, marginRight: 8 }} />
+          <Input label={t('onboarding.screens.vehicleSetup.licensePlateLabel')} placeholder={t('onboarding.screens.vehicleSetup.licensePlatePlaceholder')} value={licensePlate} onChangeText={setLicensePlate} containerStyle={{ flex: 1 }} autoCapitalize="characters" />
         </View>
 
         <Button
-          title="Add Vehicle"
+          title={t('onboarding.screens.vehicleSetup.addVehicleButton')}
           onPress={addVehicleLocal}
           variant="secondary"
           fullWidth
@@ -97,13 +99,13 @@ export function VehicleSetupScreen({ navigation }: any) {
           style={{ marginBottom: 16 }}
         />
         <Button
-          title="Next: Financial Setup"
+          title={t('onboarding.screens.vehicleSetup.nextButton')}
           onPress={handleNext}
           fullWidth size="lg"
           rightIcon={<Ionicons name="arrow-forward" size={18} color="#fff" style={{ marginLeft: 8 }} />}
         />
         <Pressable onPress={handleNext} style={styles.skipButton}>
-          <Text style={styles.skipText}>Skip for now</Text>
+          <Text style={styles.skipText}>{t('onboarding.screens.vehicleSetup.skipForNow')}</Text>
         </Pressable>
       </ScrollView>
     </View>

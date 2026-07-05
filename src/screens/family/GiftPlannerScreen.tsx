@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Modal,
-  TextInput, Alert, Switch,
+  TextInput, Alert, Switch, RefreshControl,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
@@ -29,17 +30,6 @@ const OCCASION_EMOJIS: Record<GiftOccasion, string> = {
   fathers_day: '👔',
   valentines: '💝',
   other: '🎁',
-};
-
-const OCCASION_LABELS: Record<GiftOccasion, string> = {
-  birthday: 'Birthday',
-  christmas: 'Christmas',
-  anniversary: 'Anniversary',
-  graduation: 'Graduation',
-  mothers_day: "Mother's Day",
-  fathers_day: "Father's Day",
-  valentines: "Valentine's",
-  other: 'Other',
 };
 
 const STATUS_COLORS: Record<GiftStatus, string> = {
@@ -80,10 +70,28 @@ const PRIORITIES: GiftPriority[] = ['low', 'medium', 'high'];
 const OCCASIONS: GiftOccasion[] = ['birthday', 'christmas', 'anniversary', 'graduation', 'mothers_day', 'fathers_day', 'valentines', 'other'];
 const ALL_STATUSES: GiftStatus[] = ['idea', 'purchased', 'wrapped', 'given'];
 
+const OCCASION_LABEL_KEYS: Record<GiftOccasion, string> = {
+  birthday: 'occasionBirthday',
+  christmas: 'occasionChristmas',
+  anniversary: 'occasionAnniversary',
+  graduation: 'occasionGraduation',
+  mothers_day: 'occasionMothersDay',
+  fathers_day: 'occasionFathersDay',
+  valentines: 'occasionValentines',
+  other: 'occasionOther',
+};
+
 export function GiftPlannerScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
-  const { gifts, addGift, updateStatus, deleteGift, seedDemoData } = useGiftStore();
+  const { t } = useTranslation('family');
+  const { gifts, addGift, updateStatus, deleteGift, hydrateGifts, isHydrating } = useGiftStore();
   const members = useFamilyStore((s) => s.members);
+  const family = useFamilyStore((s) => s.family);
+
+  useEffect(() => {
+    hydrateGifts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [activeTab, setActiveTab] = useState<'By Person' | 'By Occasion' | 'Budget'>('By Person');
   const [selectedMemberId, setSelectedMemberId] = useState<string>(members[0]?.id ?? '');
@@ -124,7 +132,7 @@ export function GiftPlannerScreen({ navigation }: any) {
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     addGift({
-      familyId: 'demo-family',
+      familyId: family?.id ?? 'demo-family',
       forMemberId: newForMemberId,
       occasion: newOccasion,
       title: newTitle.trim(),
@@ -148,7 +156,7 @@ export function GiftPlannerScreen({ navigation }: any) {
   };
 
   const handleDelete = (id: string, title: string) => {
-    Alert.alert(`Delete "${title}"?`, 'This cannot be undone.', [
+    Alert.alert(t('common.deleteTitle'), 'This cannot be undone.', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete', style: 'destructive', onPress: () => {
@@ -194,7 +202,7 @@ export function GiftPlannerScreen({ navigation }: any) {
             {gift.description ? <Text style={styles.giftDesc}>{gift.description}</Text> : null}
             <View style={styles.giftBadgeRow}>
               <Badge label={STATUS_LABELS[gift.status]} variant={STATUS_VARIANTS[gift.status]} size="sm" />
-              <Badge label={`${OCCASION_EMOJIS[gift.occasion]} ${OCCASION_LABELS[gift.occasion]}`} variant="neutral" size="sm" />
+              <Badge label={`${OCCASION_EMOJIS[gift.occasion]} ${t(`family.screens.giftPlanner.${OCCASION_LABEL_KEYS[gift.occasion]}`)}`} variant="neutral" size="sm" />
               <View style={[styles.priorityDot, { backgroundColor: PRIORITY_COLORS[gift.priority] }]} />
             </View>
           </View>
@@ -285,14 +293,8 @@ export function GiftPlannerScreen({ navigation }: any) {
         onMomentumScrollEnd={onMomentumScrollEnd}
         scrollEventThrottle={scrollEventThrottle}
         contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+        refreshControl={<RefreshControl refreshing={isHydrating} onRefresh={hydrateGifts} tintColor={colors.primary} />}
       >
-        {gifts.length === 0 && (
-          <Pressable onPress={seedDemoData} style={styles.seedBtn}>
-            <Ionicons name="flask" size={18} color={'#C2185B'} />
-            <Text style={[styles.seedBtnText, { color: '#C2185B' }]}>Load Demo Data</Text>
-          </Pressable>
-        )}
-
         {/* BY PERSON TAB */}
         {activeTab === 'By Person' && (
           <>
@@ -340,7 +342,7 @@ export function GiftPlannerScreen({ navigation }: any) {
               (Object.entries(groupedByOccasion) as [GiftOccasion, GiftIdea[]][]).map(([occ, oGifts]) => (
                 <View key={occ} style={styles.occasionSection}>
                   <Text style={styles.occasionHeader}>
-                    {OCCASION_EMOJIS[occ]} {OCCASION_LABELS[occ]}
+                    {OCCASION_EMOJIS[occ]} {t(`family.screens.giftPlanner.${OCCASION_LABEL_KEYS[occ]}`)}
                     <Text style={styles.occasionCount}> ({oGifts.length})</Text>
                   </Text>
                   {oGifts.map((gift) => <GiftCard key={gift.id} gift={gift} />)}
@@ -449,7 +451,7 @@ export function GiftPlannerScreen({ navigation }: any) {
                 >
                   <Text style={styles.occasionGridEmoji}>{OCCASION_EMOJIS[occ]}</Text>
                   <Text style={[styles.occasionGridLabel, newOccasion === occ && { color: '#C2185B' }]}>
-                    {OCCASION_LABELS[occ]}
+                    {t(`family.screens.giftPlanner.${OCCASION_LABEL_KEYS[occ]}`)}
                   </Text>
                 </Pressable>
               ))}
@@ -569,7 +571,7 @@ const styles = StyleSheet.create({
   tabText: { fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.6)' },
   tabTextActive: { color: '#fff' },
   content: { padding: 16 },
-  seedBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.card, borderRadius: 12, padding: 14, marginBottom: 16, ...shadows.sm },
+  seedBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.card, borderRadius: 12, padding: 14, marginBottom: 16,marginTop: 16, ...shadows.sm },
   seedBtnText: { fontSize: 14, fontWeight: '600' },
   emptyState: { alignItems: 'center', paddingVertical: 60 },
   emptyEmoji: { fontSize: 48 },

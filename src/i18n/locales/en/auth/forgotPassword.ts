@@ -1,0 +1,16 @@
+export default {
+  title: 'Reset Password',
+  subtitle: "Enter your email and we'll help you reset your password.",
+  emailLabel: 'Email Address',
+  emailPlaceholder: 'you@example.com',
+  successMessage: 'Password reset email sent. Check your inbox.',
+  resendIn: 'Resend in {{countdown}}…',
+  resendLink: 'Resend email',
+  emailSentButton: 'Email Sent',
+  sendButton: 'Send Reset Link',
+  backToSignIn: 'Back to Sign In',
+  missingEmailTitle: 'Missing Email',
+  missingEmailMsg: 'Please enter your email address.',
+  resetFailedTitle: 'Reset Failed',
+  genericError: 'An unexpected error occurred.',
+};

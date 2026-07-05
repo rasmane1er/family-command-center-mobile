@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../../theme/colors';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
@@ -10,13 +11,14 @@ import { useFinanceStore } from '../../store/useFinanceStore';
 import type { FinancialAccount } from '../../types';
 
 const accountTypes = [
-  { type: 'checking', label: 'Checking', icon: 'card-outline' },
-  { type: 'savings', label: 'Savings', icon: 'save-outline' },
-  { type: 'investment', label: 'Investment', icon: 'trending-up-outline' },
-  { type: 'credit', label: 'Credit Card', icon: 'card' },
+  { type: 'checking', labelKey: 'accountTypeChecking', icon: 'card-outline' },
+  { type: 'savings', labelKey: 'accountTypeSavings', icon: 'save-outline' },
+  { type: 'investment', labelKey: 'accountTypeInvestment', icon: 'trending-up-outline' },
+  { type: 'credit', labelKey: 'accountTypeCredit', icon: 'card' },
 ] as const;
 
 export function FinancialSetupScreen({ navigation }: any) {
+  const { t } = useTranslation('onboarding');
   const [monthlyIncome, setMonthlyIncome] = useState('');
   const [monthlyExpenses, setMonthlyExpenses] = useState('');
   const [hasEmergencyFund, setHasEmergencyFund] = useState(false);
@@ -58,19 +60,19 @@ export function FinancialSetupScreen({ navigation }: any) {
               <Ionicons name="arrow-back" size={24} color="#fff" />
             </Pressable>
             <Pressable onPress={handleNext} style={styles.skipBtn}>
-              <Text style={styles.skipBtnText}>SKIP</Text>
+              <Text style={styles.skipBtnText}>{t('onboarding.screens.financialSetup.skipBadge')}</Text>
             </Pressable>
           </View>
-          <View style={styles.stepBadge}><Text style={styles.stepText}>Step 5 of 7</Text></View>
-          <Text style={styles.headerTitle}>Financial Setup</Text>
-          <Text style={styles.headerSub}>Connect your financial picture</Text>
+          <View style={styles.stepBadge}><Text style={styles.stepText}>{t('onboarding.screens.financialSetup.stepBadge')}</Text></View>
+          <Text style={styles.headerTitle}>{t('onboarding.screens.financialSetup.title')}</Text>
+          <Text style={styles.headerSub}>{t('onboarding.screens.financialSetup.subtitle')}</Text>
         </LinearGradient>
         <View style={styles.progressBar}>
           <View style={[styles.progressFill, { width: '71%' }]} />
         </View>
 
-        <Input label="Estimated Monthly Household Income" placeholder="$8,000" value={monthlyIncome} onChangeText={setMonthlyIncome} leftIcon="cash-outline" keyboardType="numeric" />
-        <Input label="Estimated Monthly Expenses" placeholder="$5,500" value={monthlyExpenses} onChangeText={setMonthlyExpenses} leftIcon="trending-down-outline" keyboardType="numeric" />
+        <Input label={t('onboarding.screens.financialSetup.incomeLabel')} placeholder={t('onboarding.screens.financialSetup.incomePlaceholder')} value={monthlyIncome} onChangeText={setMonthlyIncome} leftIcon="cash-outline" keyboardType="numeric" />
+        <Input label={t('onboarding.screens.financialSetup.expensesLabel')} placeholder={t('onboarding.screens.financialSetup.expensesPlaceholder')} value={monthlyExpenses} onChangeText={setMonthlyExpenses} leftIcon="trending-down-outline" keyboardType="numeric" />
 
         <Pressable
           onPress={() => setHasEmergencyFund(!hasEmergencyFund)}
@@ -78,16 +80,16 @@ export function FinancialSetupScreen({ navigation }: any) {
         >
           <Ionicons name={hasEmergencyFund ? 'checkmark-circle' : 'radio-button-off'} size={22} color={hasEmergencyFund ? colors.success : colors.textMuted} />
           <Text style={[styles.emergencyText, hasEmergencyFund && { color: colors.success }]}>
-            I have an emergency fund (3-6 months of expenses)
+            {t('onboarding.screens.financialSetup.emergencyFundText')}
           </Text>
         </Pressable>
 
-        <Text style={styles.sectionLabel}>Add Accounts (optional)</Text>
+        <Text style={styles.sectionLabel}>{t('onboarding.screens.financialSetup.addAccountsLabel')}</Text>
         <View style={styles.typeRow}>
-          {accountTypes.map((t) => (
-            <Pressable key={t.type} onPress={() => setSelectedType(t.type)} style={[styles.typeChip, selectedType === t.type && styles.typeChipActive]}>
-              <Ionicons name={t.icon as any} size={16} color={selectedType === t.type ? '#fff' : colors.textSecondary} />
-              <Text style={[styles.typeText, selectedType === t.type && styles.typeTextActive]}>{t.label}</Text>
+          {accountTypes.map((at) => (
+            <Pressable key={at.type} onPress={() => setSelectedType(at.type)} style={[styles.typeChip, selectedType === at.type && styles.typeChipActive]}>
+              <Ionicons name={at.icon as any} size={16} color={selectedType === at.type ? '#fff' : colors.textSecondary} />
+              <Text style={[styles.typeText, selectedType === at.type && styles.typeTextActive]}>{t(`onboarding.screens.financialSetup.${at.labelKey}`)}</Text>
             </Pressable>
           ))}
         </View>
@@ -95,7 +97,7 @@ export function FinancialSetupScreen({ navigation }: any) {
         {accounts.map((a, i) => (
           <View key={i} style={styles.accountRow}>
             <Ionicons name="wallet-outline" size={20} color={colors.primary} />
-            <Text style={styles.accountText}>{a.name} — ${a.balance.toLocaleString()}</Text>
+            <Text style={styles.accountText}>{t('onboarding.screens.financialSetup.accountRowText', { name: a.name, balance: a.balance.toLocaleString() })}</Text>
             <Pressable onPress={() => setAccounts(accounts.filter((_, ai) => ai !== i))}>
               <Ionicons name="close-circle" size={20} color={colors.danger} />
             </Pressable>
@@ -103,13 +105,13 @@ export function FinancialSetupScreen({ navigation }: any) {
         ))}
 
         <View style={styles.accountInputRow}>
-          <Input label="Account Name" placeholder="Family Checking" value={accountName} onChangeText={setAccountName} containerStyle={{ flex: 1, marginRight: 8 }} />
-          <Input label="Balance" placeholder="8,000" value={accountBalance} onChangeText={setAccountBalance} keyboardType="numeric" containerStyle={{ flex: 1 }} />
+          <Input label={t('onboarding.screens.financialSetup.accountNameLabel')} placeholder={t('onboarding.screens.financialSetup.accountNamePlaceholder')} value={accountName} onChangeText={setAccountName} containerStyle={{ flex: 1, marginRight: 8 }} />
+          <Input label={t('onboarding.screens.financialSetup.balanceLabel')} placeholder={t('onboarding.screens.financialSetup.balancePlaceholder')} value={accountBalance} onChangeText={setAccountBalance} keyboardType="numeric" containerStyle={{ flex: 1 }} />
         </View>
 
-        <Button title="Add Account" onPress={addAccountLocal} variant="secondary" fullWidth disabled={!accountName.trim()} leftIcon={<Ionicons name="add-circle-outline" size={18} color={colors.primary} style={{ marginRight: 6 }} />} style={{ marginBottom: 16 }} />
-        <Button title="Next: Set Goals" onPress={handleNext} fullWidth size="lg" rightIcon={<Ionicons name="arrow-forward" size={18} color="#fff" style={{ marginLeft: 8 }} />} />
-        <Pressable onPress={handleNext} style={styles.skipButton}><Text style={styles.skipText}>Skip for now</Text></Pressable>
+        <Button title={t('onboarding.screens.financialSetup.addAccountButton')} onPress={addAccountLocal} variant="secondary" fullWidth disabled={!accountName.trim()} leftIcon={<Ionicons name="add-circle-outline" size={18} color={colors.primary} style={{ marginRight: 6 }} />} style={{ marginBottom: 16 }} />
+        <Button title={t('onboarding.screens.financialSetup.nextButton')} onPress={handleNext} fullWidth size="lg" rightIcon={<Ionicons name="arrow-forward" size={18} color="#fff" style={{ marginLeft: 8 }} />} />
+        <Pressable onPress={handleNext} style={styles.skipButton}><Text style={styles.skipText}>{t('onboarding.screens.financialSetup.skipForNow')}</Text></Pressable>
       </ScrollView>
     </View>
   );

@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react';
 import * as Notifications from 'expo-notifications';
+import messaging from '@react-native-firebase/messaging';
+import { Platform } from 'react-native';
 
 import { useGuardianStore } from '../store/useGuardianStore';
 import * as guardianService from '../services/guardianService';
@@ -9,11 +11,11 @@ import type { GuardianCommand } from '../types';
 const POLL_INTERVAL_MS = 25000;
 
 // Runs on a child device once it has registered itself (thisDeviceId set).
-// True background delivery (silent push waking the app) needs Firebase/EAS
-// infra that isn't configured yet — see guardianService's push token
-// registration comment. Until then, this foreground interval is the only
-// delivery mechanism: a command only lands while the app is open. A
-// received push (if it ever fires) just triggers one out-of-cycle poll
+// The backend doesn't currently send a silent/data-only push to wake the
+// app in the background for Guardian commands (sendCommandPush only fires
+// on explicit triggers), so this foreground interval remains the primary
+// delivery mechanism: a command reliably lands only while the app is open.
+// A received push (if one ever arrives) just triggers one out-of-cycle poll
 // instead of waiting for the next tick — pure enhancement, costs nothing
 // if push never arrives.
 async function executeCommand(command: GuardianCommand) {
@@ -89,20 +91,22 @@ export function useGuardianCommandPolling() {
     poll();
     const interval = setInterval(poll, POLL_INTERVAL_MS);
 
-    // Best-effort push token registration. This will fail/no-op on
-    // Expo Go and on any build without real Firebase project + EAS
-    // credentials configured (see guardianService.ts) — that's expected;
-    // foreground polling above is what actually delivers commands today.
+    // Best-effort push token registration via native FCM (same mechanism as
+    // usePushRegistration.ts) — foreground polling above remains the
+    // reliable delivery path regardless of whether this succeeds.
     (async () => {
       try {
         const { status } = await Notifications.requestPermissionsAsync();
         if (status !== 'granted') return;
-        const token = await Notifications.getDevicePushTokenAsync();
-        if (typeof token.data === 'string') {
-          await guardianService.registerPushToken(thisDeviceId, token.data);
+        if (Platform.OS === 'ios') {
+          await messaging().registerDeviceForRemoteMessages();
+        }
+        const fcmToken = await messaging().getToken();
+        if (fcmToken) {
+          await guardianService.registerPushToken(thisDeviceId, fcmToken);
         }
       } catch {
-        // no Firebase/EAS credentials configured yet — expected for now
+        // best-effort — foreground polling above still delivers commands
       }
     })();
 

@@ -35,13 +35,17 @@ const TAB_META: Record<string, {
   'AI Assistant':{ icon: 'sparkles-outline',filled: 'sparkles',  tKey: 'tabs.ai'     },
 };
 
+// Single rendering path for every tab — previously the AI tab alone got a
+// filled gradient pill on selection while the other four just tinted their
+// icon background, so the row looked inconsistent depending on which tab
+// was active. All five tabs now share the exact same selected-state
+// treatment; only the icon/label per tab differs.
 function TabItem({
   route, focused, badge, onPress, onLongPress,
 }: { route: any; focused: boolean; badge?: number | string; onPress: () => void; onLongPress: () => void }) {
   const { t } = useTranslation();
   const { colors, isDark } = useTheme();
   const meta  = TAB_META[route.name];
-  const isAI  = route.name === 'AI Assistant';
   const scale = useSharedValue(1);
   const BRAND    = colors.primary;
   const INACTIVE = colors.textMuted;
@@ -67,46 +71,27 @@ function TabItem({
   };
   const hitSlop = { top: 6, bottom: 6, left: 4, right: 4 };
 
-  if (isAI) {
-    return (
-      <Pressable onPress={handlePress} onLongPress={onLongPress} style={s.aiTabWrap} hitSlop={hitSlop} {...a11yProps}>
-        <Animated.View style={animStyle}>
-          <LinearGradient
-            colors={focused ? ['#0F2952', '#1D4ED8'] : isDark ? ['#1A2A45', '#162240'] : ['#E8EEF9', '#DDE6F5']}
-            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.aiPill}
-          >
-            <Ionicons name={focused ? meta.filled : meta.icon} size={22} color={focused ? '#fff' : BRAND} />
-            {badge ? (
-              <View style={[s.aiBadge, { backgroundColor: colors.danger }]}>
-                <Text style={s.aiBadgeTxt}>{badge}</Text>
-              </View>
-            ) : null}
-          </LinearGradient>
-          <Text style={[s.aiLabel, { color: focused ? BRAND : INACTIVE }, focused && { fontWeight: '700' }]}>{label}</Text>
-        </Animated.View>
-      </Pressable>
-    );
-  }
-
   return (
     <Pressable onPress={handlePress} onLongPress={onLongPress} style={s.tabItem} hitSlop={hitSlop} {...a11yProps}>
-      <Animated.View style={[s.tabContent, animStyle]}>
-        <View style={[s.iconWrap, focused && { backgroundColor: colors.primary + '15' }]}>
-          <Ionicons name={focused ? meta.filled : meta.icon} size={22} color={focused ? BRAND : INACTIVE} />
+      <Animated.View style={animStyle}>
+        <LinearGradient
+          colors={focused ? ['#0F2952', '#1D4ED8'] : isDark ? ['#1A2A45', '#162240'] : ['#E8EEF9', '#DDE6F5']}
+          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.tabPill}
+        >
+          <Ionicons name={focused ? meta.filled : meta.icon} size={22} color={focused ? '#fff' : BRAND} />
           {badge ? (
             <View style={[s.badge, { backgroundColor: colors.danger, borderColor: colors.card }]}>
               <Text style={s.badgeTxt}>{typeof badge === 'number' && badge > 9 ? '9+' : badge}</Text>
             </View>
           ) : null}
-        </View>
+        </LinearGradient>
         <Text style={[s.label, { color: focused ? BRAND : INACTIVE }, focused && { fontWeight: '700' }]} numberOfLines={1}>{label}</Text>
-        {focused && <View style={[s.activeLine, { backgroundColor: BRAND }]} />}
       </Animated.View>
     </Pressable>
   );
 }
 
-const HIDDEN_SCREENS = new Set(['ReceiptScanner']);
+const HIDDEN_SCREENS = new Set(['ReceiptScanner', 'EnterPairingCode']);
 
 function getActiveNestedRoute(tabRoute: BottomTabBarProps['state']['routes'][number]): string | undefined {
   const nested = tabRoute.state;
@@ -188,16 +173,11 @@ const s = StyleSheet.create({
     overflow: 'hidden',
   },
   tabs: { flexDirection: 'row', alignItems: 'flex-end', paddingTop: 12, paddingBottom: 12 },
-  tabItem:    { flex: 1, alignItems: 'center' },
-  tabContent: { alignItems: 'center', paddingBottom: 2, position: 'relative' },
-  iconWrap:   { width: 46, height: 34, borderRadius: 12, alignItems: 'center', justifyContent: 'center', position: 'relative' },
-  label:      { fontSize: 10, fontWeight: '500', marginTop: 3, letterSpacing: 0.1 },
-  activeLine: { width: 16, height: 2.5, borderRadius: 2, marginTop: 3 },
-  badge:    { position: 'absolute', top: -2, right: -2, minWidth: 16, height: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center', borderWidth: 2, paddingHorizontal: 2 },
+  tabItem: { flex: 1, alignItems: 'center', paddingBottom: 2 },
+  // Same pill every tab uses when selected (previously only the AI tab had
+  // this — see the TabItem comment above).
+  tabPill: { width: 52, height: 40, borderRadius: 16, alignItems: 'center', justifyContent: 'center', position: 'relative' },
+  label: { fontSize: 10, fontWeight: '500', marginTop: 4, letterSpacing: 0.1 },
+  badge: { position: 'absolute', top: -3, right: -3, minWidth: 16, height: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center', borderWidth: 2, paddingHorizontal: 2 },
   badgeTxt: { fontSize: 8, fontWeight: '900', color: '#fff' },
-  aiTabWrap: { flex: 1, alignItems: 'center', paddingBottom: 2 },
-  aiPill:    { width: 52, height: 40, borderRadius: 16, alignItems: 'center', justifyContent: 'center', position: 'relative' },
-  aiBadge:   { position: 'absolute', top: -3, right: -3, width: 14, height: 14, borderRadius: 7, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#fff' },
-  aiBadgeTxt:{ fontSize: 7, fontWeight: '900', color: '#fff' },
-  aiLabel:   { fontSize: 10, fontWeight: '500', marginTop: 4, letterSpacing: 0.1 },
 });

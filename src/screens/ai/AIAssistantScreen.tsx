@@ -23,7 +23,8 @@ import { useMemoryStore } from '../../store/useMemoryStore';
 import { useSubscription } from '../../hooks/useSubscription';
 import { UpgradePrompt } from '../../components/common/UpgradePrompt';
 import { useFamilyContextString } from '../../utils/buildFamilyContext';
-import { useTabBarInset } from '../../hooks/useTabBarInset';
+import { useTabBarDockOffset } from '../../hooks/useTabBarInset';
+import { useTotalNetWorth } from '../../hooks/useTotalNetWorth';
 
 const AI_FEATURES = [
   { label: 'Memory', icon: 'albums', color: '#6A1B9A', screen: 'AIMemory' },
@@ -58,11 +59,11 @@ function getActionDescription(action: { type: string; payload: Record<string, un
   }
 }
 
-export function AIAssistantScreen({ navigation }: { navigation: { navigate: (screen: string) => void } }) {
+export function AIAssistantScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
-  const { t } = useTranslation();
-  const tabBarHeight = useTabBarInset();
+  const { t } = useTranslation('ai');
+  const tabBarDockOffset = useTabBarDockOffset();
   const [input, setInput] = useState('');
   const voice = useVoiceInput({ onResult: (text) => handleSend(text) });
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
@@ -72,7 +73,7 @@ export function AIAssistantScreen({ navigation }: { navigation: { navigate: (scr
   const { features } = useSubscription();
   const aiQueryCount = useAIStore((s) => s.messages?.filter((m) => m.role === 'user').length ?? 0);
   const members = useFamilyStore((s) => s.members);
-  const { accounts, bills } = useFinanceStore();
+  const { bills } = useFinanceStore();
   const { pantryItems, vehicles } = useOperationsStore();
   const sosAlerts = useGuardianStore((s) => s.sosAlerts);
   const addTask = useFamilyStore((s) => s.addTask);
@@ -81,7 +82,22 @@ export function AIAssistantScreen({ navigation }: { navigation: { navigate: (scr
   const addMemory = useMemoryStore((s) => s.addMemory);
 
   const familyContext = useFamilyContextString();
-  const netWorth = accounts.reduce((sum, a) => sum + a.balance, 0);
+  // Same unified figure FinanceDashboardScreen shows (accounts + wealth
+  // entries + physical assets − debts) — this chip navigates straight
+  // there, so a locally-computed accounts-only subtotal would show a
+  // different number the moment you land on that screen.
+  const netWorth = useTotalNetWorth();
+
+  // initial: false tells the target tab's stack "don't treat this as your
+  // root route" — without it, jumping straight to a non-root screen (like
+  // Pantry) in a tab that's never been opened this session replaces that
+  // tab's whole stack with just that screen, leaving no dashboard
+  // underneath and permanently stuck there (even the "reset tab to root on
+  // tap" logic in CustomTabBar.tsx can't recover from it, since as far as
+  // that stack is concerned, Pantry already IS the root).
+  const goToMembers = () => navigation.navigate('Family', { screen: 'FamilyProfiles', initial: false });
+  const goToNetWorth = () => navigation.navigate('Finance', { screen: 'FinanceDashboard', initial: false });
+  const goToPantry = () => navigation.navigate('Operations', { screen: 'Pantry', initial: false });
 
   // Dynamic suggestion chips based on context
   const today = new Date();
@@ -214,34 +230,45 @@ export function AIAssistantScreen({ navigation }: { navigation: { navigate: (scr
             <Text style={dynStyles.statusText}>Online • Powered by Gemini</Text>
           </View>
         </View>
-        <Pressable onPress={clearMessages} style={dynStyles.clearBtn}>
-          <Ionicons name="refresh-outline" size={20} color="rgba(255,255,255,0.6)" />
+        <Pressable onPress={clearMessages} style={({ pressed }) => [dynStyles.clearBtn, pressed && dynStyles.clearBtnPressed]}>
+          <Ionicons name="refresh-outline" size={18} color="rgba(255,255,255,0.75)" />
         </Pressable>
       </View>
 
       <View style={dynStyles.contextRow}>
-        <View style={dynStyles.contextChip}>
+        <Pressable onPress={goToMembers} style={({ pressed }) => [dynStyles.contextChip, pressed && dynStyles.contextChipPressed]}>
           <Ionicons name="people-outline" size={12} color="rgba(255,255,255,0.7)" />
           <Text style={dynStyles.contextChipText}>{members.length} members</Text>
-        </View>
-        <View style={dynStyles.contextChip}>
+        </Pressable>
+        <Pressable onPress={goToNetWorth} style={({ pressed }) => [dynStyles.contextChip, pressed && dynStyles.contextChipPressed]}>
           <Ionicons name="wallet-outline" size={12} color="rgba(255,255,255,0.7)" />
           <Text style={dynStyles.contextChipText}>${(netWorth / 1000).toFixed(0)}k net worth</Text>
-        </View>
-        <View style={dynStyles.contextChip}>
+        </Pressable>
+        <Pressable onPress={goToPantry} style={({ pressed }) => [dynStyles.contextChip, pressed && dynStyles.contextChipPressed]}>
           <Ionicons name="nutrition-outline" size={12} color="rgba(255,255,255,0.7)" />
           <Text style={dynStyles.contextChipText}>{pantryItems.length} pantry items</Text>
-        </View>
+        </Pressable>
       </View>
 
-      <View style={dynStyles.featuresRow}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={dynStyles.featuresRow}
+        contentContainerStyle={dynStyles.featuresRowContent}
+      >
         {AI_FEATURES.map((f) => (
-          <Pressable key={f.screen} onPress={() => navigation.navigate(f.screen)} style={[dynStyles.featureBtn, { backgroundColor: f.color + '30', borderColor: f.color + '60' }]}>
-            <Ionicons name={f.icon as keyof typeof Ionicons.glyphMap} size={14} color={f.color === '#0F2952' ? '#7FAAFF' : f.color === '#2D2D8F' ? '#8888FF' : '#fff'} />
-            <Text style={dynStyles.featureBtnText}>{f.label}</Text>
+          <Pressable
+            key={f.screen}
+            onPress={() => navigation.navigate(f.screen)}
+            style={({ pressed }) => [dynStyles.featureBtn, pressed && dynStyles.featureBtnPressed]}
+          >
+            <View style={[dynStyles.featureBtnIconWrap, { backgroundColor: f.color + '40' }]}>
+              <Ionicons name={f.icon as keyof typeof Ionicons.glyphMap} size={12} color="#fff" />
+            </View>
+            <Text style={dynStyles.featureBtnText} numberOfLines={1}>{f.label}</Text>
           </Pressable>
         ))}
-      </View>
+      </ScrollView>
       {unreadInsights.length > 0 && (
         <View style={dynStyles.insightsBar}>
           <Ionicons name="bulb-outline" size={16} color={colors.secondary} />
@@ -267,7 +294,7 @@ export function AIAssistantScreen({ navigation }: { navigation: { navigate: (scr
   );
 
   return (
-    <View style={[dynStyles.container, { paddingBottom: tabBarHeight }]}>
+    <View style={[dynStyles.container, { paddingBottom: tabBarDockOffset }]}>
       <StatusBar style="light" />
 
       <KeyboardAvoidingView
@@ -426,13 +453,22 @@ function makeStyles(colors: import('../../theme/ThemeContext').ThemeColors) {
     statusRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
     statusDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#2ECC71' },
     statusText: { fontSize: 12, color: 'rgba(255,255,255,0.6)' },
-    clearBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
+    clearBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' },
+    clearBtnPressed: { backgroundColor: 'rgba(255,255,255,0.16)' },
     contextRow: { flexDirection: 'row', gap: 8 },
-    contextChip: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 20, paddingVertical: 4, paddingHorizontal: 10 },
-    contextChipText: { fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: '600' },
-    featuresRow: { flexDirection: 'row', gap: 8, marginTop: 10 },
-    featureBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, borderRadius: 10, paddingVertical: 7, borderWidth: 1 },
-    featureBtnText: { fontSize: 11, fontWeight: '700', color: '#fff' },
+    contextChip: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.09)', borderRadius: 20, paddingVertical: 3, paddingHorizontal: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+    contextChipPressed: { backgroundColor: 'rgba(255,255,255,0.18)' },
+    contextChipText: { fontSize: 11, color: 'rgba(255,255,255,0.75)', fontWeight: '600' },
+    featuresRow: { flexGrow: 0, marginTop: 10 },
+    featuresRowContent: { flexDirection: 'row', gap: 6, paddingRight: 4 },
+    featureBtn: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5,
+      borderRadius: 10, paddingVertical: 7, paddingHorizontal: 10,
+      backgroundColor: 'rgba(255,255,255,0.07)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
+    },
+    featureBtnPressed: { backgroundColor: 'rgba(255,255,255,0.15)' },
+    featureBtnIconWrap: { width: 18, height: 18, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
+    featureBtnText: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.92)', letterSpacing: 0.1 },
     insightsBar: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FEF3E2', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
     insightsText: { flex: 1, fontSize: 12, color: colors.text, fontWeight: '500' },
     insightsCount: { fontSize: 11, color: '#fff', backgroundColor: colors.secondary, borderRadius: 10, paddingHorizontal: 7, paddingVertical: 2, fontWeight: '700' },

@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
 import { Card } from '../../components/common/Card';
@@ -14,33 +15,36 @@ import { useAutomationStore } from '../../store/useAutomationStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 
-const CONFLICT_TOOLS = [
-  { id: 't1', name: 'Cool-Down Timer', desc: '10-minute pause before continuing a heated discussion', icon: 'timer', color: '#2980B9' },
-  { id: 't2', name: 'I-Statement Builder', desc: '"I feel ___ when ___ because ___" — express without blame', icon: 'chatbubble', color: '#27AE60' },
-  { id: 't3', name: 'Family Vote', desc: 'Anonymous voting on disputed family decisions', icon: 'people', color: '#8E44AD' },
-  { id: 't4', name: 'Compromise Generator', desc: 'AI suggests middle-ground solutions for both parties', icon: 'shuffle', color: '#F5A623' },
-];
-
-const RESOLUTION_FRAMEWORKS = [
-  { name: 'Acknowledge', step: 1, desc: 'Each person shares their perspective uninterrupted (2 min each)', color: '#E74C3C' },
-  { name: 'Understand', step: 2, desc: 'Repeat back what you heard to confirm understanding', color: '#F5A623' },
-  { name: 'Find Common Ground', step: 3, desc: 'Identify what both parties actually want underneath the conflict', color: '#27AE60' },
-  { name: 'Create Options', step: 4, desc: 'Brainstorm 3+ solutions without judging any of them', color: '#2980B9' },
-  { name: 'Choose & Commit', step: 5, desc: 'Agree on the best solution and document it', color: '#8E44AD' },
-];
-
 export function ConflictResolverScreen({ navigation }: any) {
+  const { t } = useTranslation('family');
   const insets = useSafeAreaInsets();
+
+  const CONFLICT_TOOLS = [
+    { id: 't1', name: t('family.screens.conflictResolver.toolCoolDownName'), desc: t('family.screens.conflictResolver.toolCoolDownDesc'), icon: 'timer', color: '#2980B9' },
+    { id: 't2', name: t('family.screens.conflictResolver.toolIStatementName'), desc: t('family.screens.conflictResolver.toolIStatementDesc'), icon: 'chatbubble', color: '#27AE60' },
+    { id: 't3', name: t('family.screens.conflictResolver.toolFamilyVoteName'), desc: t('family.screens.conflictResolver.toolFamilyVoteDesc'), icon: 'people', color: '#8E44AD' },
+    { id: 't4', name: t('family.screens.conflictResolver.toolCompromiseName'), desc: t('family.screens.conflictResolver.toolCompromiseDesc'), icon: 'shuffle', color: '#F5A623' },
+  ];
+
+  const RESOLUTION_FRAMEWORKS = [
+    { name: t('family.screens.conflictResolver.stepAcknowledgeName'), step: 1, desc: t('family.screens.conflictResolver.stepAcknowledgeDesc'), color: '#E74C3C' },
+    { name: t('family.screens.conflictResolver.stepUnderstandName'), step: 2, desc: t('family.screens.conflictResolver.stepUnderstandDesc'), color: '#F5A623' },
+    { name: t('family.screens.conflictResolver.stepCommonGroundName'), step: 3, desc: t('family.screens.conflictResolver.stepCommonGroundDesc'), color: '#27AE60' },
+    { name: t('family.screens.conflictResolver.stepCreateOptionsName'), step: 4, desc: t('family.screens.conflictResolver.stepCreateOptionsDesc'), color: '#2980B9' },
+    { name: t('family.screens.conflictResolver.stepChooseCommitName'), step: 5, desc: t('family.screens.conflictResolver.stepChooseCommitDesc'), color: '#8E44AD' },
+  ];
   const [activeTab, setActiveTab] = useState<'active' | 'tools' | 'framework'>('active');
   const [showModal, setShowModal] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [newSeverity, setNewSeverity] = useState<'low' | 'medium' | 'high'>('medium');
   const [newParties, setNewParties] = useState<string[]>([]);
-  const { conflicts, resolveConflict, updateConflictStatus, addConflict, seedDemoData } = useAutomationStore();
+  const { conflicts, resolveConflict, updateConflictStatus, addConflict, seedDemoData, hasSeeded } = useAutomationStore();
   const members = useFamilyStore((s) => s.members);
 
-  if (conflicts.length === 0) seedDemoData();
+  useEffect(() => {
+    if (!hasSeeded) seedDemoData();
+  }, [hasSeeded, seedDemoData]);
 
   const handleAddConflict = () => {
     if (!newTitle.trim()) return;
@@ -51,14 +55,14 @@ export function ConflictResolverScreen({ navigation }: any) {
       partiesInvolved: newParties,
       status: 'open',
       severity: newSeverity,
-      aiSuggestion: 'Try using the I-Statement Builder tool to express feelings without blame.',
+      aiSuggestion: t('family.screens.conflictResolver.aiSuggestionDefault'),
     });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setNewTitle(''); setNewDesc(''); setNewSeverity('medium'); setNewParties([]);
     setShowModal(false);
   };
 
-  const getMemberName = (id: string) => members.find((m) => m.id === id)?.name ?? 'Member';
+  const getMemberName = (id: string) => members.find((m) => m.id === id)?.name ?? t('family.screens.conflictResolver.memberFallback');
 
   const getStatusColor = (status: string) => {
     if (status === 'resolved') return colors.success;
@@ -69,11 +73,11 @@ export function ConflictResolverScreen({ navigation }: any) {
 
   const handleResolve = (id: string) => {
     Alert.alert(
-      'Mark as Resolved',
-      'Enter the resolution agreed upon by all parties.',
+      t('family.screens.conflictResolver.resolveTitle'),
+      t('family.screens.conflictResolver.resolveMsg'),
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Mark Resolved', onPress: () => resolveConflict(id, 'Resolved through family mediation.') },
+        { text: t('family.screens.conflictResolver.cancel'), style: 'cancel' },
+        { text: t('family.screens.conflictResolver.markResolved'), onPress: () => resolveConflict(id, t('family.screens.conflictResolver.defaultResolutionText')) },
       ]
     );
   };
@@ -87,7 +91,7 @@ export function ConflictResolverScreen({ navigation }: any) {
             <Pressable onPress={() => navigation.goBack()} style={styles.back}>
               <Ionicons name="arrow-back" size={24} color="#fff" />
             </Pressable>
-            <Text style={styles.headerTitle}>Conflict Resolver</Text>
+            <Text style={styles.headerTitle}>{t('family.screens.conflictResolver.headerTitle')}</Text>
             <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
               <Ionicons name="add" size={24} color="#fff" />
             </Pressable>
@@ -96,23 +100,23 @@ export function ConflictResolverScreen({ navigation }: any) {
           <View style={styles.summaryRow}>
             <View style={styles.sumCard}>
               <Text style={styles.sumVal}>{openConflicts.length}</Text>
-              <Text style={styles.sumLabel}>Open</Text>
+              <Text style={styles.sumLabel}>{t('family.screens.conflictResolver.tabOpen')}</Text>
             </View>
             <View style={styles.sumCard}>
               <Text style={styles.sumVal}>{resolvedConflicts.length}</Text>
-              <Text style={styles.sumLabel}>Resolved</Text>
+              <Text style={styles.sumLabel}>{t('family.screens.conflictResolver.tabResolved')}</Text>
             </View>
             <View style={styles.sumCard}>
               <Text style={styles.sumVal}>{resolvedConflicts.length > 0 ? Math.round(resolvedConflicts.length / conflicts.length * 100) : 0}%</Text>
-              <Text style={styles.sumLabel}>Resolution Rate</Text>
+              <Text style={styles.sumLabel}>{t('family.screens.conflictResolver.tabResolutionRate')}</Text>
             </View>
           </View>
-    
+
   <View style={styles.tabs}>
           {(['active', 'tools', 'framework'] as const).map((tab) => (
             <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
               <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-                {tab === 'active' ? 'Conflicts' : tab === 'tools' ? 'Tools' : 'Framework'}
+                {tab === 'active' ? t('family.screens.conflictResolver.tabConflicts') : tab === 'tools' ? t('family.screens.conflictResolver.tabTools') : t('family.screens.conflictResolver.tabFramework')}
               </Text>
             </Pressable>
           ))}
@@ -128,7 +132,7 @@ export function ConflictResolverScreen({ navigation }: any) {
       <Pressable onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </Pressable>
-      <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>Conflict Resolver</Text>
+      <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>{t('family.screens.conflictResolver.headerTitle')}</Text>
       <View />
     </LinearGradient>
   );

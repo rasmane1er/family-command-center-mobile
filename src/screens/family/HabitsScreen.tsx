@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 import { PremiumHeader } from '../../components/common/PremiumHeader';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { colors } from '../../theme/colors';
@@ -15,6 +16,7 @@ import { Avatar } from '../../components/common/Avatar';
 import { Button } from '../../components/common/Button';
 import { useHabitsStore } from '../../store/useHabitsStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { useAuthStore } from '../../store/useAuthStore';
 
 const HABIT_ICONS = ['fitness-outline', 'book-outline', 'water-outline', 'bed-outline', 'restaurant-outline', 'walk-outline', 'heart-outline', 'star-outline', 'musical-notes-outline', 'bicycle-outline'];
 const HABIT_COLORS = ['#E74C3C', '#E67E22', '#F1C40F', '#27AE60', '#2980B9', '#9B59B6', '#E91E63', '#00BCD4'];
@@ -34,6 +36,7 @@ function getLastSevenDays(): string[] {
 }
 
 export function HabitsScreen({ navigation }: any) {
+  const { t } = useTranslation('family');
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<'family' | 'personal'>('family');
   const [showModal, setShowModal] = useState(false);
@@ -44,12 +47,16 @@ export function HabitsScreen({ navigation }: any) {
   const [newFrequency, setNewFrequency] = useState<'daily' | 'weekly'>('daily');
   const [newMemberId, setNewMemberId] = useState<string | null>(null);
 
-  const { habits, completeHabit, uncompleteHabit, deleteHabit, addHabit, isCompletedToday, seedDemoData } = useHabitsStore();
+  const { habits, completeHabit, uncompleteHabit, deleteHabit, addHabit, isCompletedToday, fetchFromServer, isLoaded } = useHabitsStore();
   const members = useFamilyStore((s) => s.members);
+  const familyId = useAuthStore((s) => s.familyId);
   const today = new Date().toISOString().split('T')[0];
   const lastSeven = getLastSevenDays();
 
-  if (habits.length === 0) seedDemoData();
+  useEffect(() => {
+    if (!isLoaded) fetchFromServer(familyId ?? '');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const familyHabits = habits.filter((h) => !h.memberId);
   const personalHabits = habits.filter((h) => h.memberId);
@@ -71,9 +78,9 @@ export function HabitsScreen({ navigation }: any) {
   };
 
   const handleDelete = (id: string, title: string) => {
-    Alert.alert('Delete Habit', `Remove "${title}" from your habits?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => { deleteHabit(id); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); } },
+    Alert.alert(t('family.screens.habits.deleteHabitTitle'), t('family.screens.habits.deleteHabitMsg', { title }), [
+      { text: t('family.screens.habits.cancelBtn'), style: 'cancel' },
+      { text: t('family.screens.habits.deleteBtn'), style: 'destructive', onPress: () => { deleteHabit(id); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); } },
     ]);
   };
 
@@ -81,7 +88,7 @@ export function HabitsScreen({ navigation }: any) {
     if (!newTitle.trim()) return;
     addHabit({
       title: newTitle.trim(),
-      description: newDesc.trim() || 'Build this healthy habit',
+      description: newDesc.trim() || t('family.screens.habits.defaultHabitDesc'),
       icon: newIcon,
       color: newColor,
       frequency: newFrequency,
@@ -104,7 +111,7 @@ export function HabitsScreen({ navigation }: any) {
         <Pressable onPress={() => navigation.goBack()} style={{ marginRight: 12 }}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
-        <Text style={{ flex: 1, fontSize: 18, fontWeight: '800', color: '#fff' }}>Family Habits</Text>
+        <Text style={{ flex: 1, fontSize: 18, fontWeight: '800', color: '#fff' }}>{t('family.screens.habits.headerTitle')}</Text>
         <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
           <Ionicons name="add" size={22} color="#fff" />
         </Pressable>
@@ -112,20 +119,20 @@ export function HabitsScreen({ navigation }: any) {
       <View style={styles.statsRow}>
         <View style={styles.statItem}>
           <Text style={styles.statValue}>{completedToday}/{habits.length}</Text>
-          <Text style={styles.statLabel}>Today</Text>
+          <Text style={styles.statLabel}>{t('family.screens.habits.statToday')}</Text>
         </View>
         <View style={[styles.statItem, styles.statBorder]}>
           <Text style={styles.statValue}>{avgStreak}</Text>
-          <Text style={styles.statLabel}>Avg Streak</Text>
+          <Text style={styles.statLabel}>{t('family.screens.habits.statAvgStreak')}</Text>
         </View>
         <View style={styles.statItem}>
           <Text style={styles.statValue}>{totalStreak}</Text>
-          <Text style={styles.statLabel}>Total Days</Text>
+          <Text style={styles.statLabel}>{t('family.screens.habits.statTotalDays')}</Text>
         </View>
       </View>
       <View style={styles.todayRow}>
-        <Text style={styles.todayLabel}>Today — {format(new Date(), 'EEEE, MMM d')}</Text>
-        <Text style={styles.todayProgress}>{Math.round((completedToday / Math.max(habits.length, 1)) * 100)}% done</Text>
+        <Text style={styles.todayLabel}>{t('family.screens.habits.todayDateLabel', { date: format(new Date(), 'EEEE, MMM d') })}</Text>
+        <Text style={styles.todayProgress}>{t('family.screens.habits.percentDoneLabel', { percent: Math.round((completedToday / Math.max(habits.length, 1)) * 100) })}</Text>
       </View>
       <View style={styles.progressBar}>
         <View style={[styles.progressFill, { width: `${(completedToday / Math.max(habits.length, 1)) * 100}%` }]} />
@@ -155,11 +162,18 @@ export function HabitsScreen({ navigation }: any) {
     </LinearGradient>
   );
 
+  if (!isLoaded) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <StatusBar style="light" />
+        <ActivityIndicator size="large" color="#E67E22" />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-
-      
 
       <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
         {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
@@ -261,7 +275,7 @@ export function HabitsScreen({ navigation }: any) {
       <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowModal(false)}>
         <ScrollView style={styles.modal} contentContainerStyle={{ paddingBottom: 40 }}>
           <View style={styles.modalHandle} />
-          <Text style={styles.modalTitle}>Add Habit</Text>
+          <Text style={styles.modalTitle}>{t('habits.addHabit')}</Text>
 
           <TextInput
             style={styles.modalInput}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput,
 } from 'react-native';
@@ -14,6 +14,7 @@ import { ProgressBar } from '../../components/common/ProgressBar';
 import { useAllowanceStore, AllowanceTransactionType } from '../../store/useAllowanceStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
+import { useTranslation } from 'react-i18next';
 
 const TX_CONFIG: Record<AllowanceTransactionType, { icon: string; color: string; label: string }> = {
   weekly: { icon: 'calendar', color: '#2980B9', label: 'Weekly' },
@@ -23,36 +24,75 @@ const TX_CONFIG: Record<AllowanceTransactionType, { icon: string; color: string;
 };
 
 export function AllowanceScreen({ navigation }: any) {
+  const { t } = useTranslation('family');
   const insets = useSafeAreaInsets();
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [showBonusModal, setShowBonusModal] = useState(false);
   const [showDeductModal, setShowDeductModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [bonusAmount, setBonusAmount] = useState('');
   const [bonusReason, setBonusReason] = useState('');
   const [deductAmount, setDeductAmount] = useState('');
   const [deductReason, setDeductReason] = useState('');
+  const [newMemberId, setNewMemberId] = useState('');
+  const [newWeeklyAmount, setNewWeeklyAmount] = useState('');
 
-  const { configs, transactions, seedDemoData, payWeeklyAllowance, addBonus, addDeduction } = useAllowanceStore();
+  const { configs: allConfigs, transactions, fetchFromServer, addConfig, deleteConfig, payWeeklyAllowance, addBonus, addDeduction } = useAllowanceStore();
   const members = useFamilyStore((s) => s.members);
+  const family = useFamilyStore((s) => s.family);
 
-  if (configs.length === 0) seedDemoData();
+  useEffect(() => {
+    fetchFromServer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const getMember = (id: string) => members.find((m) => m.id === id);
 
+  // Configs seeded for a demo family (or a previous real family) whose
+  // member IDs no longer exist in this family's member list would otherwise
+  // count toward "Recipients"/"Total Balance" in the header while silently
+  // rendering nothing in the body below — filtering here up front keeps the
+  // header stats and the list it summarizes always in agreement.
+  const configs = allConfigs.filter((c) => getMember(c.memberId));
+  const unconfiguredMembers = members.filter((m) => !configs.some((c) => c.memberId === m.id));
+
   const totalBalance = configs.reduce((sum, c) => sum + c.balance, 0);
   const totalWeekly = configs.filter((c) => c.isActive).reduce((sum, c) => sum + c.weeklyAmount, 0);
-  const configuredKids = configs.map((c) => c.memberId);
 
   const selectedConfig = selectedMemberId ? configs.find((c) => c.memberId === selectedMemberId) : null;
   const memberTxs = selectedMemberId
     ? transactions.filter((t) => t.memberId === selectedMemberId).slice(0, 20)
     : [];
 
+  const handleAddConfig = () => {
+    const amount = parseFloat(newWeeklyAmount);
+    if (!newMemberId || isNaN(amount) || amount <= 0) return;
+    addConfig({
+      familyId: family?.id ?? 'demo-family',
+      memberId: newMemberId,
+      weeklyAmount: amount,
+      bonusPerChore: 0,
+      isActive: true,
+    });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setNewMemberId('');
+    setNewWeeklyAmount('');
+    setShowAddModal(false);
+  };
+
+  const handleDeleteConfig = (config: typeof configs[number]) => {
+    const member = getMember(config.memberId);
+    Alert.alert(t('allowance.removeTitle', { name: member?.name ?? 'this' }), t('allowance.removeMsg'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.delete'), style: 'destructive', onPress: () => { deleteConfig(config.id); if (selectedMemberId === config.memberId) setSelectedMemberId(null); } },
+    ]);
+  };
+
   const handlePayAll = () => {
-    Alert.alert('Pay Weekly Allowances', `Pay $${totalWeekly.toFixed(2)} to all active members?`, [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('allowance.payWeeklyTitle'), t('allowance.payWeeklyMsg', { amount: totalWeekly.toFixed(2) }), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Pay All',
+        text: t('allowance.payAll'),
         onPress: () => {
           configs.filter((c) => c.isActive).forEach((c) => payWeeklyAllowance(c.memberId));
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -86,29 +126,32 @@ export function AllowanceScreen({ navigation }: any) {
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>Allowance Manager</Text>
+          <Text style={styles.headerTitle}>{t('allowance.title')}</Text>
           <Text style={styles.headerSub}>${totalWeekly.toFixed(2)}/week budget</Text>
         </View>
         <Pressable onPress={handlePayAll} style={styles.payBtn}>
           <Ionicons name="cash" size={16} color="#fff" />
-          <Text style={styles.payBtnText}>Pay All</Text>
+          <Text style={styles.payBtnText}>{t('allowance.payAll')}</Text>
+        </Pressable>
+        <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
+          <Ionicons name="add" size={22} color="#fff" />
         </Pressable>
       </View>
 
       <View style={styles.heroCard}>
         <View style={styles.heroItem}>
           <Text style={styles.heroVal}>${totalBalance.toFixed(2)}</Text>
-          <Text style={styles.heroLabel}>Total Balance</Text>
+          <Text style={styles.heroLabel}>{t('allowance.totalBalance')}</Text>
         </View>
         <View style={styles.heroDivider} />
         <View style={styles.heroItem}>
           <Text style={styles.heroVal}>{configs.length}</Text>
-          <Text style={styles.heroLabel}>Recipients</Text>
+          <Text style={styles.heroLabel}>{t('allowance.recipients')}</Text>
         </View>
         <View style={styles.heroDivider} />
         <View style={styles.heroItem}>
           <Text style={styles.heroVal}>${totalWeekly.toFixed(0)}</Text>
-          <Text style={styles.heroLabel}>Per Week</Text>
+          <Text style={styles.heroLabel}>{t('allowance.perWeek')}</Text>
         </View>
       </View>
     </LinearGradient>
@@ -119,7 +162,7 @@ export function AllowanceScreen({ navigation }: any) {
       <Pressable onPress={() => navigation.goBack()} style={styles.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
-      <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>Allowance Manager</Text>
+      <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>{t('allowance.title')}</Text>
       <Text style={{ fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.8)' }}>${totalBalance.toFixed(0)}</Text>
     </LinearGradient>
   );
@@ -138,7 +181,7 @@ export function AllowanceScreen({ navigation }: any) {
         contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.sectionTitle}>Family Members</Text>
+        <Text style={styles.sectionTitle}>{t('allowance.familyMembers')}</Text>
         {configs.map((config) => {
           const member = getMember(config.memberId);
           if (!member) return null;
@@ -146,7 +189,7 @@ export function AllowanceScreen({ navigation }: any) {
           const weeklyGoal = config.weeklyAmount * 4;
 
           return (
-            <Pressable key={config.id} onPress={() => setSelectedMemberId(isSelected ? null : config.memberId)}>
+            <Pressable key={config.id} onPress={() => setSelectedMemberId(isSelected ? null : config.memberId)} onLongPress={() => handleDeleteConfig(config)}>
               <Card
                 style={{ ...styles.memberCard, ...(isSelected ? styles.memberCardSelected : {}) }}
                 variant="elevated"
@@ -171,22 +214,22 @@ export function AllowanceScreen({ navigation }: any) {
                 </View>
 
                 {config.lastPaidDate && (
-                  <Text style={styles.lastPaid}>Last paid {formatDistanceToNow(new Date(config.lastPaidDate), { addSuffix: true })}</Text>
+                  <Text style={styles.lastPaid}>{t('allowance.lastPaid', { time: formatDistanceToNow(new Date(config.lastPaidDate), { addSuffix: true }) })}</Text>
                 )}
 
                 {isSelected && (
                   <View style={styles.actionRow}>
                     <Pressable style={styles.actionBtn} onPress={() => payWeeklyAllowance(config.memberId)}>
                       <Ionicons name="calendar" size={14} color="#2980B9" />
-                      <Text style={[styles.actionBtnText, { color: '#2980B9' }]}>Pay Weekly</Text>
+                      <Text style={[styles.actionBtnText, { color: '#2980B9' }]}>{t('allowance.payWeekly')}</Text>
                     </Pressable>
                     <Pressable style={[styles.actionBtn, { backgroundColor: '#D5F5E3' }]} onPress={() => setShowBonusModal(true)}>
                       <Ionicons name="trophy" size={14} color={colors.success} />
-                      <Text style={[styles.actionBtnText, { color: colors.success }]}>Add Bonus</Text>
+                      <Text style={[styles.actionBtnText, { color: colors.success }]}>{t('allowance.addBonus')}</Text>
                     </Pressable>
                     <Pressable style={[styles.actionBtn, { backgroundColor: colors.dangerLight }]} onPress={() => setShowDeductModal(true)}>
                       <Ionicons name="remove-circle" size={14} color={colors.danger} />
-                      <Text style={[styles.actionBtnText, { color: colors.danger }]}>Deduct</Text>
+                      <Text style={[styles.actionBtnText, { color: colors.danger }]}>{t('allowance.deduct')}</Text>
                     </Pressable>
                   </View>
                 )}
@@ -197,7 +240,7 @@ export function AllowanceScreen({ navigation }: any) {
 
         {selectedConfig && memberTxs.length > 0 && (
           <>
-            <Text style={styles.sectionTitle}>Transaction History</Text>
+            <Text style={styles.sectionTitle}>{t('allowance.transactionHistory')}</Text>
             {memberTxs.map((tx) => {
               const cfg = TX_CONFIG[tx.type];
               const isPositive = tx.type !== 'deduction';
@@ -224,9 +267,26 @@ export function AllowanceScreen({ navigation }: any) {
         {configs.length === 0 && (
           <View style={styles.empty}>
             <Text style={{ fontSize: 56 }}>💰</Text>
-            <Text style={styles.emptyTitle}>No allowances set up</Text>
-            <Text style={styles.emptyDesc}>Load demo data to see example allowance configurations for your kids.</Text>
+            <Text style={styles.emptyTitle}>{t('allowance.emptyTitle')}</Text>
+            <Text style={styles.emptyDesc}>{t('allowance.emptyDesc')}</Text>
           </View>
+        )}
+
+        {unconfiguredMembers.length > 0 && (
+          <>
+            <Text style={[styles.sectionTitle, { marginTop: configs.length > 0 ? 20 : 0 }]}>{t('allowance.notSetUpYet')}</Text>
+            <View style={styles.unconfiguredRow}>
+              {unconfiguredMembers.map((m) => (
+                <Pressable key={m.id} style={styles.unconfiguredChip} onPress={() => { setNewMemberId(m.id); setShowAddModal(true); }}>
+                  <View style={[styles.memberAvatar, { width: 32, height: 32, borderRadius: 16, backgroundColor: m.avatarColor + '20' }]}>
+                    <Text style={[styles.memberInitial, { fontSize: 14, color: m.avatarColor }]}>{m.name.charAt(0)}</Text>
+                  </View>
+                  <Text style={styles.unconfiguredName}>{m.name.split(' ')[0]}</Text>
+                  <Ionicons name="add-circle" size={16} color={colors.primary} />
+                </Pressable>
+              ))}
+            </View>
+          </>
         )}
       </ScrollView>
         )}
@@ -235,13 +295,13 @@ export function AllowanceScreen({ navigation }: any) {
       <Modal visible={showBonusModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowBonusModal(false)}>
         <View style={styles.modal}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Add Bonus</Text>
+            <Text style={styles.modalTitle}>{t('allowance.bonusTitle')}</Text>
             <Pressable onPress={() => setShowBonusModal(false)}>
               <Ionicons name="close" size={24} color={colors.text} />
             </Pressable>
           </View>
           <View style={styles.modalContent}>
-            <Text style={styles.modalLabel}>Amount ($)</Text>
+            <Text style={styles.modalLabel}>{t('allowance.bonusAmount')}</Text>
             <TextInput
               style={styles.modalInput}
               value={bonusAmount}
@@ -250,7 +310,7 @@ export function AllowanceScreen({ navigation }: any) {
               placeholder="5.00"
               placeholderTextColor={colors.textMuted}
             />
-            <Text style={styles.modalLabel}>Reason</Text>
+            <Text style={styles.modalLabel}>{t('allowance.bonusReason')}</Text>
             <TextInput
               style={[styles.modalInput, { height: 80, textAlignVertical: 'top' }]}
               value={bonusReason}
@@ -260,7 +320,7 @@ export function AllowanceScreen({ navigation }: any) {
               multiline
             />
             <Pressable style={[styles.saveBtn, { backgroundColor: colors.success }]} onPress={handleAddBonus}>
-              <Text style={styles.saveBtnText}>Add Bonus 🎉</Text>
+              <Text style={styles.saveBtnText}>{t('allowance.bonusButton')}</Text>
             </Pressable>
           </View>
         </View>
@@ -269,13 +329,13 @@ export function AllowanceScreen({ navigation }: any) {
       <Modal visible={showDeductModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowDeductModal(false)}>
         <View style={styles.modal}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Add Deduction</Text>
+            <Text style={styles.modalTitle}>{t('allowance.deductTitle')}</Text>
             <Pressable onPress={() => setShowDeductModal(false)}>
               <Ionicons name="close" size={24} color={colors.text} />
             </Pressable>
           </View>
           <View style={styles.modalContent}>
-            <Text style={styles.modalLabel}>Amount ($)</Text>
+            <Text style={styles.modalLabel}>{t('allowance.deductAmount')}</Text>
             <TextInput
               style={styles.modalInput}
               value={deductAmount}
@@ -284,7 +344,7 @@ export function AllowanceScreen({ navigation }: any) {
               placeholder="2.00"
               placeholderTextColor={colors.textMuted}
             />
-            <Text style={styles.modalLabel}>Reason</Text>
+            <Text style={styles.modalLabel}>{t('allowance.deductReason')}</Text>
             <TextInput
               style={[styles.modalInput, { height: 80, textAlignVertical: 'top' }]}
               value={deductReason}
@@ -294,7 +354,55 @@ export function AllowanceScreen({ navigation }: any) {
               multiline
             />
             <Pressable style={[styles.saveBtn, { backgroundColor: colors.danger }]} onPress={handleAddDeduction}>
-              <Text style={styles.saveBtnText}>Apply Deduction</Text>
+              <Text style={styles.saveBtnText}>{t('allowance.deductButton')}</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showAddModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowAddModal(false)}>
+        <View style={styles.modal}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>{t('allowance.setupTitle')}</Text>
+            <Pressable onPress={() => setShowAddModal(false)}>
+              <Ionicons name="close" size={24} color={colors.text} />
+            </Pressable>
+          </View>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalLabel}>{t('allowance.setupMember')}</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }}>
+              {members.filter((m) => !configs.some((c) => c.memberId === m.id) || m.id === newMemberId).map((m) => (
+                <Pressable
+                  key={m.id}
+                  onPress={() => setNewMemberId(m.id)}
+                  style={[styles.memberPickChip, newMemberId === m.id && { borderColor: m.avatarColor, backgroundColor: m.avatarColor + '15' }]}
+                >
+                  <View style={[styles.memberAvatar, { width: 32, height: 32, borderRadius: 16, backgroundColor: m.avatarColor + '20' }]}>
+                    <Text style={[styles.memberInitial, { fontSize: 14, color: m.avatarColor }]}>{m.name.charAt(0)}</Text>
+                  </View>
+                  <Text style={styles.unconfiguredName}>{m.name.split(' ')[0]}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+            {members.every((m) => configs.some((c) => c.memberId === m.id)) && (
+              <Text style={{ fontSize: 13, color: colors.textMuted, marginBottom: 20 }}>{t('allowance.allSetUp')}</Text>
+            )}
+
+            <Text style={styles.modalLabel}>{t('allowance.setupWeeklyAmount')}</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={newWeeklyAmount}
+              onChangeText={setNewWeeklyAmount}
+              keyboardType="decimal-pad"
+              placeholder="10.00"
+              placeholderTextColor={colors.textMuted}
+            />
+            <Pressable
+              style={[styles.saveBtn, { backgroundColor: colors.primary }, (!newMemberId || !newWeeklyAmount) && { opacity: 0.4 }]}
+              onPress={handleAddConfig}
+              disabled={!newMemberId || !newWeeklyAmount}
+            >
+              <Text style={styles.saveBtnText}>{t('allowance.setupButton')}</Text>
             </Pressable>
           </View>
         </View>
@@ -311,6 +419,7 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 18, fontWeight: '800', color: '#fff' },
   headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
   payBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 10, paddingVertical: 8, paddingHorizontal: 12 },
+  addBtn: { width: 38, height: 38, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   payBtnText: { fontSize: 13, fontWeight: '700', color: '#fff' },
   heroCard: { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 16, padding: 16, justifyContent: 'space-around' },
   heroItem: { alignItems: 'center', gap: 4 },
@@ -344,6 +453,10 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', paddingTop: 60 },
   emptyTitle: { fontSize: 20, fontWeight: '700', color: colors.text, marginTop: 16, marginBottom: 8 },
   emptyDesc: { fontSize: 14, color: colors.textSecondary, textAlign: 'center', paddingHorizontal: 32, lineHeight: 22 },
+  unconfiguredRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  unconfiguredChip: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.card, borderRadius: 20, paddingVertical: 6, paddingHorizontal: 10, borderWidth: 1, borderColor: colors.border },
+  unconfiguredName: { fontSize: 13, fontWeight: '600', color: colors.text },
+  memberPickChip: { alignItems: 'center', flexDirection: 'row', gap: 8, marginRight: 10, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 20, borderWidth: 1.5, borderColor: colors.border },
   modal: { flex: 1, backgroundColor: colors.background },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: colors.border },
   modalTitle: { fontSize: 20, fontWeight: '800', color: colors.text },

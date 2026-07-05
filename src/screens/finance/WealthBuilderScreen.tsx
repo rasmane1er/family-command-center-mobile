@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions, Modal, TextInput, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,6 +16,7 @@ import { getAccounts } from '../../services/plaidService';
 import type { PlaidAccount } from '../../types';
 import type { WealthCategory } from '../../types';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
+import { useTranslation } from 'react-i18next';
 
 const WEALTH_CATEGORIES: WealthCategory[] = ['stocks', 'bonds', 'real_estate', 'crypto', 'savings', 'retirement', 'business', 'other'];
 
@@ -55,6 +56,7 @@ function firstWord(name: string): string {
 }
 
 export function WealthBuilderScreen({ navigation }: any) {
+  const { t } = useTranslation('finance');
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<'portfolio' | 'forecast' | 'insights'>('portfolio');
   const [showModal, setShowModal] = useState(false);
@@ -66,8 +68,13 @@ export function WealthBuilderScreen({ navigation }: any) {
   const [newInstitution, setNewInstitution] = useState('');
   const [plaidAccounts, setPlaidAccounts] = useState<PlaidAccount[]>([]);
   const [plaidLoading, setPlaidLoading] = useState(false);
-  const { entries, projections, getTotalNetWorth, addEntry, seedDemoData } = useWealthStore();
+  const { entries, projections, getTotalNetWorth, addEntry, isLoaded, fetchFromServer } = useWealthStore();
   const monthlyExpenses = useFinanceStore((s) => s.monthlyExpenses);
+
+  useEffect(() => {
+    if (!isLoaded) fetchFromServer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleAddEntry = () => {
     if (!newName.trim() || !newCurrentValue) { Alert.alert('Required', 'Please enter a name and current value.'); return; }
@@ -160,7 +167,7 @@ export function WealthBuilderScreen({ navigation }: any) {
             <Pressable onPress={() => navigation.goBack()} style={styles.back}>
               <Ionicons name="arrow-back" size={24} color="#fff" />
             </Pressable>
-            <Text style={styles.headerTitle}>Wealth Builder</Text>
+            <Text style={styles.headerTitle}>{t('wealth.title')}</Text>
             <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowModal(true); }} style={styles.addBtn}>
               <Ionicons name="add" size={24} color="#fff" />
             </Pressable>
@@ -204,7 +211,7 @@ export function WealthBuilderScreen({ navigation }: any) {
       <Pressable onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </Pressable>
-      <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>Wealth Builder</Text>
+      <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>{t('wealth.title')}</Text>
       <View />
     </LinearGradient>
   );
@@ -226,7 +233,6 @@ export function WealthBuilderScreen({ navigation }: any) {
               Add your real accounts and assets to track net worth, forecasts, and insights.
             </Text>
             <Button title="Add a Holding" onPress={() => setShowModal(true)} style={{ marginTop: 18, alignSelf: 'stretch' }} />
-            <Button title="Load Demo Data" variant="ghost" onPress={seedDemoData} style={{ marginTop: 10, alignSelf: 'stretch' }} />
           </View>
         )}
 

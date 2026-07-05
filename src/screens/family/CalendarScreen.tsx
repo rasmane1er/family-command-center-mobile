@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions, Modal, TextInput, Switch, Alert } from 'react-native';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions, Modal, TextInput, Switch, Alert, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, isToday } from 'date-fns';
 import * as Haptics from 'expo-haptics';
@@ -11,9 +11,12 @@ import { Avatar } from '../../components/common/Avatar';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { useFinanceStore } from '../../store/useFinanceStore';
+import { useSchoolStore } from '../../store/useSchoolStore';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import type { CalendarEvent } from '../../types';
+import { useTranslation } from 'react-i18next';
 
 const EVENT_CATEGORIES = ['Family', 'School', 'Medical', 'Sports', 'Work', 'Social', 'Holiday', 'Other'];
 const EVENT_COLORS = ['#E74C3C', '#E67E22', '#F1C40F', '#27AE60', '#2980B9', '#9B59B6', '#E91E63', '#00BCD4'];
@@ -23,6 +26,7 @@ const { width } = Dimensions.get('window');
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export function CalendarScreen({ navigation, route }: any) {
+  const { t } = useTranslation('family');
   const insets = useSafeAreaInsets();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -36,8 +40,99 @@ export function CalendarScreen({ navigation, route }: any) {
 
   const events = useFamilyStore((s) => s.events);
   const members = useFamilyStore((s) => s.members);
+  const family = useFamilyStore((s) => s.family);
+  const tasks = useFamilyStore((s) => s.tasks);
   const addEvent = useFamilyStore((s) => s.addEvent);
   const deleteEvent = useFamilyStore((s) => s.deleteEvent);
+  const hydrateEvents = useFamilyStore((s) => s.hydrateEvents);
+  const isHydratingEvents = useFamilyStore((s) => s.isHydratingEvents);
+  const bills = useFinanceStore((s) => s.bills);
+  const assignments = useSchoolStore((s) => s.assignments);
+
+  // Automatically surfaces what's already due elsewhere in the app —
+  // unpaid bills, incomplete tasks, incomplete school assignments — as
+  // read-only entries on the same calendar, so this becomes one real place
+  // to see everything due instead of a fourth place you have to remember
+  // to separately re-enter the same date into.
+  const virtualEvents = useMemo<CalendarEvent[]>(() => {
+    const fromBills: CalendarEvent[] = bills
+      .filter((b) => b.status !== 'paid')
+      .map((b) => ({
+        id: `virtual-bill-${b.id}`,
+        familyId: family?.id ?? 'demo-family',
+        title: `💳 ${b.name} due`,
+        description: `$${b.amount.toLocaleString()}`,
+        startDate: b.dueDate,
+        endDate: b.dueDate,
+        allDay: true,
+        attendees: [],
+        color: '#E74C3C',
+        category: 'Bill',
+        recurrence: 'none',
+        createdAt: b.dueDate,
+        createdBy: 'system',
+        isVirtual: true,
+        sourceRoute: 'Finance',
+      }));
+
+    const fromTasks: CalendarEvent[] = tasks
+      .filter((t) => t.status !== 'completed' && t.dueDate)
+      .map((t) => ({
+        id: `virtual-task-${t.id}`,
+        familyId: family?.id ?? 'demo-family',
+        title: `✅ ${t.title}`,
+        startDate: t.dueDate!,
+        endDate: t.dueDate!,
+        allDay: true,
+        attendees: t.assignedTo ?? [],
+        color: '#F5A623',
+        category: 'Task',
+        recurrence: 'none',
+        createdAt: t.dueDate!,
+        createdBy: 'system',
+        isVirtual: true,
+        sourceRoute: 'Tasks',
+      }));
+
+    const fromSchool: CalendarEvent[] = assignments
+      .filter((a) => a.status !== 'completed')
+      .map((a) => ({
+        id: `virtual-school-${a.id}`,
+        familyId: family?.id ?? 'demo-family',
+        title: `📚 ${a.title}`,
+        description: a.subject,
+        startDate: a.dueDate,
+        endDate: a.dueDate,
+        allDay: true,
+        attendees: [a.memberId],
+        color: '#1E4A8A',
+        category: 'School',
+        recurrence: 'none',
+        createdAt: a.dueDate,
+        createdBy: 'system',
+        isVirtual: true,
+        sourceRoute: 'SchoolCenter',
+      }));
+
+    return [...fromBills, ...fromTasks, ...fromSchool];
+  }, [bills, tasks, assignments, family?.id]);
+
+  const allEvents = useMemo(() => [...events, ...virtualEvents], [events, virtualEvents]);
+
+  const handleVirtualEventPress = (event: CalendarEvent) => {
+    if (event.sourceRoute === 'Finance') navigation.navigate('Finance', { screen: 'Bills', initial: false });
+    else if (event.sourceRoute === 'Tasks') navigation.navigate('Family', { screen: 'Tasks', initial: false });
+    else if (event.sourceRoute === 'SchoolCenter') navigation.navigate('SchoolCenter');
+  };
+
+  useEffect(() => {
+    hydrateEvents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const onRefresh = useCallback(() => {
+    hydrateEvents();
+  }, [hydrateEvents]);
 
   const handleAddEvent = () => {
     if (!newTitle.trim()) return;
@@ -47,7 +142,7 @@ export function CalendarScreen({ navigation, route }: any) {
     end.setHours(10, 0, 0, 0);
     const event: CalendarEvent = {
       id: generateId(),
-      familyId: 'demo-family',
+      familyId: family?.id ?? 'demo-family',
       title: newTitle.trim(),
       location: newLocation.trim() || undefined,
       startDate: start.toISOString(),
@@ -72,7 +167,7 @@ export function CalendarScreen({ navigation, route }: any) {
   };
 
   const handleDeleteEvent = (id: string, title: string) => {
-    Alert.alert('Delete Event', `Remove "${title}"?`, [
+    Alert.alert(t('common.deleteTitle'), `Remove "${title}"?`, [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: () => { deleteEvent(id); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); } },
     ]);
@@ -88,15 +183,15 @@ export function CalendarScreen({ navigation, route }: any) {
   const firstDayOfWeek = getDay(monthStart);
   const emptyDays = Array(firstDayOfWeek).fill(null);
 
-  const selectedEvents = events.filter((e) => isSameDay(new Date(e.startDate), selectedDate));
-  const getDayEvents = (date: Date) => events.filter((e) => isSameDay(new Date(e.startDate), date));
+  const selectedEvents = allEvents.filter((e) => isSameDay(new Date(e.startDate), selectedDate));
+  const getDayEvents = (date: Date) => allEvents.filter((e) => isSameDay(new Date(e.startDate), date));
 
   const prevMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
   const nextMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1));
 
   const screenHeader = (
     <PremiumHeader
-      title="Family Calendar"
+      title={t('calendar.title')}
       onBack={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()}
       rightAction={
         <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
@@ -174,6 +269,7 @@ export function CalendarScreen({ navigation, route }: any) {
         onMomentumScrollEnd={onMomentumScrollEnd}
         scrollEventThrottle={scrollEventThrottle}
         contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+        refreshControl={<RefreshControl refreshing={isHydratingEvents} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
         <View style={styles.selectedDateRow}>
           <Text style={styles.selectedDateText}>{format(selectedDate, 'EEEE, MMMM d')}</Text>
@@ -185,8 +281,8 @@ export function CalendarScreen({ navigation, route }: any) {
         {selectedEvents.length > 0 ? (
           selectedEvents.map((event) => {
             const attendees = members.filter((m) => event.attendees.includes(m.id));
-            return (
-              <Card key={event.id} style={styles.eventCard} variant="elevated">
+            const card = (
+              <Card style={{ ...styles.eventCard, ...(event.isVirtual ? styles.eventCardVirtual : {}) }} variant="elevated">
                 <View style={styles.eventRow}>
                   <View style={[styles.eventBar, { backgroundColor: event.color }]} />
                   <View style={{ flex: 1, marginLeft: 14 }}>
@@ -194,11 +290,18 @@ export function CalendarScreen({ navigation, route }: any) {
                       <Text style={styles.eventTitle}>{event.title}</Text>
                       <View style={styles.eventHeaderRight}>
                         <Text style={styles.eventCategory}>{event.category}</Text>
-                        <Pressable onPress={() => handleDeleteEvent(event.id, event.title)} style={styles.eventDeleteBtn}>
-                          <Ionicons name="trash-outline" size={14} color={colors.danger} />
-                        </Pressable>
+                        {event.isVirtual ? (
+                          <Ionicons name="link-outline" size={14} color={colors.textMuted} />
+                        ) : (
+                          <Pressable onPress={() => handleDeleteEvent(event.id, event.title)} style={styles.eventDeleteBtn}>
+                            <Ionicons name="trash-outline" size={14} color={colors.danger} />
+                          </Pressable>
+                        )}
                       </View>
                     </View>
+                    {event.isVirtual && event.description && (
+                      <Text style={styles.eventLocationText}>{event.description}</Text>
+                    )}
                     {!event.allDay && (
                       <View style={styles.eventTime}>
                         <Ionicons name="time-outline" size={14} color={colors.textMuted} />
@@ -224,6 +327,11 @@ export function CalendarScreen({ navigation, route }: any) {
                   </View>
                 </View>
               </Card>
+            );
+            return event.isVirtual ? (
+              <Pressable key={event.id} onPress={() => handleVirtualEventPress(event)}>{card}</Pressable>
+            ) : (
+              <View key={event.id}>{card}</View>
             );
           })
         ) : (
@@ -321,6 +429,7 @@ const styles = StyleSheet.create({
   todayBadge: { backgroundColor: '#E8EEF9', borderRadius: 10, paddingVertical: 3, paddingHorizontal: 10 },
   todayBadgeText: { fontSize: 12, fontWeight: '700', color: colors.primary },
   eventCard: { marginBottom: 10, borderRadius: 16 },
+  eventCardVirtual: { opacity: 0.85, borderWidth: 1, borderColor: colors.border, borderStyle: 'dashed' },
   eventRow: { flexDirection: 'row', alignItems: 'flex-start' },
   eventBar: { width: 4, height: '100%', minHeight: 60, borderRadius: 2 },
   eventHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 },

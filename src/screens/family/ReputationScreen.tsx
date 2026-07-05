@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,6 +10,7 @@ import { ProgressBar } from '../../components/common/ProgressBar';
 import { useWealthStore } from '../../store/useWealthStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
+import { useTranslation } from 'react-i18next';
 
 const METRICS = [
   { key: 'helpfulness', label: 'Helpfulness', icon: 'hand-right', color: '#27AE60' },
@@ -27,12 +28,15 @@ const LEADERBOARD_REWARDS = [
 ];
 
 export function ReputationScreen({ navigation }: any) {
+  const { t } = useTranslation('family');
   const insets = useSafeAreaInsets();
   const [selectedMember, setSelectedMember] = useState<string | null>(null);
-  const { reputationScores, seedDemoData } = useWealthStore();
+  const { reputationScores, isLoaded, fetchFromServer } = useWealthStore();
   const members = useFamilyStore((s) => s.members);
 
-  if (reputationScores.length === 0) seedDemoData();
+  useEffect(() => {
+    if (!isLoaded) fetchFromServer();
+  }, [isLoaded, fetchFromServer]);
 
   const sorted = [...reputationScores].sort((a, b) => b.overall - a.overall);
   const getMember = (id: string) => members.find((m) => m.id === id);

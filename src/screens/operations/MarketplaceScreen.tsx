@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,6 +14,7 @@ import { useAutomationStore } from '../../store/useAutomationStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import type { ListingCategory } from '../../types';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
+import { useTranslation } from 'react-i18next';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 const LISTING_CATEGORIES: ListingCategory[] = ['chores', 'skills', 'items', 'favors', 'lessons'];
@@ -34,6 +35,7 @@ const CATEGORY_CONFIG: Record<string, { color: string; icon: string }> = {
 };
 
 export function MarketplaceScreen({ navigation }: any) {
+  const { t } = useTranslation('ops');
   const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<'all' | string>('all');
   const [activeTab, setActiveTab] = useState<'available' | 'claimed' | 'history'>('available');
@@ -42,39 +44,102 @@ export function MarketplaceScreen({ navigation }: any) {
   const [newDesc, setNewDesc] = useState('');
   const [newCategory, setNewCategory] = useState<ListingCategory>('chores');
   const [newPoints, setNewPoints] = useState('50');
-  const { listings, claimListing, completeListing, addListing, seedDemoData } = useAutomationStore();
+  const { listings, hasSeeded, claimListing, deleteListing, addListing, seedDemoData, repairOrphanedClaims } = useAutomationStore();
   const members = useFamilyStore((s) => s.members);
+  const activeMemberId = useFamilyStore((s) => s.activeMemberId);
+  const family = useFamilyStore((s) => s.family);
+  const tasks = useFamilyStore((s) => s.tasks);
+  const currentMemberId = activeMemberId ?? members[0]?.id ?? 'member-1';
 
-  if (listings.length === 0) seedDemoData();
+  useEffect(() => {
+    if (!hasSeeded) seedDemoData();
+    // Backfills a real linked Task for any listing claimed before
+    // claimListing() started creating one — otherwise those are stuck
+    // showing "Claimed" with an "Open in Tasks" button that has nothing to
+    // open. Cheap no-op once there's nothing left to repair.
+    repairOrphanedClaims();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const getMemberName = (id: string) => members.find((m) => m.id === id)?.name ?? 'Unknown';
+  // "a family member" instead of "Unknown" — this fires constantly on a
+  // fresh account before real family members are set up, and "Unknown"
+  // reads like something broke rather than just "not filled in yet."
+  const getMemberName = (id: string) => members.find((m) => m.id === id)?.name ?? 'a family member';
+
+  // A claimed listing's real status lives entirely on its linked Task —
+  // nothing here is a second copy that could drift out of sync.
+  const getLinkedTask = (listing: (typeof listings)[number]) =>
+    listing.taskId ? tasks.find((t) => t.id === listing.taskId) : undefined;
 
   const available = listings.filter((l) => l.isAvailable);
-  const claimed = listings.filter((l) => !l.isAvailable && !l.completedAt);
-  const completed = listings.filter((l) => !!l.completedAt);
+  const claimed = listings.filter((l) => !l.isAvailable && getLinkedTask(l)?.status !== 'completed');
+  const completed = listings.filter((l) => !l.isAvailable && getLinkedTask(l)?.status === 'completed');
 
   const displayList = activeTab === 'available' ? available : activeTab === 'claimed' ? claimed : completed;
 
   const handleClaim = (id: string, title: string, value: number) => {
     Alert.alert(
       `Claim "${title}"?`,
-      `This task is worth ${value} points. Complete it to earn your reward!`,
+      `This task is worth ${value} points. It'll show up in your Tasks — complete it there (with photo proof if needed) to earn your reward!`,
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Claim!', onPress: () => claimListing(id, 'member-3') },
+        { text: 'Claim!', onPress: () => claimListing(id, currentMemberId) },
       ]
     );
   };
 
+  // Only removes the listing from the marketplace view — the real task
+  // record (photo proof, approval, points already paid out) stays put in
+  // Tasks either way, since deleting the listing isn't the same as undoing
+  // the work that was actually done.
+  const handleDeleteListing = (id: string, title: string) => {
+    Alert.alert(
+      `Remove "${title}"?`,
+      "This clears it from your marketplace view. It won't affect the points already awarded or its task history.",
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => {
+            deleteListing(id);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          },
+        },
+      ]
+    );
+  };
+
+  // Completion happens entirely in Tasks/Kids Mode now — same photo-proof
+  // submission and parent "Needs Review" queue as any other task. This just
+  // jumps you there instead of duplicating that flow here.
+  //
+  // Jumping into a sibling tab's nested stack (navigation.navigate('Family',
+  // { screen: 'Tasks' }) or via navigation.getParent()) turned out to be
+  // unreliable from this screen's specific nesting depth (Tab -> Operations
+  // stack -> Marketplace) — rather than keep guessing at the right
+  // incantation for crossing navigators, TasksScreen is now also registered
+  // directly inside OperationsNavigator's own stack (see
+  // OperationsNavigator.tsx), so this is a plain, same-stack, unambiguous
+  // navigate() with nothing to bubble or resolve.
+  const goToTasks = () => navigation.navigate('Tasks');
+
   const totalPoints = listings.filter((l) => l.isAvailable).reduce((s, l) => s + l.pointsValue, 0);
 
+  const MIN_POINTS = 5;
+  const MAX_POINTS = 1000;
+
   const handlePost = () => {
-    if (!newTitle.trim()) { Alert.alert('Required', 'Please enter a title.'); return; }
-    const pts = parseInt(newPoints) || 50;
+    if (!newTitle.trim()) { Alert.alert(t('common.validationTitle'), t('common.validationMsg')); return; }
+    const pts = parseInt(newPoints, 10);
+    if (!Number.isFinite(pts) || pts < MIN_POINTS || pts > MAX_POINTS) {
+      Alert.alert('Invalid Points', `Points must be between ${MIN_POINTS} and ${MAX_POINTS}.`);
+      return;
+    }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     addListing({
-      familyId: 'demo-family',
-      createdBy: 'member-1',
+      familyId: family?.id ?? 'demo-family',
+      createdBy: currentMemberId,
       title: newTitle.trim(),
       description: newDesc.trim() || 'Help needed with this task',
       category: newCategory,
@@ -206,22 +271,47 @@ export function MarketplaceScreen({ navigation }: any) {
                   </Pressable>
                 )}
 
-                {listing.claimedBy && !listing.completedAt && (
-                  <View style={styles.claimedBanner}>
-                    <Ionicons name="person" size={14} color={colors.warning} />
-                    <Text style={styles.claimedText}>Claimed by {getMemberName(listing.claimedBy)}</Text>
-                    <Pressable onPress={() => completeListing(listing.id)} style={styles.doneBtn}>
-                      <Text style={styles.doneBtnText}>Mark Done</Text>
-                    </Pressable>
-                  </View>
-                )}
+                {(() => {
+                  if (!listing.claimedBy) return null;
+                  const linkedTask = getLinkedTask(listing);
+                  const taskStatus = linkedTask?.status;
 
-                {listing.completedAt && (
-                  <View style={styles.completedBanner}>
-                    <Ionicons name="checkmark-circle" size={14} color={colors.success} />
-                    <Text style={styles.completedText}>Completed by {listing.claimedBy ? getMemberName(listing.claimedBy) : 'someone'}</Text>
-                  </View>
-                )}
+                  if (taskStatus === 'completed') {
+                    return (
+                      <View style={styles.completedBanner}>
+                        <Ionicons name="checkmark-circle" size={14} color={colors.success} />
+                        <Text style={styles.completedText}>Completed by {getMemberName(listing.claimedBy)} — points awarded</Text>
+                        <Pressable onPress={() => handleDeleteListing(listing.id, listing.title)} hitSlop={8}>
+                          <Ionicons name="trash-outline" size={16} color={colors.textMuted} />
+                        </Pressable>
+                      </View>
+                    );
+                  }
+
+                  if (taskStatus === 'pending_approval') {
+                    return (
+                      <View style={styles.claimedBanner}>
+                        <Ionicons name="hourglass-outline" size={14} color={colors.warning} />
+                        <Text style={styles.claimedText}>{getMemberName(listing.claimedBy)} submitted this — awaiting parent approval</Text>
+                        <Pressable onPress={goToTasks} style={styles.doneBtn}>
+                          <Text style={styles.doneBtnText}>Review</Text>
+                        </Pressable>
+                      </View>
+                    );
+                  }
+
+                  // Claimed, still in progress — completion happens in
+                  // Tasks/Kids Mode (photo proof + approval), not here.
+                  return (
+                    <View style={styles.claimedBanner}>
+                      <Ionicons name="person" size={14} color={colors.warning} />
+                      <Text style={styles.claimedText}>Claimed by {getMemberName(listing.claimedBy)}</Text>
+                      <Pressable onPress={goToTasks} style={styles.doneBtn}>
+                        <Text style={styles.doneBtnText}>Open in Tasks</Text>
+                      </Pressable>
+                    </View>
+                  );
+                })()}
               </Card>
             );
           })}
@@ -261,7 +351,7 @@ export function MarketplaceScreen({ navigation }: any) {
           <Text style={styles.modalLabel}>Description</Text>
           <TextInput style={[styles.modalInput, styles.modalTextarea]} value={newDesc} onChangeText={setNewDesc} placeholder="Add details about this task..." placeholderTextColor={colors.textMuted} multiline numberOfLines={3} />
 
-          <Text style={styles.modalLabel}>Points Value</Text>
+          <Text style={styles.modalLabel}>Points Value ({MIN_POINTS}–{MAX_POINTS})</Text>
           <TextInput style={styles.modalInput} value={newPoints} onChangeText={setNewPoints} placeholder="50" placeholderTextColor={colors.textMuted} keyboardType="numeric" />
 
           <Button title="Post Task" onPress={handlePost} />
@@ -312,7 +402,7 @@ const styles = StyleSheet.create({
   doneBtn: { backgroundColor: colors.success, borderRadius: 8, paddingVertical: 5, paddingHorizontal: 10 },
   doneBtnText: { fontSize: 11, fontWeight: '700', color: '#fff' },
   completedBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.success + '10', borderRadius: 10, padding: 10 },
-  completedText: { fontSize: 12, color: colors.success, fontWeight: '600' },
+  completedText: { flex: 1, fontSize: 12, color: colors.success, fontWeight: '600' },
   emptyState: { alignItems: 'center', paddingVertical: 60 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginTop: 16 },
   emptyDesc: { fontSize: 13, color: colors.textSecondary, marginTop: 8, textAlign: 'center', paddingHorizontal: 32 },

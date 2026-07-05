@@ -11,17 +11,17 @@ import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { Badge } from '../../components/common/Badge';
 import { useFamilyMeetingsStore, type FamilyMeeting } from '../../store/useFamilyMeetingsStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { useTranslation } from 'react-i18next';
 
-const AGENDA_TEMPLATE = [
-  'Wins & celebrations',
-  "Review last week's action items",
-  "This week's priorities",
-  'Any concerns or celebrations?',
-];
+const AGENDA_TEMPLATE_KEYS = ['wins', 'reviewLastWeek', 'thisWeekPriorities', 'concerns'] as const;
 
 const MOODS = ['😄', '🙂', '😐', '😕', '😣'];
 
+const TEMPLATE_STEP_KEYS = ['wins', 'reviewLastWeek', 'thisWeekPlan', 'concerns', 'assignActions'] as const;
+const TEMPLATE_STEP_TIMES = ['0-5m', '5-15m', '15-22m', '22-28m', '28-30m'] as const;
+
 export function FamilyMeetingScreen({ navigation }: any) {
+  const { t } = useTranslation('family');
   const insets = useSafeAreaInsets();
   const {
     meetings, addMeeting, deleteMeeting, toggleAgendaItem, updateNotes,
@@ -35,7 +35,7 @@ export function FamilyMeetingScreen({ navigation }: any) {
   const [newActionAssignee, setNewActionAssignee] = useState<Record<string, string>>({});
   const [editingAttendeesId, setEditingAttendeesId] = useState<string | null>(null);
 
-  const memberName = (id: string) => members.find((m) => m.id === id)?.name ?? 'Unknown';
+  const memberName = (id: string) => members.find((m) => m.id === id)?.name ?? t('family.screens.familyMeeting.unknownMember');
 
   const totalMeetings = meetings.length;
   const totalActions = meetings.flatMap((m) => m.actionItems).length;
@@ -46,31 +46,43 @@ export function FamilyMeetingScreen({ navigation }: any) {
     : null;
 
   const handleNewMeeting = () => {
-    Alert.alert('New Meeting', 'Create a new family meeting record?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Create',
-        onPress: () => {
-          const id = addMeeting({
-            familyId: family?.id ?? 'demo-family',
-            date: new Date().toISOString(),
-            title: `Weekly Family Sync #${totalMeetings + 1}`,
-            attendeeIds: members.map((m) => m.id),
-            agenda: AGENDA_TEMPLATE.map((text) => ({ id: Math.random().toString(36).slice(2), text, done: false })),
-            notes: '',
-            actionItems: [],
-          });
-          setExpandedId(id);
+    Alert.alert(
+      t('family.screens.familyMeeting.newMeetingTitle'),
+      t('family.screens.familyMeeting.newMeetingMessage'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('family.screens.familyMeeting.create'),
+          onPress: () => {
+            const id = addMeeting({
+              familyId: family?.id ?? 'demo-family',
+              date: new Date().toISOString(),
+              title: t('family.screens.familyMeeting.defaultMeetingTitle', { n: totalMeetings + 1 }),
+              attendeeIds: members.map((m) => m.id),
+              agenda: AGENDA_TEMPLATE_KEYS.map((key) => ({
+                id: Math.random().toString(36).slice(2),
+                text: t(`family.screens.familyMeeting.agendaTemplate.${key}`),
+                done: false,
+              })),
+              notes: '',
+              actionItems: [],
+            });
+            setExpandedId(id);
+          },
         },
-      },
-    ]);
+      ]
+    );
   };
 
   const handleDelete = (meeting: FamilyMeeting) => {
-    Alert.alert('Delete Meeting', `Remove "${meeting.title}"? This can't be undone.`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => deleteMeeting(meeting.id) },
-    ]);
+    Alert.alert(
+      t('family.screens.familyMeeting.deleteMeetingTitle'),
+      t('family.screens.familyMeeting.deleteMeetingMessage', { title: meeting.title }),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('common.delete'), style: 'destructive', onPress: () => deleteMeeting(meeting.id) },
+      ]
+    );
   };
 
   const handleAddAction = (meetingId: string) => {
@@ -88,8 +100,8 @@ export function FamilyMeetingScreen({ navigation }: any) {
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>Family Meetings</Text>
-          <Text style={styles.headerSub}>Building connection through regular check-ins</Text>
+          <Text style={styles.headerTitle}>{t('family.screens.familyMeeting.headerTitle')}</Text>
+          <Text style={styles.headerSub}>{t('family.screens.familyMeeting.headerSub')}</Text>
         </View>
         <Pressable onPress={handleNewMeeting} style={styles.addBtn}>
           <Ionicons name="add" size={22} color="#fff" />
@@ -99,15 +111,15 @@ export function FamilyMeetingScreen({ navigation }: any) {
       <View style={styles.statsRow}>
         <View style={styles.statItem}>
           <Text style={styles.statValue}>{totalMeetings}</Text>
-          <Text style={styles.statLabel}>Meetings Held</Text>
+          <Text style={styles.statLabel}>{t('family.screens.familyMeeting.statMeetingsHeld')}</Text>
         </View>
         <View style={[styles.statItem, styles.statBorder]}>
           <Text style={styles.statValue}>{completedActions}/{totalActions}</Text>
-          <Text style={styles.statLabel}>Actions Done</Text>
+          <Text style={styles.statLabel}>{t('family.screens.familyMeeting.statActionsDone')}</Text>
         </View>
         <View style={styles.statItem}>
           <Text style={styles.statValue}>{avgDuration !== null ? `${avgDuration}m` : '—'}</Text>
-          <Text style={styles.statLabel}>Avg Duration</Text>
+          <Text style={styles.statLabel}>{t('family.screens.familyMeeting.statAvgDuration')}</Text>
         </View>
       </View>
     </LinearGradient>
@@ -118,7 +130,7 @@ export function FamilyMeetingScreen({ navigation }: any) {
       <Pressable onPress={() => navigation.goBack()} style={styles.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
-      <Text style={styles.headerTitle}>Family Meetings</Text>
+      <Text style={styles.headerTitle}>{t('family.screens.familyMeeting.headerTitle')}</Text>
       <Pressable onPress={handleNewMeeting} style={styles.addBtn}>
         <Ionicons name="add" size={22} color="#fff" />
       </Pressable>
@@ -316,23 +328,23 @@ export function FamilyMeetingScreen({ navigation }: any) {
           );
         })}
 
-        <Text style={styles.sectionTitle}>Meeting Template</Text>
+        <Text style={styles.sectionTitle}>{t('family.screens.familyMeeting.templateSection')}</Text>
         <Card variant="elevated" style={styles.templateCard}>
-          <Text style={styles.templateTitle}>✨ 30-Minute Family Meeting Formula</Text>
-          {[
-            { time: '0-5m', title: 'Wins & Celebrations', desc: 'Start with positives — what went well?' },
-            { time: '5-15m', title: 'Review Last Week', desc: 'How did action items go? Any blockers?' },
-            { time: '15-22m', title: "This Week's Plan", desc: 'Set 3 family priorities for the week' },
-            { time: '22-28m', title: 'Any Concerns?', desc: 'Open floor — anyone need support?' },
-            { time: '28-30m', title: 'Assign Actions', desc: 'Who does what by when? Be specific.' },
-          ].map((step) => (
+          <Text style={styles.templateTitle}>{t('family.screens.familyMeeting.templateTitle')}</Text>
+          {([
+            { time: '0-5m',   key: 'wins' },
+            { time: '5-15m',  key: 'reviewLastWeek' },
+            { time: '15-22m', key: 'thisWeekPlan' },
+            { time: '22-28m', key: 'concerns' },
+            { time: '28-30m', key: 'assignActions' },
+          ] as const).map((step) => (
             <View key={step.time} style={styles.templateStep}>
               <View style={styles.templateTimeBox}>
                 <Text style={styles.templateTime}>{step.time}</Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.templateStepTitle}>{step.title}</Text>
-                <Text style={styles.templateStepDesc}>{step.desc}</Text>
+                <Text style={styles.templateStepTitle}>{t(`family.screens.familyMeeting.template.${step.key}.title`)}</Text>
+                <Text style={styles.templateStepDesc}>{t(`family.screens.familyMeeting.template.${step.key}.desc`)}</Text>
               </View>
             </View>
           ))}

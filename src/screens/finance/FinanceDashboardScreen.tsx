@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions, Modal, TextInput, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions, Modal, TextInput, FlatList, ActivityIndicator, RefreshControl, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -22,7 +22,8 @@ import { getDetectedBills, getInvestmentAccounts } from '../../services/autoFill
 import type { DetectedBill, PlaidInvestmentAccount } from '../../services/autoFillService';
 import { getDetectedSubscriptions, confirmSubscription } from '../../services/subscriptionDetectionService';
 import type { DetectedSubscription } from '../../services/subscriptionDetectionService';
-import type { AccountType, PlaidAccount, Bill, Subscription } from '../../types';
+import type { AccountType, PlaidAccount, Bill, Subscription, FinancialAccount } from '../../types';
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 const generateId = () => Math.random().toString(36).substring(2, 11);
@@ -125,11 +126,14 @@ function BudgetRing({ ratio, color, size = 44 }: { ratio: number; color: string;
 }
 
 export function FinanceDashboardScreen({ navigation }: any) {
+  const { t } = useTranslation('finance');
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState('overview');
   const [plaidAccounts, setPlaidAccounts] = useState<PlaidAccount[]>([]);
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [showGoalModal, setShowGoalModal] = useState(false);
+  const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
+  const [showAllTransactions, setShowAllTransactions] = useState(false);
   const [newAccName, setNewAccName] = useState('');
   const [newAccType, setNewAccType] = useState<AccountType>('checking');
   const [newAccBalance, setNewAccBalance] = useState('');
@@ -176,9 +180,23 @@ export function FinanceDashboardScreen({ navigation }: any) {
   const {
     accounts, transactions, budgets, bills, subscriptions, financialGoals,
     totalNetWorth: accountsNetWorth, monthlyIncome, monthlyExpenses, monthlySavings,
-    addAccount, addFinancialGoal, addBudget, addBill, markBillPaid, addSubscription, deleteSubscription,
+    addAccount, updateAccount, deleteAccount, deleteTransaction, addFinancialGoal, addBudget, addBill, markBillPaid, addSubscription, deleteSubscription,
+    isLoaded: isFinanceLoaded, fetchFromServer: fetchFinance,
   } = useFinanceStore();
-  const { assets, addAsset } = useOperationsStore();
+
+  useEffect(() => {
+    if (!isFinanceLoaded) fetchFinance();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const {
+    assets, addAsset, deleteAsset,
+    isLoaded: isOpsLoaded, fetchFromServer: fetchOps,
+  } = useOperationsStore();
+
+  useEffect(() => {
+    if (!isOpsLoaded) fetchOps();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // The real single-source-of-truth total (accounts + wealth entries +
   // physical assets − debts), not just Plaid account balances — see
   // useTotalNetWorth.ts for why this replaced three separately-computed
@@ -390,17 +408,57 @@ export function FinanceDashboardScreen({ navigation }: any) {
     totalAssetValue, assets.length, assetsByCategory,
   ]);
 
-  const handleAddAccount = () => {
-    if (!newAccName.trim()) return;
-    addAccount({
-      id: generateId(), familyId: 'demo-family', name: newAccName.trim(),
-      type: newAccType, balance: parseFloat(newAccBalance) || 0,
-      institution: newAccInstitution.trim() || undefined,
-      lastUpdated: new Date().toISOString(), isShared: true,
-    });
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setNewAccName(''); setNewAccType('checking'); setNewAccBalance(''); setNewAccInstitution('');
+  const closeAccountModal = () => {
     setShowAccountModal(false);
+    setEditingAccountId(null);
+    setNewAccName(''); setNewAccType('checking'); setNewAccBalance(''); setNewAccInstitution('');
+  };
+
+  const openEditAccount = (acc: FinancialAccount) => {
+    setEditingAccountId(acc.id);
+    setNewAccName(acc.name);
+    setNewAccType(acc.type);
+    setNewAccBalance(String(acc.balance));
+    setNewAccInstitution(acc.institution ?? '');
+    setShowAccountModal(true);
+  };
+
+  const handleSaveAccount = () => {
+    if (!newAccName.trim()) return;
+    if (editingAccountId) {
+      updateAccount(editingAccountId, {
+        name: newAccName.trim(), type: newAccType,
+        balance: parseFloat(newAccBalance) || 0,
+        institution: newAccInstitution.trim() || undefined,
+        lastUpdated: new Date().toISOString(),
+      });
+    } else {
+      addAccount({
+        id: generateId(), familyId: 'demo-family', name: newAccName.trim(),
+        type: newAccType, balance: parseFloat(newAccBalance) || 0,
+        institution: newAccInstitution.trim() || undefined,
+        lastUpdated: new Date().toISOString(), isShared: true,
+      });
+    }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    closeAccountModal();
+  };
+
+  const handleDeleteAccount = (acc: FinancialAccount) => {
+    Alert.alert(
+      `Delete ${acc.name}?`,
+      'This removes the account from your dashboard. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete', style: 'destructive',
+          onPress: () => {
+            deleteAccount(acc.id);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          },
+        },
+      ]
+    );
   };
 
   const handleAddGoal = () => {
@@ -651,8 +709,13 @@ export function FinanceDashboardScreen({ navigation }: any) {
                 <View style={s.sectionDot} />
                 <Text style={s.sectionTitle}>Bank Accounts</Text>
               </View>
+              {/* "Linked Balance" not "Net Worth" — this is scoped to just
+                  the connected bank accounts, while the header's TOTAL NET
+                  WORTH above also includes wealth entries, physical assets,
+                  and debts. Both showing "net" on the same screen read as
+                  a contradiction otherwise. */}
               <Text style={s.netWorthSmall}>
-                Net: ${plaidNetWorth.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                Linked Balance: ${plaidNetWorth.toLocaleString('en-US', { minimumFractionDigits: 2 })}
               </Text>
             </View>
             <FlatList
@@ -714,8 +777,16 @@ export function FinanceDashboardScreen({ navigation }: any) {
                   <View style={s.cardChip}>
                     <Text style={s.cardChipText}>{acc.type.toUpperCase()}</Text>
                   </View>
-                  <View style={s.cardIconWrap}>
-                    <Ionicons name={(ACCOUNT_ICONS[acc.type] ?? 'card') as any} size={18} color="rgba(255,255,255,0.9)" />
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Pressable onPress={() => openEditAccount(acc)} style={s.cardActionBtn} hitSlop={8}>
+                      <Ionicons name="pencil" size={14} color="rgba(255,255,255,0.9)" />
+                    </Pressable>
+                    <Pressable onPress={() => handleDeleteAccount(acc)} style={s.cardActionBtn} hitSlop={8}>
+                      <Ionicons name="trash" size={14} color="rgba(255,255,255,0.9)" />
+                    </Pressable>
+                    <View style={s.cardIconWrap}>
+                      <Ionicons name={(ACCOUNT_ICONS[acc.type] ?? 'card') as any} size={18} color="rgba(255,255,255,0.9)" />
+                    </View>
                   </View>
                 </View>
                 {/* Name + institution */}
@@ -924,7 +995,7 @@ export function FinanceDashboardScreen({ navigation }: any) {
             <View style={s.sectionDot} />
             <Text style={s.sectionTitle}>Recent Transactions</Text>
           </View>
-          <Pressable><Text style={s.seeAll}>See All →</Text></Pressable>
+          <Pressable onPress={() => setShowAllTransactions(true)}><Text style={s.seeAll}>See All →</Text></Pressable>
         </View>
         <View style={s.txContainer}>
           {transactions.slice(0, 6).map((tx, idx) => {
@@ -1202,6 +1273,18 @@ export function FinanceDashboardScreen({ navigation }: any) {
                   <Text style={s.finMeta}>{asset.category}</Text>
                 </View>
                 <Text style={s.finValueText}>${asset.value.toLocaleString()}</Text>
+                <Pressable
+                  hitSlop={8}
+                  style={{ marginLeft: 10 }}
+                  onPress={() => {
+                    Alert.alert(`Delete ${asset.name}?`, 'This cannot be undone.', [
+                      { text: 'Cancel', style: 'cancel' },
+                      { text: 'Delete', style: 'destructive', onPress: () => deleteAsset(asset.id) },
+                    ]);
+                  }}
+                >
+                  <Ionicons name="trash-outline" size={18} color={colors.textMuted} />
+                </Pressable>
               </View>
             ))}
           </>
@@ -1219,11 +1302,11 @@ export function FinanceDashboardScreen({ navigation }: any) {
         <Ionicons name="camera" size={26} color="#fff" />
       </Pressable>
 
-      {/* ── ADD ACCOUNT MODAL ── */}
-      <Modal visible={showAccountModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowAccountModal(false)}>
+      {/* ── ADD/EDIT ACCOUNT MODAL ── */}
+      <Modal visible={showAccountModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={closeAccountModal}>
         <ScrollView style={s.modal} contentContainerStyle={{ paddingBottom: 40 }}>
           <View style={s.modalHandle} />
-          <Text style={s.modalTitle}>Add Account</Text>
+          <Text style={s.modalTitle}>{editingAccountId ? 'Edit Account' : 'Add Account'}</Text>
           <Text style={s.modalLabel}>Account Name *</Text>
           <TextInput style={s.modalInput} placeholder="e.g. Chase Checking" value={newAccName} onChangeText={setNewAccName} placeholderTextColor={colors.textMuted} autoFocus />
           <Text style={s.modalLabel}>Account Type</Text>
@@ -1238,9 +1321,57 @@ export function FinanceDashboardScreen({ navigation }: any) {
           <TextInput style={s.modalInput} placeholder="0.00" value={newAccBalance} onChangeText={setNewAccBalance} keyboardType="decimal-pad" placeholderTextColor={colors.textMuted} />
           <Text style={s.modalLabel}>Institution (optional)</Text>
           <TextInput style={[s.modalInput, { marginBottom: 24 }]} placeholder="e.g. Chase, Fidelity" value={newAccInstitution} onChangeText={setNewAccInstitution} placeholderTextColor={colors.textMuted} />
-          <Button title="Add Account" onPress={handleAddAccount} fullWidth size="lg" disabled={!newAccName.trim()} />
-          <Button title="Cancel" onPress={() => setShowAccountModal(false)} variant="ghost" fullWidth style={{ marginTop: 8 }} />
+          <Button title={editingAccountId ? 'Save Changes' : 'Add Account'} onPress={handleSaveAccount} fullWidth size="lg" disabled={!newAccName.trim()} />
+          <Button title="Cancel" onPress={closeAccountModal} variant="ghost" fullWidth style={{ marginTop: 8 }} />
         </ScrollView>
+      </Modal>
+
+      {/* ── ALL TRANSACTIONS MODAL ── */}
+      <Modal visible={showAllTransactions} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowAllTransactions(false)}>
+        <View style={s.modal}>
+          <View style={s.modalHandle} />
+          <Text style={s.modalTitle}>All Transactions</Text>
+          <FlatList
+            data={[...transactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())}
+            keyExtractor={(tx) => tx.id}
+            contentContainerStyle={{ paddingBottom: 40 }}
+            ListEmptyComponent={<Text style={s.emptyHint}>No transactions yet.</Text>}
+            renderItem={({ item: tx }) => {
+              const isIncome = tx.type === 'income';
+              const isExpense = tx.type === 'expense';
+              const dotColor = isIncome ? '#10B981' : isExpense ? '#EF4444' : colors.primary;
+              return (
+                <View style={[s.txRow, s.txBorder]}>
+                  <View style={[s.txIconCircle, { backgroundColor: dotColor + '15' }]}>
+                    <Ionicons
+                      name={(isIncome ? 'arrow-down-circle' : isExpense ? 'arrow-up-circle' : 'swap-horizontal') as any}
+                      size={20} color={dotColor}
+                    />
+                  </View>
+                  <View style={{ flex: 1, marginLeft: 12 }}>
+                    <Text style={s.txDesc} numberOfLines={1}>{tx.description}</Text>
+                    <Text style={s.txMeta}>{tx.category} · {format(new Date(tx.date), 'MMM d, yyyy')}</Text>
+                  </View>
+                  <Text style={[s.txAmount, { color: dotColor, marginRight: 10 }]}>
+                    {isIncome ? '+' : isExpense ? '-' : ''}${tx.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  </Text>
+                  <Pressable
+                    hitSlop={8}
+                    onPress={() => {
+                      Alert.alert('Delete Transaction?', 'This cannot be undone.', [
+                        { text: 'Cancel', style: 'cancel' },
+                        { text: 'Delete', style: 'destructive', onPress: () => deleteTransaction(tx.id) },
+                      ]);
+                    }}
+                  >
+                    <Ionicons name="trash-outline" size={18} color={colors.textMuted} />
+                  </Pressable>
+                </View>
+              );
+            }}
+          />
+          <Button title="Close" onPress={() => setShowAllTransactions(false)} variant="ghost" fullWidth style={{ marginTop: 8 }} />
+        </View>
       </Modal>
 
       {/* ── ADD GOAL MODAL ── */}
@@ -1398,10 +1529,10 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#F0F3F9' },
 
   /* ── Header ── */
-  header: { paddingHorizontal: 20, paddingBottom: 0, overflow: 'hidden' },
+  header: { paddingHorizontal: 10, paddingBottom: 0, overflow: 'hidden' },
   glow1: {
     position: 'absolute', top: -60, right: -60,
-    width: 200, height: 200, borderRadius: 100,
+    width: 100, height: 200, borderRadius: 100,
     backgroundColor: '#1E4A8A', opacity: 0.35,
   },
   glow2: {
@@ -1409,9 +1540,9 @@ const s = StyleSheet.create({
     width: 140, height: 140, borderRadius: 70,
     backgroundColor: '#00D4AA', opacity: 0.08,
   },
-  headerTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 22 },
-  netWorthLabel: { fontSize: 11, color: 'rgba(255,255,255,0.45)', fontWeight: '700', letterSpacing: 1.5, marginBottom: 6 },
-  netWorthValue: { fontSize: 25, fontWeight: '900', color: '#fff', letterSpacing: -1.5 },
+  headerTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 },
+  netWorthLabel: { fontSize: 10, color: 'rgba(255,255,255,0.45)', fontWeight: '700', letterSpacing: 1.5, marginBottom: 6 },
+  netWorthValue: { fontSize: 20, fontWeight: '900', color: '#fff', letterSpacing: -1.5 },
   trendRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
   trendPill: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
@@ -1435,23 +1566,23 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
     paddingVertical: 10,
-    marginBottom: 15,
+    marginBottom: 10,
   },
   statItem: { flex: 1, alignItems: 'center', gap: 4 },
   statBorder: { borderRightWidth: 1, borderRightColor: 'rgba(255,255,255,0.1)' },
   statIconBg: { width: 15, height: 15, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  statValue: { fontSize: 12, fontWeight: '800' },
+  statValue: { fontSize: 10, fontWeight: '800' },
   statLabel: { fontSize: 10, color: 'rgba(255,255,255,0.45)', fontWeight: '600', letterSpacing: 0.3 },
 
   /* Tab pills */
   tabPills: { flexGrow: 0 },
   tabPill: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
-    paddingVertical: 8, paddingHorizontal: 12,
-    borderTopLeftRadius: 12, borderTopRightRadius: 12,
+    paddingVertical: 5, paddingHorizontal: 12,
+    borderTopLeftRadius: 10, borderTopRightRadius: 10,
   },
   tabPillActive: { backgroundColor: '#F0F3F9' },
-  tabPillText: { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.5)' },
+  tabPillText: { fontSize: 9.8, fontWeight: '700', color: 'rgba(255,255,255,0.5)' },
   tabPillTextActive: { color: colors.primary },
 
   /* ── Body ── */
@@ -1498,7 +1629,7 @@ const s = StyleSheet.create({
   plaidCardName: { fontSize: 13, fontWeight: '700', color: '#1A1A2E', marginBottom: 2 },
   plaidCardMask: { fontSize: 11, color: '#6B7280', marginBottom: 6 },
   plaidCardBalance: { fontSize: 18, fontWeight: '900', color: '#1A1A2E' },
-  connectPrompt: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#ECFDF5', borderRadius: 12, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: '#A7F3D0' },
+  connectPrompt: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#ECFDF5', borderRadius: 12, padding: 14, marginBottom: 16,marginTop: 16, borderWidth: 1, borderColor: '#A7F3D0' },
   connectPromptText: { flex: 1, fontSize: 13, fontWeight: '600', color: '#065F46' },
 
   /* ── Account cards ── */
@@ -1524,6 +1655,13 @@ const s = StyleSheet.create({
     width: 36, height: 36, borderRadius: 12,
     backgroundColor: 'rgba(255,255,255,0.12)',
     alignItems: 'center', justifyContent: 'center',
+    marginLeft: 6,
+  },
+  cardActionBtn: {
+    width: 26, height: 26, borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    alignItems: 'center', justifyContent: 'center',
+    marginLeft: 6,
   },
   cardName: { fontSize: 16, fontWeight: '800', color: '#fff', marginTop: 4 },
   cardBank: { fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 2 },
@@ -1605,7 +1743,7 @@ const s = StyleSheet.create({
   txAmount: { fontSize: 15, fontWeight: '800' },
 
   fab: {
-    position: 'absolute', bottom: 90, right: 20,
+    position: 'absolute', bottom: 140, right: 20,
     width: 58, height: 58, borderRadius: 29,
     backgroundColor: '#8B5CF6', alignItems: 'center', justifyContent: 'center',
     shadowColor: '#8B5CF6', shadowOffset: { width: 0, height: 6 },

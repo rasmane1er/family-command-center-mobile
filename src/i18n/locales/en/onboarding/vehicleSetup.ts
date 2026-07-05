@@ -1,0 +1,18 @@
+export default {
+  skipBadge: 'SKIP',
+  stepBadge: 'Step 4 of 7',
+  title: 'Vehicles',
+  subtitle: 'Track maintenance, insurance & more',
+  addVehicleLabel: 'Add a Vehicle',
+  makeLabel: 'Make',
+  makePlaceholder: 'Toyota',
+  modelLabel: 'Model',
+  modelPlaceholder: 'Camry',
+  yearLabel: 'Year',
+  yearPlaceholder: '2021',
+  licensePlateLabel: 'License Plate',
+  licensePlatePlaceholder: 'ABC 1234',
+  addVehicleButton: 'Add Vehicle',
+  nextButton: 'Next: Financial Setup',
+  skipForNow: 'Skip for now',
+};

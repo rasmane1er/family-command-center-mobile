@@ -32,6 +32,13 @@ interface UsePurchasesResult {
 }
 
 function syncTierFromCustomerInfo(customerInfo: CustomerInfo) {
+  // Skipped in __DEV__ for the same reason as the App.tsx backend
+  // reconciliation: RevenueCat's CustomerInfoUpdateListener fires
+  // immediately on registration with the SDK's real (no real purchase
+  // behind a bare dev-client sandbox account, so always empty/'free')
+  // entitlement state — which would otherwise clobber Settings' dev-only
+  // tier override the instant any screen using usePurchases() mounts.
+  if (__DEV__) return;
   const tier = tierFromEntitlements(customerInfo.entitlements.active);
   useAppStore.getState().updateSettings({ subscriptionTier: tier });
 }

@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 export interface ResetAction {
   label: string;
@@ -24,6 +25,7 @@ interface Props {
 }
 
 export function AIResetMenu({ actions, iconColor = 'rgba(255,255,255,0.6)' }: Props) {
+  const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
 
   function run(action: ResetAction) {
@@ -31,16 +33,16 @@ export function AIResetMenu({ actions, iconColor = 'rgba(255,255,255,0.6)' }: Pr
     if (action.danger) {
       Alert.alert(
         action.label,
-        `${action.description}\n\nThis cannot be undone.`,
+        t('screens.shared.aiResetCannotBeUndone', { description: action.description }),
         [
-          { text: 'Cancel', style: 'cancel' },
+          { text: t('common.cancel'), style: 'cancel' },
           { text: action.label, style: 'destructive', onPress: action.onPress },
         ]
       );
     } else {
       Alert.alert(action.label, action.description, [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Confirm', onPress: action.onPress },
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('common.confirm'), onPress: action.onPress },
       ]);
     }
   }
@@ -60,7 +62,7 @@ export function AIResetMenu({ actions, iconColor = 'rgba(255,255,255,0.6)' }: Pr
         <Pressable style={styles.backdrop} onPress={() => setVisible(false)}>
           <View style={styles.sheet}>
             <View style={styles.sheetHandle} />
-            <Text style={styles.sheetTitle}>Options</Text>
+            <Text style={styles.sheetTitle}>{t('screens.shared.aiResetOptionsTitle')}</Text>
 
             {actions.map((action, i) => (
               <Pressable
@@ -86,7 +88,7 @@ export function AIResetMenu({ actions, iconColor = 'rgba(255,255,255,0.6)' }: Pr
             ))}
 
             <Pressable style={styles.cancelBtn} onPress={() => setVisible(false)}>
-              <Text style={styles.cancelText}>Cancel</Text>
+              <Text style={styles.cancelText}>{t('common.cancel')}</Text>
             </Pressable>
           </View>
         </Pressable>

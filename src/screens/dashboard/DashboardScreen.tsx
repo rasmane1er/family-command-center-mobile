@@ -27,6 +27,7 @@ import { useAIStore } from '../../store/useAIStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { useNotificationsStore } from '../../store/useNotificationsStore';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../theme/ThemeContext';
 import { shadows } from '../../theme/spacing';
 import { getVisibleTasks, getVisibleEvents } from '../../utils/roleVisibility';
@@ -47,6 +48,7 @@ const COMMAND_COLORS = {
 };
 
 export function DashboardScreen({ navigation }: any) {
+  const { t } = useTranslation('dashboard');
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -78,7 +80,14 @@ export function DashboardScreen({ navigation }: any) {
   const healthScore = useFinancialHealth();
   const { monthlyIncome, monthlyExpenses, monthlySavings, bills } = useFinanceStore();
   const hideBalances = useAppStore((s) => s.settings.hideBalances);
-  const maskAmount = (n: number) => (hideBalances ? '••••' : `$${n.toLocaleString()}`);
+  // Masks the actual figures whenever they shouldn't be legible — either the
+  // user's own privacy toggle, or not having premium access. The visual
+  // blur/lock overlay below is a nice presentation on top of this, but this
+  // is what actually guarantees the numbers aren't readable: expo-blur's
+  // Android blur is experimental and off by default, so relying on the blur
+  // alone left real numbers fully legible under a barely-there tint on
+  // Android even though the exact same code hid them properly on iOS.
+  const maskAmount = (n: number) => (hideBalances || !hasFinanceAccess ? '••••' : `$${n.toLocaleString()}`);
 
   const insights = useAIStore((s) => s.insights);
   const notifications = useNotificationsStore((s) => s.notifications);
@@ -130,7 +139,7 @@ export function DashboardScreen({ navigation }: any) {
 
   const roleLabel = activeMember
     ? activeMember.role.charAt(0).toUpperCase() + activeMember.role.slice(1)
-    : 'Family';
+    : t('dashboard.screens.main.familyFallback');
 
   const savingsRate = monthlyIncome > 0 ? Math.round((monthlySavings / monthlyIncome) * 100) : 0;
   const expenseRate = monthlyIncome > 0 ? Math.min(monthlyExpenses / monthlyIncome, 1) : 0;
@@ -138,61 +147,61 @@ export function DashboardScreen({ navigation }: any) {
   const operationalStatus = useMemo(() => {
     if (overdueBills > 0 || overdueTasks > 0) {
       return {
-        label: 'Attention Needed',
+        label: t('dashboard.screens.main.statusAttentionNeeded'),
         tone: COMMAND_COLORS.orange,
         icon: 'warning-outline',
-        message: `${overdueTasks + overdueBills} priority item${overdueTasks + overdueBills === 1 ? '' : 's'} need review`,
+        message: t('dashboard.screens.main.priorityItemsMessage', { count: overdueTasks + overdueBills }),
       };
     }
 
     if (healthScore.overall >= 80 && monthlySavings >= 0) {
       return {
-        label: 'Household Stable',
+        label: t('dashboard.screens.main.statusHouseholdStable'),
         tone: COMMAND_COLORS.teal,
         icon: 'shield-checkmark-outline',
-        message: 'No critical issues detected today',
+        message: t('dashboard.screens.main.statusMessageNoIssues'),
       };
     }
 
     return {
-      label: 'Monitor Closely',
+      label: t('dashboard.screens.main.statusMonitorClosely'),
       tone: COMMAND_COLORS.gold,
       icon: 'pulse-outline',
-      message: 'Some areas should be reviewed this week',
+      message: t('dashboard.screens.main.statusMessageReviewWeek'),
     };
-  }, [healthScore.overall, monthlySavings, overdueBills, overdueTasks]);
+  }, [healthScore.overall, monthlySavings, overdueBills, overdueTasks, t]);
 
   const kpiCards = useMemo(() => {
     if (isChild) {
       return [
         {
-          label: 'My Tasks',
+          label: t('dashboard.screens.main.kpiMyTasks'),
           value: `${activeMemberPendingTasks}`,
-          detail: 'pending',
+          detail: t('dashboard.screens.main.kpiPending'),
           icon: 'checkbox-outline',
           tone: COMMAND_COLORS.teal,
           route: 'Tasks',
         },
         {
-          label: 'Points',
+          label: t('dashboard.screens.main.kpiPoints'),
           value: `${activeMember?.points?.toLocaleString() ?? 0}`,
-          detail: 'earned',
+          detail: t('dashboard.screens.main.kpiEarned'),
           icon: 'trophy-outline',
           tone: COMMAND_COLORS.gold,
           route: 'OperationsRewards',
         },
         {
-          label: 'Events',
+          label: t('dashboard.screens.main.kpiEvents'),
           value: `${todayEvents.length}`,
-          detail: 'today',
+          detail: t('dashboard.screens.main.kpiToday'),
           icon: 'calendar-outline',
           tone: COMMAND_COLORS.blue,
           route: 'Calendar',
         },
         {
-          label: 'Level',
+          label: t('dashboard.screens.main.kpiLevel'),
           value: `${activeMember?.level ?? 1}`,
-          detail: 'current',
+          detail: t('dashboard.screens.main.kpiCurrent'),
           icon: 'star-outline',
           tone: '#8B5CF6',
           route: 'OperationsRewards',
@@ -203,33 +212,33 @@ export function DashboardScreen({ navigation }: any) {
     if (isGrandparent) {
       return [
         {
-          label: 'Family Score',
+          label: t('dashboard.screens.main.kpiFamilyScore'),
           value: `${healthScore.overall}`,
-          detail: 'overall',
+          detail: t('dashboard.screens.main.kpiOverall'),
           icon: 'heart-outline',
           tone: SCORE_COLOR(healthScore.overall),
           route: 'WeeklyReport',
         },
         {
-          label: 'Events',
+          label: t('dashboard.screens.main.kpiEvents'),
           value: `${todayEvents.length}`,
-          detail: 'today',
+          detail: t('dashboard.screens.main.kpiToday'),
           icon: 'calendar-outline',
           tone: COMMAND_COLORS.gold,
           route: 'Calendar',
         },
         {
-          label: 'Members',
+          label: t('dashboard.screens.main.kpiMembers'),
           value: `${members.length}`,
-          detail: 'family',
+          detail: t('dashboard.screens.main.kpiFamily'),
           icon: 'people-outline',
           tone: COMMAND_COLORS.blue,
           route: 'FamilyProfiles',
         },
         {
-          label: 'Updates',
+          label: t('dashboard.screens.main.kpiUpdates'),
           value: `${unreadNotifications}`,
-          detail: 'unread',
+          detail: t('dashboard.screens.main.kpiUnread'),
           icon: 'notifications-outline',
           tone: COMMAND_COLORS.teal,
           route: 'Notifications',
@@ -239,33 +248,33 @@ export function DashboardScreen({ navigation }: any) {
 
     return [
       {
-        label: 'Household Score',
+        label: t('dashboard.screens.main.kpiHouseholdScore'),
         value: `${healthScore.overall}`,
-        detail: `Grade ${healthScore.grade}`,
+        detail: t('dashboard.screens.main.kpiGrade', { grade: healthScore.grade }),
         icon: 'shield-checkmark-outline',
         tone: SCORE_COLOR(healthScore.overall),
         route: 'WeeklyReport',
       },
       {
-        label: 'Open Tasks',
+        label: t('dashboard.screens.main.kpiOpenTasks'),
         value: `${pendingTasks}`,
-        detail: overdueTasks > 0 ? `${overdueTasks} urgent` : 'on track',
+        detail: overdueTasks > 0 ? t('dashboard.screens.main.kpiUrgentCount', { count: overdueTasks }) : t('dashboard.screens.main.kpiOnTrack'),
         icon: 'checkbox-outline',
         tone: overdueTasks > 0 ? COMMAND_COLORS.orange : COMMAND_COLORS.teal,
         route: 'Tasks',
       },
       {
-        label: 'Budget Status',
+        label: t('dashboard.screens.main.kpiBudgetStatus'),
         value: monthlyIncome > 0 ? `${savingsRate}%` : '—',
-        detail: monthlySavings < 0 ? 'negative' : 'savings rate',
+        detail: monthlySavings < 0 ? t('dashboard.screens.main.kpiNegative') : t('dashboard.screens.main.kpiSavingsRate'),
         icon: 'wallet-outline',
         tone: monthlySavings < 0 ? COMMAND_COLORS.red : COMMAND_COLORS.gold,
         route: 'Budgeting',
       },
       {
-        label: 'Today',
+        label: t('dashboard.screens.main.kpiTodayLabel'),
         value: `${todayEvents.length}`,
-        detail: 'events',
+        detail: t('dashboard.screens.main.kpiEventsDetail'),
         icon: 'calendar-outline',
         tone: COMMAND_COLORS.blue,
         route: 'Calendar',
@@ -287,6 +296,7 @@ export function DashboardScreen({ navigation }: any) {
     savingsRate,
     todayEvents.length,
     unreadNotifications,
+    t,
   ]);
 
   const actionItems = useMemo(() => {
@@ -296,7 +306,7 @@ export function DashboardScreen({ navigation }: any) {
       .map((task: any) => ({
         id: `task-${task.id}`,
         title: task.title,
-        subtitle: task.dueDate ? `Due ${format(new Date(task.dueDate), 'MMM d')}` : 'Priority task',
+        subtitle: task.dueDate ? t('dashboard.screens.main.dueDatePrefix', { date: format(new Date(task.dueDate), 'MMM d') }) : t('dashboard.screens.main.priorityTask'),
         icon: 'alert-circle-outline',
         tone: task.priority === 'urgent' || task.status === 'overdue' ? COMMAND_COLORS.red : COMMAND_COLORS.orange,
         route: 'Tasks',
@@ -308,13 +318,13 @@ export function DashboardScreen({ navigation }: any) {
           .slice(0, 2)
           .map((bill: any) => ({
             id: `bill-${bill.id}`,
-            title: bill.name ?? 'Overdue bill',
+            title: bill.name ?? t('dashboard.screens.main.overdueBillFallback'),
             // Finance is a Premium feature — the urgency ("you have an overdue
             // bill") stays visible as a conversion hook, but the exact figure
             // doesn't, to stay consistent with Finance being paywalled.
             subtitle: !hasFinanceAccess
-              ? 'Payment needed — upgrade to view'
-              : bill.amount ? `$${Number(bill.amount).toLocaleString()} needs payment` : 'Payment needed',
+              ? t('dashboard.screens.main.upgradeToViewSubtitle')
+              : bill.amount ? t('dashboard.screens.main.paymentNeededWithAmount', { amount: `$${Number(bill.amount).toLocaleString()}` }) : t('dashboard.screens.main.paymentNeeded'),
             icon: 'receipt-outline',
             tone: COMMAND_COLORS.red,
             route: 'Bills',
@@ -337,8 +347,8 @@ export function DashboardScreen({ navigation }: any) {
       ? [
           {
             id: 'join-requests',
-            title: `${pendingJoinRequestsCount} family join request${pendingJoinRequestsCount === 1 ? '' : 's'}`,
-            subtitle: 'Review and approve household access',
+            title: t('dashboard.screens.main.joinRequestsTitle', { count: pendingJoinRequestsCount }),
+            subtitle: t('dashboard.screens.main.joinRequestsSubtitle'),
             icon: 'person-add-outline',
             tone: COMMAND_COLORS.blue,
             route: 'JoinRequests',
@@ -353,14 +363,14 @@ export function DashboardScreen({ navigation }: any) {
     return [
       {
         id: 'clear',
-        title: 'No urgent actions right now',
-        subtitle: 'Your household command center is clear for the moment',
+        title: t('dashboard.screens.main.noUrgentActionsTitle'),
+        subtitle: t('dashboard.screens.main.noUrgentActionsSubtitle'),
         icon: 'checkmark-circle-outline',
         tone: COMMAND_COLORS.teal,
         route: 'WeeklyReport',
       },
     ];
-  }, [bills, insights, isParent, hasFinanceAccess, pendingJoinRequestsCount, visibleTasks]);
+  }, [bills, insights, isParent, hasFinanceAccess, pendingJoinRequestsCount, visibleTasks, t]);
 
   const timelineItems = useMemo(() => {
     return todayEvents
@@ -373,15 +383,15 @@ export function DashboardScreen({ navigation }: any) {
 
   const greeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
+    const period = hour < 12 ? t('dashboard.morning') : hour < 17 ? t('dashboard.afternoon') : t('dashboard.evening');
+    return t('dashboard.greeting', { period });
   };
 
   const openMemberDetails = (memberId: string) => {
     navigation.navigate('Family', {
       screen: 'MemberDetails',
       params: { memberId, source: 'dashboard' },
+      initial: false,
     });
   };
 
@@ -426,12 +436,12 @@ export function DashboardScreen({ navigation }: any) {
     }
 
     if (route === 'Bills') {
-      navigation.navigate('Finance', { screen: 'Bills', params: { source: 'dashboard' } } as any);
+      navigation.navigate('Finance', { screen: 'Bills', params: { source: 'dashboard' }, initial: false } as any);
       return;
     }
 
     if (route === 'Budgeting') {
-      navigation.navigate('Finance', { screen: 'Budgeting', params: { source: 'dashboard' } } as any);
+      navigation.navigate('Finance', { screen: 'Budgeting', params: { source: 'dashboard' }, initial: false } as any);
       return;
     }
 
@@ -448,12 +458,14 @@ export function DashboardScreen({ navigation }: any) {
           role: activeMember?.role,
           source: 'dashboard',
         },
+        initial: false,
       });
       return;
     }
 
     navigation.navigate('Family', {
       screen: route,
+      initial: false,
       params: {
         memberId: activeMember?.id,
         role: activeMember?.role,
@@ -491,10 +503,10 @@ export function DashboardScreen({ navigation }: any) {
           <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
             <View style={dynStyles.headerTop}>
               <View style={dynStyles.headerIdentity}>
-                <Text style={dynStyles.eyebrow}>Family Command Center</Text>
-                <Text style={dynStyles.greeting}>{greeting()},</Text>
+                <Text style={dynStyles.eyebrow}>{t('dashboard.screens.main.eyebrow')}</Text>
+                <Text style={dynStyles.greeting}>{greeting()}</Text>
                 <Text style={dynStyles.familyName} numberOfLines={1} ellipsizeMode="tail">
-                  {family?.name ?? 'My Family'}
+                  {family?.name ?? t('dashboard.screens.main.defaultFamilyName')}
                 </Text>
                 <Text style={dynStyles.dateText}>{format(new Date(), 'EEEE, MMMM d')}</Text>
 
@@ -505,6 +517,7 @@ export function DashboardScreen({ navigation }: any) {
                       navigation.navigate('Family', {
                         screen: 'ProfileSwitcher',
                         params: { source: 'dashboard' },
+                        initial: false,
                       })
                     }
                   >
@@ -551,17 +564,17 @@ export function DashboardScreen({ navigation }: any) {
             <View style={dynStyles.smartBar}>
               <View style={dynStyles.smartBarItem}>
                 <Text style={dynStyles.smartBarValue}>{pendingTasks}</Text>
-                <Text style={dynStyles.smartBarLabel}>Pending</Text>
+                <Text style={dynStyles.smartBarLabel}>{t('dashboard.screens.main.pendingLabel')}</Text>
               </View>
               <View style={dynStyles.smartBarDivider} />
               <View style={dynStyles.smartBarItem}>
                 <Text style={[dynStyles.smartBarValue, overdueTasks > 0 && { color: COMMAND_COLORS.orange }]}>{overdueTasks}</Text>
-                <Text style={dynStyles.smartBarLabel}>Urgent</Text>
+                <Text style={dynStyles.smartBarLabel}>{t('dashboard.screens.main.urgentLabel')}</Text>
               </View>
               <View style={dynStyles.smartBarDivider} />
               <View style={dynStyles.smartBarItem}>
                 <Text style={[dynStyles.smartBarValue, { color: monthlySavings < 0 ? COMMAND_COLORS.red : COMMAND_COLORS.teal }]}>${Math.abs(monthlySavings).toLocaleString('en-US', { maximumFractionDigits: 0 })}</Text>
-                <Text style={dynStyles.smartBarLabel}>{monthlySavings < 0 ? 'Deficit' : 'Saved'}</Text>
+                <Text style={dynStyles.smartBarLabel}>{monthlySavings < 0 ? t('dashboard.screens.main.deficitLabel') : t('dashboard.screens.main.savedLabel')}</Text>
               </View>
             </View>
           </Animated.View>
@@ -587,11 +600,11 @@ export function DashboardScreen({ navigation }: any) {
 
           <View style={dynStyles.sectionHeader}>
             <View>
-              <Text style={dynStyles.sectionTitle}>Action Center</Text>
-              <Text style={dynStyles.sectionSubtitle}>Highest priority household decisions</Text>
+              <Text style={dynStyles.sectionTitle}>{t('dashboard.screens.main.actionCenterTitle')}</Text>
+              <Text style={dynStyles.sectionSubtitle}>{t('dashboard.screens.main.actionCenterSubtitle')}</Text>
             </View>
             <Pressable onPress={() => handleRoleActionPress('Tasks')} style={dynStyles.sectionButton}>
-              <Text style={dynStyles.sectionButtonText}>Review</Text>
+              <Text style={dynStyles.sectionButtonText}>{t('dashboard.screens.main.review')}</Text>
             </Pressable>
           </View>
 
@@ -612,11 +625,11 @@ export function DashboardScreen({ navigation }: any) {
 
           <View style={dynStyles.sectionHeader}>
             <View>
-              <Text style={dynStyles.sectionTitle}>{isChild ? 'My Timeline' : 'Today Timeline'}</Text>
-              <Text style={dynStyles.sectionSubtitle}>Chronological household flow</Text>
+              <Text style={dynStyles.sectionTitle}>{isChild ? t('dashboard.screens.main.myTimeline') : t('dashboard.screens.main.todayTimeline')}</Text>
+              <Text style={dynStyles.sectionSubtitle}>{t('dashboard.screens.main.timelineSubtitle')}</Text>
             </View>
             <Pressable onPress={() => handleRoleActionPress('Calendar')} style={dynStyles.sectionButton}>
-              <Text style={dynStyles.sectionButtonText}>Calendar</Text>
+              <Text style={dynStyles.sectionButtonText}>{t('dashboard.screens.main.calendarButton')}</Text>
             </Pressable>
           </View>
 
@@ -625,7 +638,7 @@ export function DashboardScreen({ navigation }: any) {
               timelineItems.map((event, index) => (
                 <Pressable key={event.id} onPress={() => handleRoleActionPress('Calendar')} style={dynStyles.timelineRow}>
                   <View style={dynStyles.timelineLeft}>
-                    <Text style={dynStyles.timelineTime}>{event.allDay ? 'All day' : format(new Date(event.startDate), 'h:mm a')}</Text>
+                    <Text style={dynStyles.timelineTime}>{event.allDay ? t('dashboard.screens.main.allDay') : format(new Date(event.startDate), 'h:mm a')}</Text>
                     {index < timelineItems.length - 1 && <View style={dynStyles.timelineLine} />}
                   </View>
                   <View style={dynStyles.timelineDotWrap}>
@@ -634,7 +647,7 @@ export function DashboardScreen({ navigation }: any) {
                   <View style={dynStyles.timelineContent}>
                     <Text style={dynStyles.timelineTitle}>{event.title}</Text>
                     <Text style={dynStyles.timelineMeta} numberOfLines={1}>
-                      {event.location ? event.location : `${event.attendees?.length ?? 0} attendee${(event.attendees?.length ?? 0) === 1 ? '' : 's'}`}
+                      {event.location ? event.location : t('dashboard.screens.main.attendeeCount', { count: event.attendees?.length ?? 0 })}
                     </Text>
                   </View>
                 </Pressable>
@@ -642,19 +655,19 @@ export function DashboardScreen({ navigation }: any) {
             ) : (
               <Pressable style={dynStyles.emptyPanel} onPress={() => handleRoleActionPress('Calendar')}>
                 <Ionicons name="calendar-clear-outline" size={28} color={colors.textMuted} />
-                <Text style={dynStyles.emptyTitle}>No scheduled events today</Text>
-                <Text style={dynStyles.emptyText}>Enjoy the white space or add a new household event.</Text>
+                <Text style={dynStyles.emptyTitle}>{t('dashboard.screens.main.noScheduledEventsTitle')}</Text>
+                <Text style={dynStyles.emptyText}>{t('dashboard.screens.main.noScheduledEventsDesc')}</Text>
               </Pressable>
             )}
           </View>
 
           <View style={dynStyles.sectionHeader}>
             <View>
-              <Text style={dynStyles.sectionTitle}>Family Status Board</Text>
-              <Text style={dynStyles.sectionSubtitle}>People, roles, progress, and access</Text>
+              <Text style={dynStyles.sectionTitle}>{t('dashboard.screens.main.familyStatusBoardTitle')}</Text>
+              <Text style={dynStyles.sectionSubtitle}>{t('dashboard.screens.main.familyStatusBoardSubtitle')}</Text>
             </View>
             <Pressable onPress={openFamilyMembers} style={dynStyles.sectionButton}>
-              <Text style={dynStyles.sectionButtonText}>Manage</Text>
+              <Text style={dynStyles.sectionButtonText}>{t('dashboard.screens.main.manageButton')}</Text>
             </Pressable>
           </View>
 
@@ -676,7 +689,7 @@ export function DashboardScreen({ navigation }: any) {
                     </View>
                   </View>
                   <Text style={dynStyles.memberName} numberOfLines={1}>{member.name}</Text>
-                  <Text style={dynStyles.memberStatusText}>{memberTasks} pending task{memberTasks === 1 ? '' : 's'}</Text>
+                  <Text style={dynStyles.memberStatusText}>{t('dashboard.screens.main.pendingTaskCount', { count: memberTasks })}</Text>
                   <View style={dynStyles.memberFooter}>
                     <Ionicons name="trophy-outline" size={13} color={COMMAND_COLORS.gold} />
                     <Text style={dynStyles.memberPoints}>{member.points?.toLocaleString?.() ?? 0} pts</Text>
@@ -690,8 +703,8 @@ export function DashboardScreen({ navigation }: any) {
                 <View style={dynStyles.inviteIcon}>
                   <Ionicons name="add" size={22} color={colors.primary} />
                 </View>
-                <Text style={dynStyles.inviteTitle}>Invite</Text>
-                <Text style={dynStyles.inviteSubtitle}>Add family access</Text>
+                <Text style={dynStyles.inviteTitle}>{t('dashboard.screens.main.inviteTitle')}</Text>
+                <Text style={dynStyles.inviteSubtitle}>{t('dashboard.screens.main.inviteSubtitle')}</Text>
               </Pressable>
             )}
           </ScrollView>
@@ -700,11 +713,11 @@ export function DashboardScreen({ navigation }: any) {
             <>
               <View style={dynStyles.sectionHeader}>
                 <View>
-                  <Text style={dynStyles.sectionTitle}>Finance Snapshot</Text>
-                  <Text style={dynStyles.sectionSubtitle}>Income, spend, and savings position</Text>
+                  <Text style={dynStyles.sectionTitle}>{t('dashboard.screens.main.financeSnapshotTitle')}</Text>
+                  <Text style={dynStyles.sectionSubtitle}>{t('dashboard.screens.main.financeSnapshotSubtitle')}</Text>
                 </View>
                 <Pressable onPress={() => handleRoleActionPress('Finance')} style={dynStyles.sectionButton}>
-                  <Text style={dynStyles.sectionButtonText}>Open</Text>
+                  <Text style={dynStyles.sectionButtonText}>{t('dashboard.screens.main.openButton')}</Text>
                 </Pressable>
               </View>
 
@@ -715,33 +728,33 @@ export function DashboardScreen({ navigation }: any) {
                 <LinearGradient colors={[COMMAND_COLORS.navy800, COMMAND_COLORS.navy700]} style={dynStyles.financeGradient}>
                   <View style={dynStyles.financeTopRow}>
                     <View>
-                      <Text style={dynStyles.financeTitle}>Monthly Cash Flow</Text>
-                      <Text style={dynStyles.financeSubtitle}>Savings rate {savingsRate}%</Text>
+                      <Text style={dynStyles.financeTitle}>{t('dashboard.screens.main.monthlyCashFlow')}</Text>
+                      <Text style={dynStyles.financeSubtitle}>{t('dashboard.screens.main.savingsRatePercent', { rate: savingsRate })}</Text>
                     </View>
                     <View style={[dynStyles.financeBadge, { backgroundColor: monthlySavings < 0 ? COMMAND_COLORS.red + '22' : COMMAND_COLORS.teal + '22' }]}>
                       <Text style={[dynStyles.financeBadgeText, { color: monthlySavings < 0 ? COMMAND_COLORS.red : COMMAND_COLORS.teal }]}>
-                        {monthlySavings < 0 ? 'Deficit' : 'Positive'}
+                        {monthlySavings < 0 ? t('dashboard.screens.main.deficitBadge') : t('dashboard.screens.main.positiveBadge')}
                       </Text>
                     </View>
                   </View>
 
                   <View style={dynStyles.financeMetricRow}>
                     <View style={dynStyles.financeMetric}>
-                      <Text style={dynStyles.financeMetricLabel}>Income</Text>
+                      <Text style={dynStyles.financeMetricLabel}>{t('dashboard.screens.main.incomeLabel')}</Text>
                       <Text style={dynStyles.financeMetricValue}>{maskAmount(monthlyIncome)}</Text>
                     </View>
                     <View style={dynStyles.financeMetric}>
-                      <Text style={dynStyles.financeMetricLabel}>Expenses</Text>
+                      <Text style={dynStyles.financeMetricLabel}>{t('dashboard.screens.main.expensesLabel')}</Text>
                       <Text style={dynStyles.financeMetricValue}>{maskAmount(monthlyExpenses)}</Text>
                     </View>
                     <View style={dynStyles.financeMetric}>
-                      <Text style={dynStyles.financeMetricLabel}>Savings</Text>
+                      <Text style={dynStyles.financeMetricLabel}>{t('dashboard.screens.main.savingsLabel')}</Text>
                       <Text style={dynStyles.financeMetricValue}>{maskAmount(monthlySavings)}</Text>
                     </View>
                   </View>
 
                   <View style={dynStyles.progressLabelRow}>
-                    <Text style={dynStyles.progressLabel}>Expense load</Text>
+                    <Text style={dynStyles.progressLabel}>{t('dashboard.screens.main.expenseLoadLabel')}</Text>
                     <Text style={dynStyles.progressValue}>{Math.round(expenseRate * 100)}%</Text>
                   </View>
                   <ProgressBar
@@ -754,12 +767,18 @@ export function DashboardScreen({ navigation }: any) {
 
                 {!hasFinanceAccess && (
                   <>
+                    {/* Solid scrim first — expo-blur's Android blur is
+                        experimental/opt-in and renders as a near-invisible
+                        tint by default, so the BlurView alone isn't enough
+                        contrast on Android to read as "locked" the way it
+                        does on iOS. */}
+                    <View style={dynStyles.financeLockScrim} />
                     <BlurView intensity={28} tint="dark" style={StyleSheet.absoluteFill} />
                     <View style={dynStyles.financeLockOverlay} pointerEvents="none">
                       <View style={dynStyles.financeLockIconCircle}>
                         <Ionicons name="lock-closed" size={18} color="#fff" />
                       </View>
-                      <Text style={dynStyles.financeLockText}>Upgrade to Premium to view</Text>
+                      <Text style={dynStyles.financeLockText}>{t('dashboard.screens.main.upgradeToPremium')}</Text>
                     </View>
                   </>
                 )}
@@ -769,11 +788,11 @@ export function DashboardScreen({ navigation }: any) {
 
           <View style={dynStyles.sectionHeader}>
             <View>
-              <Text style={dynStyles.sectionTitle}>Commander AI</Text>
-              <Text style={dynStyles.sectionSubtitle}>Predictive household guidance</Text>
+              <Text style={dynStyles.sectionTitle}>{t('dashboard.screens.main.commanderAiTitle')}</Text>
+              <Text style={dynStyles.sectionSubtitle}>{t('dashboard.screens.main.commanderAiSubtitle')}</Text>
             </View>
             <Pressable onPress={() => handleRoleActionPress('AIAssistant')} style={dynStyles.sectionButton}>
-              <Text style={dynStyles.sectionButtonText}>Ask AI</Text>
+              <Text style={dynStyles.sectionButtonText}>{t('dashboard.screens.main.askAiButton')}</Text>
             </Pressable>
           </View>
 
@@ -784,19 +803,19 @@ export function DashboardScreen({ navigation }: any) {
                   <Ionicons name="sparkles-outline" size={20} color={COMMAND_COLORS.gold} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={dynStyles.aiTitle}>{featuredInsight?.title ?? 'Household intelligence is ready'}</Text>
+                  <Text style={dynStyles.aiTitle}>{featuredInsight?.title ?? t('dashboard.screens.main.aiDefaultTitle')}</Text>
                   <Text style={dynStyles.aiText} numberOfLines={3}>
                     {featuredInsight?.summary ??
                       (isParent
-                        ? 'Review spending, tasks, and calendar load to keep the household ahead of upcoming pressure points.'
+                        ? t('dashboard.screens.main.aiParentText')
                         : isChild
-                          ? 'Stay on top of tasks, homework, rewards, and your upcoming family schedule.'
-                          : 'Review family updates, events, birthdays, and household highlights in one place.')}
+                          ? t('dashboard.screens.main.aiChildText')
+                          : t('dashboard.screens.main.aiOtherText'))}
                   </Text>
                 </View>
               </View>
               <View style={dynStyles.aiActionRow}>
-                <Text style={dynStyles.aiActionText}>Open Commander AI</Text>
+                <Text style={dynStyles.aiActionText}>{t('dashboard.screens.main.openCommanderAi')}</Text>
                 <Ionicons name="arrow-forward" size={16} color={COMMAND_COLORS.gold} />
               </View>
             </LinearGradient>
@@ -804,20 +823,20 @@ export function DashboardScreen({ navigation }: any) {
 
           <View style={dynStyles.sectionHeader}>
             <View>
-              <Text style={dynStyles.sectionTitle}>Weekly Progress</Text>
-              <Text style={dynStyles.sectionSubtitle}>Performance across key household areas</Text>
+              <Text style={dynStyles.sectionTitle}>{t('dashboard.screens.main.weeklyProgressTitle')}</Text>
+              <Text style={dynStyles.sectionSubtitle}>{t('dashboard.screens.main.weeklyProgressSubtitle')}</Text>
             </View>
             <Pressable onPress={() => handleRoleActionPress('WeeklyReport')} style={dynStyles.sectionButton}>
-              <Text style={dynStyles.sectionButtonText}>Report</Text>
+              <Text style={dynStyles.sectionButtonText}>{t('dashboard.screens.main.reportButton')}</Text>
             </Pressable>
           </View>
 
           <View style={dynStyles.progressCard}>
             {[
-              { label: 'Finance', value: healthScore.financial, color: SCORE_COLOR(healthScore.financial) },
-              { label: 'Tasks', value: healthScore.tasks, color: SCORE_COLOR(healthScore.tasks) },
-              { label: 'Goals', value: healthScore.goals, color: SCORE_COLOR(healthScore.goals) },
-              { label: 'Wellness', value: healthScore.health, color: SCORE_COLOR(healthScore.health) },
+              { label: t('dashboard.screens.main.progressFinance'), value: healthScore.financial, color: SCORE_COLOR(healthScore.financial) },
+              { label: t('dashboard.screens.main.progressTasks'), value: healthScore.tasks, color: SCORE_COLOR(healthScore.tasks) },
+              { label: t('dashboard.screens.main.progressGoals'), value: healthScore.goals, color: SCORE_COLOR(healthScore.goals) },
+              { label: t('dashboard.screens.main.progressWellness'), value: healthScore.health, color: SCORE_COLOR(healthScore.health) },
             ].map((item) => (
               <View key={item.label} style={dynStyles.progressItem}>
                 <View style={dynStyles.progressLabelRowLight}>
@@ -834,10 +853,10 @@ export function DashboardScreen({ navigation }: any) {
       {fabOpen && (
         <View style={[dynStyles.fabMenu, { bottom: 92 + insets.bottom }]}> 
           {[
-            { label: 'Add Task', icon: 'checkbox-outline', route: 'Tasks' },
-            { label: 'Add Event', icon: 'calendar-outline', route: 'Calendar' },
-            ...(isParent ? [{ label: 'Add Expense', icon: 'wallet-outline', route: 'Budgeting' }] : []),
-            { label: 'Ask AI', icon: 'sparkles-outline', route: 'AIAssistant' },
+            { label: t('dashboard.screens.main.fabAddTask'), icon: 'checkbox-outline', route: 'Tasks' },
+            { label: t('dashboard.screens.main.fabAddEvent'), icon: 'calendar-outline', route: 'Calendar' },
+            ...(isParent ? [{ label: t('dashboard.screens.main.fabAddExpense'), icon: 'wallet-outline', route: 'Budgeting' }] : []),
+            { label: t('dashboard.screens.main.fabAskAi'), icon: 'sparkles-outline', route: 'AIAssistant' },
           ].map((item) => (
             <Pressable key={item.label} style={dynStyles.fabMenuItem} onPress={() => handleQuickAction(item.route)}>
               <Text style={dynStyles.fabMenuLabel}>{item.label}</Text>
@@ -1340,6 +1359,10 @@ function makeStyles(colors: import('../../theme/ThemeContext').ThemeColors) {
       marginHorizontal: 18,
       borderRadius: 24,
       overflow: 'hidden',
+    },
+    financeLockScrim: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: 'rgba(13,33,55,0.82)',
     },
     financeLockOverlay: {
       ...StyleSheet.absoluteFillObject,

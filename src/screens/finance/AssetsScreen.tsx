@@ -4,6 +4,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../theme/ThemeContext';
 import { Card } from '../../components/common/Card';
 import { PremiumHeader } from '../../components/common/PremiumHeader';
@@ -44,7 +45,19 @@ const generateId = () => Math.random().toString(36).substring(2, 11);
 export function AssetsScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  const { t } = useTranslation('finance');
   const { assets, addAsset, deleteAsset } = useOperationsStore();
+
+  const CATEGORY_LABELS: Record<string, string> = {
+    'Real Estate': t('finance.screens.assets.categoryRealEstate'),
+    'Vehicle': t('finance.screens.assets.categoryVehicle'),
+    'Electronics': t('finance.screens.assets.categoryElectronics'),
+    'Furniture': t('finance.screens.assets.categoryFurniture'),
+    'Jewelry': t('finance.screens.assets.categoryJewelry'),
+    'Investments': t('finance.screens.assets.categoryInvestments'),
+    'Collectibles': t('finance.screens.assets.categoryCollectibles'),
+    'Other': t('finance.screens.assets.categoryOther'),
+  };
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [newName, setNewName] = useState('');
@@ -94,7 +107,7 @@ export function AssetsScreen({ navigation }: any) {
   const handleAddAsset = () => {
     const value = parseFloat(newValue);
     if (!newName.trim() || isNaN(value) || value <= 0) {
-      Alert.alert('Invalid Input', 'Please enter an asset name and valid value.');
+      Alert.alert(t('finance.screens.assets.invalidInputTitle'), t('finance.screens.assets.invalidInputMsg'));
       return;
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -118,13 +131,13 @@ export function AssetsScreen({ navigation }: any) {
 
   const handleDelete = (id: string, name: string, isVehicle: boolean) => {
     if (isVehicle) {
-      Alert.alert('Vehicle Asset', 'Vehicle assets are managed in the Vehicles section.');
+      Alert.alert(t('finance.screens.assets.vehicleAssetTitle'), t('finance.screens.assets.vehicleAssetMsg'));
       return;
     }
-    Alert.alert(`Delete "${name}"?`, 'This action cannot be undone.', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('finance.screens.assets.confirmDeleteTitle', { name }), t('finance.screens.assets.confirmDeleteMsg'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Delete', style: 'destructive', onPress: () => {
+        text: t('common.delete'), style: 'destructive', onPress: () => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
           deleteAsset(id);
         },

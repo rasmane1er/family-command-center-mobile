@@ -18,6 +18,7 @@ import { useFamilyStore } from '../../../store/useFamilyStore';
 import { colors } from '../../../theme/colors';
 import { shadows } from '../../../theme/spacing';
 import { CollapsibleHeader } from '../../../components/common/CollapsibleHeader';
+import { useTranslation } from 'react-i18next';
 
 // Shown on a CHILD'S device: registers this physical device with the
 // backend (POST /guardian/devices/register) and displays the real,
@@ -26,6 +27,7 @@ import { CollapsibleHeader } from '../../../components/common/CollapsibleHeader'
 // locally and show it on the PARENT's device — inverted from what the
 // backend actually expects (register is child-side, pair is parent-side).
 export function RegisterChildDeviceScreen({ navigation }: any) {
+  const { t } = useTranslation('family');
   const insets = useSafeAreaInsets();
 
   const thisDeviceId = useGuardianStore((s) => s.thisDeviceId);
@@ -156,7 +158,7 @@ export function RegisterChildDeviceScreen({ navigation }: any) {
       </Pressable>
 
       <View style={styles.compactTitleBlock}>
-        <Text style={styles.compactTitle}>Register Device</Text>
+        <Text style={styles.compactTitle}>{t('guardian.registerDevice')}</Text>
         <Text style={styles.compactSubtitle}>{formattedCode}</Text>
       </View>
 

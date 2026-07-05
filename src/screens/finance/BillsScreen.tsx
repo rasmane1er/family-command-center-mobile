@@ -18,6 +18,7 @@ import type { Bill } from '../../types';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 const statusBadge = { upcoming: 'neutral', due_soon: 'warning', overdue: 'danger', paid: 'success' } as const;
 const statusLabels = { upcoming: 'Upcoming', due_soon: 'Due Soon', overdue: 'OVERDUE', paid: 'Paid' };
@@ -31,6 +32,7 @@ const CATEGORY_ICONS: Record<string, string> = {
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
 export function BillsScreen({ navigation, route }: any) {
+  const { t } = useTranslation('finance');
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const [filter, setFilter] = useState('All');
@@ -139,7 +141,7 @@ export function BillsScreen({ navigation, route }: any) {
 
   const screenHeader = (
       <PremiumHeader
-        title="Bills"
+        title={t('bills.title')}
         onBack={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()}
         colors={['#0F2952', '#1E4A8A']}
         rightAction={

@@ -17,11 +17,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useGuardianStore } from '../../../store/useGuardianStore';
 import { Button } from '../../../components/common/Button';
 import { colors } from '../../../theme/colors';
+import { useTranslation } from 'react-i18next';
 
 // Shown on a PARENT's device: scans or manually enters the pairing code a
 // child's device generated on RegisterChildDeviceScreen, then calls
 // POST /guardian/devices/pair to link it to this family.
 export function EnterPairingCodeScreen({ navigation }: any) {
+  const { t } = useTranslation('family');
   const insets = useSafeAreaInsets();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
@@ -33,7 +35,10 @@ export function EnterPairingCodeScreen({ navigation }: any) {
   const submitCode = async (rawCode: string) => {
     const code = rawCode.trim().toUpperCase();
     if (code.length < 4) {
-      Alert.alert('Enter a Code', "Enter the pairing code shown on the child's device.");
+      Alert.alert(
+        t('family.screens.enterPairingCode.enterCodeTitle'),
+        t('family.screens.enterPairingCode.enterCodeMessage')
+      );
       setScanned(false);
       return;
     }
@@ -41,13 +46,15 @@ export function EnterPairingCodeScreen({ navigation }: any) {
     setIsPairing(true);
     try {
       await pairWithCode(code);
-      Alert.alert('Device Paired', 'The device is now connected to your family.', [
-        { text: 'Done', onPress: () => navigation.goBack() },
-      ]);
+      Alert.alert(
+        t('family.screens.enterPairingCode.devicePairedTitle'),
+        t('family.screens.enterPairingCode.devicePairedMessage'),
+        [{ text: t('family.screens.enterPairingCode.doneButton'), onPress: () => navigation.goBack() }]
+      );
     } catch {
       Alert.alert(
-        'Pairing Failed',
-        'That code is invalid, expired, or already paired. Ask the child to generate a new one and try again.'
+        t('family.screens.enterPairingCode.pairingFailedTitle'),
+        t('family.screens.enterPairingCode.pairingFailedMessage')
       );
       setScanned(false);
     } finally {
@@ -62,13 +69,19 @@ export function EnterPairingCodeScreen({ navigation }: any) {
     try {
       const parsed = JSON.parse(data);
       if (parsed?.type !== 'device-pair' || !parsed?.pairingCode) {
-        Alert.alert('Invalid QR Code', 'This is not a valid device pairing code.');
+        Alert.alert(
+          t('family.screens.enterPairingCode.invalidQrTitle'),
+          t('family.screens.enterPairingCode.invalidQrNotDevicePair')
+        );
         setScanned(false);
         return;
       }
       submitCode(parsed.pairingCode);
     } catch {
-      Alert.alert('Invalid QR Code', 'This QR code could not be read.');
+      Alert.alert(
+        t('family.screens.enterPairingCode.invalidQrTitle'),
+        t('family.screens.enterPairingCode.invalidQrUnreadable')
+      );
       setScanned(false);
     }
   };
@@ -82,7 +95,7 @@ export function EnterPairingCodeScreen({ navigation }: any) {
         <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color={colors.text} />
         </Pressable>
-        <Text style={styles.headerTitle}>Add Device</Text>
+        <Text style={styles.headerTitle}>{t('family.screens.enterPairingCode.headerTitle')}</Text>
         <View style={{ width: 38 }} />
       </View>
 
@@ -102,7 +115,7 @@ export function EnterPairingCodeScreen({ navigation }: any) {
                 <View style={[styles.corner, styles.cornerBottomLeft]} />
                 <View style={[styles.corner, styles.cornerBottomRight]} />
               </View>
-              <Text style={styles.scanHint}>Scan the QR code on the child's device</Text>
+              <Text style={styles.scanHint}>{t('family.screens.enterPairingCode.scanHint')}</Text>
 
               {(scanned || isPairing) && (
                 <Pressable
@@ -115,7 +128,7 @@ export function EnterPairingCodeScreen({ navigation }: any) {
                   {isPairing ? (
                     <ActivityIndicator color="#fff" size="small" />
                   ) : (
-                    <Text style={styles.scanAgainText}>Scan Again</Text>
+                    <Text style={styles.scanAgainText}>{t('family.screens.enterPairingCode.scanAgain')}</Text>
                   )}
                 </Pressable>
               )}
@@ -125,19 +138,19 @@ export function EnterPairingCodeScreen({ navigation }: any) {
           <View style={styles.permissionPlaceholder}>
             <Ionicons name="camera-outline" size={40} color={colors.textMuted} />
             <Text style={styles.permissionText}>
-              Allow camera access to scan a pairing QR code, or enter the code manually below.
+              {t('family.screens.enterPairingCode.permissionText')}
             </Text>
-            <Button title="Allow Camera" onPress={requestPermission} />
+            <Button title={t('family.screens.enterPairingCode.allowCamera')} onPress={requestPermission} />
           </View>
         )}
       </View>
 
       <View style={styles.manualCard}>
-        <Text style={styles.manualLabel}>Or enter the code manually</Text>
+        <Text style={styles.manualLabel}>{t('family.screens.enterPairingCode.manualLabel')}</Text>
         <View style={styles.manualRow}>
           <TextInput
             style={styles.manualInput}
-            placeholder="ABC123"
+            placeholder={t('family.screens.enterPairingCode.manualPlaceholder')}
             placeholderTextColor={colors.textMuted}
             value={manualCode}
             onChangeText={setManualCode}
@@ -146,7 +159,7 @@ export function EnterPairingCodeScreen({ navigation }: any) {
             maxLength={6}
           />
           <Button
-            title="Pair"
+            title={t('family.screens.enterPairingCode.pairButton')}
             onPress={() => submitCode(manualCode)}
             disabled={manualCode.trim().length < 4 || isPairing}
           />
@@ -276,6 +289,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 10,
     alignItems: 'center',
+  
   },
 
   manualInput: {

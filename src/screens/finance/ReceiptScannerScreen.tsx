@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as SecureStore from 'expo-secure-store';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
 import { useFinanceStore } from '../../store/useFinanceStore';
@@ -49,6 +50,7 @@ async function scanReceipt(imageBase64: string): Promise<ReceiptData> {
 }
 
 export function ReceiptScannerScreen({ navigation }: { navigation: { goBack: () => void; navigate: (screen: string) => void } }) {
+  const { t } = useTranslation('finance');
   const insets = useSafeAreaInsets();
   const { addTransaction, addBill, addSubscription } = useFinanceStore();
 
@@ -83,20 +85,48 @@ export function ReceiptScannerScreen({ navigation }: { navigation: { goBack: () 
   }, [step, scanLineAnim]);
 
   const pickFromCamera = async () => {
-    const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) { Alert.alert('Permission required', 'Camera permission is needed to scan receipts.'); return; }
-    const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'] as ImagePicker.MediaType[], quality: 0.8, base64: true });
-    if (!result.canceled && result.assets[0]) {
-      setImageUri(result.assets[0].uri);
-      setImageBase64(result.assets[0].base64 ?? null);
+    try {
+      const perm = await ImagePicker.requestCameraPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert(
+          t('finance.screens.receiptScanner.cameraPermissionTitle'),
+          perm.canAskAgain
+            ? t('finance.screens.receiptScanner.cameraPermissionMsgAskAgain')
+            : t('finance.screens.receiptScanner.cameraPermissionMsgBlocked')
+        );
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'] as ImagePicker.MediaType[], quality: 0.8, base64: true });
+      if (!result.canceled && result.assets[0]) {
+        setImageUri(result.assets[0].uri);
+        setImageBase64(result.assets[0].base64 ?? null);
+      }
+    } catch (err) {
+      // launchCameraAsync rejects (rather than just no-op'ing) when there's
+      // no real camera to open — e.g. every iOS/Android simulator, which
+      // has no camera hardware. Without this catch, the promise rejection
+      // was unhandled and the screen just sat there looking frozen with no
+      // feedback at all, which is exactly what "doesn't open the camera"
+      // looks like from the outside — on a real device this same catch
+      // covers rarer failures too (hardware busy, OS-level restriction).
+      Alert.alert(
+        t('finance.screens.receiptScanner.cameraUnavailableTitle'),
+        __DEV__
+          ? t('finance.screens.receiptScanner.cameraUnavailableMsgDev')
+          : t('finance.screens.receiptScanner.cameraUnavailableMsgProd')
+      );
     }
   };
 
   const pickFromLibrary = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'] as ImagePicker.MediaType[], quality: 0.8, base64: true });
-    if (!result.canceled && result.assets[0]) {
-      setImageUri(result.assets[0].uri);
-      setImageBase64(result.assets[0].base64 ?? null);
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'] as ImagePicker.MediaType[], quality: 0.8, base64: true });
+      if (!result.canceled && result.assets[0]) {
+        setImageUri(result.assets[0].uri);
+        setImageBase64(result.assets[0].base64 ?? null);
+      }
+    } catch (err) {
+      Alert.alert(t('finance.screens.receiptScanner.libraryErrorTitle'), t('finance.screens.receiptScanner.libraryErrorMsg'));
     }
   };
 
@@ -115,7 +145,7 @@ export function ReceiptScannerScreen({ navigation }: { navigation: { goBack: () 
       setDestination(data.suggestedDestination);
       setStep(3);
     } catch (err) {
-      setScanError(err instanceof Error ? err.message : 'Scan failed');
+      setScanError(err instanceof Error ? err.message : t('finance.screens.receiptScanner.scanFailed'));
     } finally {
       setScanning(false);
     }

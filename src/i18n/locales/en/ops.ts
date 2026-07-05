@@ -1,0 +1,98 @@
+export default {
+  ops: {
+    title: 'Operations', documents: 'Documents', pantry: 'Pantry', recipes: 'Recipes',
+    shopping: 'Shopping List', health: 'Health', medications: 'Medications',
+    sleep: 'Sleep', workout: 'Workout', addItem: 'Add Item',
+    homeMaintenance: 'Home Maintenance', addRequest: 'Add Request', noRequests: 'No maintenance requests',
+    searchRecipes: 'Search recipes…', allCategories: 'All', noRecipes: 'No recipes found',
+    searchItems: 'Search items…', noItems: 'No items found', lowStock: 'Low Stock',
+    searchShopping: 'Search items…', noShopping: 'Your shopping list is empty', addToList: 'Add to List',
+  },
+  documents: {
+    title: 'Document Vault', uploadDoc: 'Upload Document', noDocs: 'No documents yet',
+    search: 'Search documents…', categories: 'Categories', shared: 'Shared',
+    personal: 'Personal', medical: 'Medical', financial: 'Financial', legal: 'Legal',
+    view: 'View', share: 'Share', download: 'Download',
+  },
+  emergency: {
+    title: 'Emergency Mode', contacts: 'Emergency Contacts', instructions: 'Instructions',
+    addContact: 'Add Contact', noContacts: 'No emergency contacts', call: 'Call',
+    allergies: 'Allergies', conditions: 'Medical Conditions', bloodType: 'Blood Type',
+  },
+  homeInventory: {
+    title: 'Home Inventory', addItem: 'Add Item', noItems: 'No items yet',
+    search: 'Search inventory…', category: 'Category', value: 'Value',
+    location: 'Location', serialNumber: 'Serial Number', warranty: 'Warranty',
+    room: 'Room', electronics: 'Electronics', furniture: 'Furniture',
+  },
+  marketplace: {
+    title: 'Marketplace', selling: 'Selling', bought: 'Bought', addListing: 'Add Listing',
+    noListings: 'No listings yet', price: 'Price', category: 'Category',
+    condition: 'Condition', description: 'Description', search: 'Search marketplace…',
+  },
+  mealPlanning: {
+    title: 'Meal Planning', addMeal: 'Add Meal', noMeals: 'No meals planned',
+    breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner', snacks: 'Snacks',
+    thisWeek: 'This Week', shopList: 'Shopping List', ingredients: 'Ingredients',
+    servings: 'Servings',
+  },
+  petTracker: {
+    title: 'Pet Tracker', addPet: 'Add Pet', noPets: 'No pets added yet',
+    name: 'Name', breed: 'Breed', age: 'Age', weight: 'Weight',
+    vet: 'Veterinarian', nextVet: 'Next Vet Visit', vaccinations: 'Vaccinations',
+    medications: 'Medications',
+  },
+  rewards: {
+    title: 'Rewards', addReward: 'Add Reward', noRewards: 'No rewards yet',
+    points: 'Points', redeem: 'Redeem', earned: 'Earned', available: 'Available',
+    claimed: 'Claimed', expires: 'Expires', myPoints: 'My Points',
+  },
+  smartHome: {
+    title: 'Smart Home', devices: 'Devices', rooms: 'Rooms', scenes: 'Scenes',
+    addDevice: 'Add Device', noDevices: 'No devices connected',
+    online: 'Online', offline: 'Offline', on: 'On', off: 'Off',
+  },
+  timeEconomy: {
+    title: 'Time Economy', addEntry: 'Log Time', noEntries: 'No time entries yet',
+    thisWeek: 'This Week', category: 'Category', family: 'Family Time',
+    work: 'Work', personal: 'Personal', chores: 'Chores', sleep: 'Sleep',
+  },
+  travel: {
+    title: 'Travel Planning', addTrip: 'Add Trip', noTrips: 'No trips planned',
+    destination: 'Destination', dates: 'Dates', budget: 'Budget', packing: 'Packing List',
+    activities: 'Activities', accommodation: 'Accommodation', upcoming: 'Upcoming', past: 'Past',
+  },
+  vehicles: {
+    title: 'Vehicles', addVehicle: 'Add Vehicle', noVehicles: 'No vehicles added yet',
+    make: 'Make', model: 'Model', year: 'Year', mileage: 'Mileage',
+    insurance: 'Insurance', registration: 'Registration', maintenance: 'Maintenance',
+    fuelType: 'Fuel Type', nextService: 'Next Service',
+  },
+  automation: {
+    title: 'Automation', addRule: 'Add Rule', noRules: 'No automation rules yet',
+    trigger: 'Trigger', action: 'Action', active: 'Active', inactive: 'Inactive',
+    condition: 'Condition', runNow: 'Run Now',
+  },
+  carpool: {
+    title: 'Carpool Manager', addRoute: 'Add Route', noRoutes: 'No routes yet',
+    driver: 'Driver', riders: 'Riders', pickupTime: 'Pickup Time', dropoffTime: 'Drop-off Time',
+    school: 'School', location: 'Location', myTurn: 'My Turn', nextUp: 'Next Up',
+  },
+  childcare: {
+    title: 'Childcare Manager', addProvider: 'Add Provider', noProviders: 'No providers yet',
+    provider: 'Provider', type: 'Type', schedule: 'Schedule', cost: 'Cost',
+    contact: 'Contact', nanny: 'Nanny', daycare: 'Daycare', babysitter: 'Babysitter',
+  },
+  gates: {
+    restrictedTitle: 'Operations Restricted',
+    restrictedMsg: 'Operations tools are only available to parents, guardians, or admins.',
+    mealPlanningFeature: 'Meal Planning',
+    documentVaultFeature: 'Document Vault',
+    smartAutomationFeature: 'Smart Automation',
+    shoppingIntelligenceFeature: 'Shopping Intelligence',
+    travelPlanningFeature: 'Travel Planning',
+    petTrackerFeature: 'Pet Tracker',
+    childcareManagerFeature: 'Childcare Manager',
+    homeInventoryFeature: 'Home Inventory',
+  },
+} as const;

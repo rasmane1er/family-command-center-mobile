@@ -22,6 +22,7 @@ import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useOperationsStore } from '../../store/useOperationsStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import type { DocumentCategory, Document } from '../../types';
+import { useTranslation } from 'react-i18next';
 
 // ─── constants ────────────────────────────────────────────────────────────────
 
@@ -90,6 +91,7 @@ function isValidDate(value: unknown): value is string {
 
 export function DocumentsScreen({ navigation, route }: any) {
   const { colors } = useTheme();
+  const { t } = useTranslation('ops');
   const insets = useSafeAreaInsets();
 
   // If navigated from a vehicle with a filter
@@ -153,21 +155,25 @@ export function DocumentsScreen({ navigation, route }: any) {
       setPickedFile({ uri: asset.uri, name: asset.name, size: asset.size ?? undefined, mimeType: asset.mimeType ?? undefined });
       if (!newTitle.trim()) setNewTitle(asset.name.replace(/\.[^.]+$/, ''));
     } catch {
-      Alert.alert('Error', 'Could not pick a file. Please try again.');
+      Alert.alert(t('common.error'), 'Could not pick a file. Please try again.');
     }
   };
 
   // ── add document ───────────────────────────────────────────────────────────
 
   const handleAdd = async () => {
+    if (!pickedFile) {
+      Alert.alert('File Required', 'Please upload a file before saving — a "Document Vault" entry with nothing attached isn\'t a real document.');
+      return;
+    }
     if (!newTitle.trim()) {
-      Alert.alert('Required', 'Please enter a document title.');
+      Alert.alert(t('common.validationTitle'), 'Please enter a document title.');
       return;
     }
 
     const expiryDate = newExpiry.trim() ? parseExpiryDateInput(newExpiry) : null;
     if (newExpiry.trim() && !expiryDate) {
-      Alert.alert('Invalid Date', 'Please enter the expiry date as MM/DD/YYYY, e.g. 03/15/2029.');
+      Alert.alert(t('common.validationTitle'), t('common.validationMsg'));
       return;
     }
 
@@ -256,7 +262,7 @@ export function DocumentsScreen({ navigation, route }: any) {
   };
 
   const handleDelete = (id: string, title: string) => {
-    Alert.alert('Delete Document', `Remove "${title}" from the vault?`, [
+    Alert.alert(t('common.deleteTitle'), `Remove "${title}" from the vault?`, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete', style: 'destructive', onPress: () => {
@@ -507,7 +513,7 @@ export function DocumentsScreen({ navigation, route }: any) {
             ) : (
               <>
                 <Ionicons name="cloud-upload-outline" size={40} color={colors.textMuted} />
-                <Text style={s.uploadTitle}>Upload File</Text>
+                <Text style={s.uploadTitle}>Upload File *</Text>
                 <Text style={s.uploadHint}>Tap to pick a PDF, image, or any document</Text>
               </>
             )}
@@ -577,7 +583,7 @@ export function DocumentsScreen({ navigation, route }: any) {
 
           {uploading
             ? <ActivityIndicator color={colors.primary} size="large" style={{ marginVertical: 16 }} />
-            : <Button title="Save Document" onPress={handleAdd} fullWidth size="lg" disabled={!newTitle.trim()} />
+            : <Button title="Save Document" onPress={handleAdd} fullWidth size="lg" disabled={!newTitle.trim() || !pickedFile} />
           }
           <Button title="Cancel" onPress={() => { setShowModal(false); setPickedFile(null); }}
             variant="ghost" fullWidth style={{ marginTop: 8 }} />

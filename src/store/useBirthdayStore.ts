@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import { mmkvStorage } from '../storage/mmkvStorage';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -20,6 +22,7 @@ interface Birthday {
 
 interface BirthdayState {
   birthdays: Birthday[];
+  hasSeeded: boolean;
   addBirthday: (b: Omit<Birthday, 'id'>) => void;
   updateBirthday: (id: string, updates: Partial<Birthday>) => void;
   deleteBirthday: (id: string) => void;
@@ -50,8 +53,11 @@ function getDaysUntilDate(mmdd: string): number {
   return Math.round((nextYear.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24));
 }
 
-export const useBirthdayStore = create<BirthdayState>((set, get) => ({
+export const useBirthdayStore = create<BirthdayState>()(
+  persist(
+    (set, get) => ({
   birthdays: [],
+  hasSeeded: false,
 
   addBirthday: (b) =>
     set((s) => ({ birthdays: [...s.birthdays, { ...b, id: generateId() }] })),
@@ -176,8 +182,14 @@ export const useBirthdayStore = create<BirthdayState>((set, get) => ({
         notes: 'Birthday on Valentines Day - make it extra special',
       },
     ];
-    set({ birthdays });
+    set({ birthdays, hasSeeded: true });
   },
-}));
+    }),
+    {
+      name: 'family-command-center-birthday',
+      storage: createJSONStorage(() => mmkvStorage),
+    }
+  )
+);
 
 export type { Birthday, Relationship };

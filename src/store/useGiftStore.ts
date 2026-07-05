@@ -1,4 +1,7 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import { mmkvStorage } from '../storage/mmkvStorage';
+import * as giftService from '../services/giftService';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -25,29 +28,84 @@ export interface GiftIdea {
 
 interface GiftState {
   gifts: GiftIdea[];
-  addGift: (g: Omit<GiftIdea, 'id' | 'createdAt'>) => void;
-  updateGift: (id: string, updates: Partial<GiftIdea>) => void;
-  deleteGift: (id: string) => void;
+  isLoaded: boolean;
+  isHydrating: boolean;
+  addGift: (g: Omit<GiftIdea, 'id' | 'createdAt'>) => Promise<void>;
+  updateGift: (id: string, updates: Partial<GiftIdea>) => Promise<void>;
+  deleteGift: (id: string) => Promise<void>;
   updateStatus: (id: string, status: GiftStatus) => void;
-  seedDemoData: () => void;
+  fetchFromServer: (familyId?: string) => Promise<void>;
+  hydrateGifts: () => Promise<void>;
 }
 
-export const useGiftStore = create<GiftState>((set) => ({
-  gifts: [],
-  addGift: (g) => set((s) => ({ gifts: [{ ...g, id: generateId(), createdAt: new Date().toISOString() }, ...s.gifts] })),
-  updateGift: (id, updates) => set((s) => ({ gifts: s.gifts.map((g) => g.id === id ? { ...g, ...updates } : g) })),
-  deleteGift: (id) => set((s) => ({ gifts: s.gifts.filter((g) => g.id !== id) })),
-  updateStatus: (id, status) => set((s) => ({ gifts: s.gifts.map((g) => g.id === id ? { ...g, status } : g) })),
-  seedDemoData: () => {
-    const now = new Date().toISOString();
-    const gifts: GiftIdea[] = [
-      { id: 'g1', familyId: 'demo-family', forMemberId: 'member-2', occasion: 'birthday', title: 'Instant Pot Duo 7-in-1', description: 'She mentioned wanting one for meal prep', estimatedPrice: 89, priority: 'high', status: 'purchased', purchasedBy: 'member-1', isSurprise: true, createdAt: now },
-      { id: 'g2', familyId: 'demo-family', forMemberId: 'member-2', occasion: 'birthday', title: 'Yoga mat & blocks set', estimatedPrice: 55, priority: 'medium', status: 'idea', isSurprise: true, createdAt: now },
-      { id: 'g3', familyId: 'demo-family', forMemberId: 'member-3', occasion: 'christmas', title: 'PlayStation gift card $50', estimatedPrice: 50, priority: 'high', status: 'idea', isSurprise: false, createdAt: now },
-      { id: 'g4', familyId: 'demo-family', forMemberId: 'member-3', occasion: 'christmas', title: 'Minecraft Lego set', estimatedPrice: 79, priority: 'medium', status: 'purchased', purchasedBy: 'member-2', isSurprise: true, createdAt: now },
-      { id: 'g5', familyId: 'demo-family', forMemberId: 'member-4', occasion: 'birthday', title: 'American Girl Doll', estimatedPrice: 120, priority: 'high', status: 'purchased', purchasedBy: 'member-1', isSurprise: true, createdAt: now },
-      { id: 'g6', familyId: 'demo-family', forMemberId: 'member-1', occasion: 'fathers_day', title: 'Yeti tumbler', estimatedPrice: 45, priority: 'medium', status: 'given', isSurprise: false, createdAt: now },
-    ];
-    set({ gifts });
-  },
-}));
+export const useGiftStore = create<GiftState>()(
+  persist(
+    (set, get) => ({
+      gifts: [],
+      isLoaded: false,
+      isHydrating: false,
+
+      addGift: async (g) => {
+        const gift: GiftIdea = { ...g, id: generateId(), createdAt: new Date().toISOString() };
+        set((s) => ({ gifts: [gift, ...s.gifts] }));
+        try {
+          await giftService.createGift(gift);
+        } catch {
+          set((s) => ({ gifts: s.gifts.filter((x) => x.id !== gift.id) }));
+        }
+      },
+
+      updateGift: async (id, updates) => {
+        const prev = get().gifts;
+        set((s) => ({ gifts: s.gifts.map((g) => (g.id === id ? { ...g, ...updates } : g)) }));
+        try {
+          await giftService.updateGiftRemote(id, updates);
+        } catch {
+          set({ gifts: prev });
+        }
+      },
+
+      deleteGift: async (id) => {
+        const prev = get().gifts;
+        set((s) => ({ gifts: s.gifts.filter((g) => g.id !== id) }));
+        try {
+          await giftService.deleteGiftRemote(id);
+        } catch {
+          set({ gifts: prev });
+        }
+      },
+
+      updateStatus: (id, status) => {
+        set((s) => ({ gifts: s.gifts.map((g) => (g.id === id ? { ...g, status } : g)) }));
+        giftService.updateGiftRemote(id, { status }).catch(() => {});
+      },
+
+      fetchFromServer: async () => {
+        set({ isHydrating: true });
+        try {
+          const { gifts } = await giftService.fetchGifts();
+          set({ gifts, isLoaded: true });
+        } catch {
+        } finally {
+          set({ isHydrating: false, isLoaded: true });
+        }
+      },
+
+      hydrateGifts: async () => {
+        set({ isHydrating: true });
+        try {
+          const { gifts } = await giftService.fetchGifts();
+          set({ gifts, isLoaded: true });
+        } catch {
+        } finally {
+          set({ isHydrating: false, isLoaded: true });
+        }
+      },
+    }),
+    {
+      name: 'gift-store',
+      storage: createJSONStorage(() => mmkvStorage),
+      partialize: (state) => ({ gifts: state.gifts }),
+    }
+  )
+);

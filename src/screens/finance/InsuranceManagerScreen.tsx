@@ -18,6 +18,7 @@ import { useInsuranceStore, InsuranceType, PremiumFrequency } from '../../store/
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { getDetectedInsurance } from '../../services/autoFillService';
 import type { DetectedInsurance } from '../../services/autoFillService';
+import { useTranslation } from 'react-i18next';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -75,8 +76,9 @@ function normalizeInsuranceType(raw: string): InsuranceType {
 }
 
 export function InsuranceManagerScreen({ navigation }: any) {
+  const { t } = useTranslation('finance');
   const insets = useSafeAreaInsets();
-  const { policies, addPolicy, deletePolicy, getTotalMonthlyPremium, seedDemoData } = useInsuranceStore();
+  const { policies, addPolicy, deletePolicy, getTotalMonthlyPremium, isLoaded, fetchFromServer } = useInsuranceStore();
   const members = useFamilyStore((s) => s.members);
 
   const [activeTab, setActiveTab] = useState<'Policies' | 'Coverage' | 'Calendar'>('Policies');
@@ -108,6 +110,7 @@ export function InsuranceManagerScreen({ navigation }: any) {
     .sort((a, b) => new Date(a.renewalDate!).getTime() - new Date(b.renewalDate!).getTime())[0];
 
   useEffect(() => {
+    if (!isLoaded) fetchFromServer();
     getDetectedInsurance()
       .then((res) => setDetectedInsurance(res.insurance))
       .catch(() => {/* silent */ });
@@ -284,13 +287,6 @@ export function InsuranceManagerScreen({ navigation }: any) {
               </View>
             ))}
           </View>
-        )}
-
-        {policies.length === 0 && detectedInsurance.length === 0 && (
-          <Pressable onPress={seedDemoData} style={styles.seedBtn}>
-            <Ionicons name="flask" size={18} color={colors.primary} />
-            <Text style={styles.seedBtnText}>Load Demo Data</Text>
-          </Pressable>
         )}
 
         {/* POLICIES TAB */}

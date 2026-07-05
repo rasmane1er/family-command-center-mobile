@@ -1,29 +1,19 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput,
+  View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput, ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../../theme/colors';
 import { Card } from '../../components/common/Card';
 import { useChoreStore, Chore, ChoreFrequency, ChoreCategory } from '../../store/useChoreStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
-
-const FREQ_LABELS: Record<ChoreFrequency, string> = {
-  daily: 'Daily', weekly: 'Weekly', biweekly: 'Every 2 Weeks', monthly: 'Monthly',
-};
-
-const FREQ_FILTERS: { key: ChoreFrequency | 'all'; label: string }[] = [
-  { key: 'all', label: 'All' },
-  { key: 'daily', label: 'Daily' },
-  { key: 'weekly', label: 'Weekly' },
-  { key: 'biweekly', label: 'Biweekly' },
-  { key: 'monthly', label: 'Monthly' },
-];
 
 const CAT_EMOJIS: Record<ChoreCategory, string> = {
   kitchen: '🍳', bathroom: '🚿', bedroom: '🛏️', living: '🛋️',
@@ -45,17 +35,38 @@ function isOverdue(chore: Chore): boolean {
 }
 
 export function ChoreRotationScreen({ navigation }: any) {
+  const { t } = useTranslation('family');
   const insets = useSafeAreaInsets();
+
+  const FREQ_LABELS: Record<ChoreFrequency, string> = {
+    daily: t('family.screens.choreRotation.freqDaily'),
+    weekly: t('family.screens.choreRotation.freqWeekly'),
+    biweekly: t('family.screens.choreRotation.freqBiweekly'),
+    monthly: t('family.screens.choreRotation.freqMonthly'),
+  };
+
+  const FREQ_FILTERS: { key: ChoreFrequency | 'all'; label: string }[] = [
+    { key: 'all', label: t('family.screens.choreRotation.filterAll') },
+    { key: 'daily', label: t('family.screens.choreRotation.freqDaily') },
+    { key: 'weekly', label: t('family.screens.choreRotation.freqWeekly') },
+    { key: 'biweekly', label: t('family.screens.choreRotation.filterBiweekly') },
+    { key: 'monthly', label: t('family.screens.choreRotation.freqMonthly') },
+  ];
+
   const [filter, setFilter] = useState<ChoreFrequency | 'all'>('all');
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState('');
   const [newEmoji, setNewEmoji] = useState('🧹');
   const [newFreq, setNewFreq] = useState<ChoreFrequency>('weekly');
 
-  const { chores, completeChore, deleteChore, addChore, seedDemoData } = useChoreStore();
+  const { chores, completeChore, deleteChore, addChore, fetchFromServer, isLoaded } = useChoreStore();
   const members = useFamilyStore((s) => s.members);
+  const familyId = useAuthStore((s) => s.familyId);
 
-  if (chores.length === 0) seedDemoData();
+  useEffect(() => {
+    if (!isLoaded) fetchFromServer(familyId ?? '');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const getMember = (id?: string) => members.find((m) => m.id === id);
 
@@ -72,12 +83,17 @@ export function ChoreRotationScreen({ navigation }: any) {
     const nextIndex = (chore.currentAssigneeIndex + 1) % chore.assignedMemberIds.length;
     const nextAssignee = getMember(chore.assignedMemberIds[nextIndex]);
     Alert.alert(
-      `Mark as Done?`,
-      `${chore.emoji} ${chore.name}\n\nCompleted by: ${assignee?.name ?? 'Unknown'}\nNext up: ${nextAssignee?.name ?? 'Same person'}`,
+      t('family.screens.choreRotation.markAsDoneTitle'),
+      t('family.screens.choreRotation.markAsDoneMsg', {
+        emoji: chore.emoji,
+        name: chore.name,
+        assignee: assignee?.name ?? t('family.screens.choreRotation.unknown'),
+        nextAssignee: nextAssignee?.name ?? t('family.screens.choreRotation.samePerson'),
+      }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('family.screens.choreRotation.cancel'), style: 'cancel' },
         {
-          text: 'Done! ✓',
+          text: t('family.screens.choreRotation.doneExclaim'),
           onPress: () => {
             completeChore(chore.id);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -88,9 +104,9 @@ export function ChoreRotationScreen({ navigation }: any) {
   };
 
   const handleDelete = (chore: Chore) => {
-    Alert.alert('Delete Chore', `Remove "${chore.name}" from rotation?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => deleteChore(chore.id) },
+    Alert.alert(t('family.screens.choreRotation.deleteChoreTitle'), t('family.screens.choreRotation.deleteChoreMsg', { name: chore.name }), [
+      { text: t('family.screens.choreRotation.cancel'), style: 'cancel' },
+      { text: t('family.screens.choreRotation.delete'), style: 'destructive', onPress: () => deleteChore(chore.id) },
     ]);
   };
 
@@ -123,8 +139,8 @@ export function ChoreRotationScreen({ navigation }: any) {
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>Chore Rotation</Text>
-          <Text style={styles.headerSub}>{doneToday} done today · {overdueCount} overdue</Text>
+          <Text style={styles.headerTitle}>{t('family.screens.choreRotation.headerTitle')}</Text>
+          <Text style={styles.headerSub}>{t('family.screens.choreRotation.headerSub', { doneToday, overdueCount })}</Text>
         </View>
         <Pressable onPress={() => setShowAdd(true)} style={styles.addBtn}>
           <Ionicons name="add" size={22} color="#fff" />
@@ -134,17 +150,17 @@ export function ChoreRotationScreen({ navigation }: any) {
       <View style={styles.statsRow}>
         <View style={styles.stat}>
           <Text style={styles.statVal}>{chores.length}</Text>
-          <Text style={styles.statLabel}>Total Chores</Text>
+          <Text style={styles.statLabel}>{t('family.screens.choreRotation.totalChores')}</Text>
         </View>
         <View style={styles.statDivider} />
         <View style={styles.stat}>
           <Text style={[styles.statVal, { color: overdueCount > 0 ? '#FFD166' : '#4EECD0' }]}>{overdueCount}</Text>
-          <Text style={styles.statLabel}>Overdue</Text>
+          <Text style={styles.statLabel}>{t('family.screens.choreRotation.overdue')}</Text>
         </View>
         <View style={styles.statDivider} />
         <View style={styles.stat}>
           <Text style={[styles.statVal, { color: '#4EECD0' }]}>{doneToday}</Text>
-          <Text style={styles.statLabel}>Done Today</Text>
+          <Text style={styles.statLabel}>{t('family.screens.choreRotation.doneToday')}</Text>
         </View>
       </View>
 
@@ -167,10 +183,19 @@ export function ChoreRotationScreen({ navigation }: any) {
       <Pressable onPress={() => navigation.goBack()} style={styles.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
-      <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>Chore Rotation</Text>
-      <Text style={{ fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.8)' }}>{overdueCount} overdue</Text>
+      <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>{t('family.screens.choreRotation.headerTitle')}</Text>
+      <Text style={{ fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.8)' }}>{overdueCount} {t('family.screens.choreRotation.overdue')}</Text>
     </LinearGradient>
   );
+
+  if (!isLoaded) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <StatusBar style="light" />
+        <ActivityIndicator size="large" color="#16A085" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -189,8 +214,8 @@ export function ChoreRotationScreen({ navigation }: any) {
         {filtered.length === 0 && (
           <View style={styles.empty}>
             <Text style={{ fontSize: 56 }}>🧹</Text>
-            <Text style={styles.emptyTitle}>No chores here</Text>
-            <Text style={styles.emptyDesc}>Tap + to add chores and assign them to family members for automatic rotation.</Text>
+            <Text style={styles.emptyTitle}>{t('family.screens.choreRotation.emptyTitle')}</Text>
+            <Text style={styles.emptyDesc}>{t('family.screens.choreRotation.emptyDesc')}</Text>
           </View>
         )}
 
@@ -216,14 +241,14 @@ export function ChoreRotationScreen({ navigation }: any) {
                     <View style={styles.choreNameRow}>
                       <Text style={[styles.choreName, done && styles.choreNameDone]}>{chore.name}</Text>
                       {done && <Ionicons name="checkmark-circle" size={18} color={colors.success} />}
-                      {overdue && !done && <View style={styles.overdueBadge}><Text style={styles.overdueText}>OVERDUE</Text></View>}
+                      {overdue && !done && <View style={styles.overdueBadge}><Text style={styles.overdueText}>{t('family.screens.choreRotation.overdueBadge')}</Text></View>}
                     </View>
                     <View style={styles.choreMeta}>
                       <Text style={styles.choreFreq}>{FREQ_LABELS[chore.frequency]}</Text>
                       <Text style={styles.choreDot}>·</Text>
-                      <Text style={styles.choreTime}>{chore.estimatedMinutes} min</Text>
+                      <Text style={styles.choreTime}>{t('family.screens.choreRotation.minutesAbbrev', { minutes: chore.estimatedMinutes })}</Text>
                       <Text style={styles.choreDot}>·</Text>
-                      <Text style={styles.chorePoints}>+{chore.points} pts</Text>
+                      <Text style={styles.chorePoints}>{t('family.screens.choreRotation.pointsAbbrev', { points: chore.points })}</Text>
                     </View>
                   </View>
                 </View>
@@ -231,8 +256,8 @@ export function ChoreRotationScreen({ navigation }: any) {
                 <View style={styles.assigneeRow}>
                   <View style={styles.assigneeInfo}>
                     <View style={[styles.assigneeDot, { backgroundColor: assignee?.avatarColor ?? colors.primary }]} />
-                    <Text style={styles.assigneeLabel}>Up now: </Text>
-                    <Text style={styles.assigneeName}>{assignee?.name ?? 'Unassigned'}</Text>
+                    <Text style={styles.assigneeLabel}>{t('family.screens.choreRotation.upNow')}</Text>
+                    <Text style={styles.assigneeName}>{assignee?.name ?? t('family.screens.choreRotation.unassigned')}</Text>
                   </View>
 
                   <View style={styles.rotationChips}>
@@ -260,7 +285,7 @@ export function ChoreRotationScreen({ navigation }: any) {
                     onPress={() => handleComplete(chore)}
                   >
                     <Ionicons name="checkmark" size={16} color="#fff" />
-                    <Text style={styles.doneBtnText}>Mark Done</Text>
+                    <Text style={styles.doneBtnText}>{t('family.screens.choreRotation.markDone')}</Text>
                   </Pressable>
                 )}
               </Card>
@@ -275,14 +300,14 @@ export function ChoreRotationScreen({ navigation }: any) {
       <Modal visible={showAdd} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowAdd(false)}>
         <View style={styles.modal}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>New Chore</Text>
+            <Text style={styles.modalTitle}>{t('family.screens.choreRotation.newChoreTitle')}</Text>
             <Pressable onPress={() => setShowAdd(false)}>
               <Ionicons name="close" size={24} color={colors.text} />
             </Pressable>
           </View>
 
           <ScrollView contentContainerStyle={styles.modalContent}>
-            <Text style={styles.modalLabel}>Emoji</Text>
+            <Text style={styles.modalLabel}>{t('family.screens.choreRotation.emojiLabel')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, marginBottom: 20 }}>
               {['🧹', '🍽️', '🚿', '🛏️', '🗑️', '👕', '🌿', '✨', '🍳', '🚰'].map((e) => (
                 <Pressable key={e} onPress={() => setNewEmoji(e)} style={[styles.emojiBtn, newEmoji === e && styles.emojiBtnActive]}>
@@ -291,16 +316,16 @@ export function ChoreRotationScreen({ navigation }: any) {
               ))}
             </ScrollView>
 
-            <Text style={styles.modalLabel}>Chore Name</Text>
+            <Text style={styles.modalLabel}>{t('family.screens.choreRotation.choreNameLabel')}</Text>
             <TextInput
               style={styles.modalInput}
               value={newName}
               onChangeText={setNewName}
-              placeholder="e.g. Take out trash"
+              placeholder={t('family.screens.choreRotation.choreNamePlaceholder')}
               placeholderTextColor={colors.textMuted}
             />
 
-            <Text style={styles.modalLabel}>Frequency</Text>
+            <Text style={styles.modalLabel}>{t('family.screens.choreRotation.frequencyLabel')}</Text>
             <View style={styles.freqRow}>
               {(['daily', 'weekly', 'biweekly', 'monthly'] as ChoreFrequency[]).map((f) => (
                 <Pressable key={f} onPress={() => setNewFreq(f)} style={[styles.freqBtn, newFreq === f && styles.freqBtnActive]}>
@@ -312,7 +337,7 @@ export function ChoreRotationScreen({ navigation }: any) {
             </View>
 
             <Pressable style={styles.saveBtn} onPress={handleAdd}>
-              <Text style={styles.saveBtnText}>Add Chore</Text>
+              <Text style={styles.saveBtnText}>{t('family.screens.choreRotation.addChoreButton')}</Text>
             </Pressable>
           </ScrollView>
         </View>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -22,16 +22,17 @@ import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useWorkoutStore, WorkoutType } from '../../store/useWorkoutStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 
-const WORKOUT_CONFIG: Record<WorkoutType, { icon: string; color: string; label: string }> = {
-  cardio:   { icon: 'flame',       color: '#E74C3C', label: 'Cardio' },
-  strength: { icon: 'barbell',     color: '#2980B9', label: 'Strength' },
-  yoga:     { icon: 'leaf',        color: '#27AE60', label: 'Yoga' },
-  sports:   { icon: 'basketball',  color: '#F5A623', label: 'Sports' },
-  walking:  { icon: 'walk',        color: '#16A085', label: 'Walking' },
-  cycling:  { icon: 'bicycle',     color: '#8E44AD', label: 'Cycling' },
-  swimming: { icon: 'water',       color: '#2980B9', label: 'Swimming' },
-  other:    { icon: 'fitness',     color: '#7F8C8D', label: 'Other' },
+const WORKOUT_CONFIG: Record<WorkoutType, { icon: string; color: string; labelKey: string }> = {
+  cardio:   { icon: 'flame',       color: '#E74C3C', labelKey: 'typeCardio' },
+  strength: { icon: 'barbell',     color: '#2980B9', labelKey: 'typeStrength' },
+  yoga:     { icon: 'leaf',        color: '#27AE60', labelKey: 'typeYoga' },
+  sports:   { icon: 'basketball',  color: '#F5A623', labelKey: 'typeSports' },
+  walking:  { icon: 'walk',        color: '#16A085', labelKey: 'typeWalking' },
+  cycling:  { icon: 'bicycle',     color: '#8E44AD', labelKey: 'typeCycling' },
+  swimming: { icon: 'water',       color: '#2980B9', labelKey: 'typeSwimming' },
+  other:    { icon: 'fitness',     color: '#7F8C8D', labelKey: 'typeOther' },
 };
 
 const WORKOUT_TYPES = Object.keys(WORKOUT_CONFIG) as WorkoutType[];
@@ -48,11 +49,14 @@ export function WorkoutTrackerScreen({ navigation: navProp }: any) {
   const { colors } = useTheme();
   const navHook = useNavigation<any>();
   const navigation = navProp ?? navHook;
+  const { t } = useTranslation('health');
   const insets = useSafeAreaInsets();
-  const { workouts, addWorkout, deleteWorkout, getWeeklyCount, getTotalMinutes, seedDemoData } = useWorkoutStore();
+  const { workouts, addWorkout, deleteWorkout, getWeeklyCount, getTotalMinutes, seedDemoData, hasSeeded } = useWorkoutStore();
   const members = useFamilyStore((s) => s.members);
 
-  if (workouts.length === 0) seedDemoData();
+  useEffect(() => {
+    if (!hasSeeded) seedDemoData();
+  }, [hasSeeded, seedDemoData]);
 
   const [selectedMemberId, setSelectedMemberId] = useState<string>(members[0]?.id ?? 'member-1');
   const [showModal, setShowModal] = useState(false);
@@ -97,12 +101,12 @@ export function WorkoutTrackerScreen({ navigation: navProp }: any) {
 
   const handleAddWorkout = () => {
     if (!modalTitle.trim()) {
-      Alert.alert('Missing Info', 'Please enter a workout title.');
+      Alert.alert(t('health.screens.workoutTracker.missingInfoTitle'), t('health.screens.workoutTracker.missingTitleMsg'));
       return;
     }
     const dur = parseInt(modalDuration);
     if (!dur || dur <= 0) {
-      Alert.alert('Missing Info', 'Please enter a valid duration in minutes.');
+      Alert.alert(t('health.screens.workoutTracker.missingInfoTitle'), t('health.screens.workoutTracker.missingDurationMsg'));
       return;
     }
     addWorkout({
@@ -127,10 +131,10 @@ export function WorkoutTrackerScreen({ navigation: navProp }: any) {
   };
 
   const handleDelete = (id: string, title: string) => {
-    Alert.alert('Delete Workout', `Remove "${title}"?`, [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('health.screens.workoutTracker.deleteWorkoutTitle'), t('health.screens.workoutTracker.deleteWorkoutMsg', { title }), [
+      { text: t('health.screens.workoutTracker.cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: t('health.screens.workoutTracker.delete'),
         style: 'destructive',
         onPress: () => {
           deleteWorkout(id);
@@ -145,7 +149,7 @@ export function WorkoutTrackerScreen({ navigation: navProp }: any) {
   const screenHeader = (
     <View>
       <PremiumHeader
-        title="Workout Tracker"
+        title={t('workout.title')}
         onBack={() => navigation.goBack()}
         colors={['#BF360C', '#D84315', '#E64A19']}
         rightAction={
@@ -163,17 +167,17 @@ export function WorkoutTrackerScreen({ navigation: navProp }: any) {
         <View style={s.headerStats}>
           <View style={s.headerStatBlock}>
             <Text style={s.headerStatValue}>{familyWeekCount}</Text>
-            <Text style={s.headerStatLabel}>Family Workouts</Text>
+            <Text style={s.headerStatLabel}>{t('health.screens.workoutTracker.familyWorkouts')}</Text>
           </View>
           <View style={s.headerStatDivider} />
           <View style={s.headerStatBlock}>
             <Text style={s.headerStatValue}>{familyWeekMinutes}</Text>
-            <Text style={s.headerStatLabel}>Total Minutes</Text>
+            <Text style={s.headerStatLabel}>{t('health.screens.workoutTracker.totalMinutes')}</Text>
           </View>
           <View style={s.headerStatDivider} />
           <View style={s.headerStatBlock}>
             <Text style={s.headerStatValue}>🔥</Text>
-            <Text style={s.headerStatLabel}>This Week</Text>
+            <Text style={s.headerStatLabel}>{t('health.screens.workoutTracker.thisWeek')}</Text>
           </View>
         </View>
       </PremiumHeader>
@@ -197,7 +201,7 @@ export function WorkoutTrackerScreen({ navigation: navProp }: any) {
                 {m.name.split(' ')[0]}
               </Text>
               <Text style={[s.memberTabCount, isActive && s.memberTabCountActive]}>
-                {count} workouts
+                {t('health.screens.workoutTracker.workoutsCount', { count })}
               </Text>
             </Pressable>
           );
@@ -211,7 +215,7 @@ export function WorkoutTrackerScreen({ navigation: navProp }: any) {
       <Pressable onPress={() => navigation.goBack()} style={s.addBtn}>
         <Ionicons name="arrow-back" size={20} color="#fff" />
       </Pressable>
-      <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700', flex: 1, marginLeft: 8 }}>Workout Tracker</Text>
+      <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700', flex: 1, marginLeft: 8 }}>{t('workout.title')}</Text>
       <Pressable onPress={() => { setModalMemberId(selectedMemberId); setShowModal(true); }} style={s.addBtn}>
         <Ionicons name="add" size={22} color="#fff" />
       </Pressable>
@@ -231,7 +235,7 @@ export function WorkoutTrackerScreen({ navigation: navProp }: any) {
         contentContainerStyle={{ paddingBottom: 100, paddingTop: contentPaddingTop }}>
         {/* Weekly Activity Grid */}
         <View style={s.section}>
-          <Text style={s.sectionTitle}>Weekly Activity</Text>
+          <Text style={s.sectionTitle}>{t('health.screens.workoutTracker.sectionWeeklyActivity')}</Text>
           <Card style={s.gridCard} variant="elevated">
             <View style={s.dayGrid}>
               {last7Days.map((date) => {
@@ -260,29 +264,29 @@ export function WorkoutTrackerScreen({ navigation: navProp }: any) {
           <View style={s.statsRow}>
             <Card style={s.statCard} variant="elevated">
               <Text style={s.statValue}>{memberWeekCount}</Text>
-              <Text style={s.statLabel}>Workouts</Text>
+              <Text style={s.statLabel}>{t('health.screens.workoutTracker.statWorkouts')}</Text>
             </Card>
             <Card style={s.statCard} variant="elevated">
               <Text style={s.statValue}>{memberWeekMinutes}</Text>
-              <Text style={s.statLabel}>Minutes</Text>
+              <Text style={s.statLabel}>{t('health.screens.workoutTracker.statMinutes')}</Text>
             </Card>
             <Card style={s.statCard} variant="elevated">
               <Text style={s.statValue}>{memberAvgDuration}</Text>
-              <Text style={s.statLabel}>Avg Min</Text>
+              <Text style={s.statLabel}>{t('health.screens.workoutTracker.statAvgMin')}</Text>
             </Card>
             <Card style={s.statCard} variant="elevated">
               <Text style={s.statValue}>{memberWeekCalories}</Text>
-              <Text style={s.statLabel}>Calories</Text>
+              <Text style={s.statLabel}>{t('health.screens.workoutTracker.statCalories')}</Text>
             </Card>
           </View>
         </View>
 
         {/* Recent Workouts */}
         <View style={s.section}>
-          <Text style={s.sectionTitle}>Recent Workouts</Text>
+          <Text style={s.sectionTitle}>{t('health.screens.workoutTracker.sectionRecentWorkouts')}</Text>
           {memberWorkouts.length === 0 && (
             <Card style={s.emptyCard} variant="elevated">
-              <Text style={s.emptyText}>No workouts logged yet. Tap + to add one!</Text>
+              <Text style={s.emptyText}>{t('health.screens.workoutTracker.emptyWorkouts')}</Text>
             </Card>
           )}
           {memberWorkouts.slice(0, 10).map((w) => {
@@ -327,7 +331,7 @@ export function WorkoutTrackerScreen({ navigation: navProp }: any) {
 
         {/* Family Leaderboard */}
         <View style={s.section}>
-          <Text style={s.sectionTitle}>Family Leaderboard</Text>
+          <Text style={s.sectionTitle}>{t('health.screens.workoutTracker.sectionFamilyLeaderboard')}</Text>
           <Card style={s.leaderboardCard} variant="elevated">
             {leaderboard.map((entry, i) => {
               const medals = ['🥇', '🥈', '🥉'];
@@ -340,8 +344,8 @@ export function WorkoutTrackerScreen({ navigation: navProp }: any) {
                   <View style={[s.leaderDot, { backgroundColor: entry.member.avatarColor }]} />
                   <Text style={s.leaderName}>{entry.member.name.split(' ')[0]}</Text>
                   <View style={s.leaderRight}>
-                    <Text style={s.leaderCount}>{entry.count} workouts</Text>
-                    <Text style={s.leaderMinutes}>{entry.minutes} min total</Text>
+                    <Text style={s.leaderCount}>{t('health.screens.workoutTracker.leaderWorkoutsCount', { count: entry.count })}</Text>
+                    <Text style={s.leaderMinutes}>{t('health.screens.workoutTracker.leaderMinutesTotal', { count: entry.minutes })}</Text>
                   </View>
                 </View>
               );
@@ -356,13 +360,13 @@ export function WorkoutTrackerScreen({ navigation: navProp }: any) {
       <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet">
         <View style={s.modalContainer}>
           <View style={s.modalHeader}>
-            <Text style={s.modalTitle}>Log Workout</Text>
+            <Text style={s.modalTitle}>{t('health.screens.workoutTracker.logWorkoutTitle')}</Text>
             <Pressable onPress={() => setShowModal(false)}>
               <Ionicons name="close" size={24} color={colors.text} />
             </Pressable>
           </View>
           <ScrollView contentContainerStyle={s.modalContent}>
-            <Text style={s.fieldLabel}>Family Member</Text>
+            <Text style={s.fieldLabel}>{t('health.screens.workoutTracker.familyMemberLabel')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.modalMemberScroll}>
               {members.map((m) => (
                 <Pressable
@@ -389,7 +393,7 @@ export function WorkoutTrackerScreen({ navigation: navProp }: any) {
               ))}
             </ScrollView>
 
-            <Text style={s.fieldLabel}>Workout Type</Text>
+            <Text style={s.fieldLabel}>{t('health.screens.workoutTracker.workoutTypeLabel')}</Text>
             <View style={s.typeGrid}>
               {WORKOUT_TYPES.map((type) => {
                 const wc = WORKOUT_CONFIG[type];
@@ -405,58 +409,58 @@ export function WorkoutTrackerScreen({ navigation: navProp }: any) {
                   >
                     <Ionicons name={wc.icon as any} size={18} color={isActive ? wc.color : colors.textMuted} />
                     <Text style={[s.typeChipLabel, isActive && { color: wc.color }]}>
-                      {wc.label}
+                      {t(`health.screens.workoutTracker.${wc.labelKey}`)}
                     </Text>
                   </Pressable>
                 );
               })}
             </View>
 
-            <Text style={s.fieldLabel}>Title</Text>
+            <Text style={s.fieldLabel}>{t('health.screens.workoutTracker.titleLabel')}</Text>
             <TextInput
               style={s.textInput}
               value={modalTitle}
               onChangeText={setModalTitle}
-              placeholder="e.g. Morning Run, Leg Day..."
+              placeholder={t('health.screens.workoutTracker.titlePlaceholder')}
               placeholderTextColor={colors.textMuted}
             />
 
-            <Text style={s.fieldLabel}>Date (YYYY-MM-DD)</Text>
+            <Text style={s.fieldLabel}>{t('health.screens.workoutTracker.dateLabel')}</Text>
             <TextInput
               style={s.textInput}
               value={modalDate}
               onChangeText={setModalDate}
-              placeholder="2026-06-23"
+              placeholder={t('health.screens.workoutTracker.datePlaceholder')}
               placeholderTextColor={colors.textMuted}
             />
 
-            <Text style={s.fieldLabel}>Duration (minutes)</Text>
+            <Text style={s.fieldLabel}>{t('health.screens.workoutTracker.durationLabel')}</Text>
             <TextInput
               style={s.textInput}
               value={modalDuration}
               onChangeText={setModalDuration}
-              placeholder="e.g. 45"
+              placeholder={t('health.screens.workoutTracker.durationPlaceholder')}
               placeholderTextColor={colors.textMuted}
               keyboardType="numeric"
             />
 
-            <Text style={s.fieldLabel}>Calories Burned (optional)</Text>
+            <Text style={s.fieldLabel}>{t('health.screens.workoutTracker.caloriesLabel')}</Text>
             <TextInput
               style={s.textInput}
               value={modalCalories}
               onChangeText={setModalCalories}
-              placeholder="e.g. 300"
+              placeholder={t('health.screens.workoutTracker.caloriesPlaceholder')}
               placeholderTextColor={colors.textMuted}
               keyboardType="numeric"
             />
 
-            <Text style={s.fieldLabel}>Distance (optional)</Text>
+            <Text style={s.fieldLabel}>{t('health.screens.workoutTracker.distanceLabel')}</Text>
             <View style={s.distanceRow}>
               <TextInput
                 style={[s.textInput, { flex: 1, marginRight: 10 }]}
                 value={modalDistance}
                 onChangeText={setModalDistance}
-                placeholder="e.g. 3.1"
+                placeholder={t('health.screens.workoutTracker.distancePlaceholder')}
                 placeholderTextColor={colors.textMuted}
                 keyboardType="decimal-pad"
               />
@@ -476,19 +480,19 @@ export function WorkoutTrackerScreen({ navigation: navProp }: any) {
                         modalDistUnit === unit && s.unitBtnTextActive,
                       ]}
                     >
-                      {unit}
+                      {unit === 'miles' ? t('health.screens.workoutTracker.unitMiles') : t('health.screens.workoutTracker.unitKm')}
                     </Text>
                   </Pressable>
                 ))}
               </View>
             </View>
 
-            <Text style={s.fieldLabel}>Notes (optional)</Text>
+            <Text style={s.fieldLabel}>{t('health.screens.workoutTracker.notesLabel')}</Text>
             <TextInput
               style={[s.textInput, s.textInputMultiline]}
               value={modalNotes}
               onChangeText={setModalNotes}
-              placeholder="How did it feel? Any personal records?"
+              placeholder={t('health.screens.workoutTracker.notesPlaceholder')}
               placeholderTextColor={colors.textMuted}
               multiline
               numberOfLines={3}
@@ -500,7 +504,7 @@ export function WorkoutTrackerScreen({ navigation: navProp }: any) {
                 style={s.saveBtnGradient}
               >
                 <Ionicons name="flame" size={18} color="#fff" />
-                <Text style={s.saveBtnText}>Save Workout</Text>
+                <Text style={s.saveBtnText}>{t('health.screens.workoutTracker.saveWorkout')}</Text>
               </LinearGradient>
             </Pressable>
           </ScrollView>

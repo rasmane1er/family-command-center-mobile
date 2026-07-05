@@ -24,6 +24,7 @@ import { usePetStore, PetSpecies, PetEventType, Pet } from '../../store/usePetSt
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { getPetCharges, type PetCharge } from '../../services/autoFillService';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
+import { useTranslation } from 'react-i18next';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -112,8 +113,9 @@ function isOverdue(dateStr: string): boolean {
 }
 
 export function PetTrackerScreen({ navigation }: any) {
+  const { t } = useTranslation('ops');
   const insets = useSafeAreaInsets();
-  const { pets, events, addPet, deletePet, addEvent, toggleEvent, deleteEvent, seedDemoData } = usePetStore();
+  const { pets, events, addPet, deletePet, addEvent, toggleEvent, deleteEvent, isLoaded, fetchFromServer } = usePetStore();
   const family = useFamilyStore((s) => s.family);
 
   const [activeTab, setActiveTab] = useState<'pets' | 'events' | 'health'>('pets');
@@ -144,6 +146,11 @@ export function PetTrackerScreen({ navigation }: any) {
   const [vetBannerExpanded, setVetBannerExpanded] = useState(true);
   const [dismissedCharges, setDismissedCharges] = useState<Set<string>>(new Set());
   const [selectedPetForCharge, setSelectedPetForCharge] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (!isLoaded) fetchFromServer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     getPetCharges()
@@ -204,7 +211,7 @@ export function PetTrackerScreen({ navigation }: any) {
   };
 
   const handleDeletePet = (pet: Pet) => {
-    Alert.alert('Remove Pet', `Remove ${pet.name} from your family?`, [
+    Alert.alert(t('common.removeTitle'), `Remove ${pet.name} from your family?`, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Remove', style: 'destructive', onPress: () => {
@@ -225,7 +232,6 @@ export function PetTrackerScreen({ navigation }: any) {
           <Text style={styles.emptyEmoji}>🐾</Text>
           <Text style={styles.emptyTitle}>No pets yet</Text>
           <Text style={styles.emptyDesc}>Add your furry, feathered, or scaly family members</Text>
-          <Button title="Add Demo Data" onPress={() => { seedDemoData(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} variant="ghost" style={{ marginTop: 12 }} />
         </View>
       )}
       <View style={styles.petGrid}>
@@ -423,7 +429,7 @@ export function PetTrackerScreen({ navigation }: any) {
         <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
-        <Text style={styles.headerTitle}>Pet Tracker</Text>
+        <Text style={styles.headerTitle}>{t('petTracker.title')}</Text>
         <Pressable onPress={() => setShowAddPetModal(true)} style={styles.addBtn}>
           <Ionicons name="add" size={26} color="#fff" />
         </Pressable>
@@ -447,7 +453,7 @@ export function PetTrackerScreen({ navigation }: any) {
       <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
-      <Text style={styles.headerTitle}>Pet Tracker</Text>
+      <Text style={styles.headerTitle}>{t('petTracker.title')}</Text>
       <Text style={{ fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.9)' }}>{pets.length} pets</Text>
     </LinearGradient>
   );

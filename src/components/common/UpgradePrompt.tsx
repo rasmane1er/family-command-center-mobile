@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, StyleSheet, Modal, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../theme/ThemeContext';
 import { SubscriptionTier, TIER_LABELS, TIER_PRICES } from '../../hooks/useSubscription';
 import { usePurchases } from '../../hooks/usePurchases';
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export function UpgradePrompt({ visible, onClose, featureName, requiredTier, description }: Props) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { showPaywall } = usePurchases();
   const [isLoading, setIsLoading] = useState(false);
@@ -37,8 +39,10 @@ export function UpgradePrompt({ visible, onClose, featureName, requiredTier, des
         <View style={[styles.card, { backgroundColor: colors.card }]}>
           <LinearGradient colors={['#0F2952', '#1E4A8A']} style={styles.cardHeader}>
             <Ionicons name="star" size={32} color="#FFD700" />
-            <Text style={styles.headerTitle}>Upgrade Required</Text>
-            <Text style={styles.headerSub}>{featureName} is a {TIER_LABELS[requiredTier]} feature</Text>
+            <Text style={styles.headerTitle}>{t('screens.shared.upgradeRequiredTitle')}</Text>
+            <Text style={styles.headerSub}>
+              {t('screens.shared.upgradeRequiredSub', { featureName, tier: TIER_LABELS[requiredTier] })}
+            </Text>
           </LinearGradient>
           <View style={styles.body}>
             {description && <Text style={[styles.desc, { color: colors.textSecondary }]}>{description}</Text>}
@@ -52,12 +56,14 @@ export function UpgradePrompt({ visible, onClose, featureName, requiredTier, des
                 {isLoading ? (
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
-                  <Text style={styles.upgradeBtnText}>Upgrade to {TIER_LABELS[requiredTier]}</Text>
+                  <Text style={styles.upgradeBtnText}>
+                    {t('screens.shared.upgradeToTier', { tier: TIER_LABELS[requiredTier] })}
+                  </Text>
                 )}
               </LinearGradient>
             </Pressable>
             <Pressable onPress={onClose} style={styles.cancelBtn} disabled={isLoading}>
-              <Text style={[styles.cancelText, { color: colors.textSecondary }]}>Maybe later</Text>
+              <Text style={[styles.cancelText, { color: colors.textSecondary }]}>{t('screens.shared.maybeLater')}</Text>
             </Pressable>
           </View>
         </View>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions, Modal, TextInput, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,6 +14,7 @@ import { Button } from '../../components/common/Button';
 import { useAutomationStore } from '../../store/useAutomationStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import type { TimeBlockCategory } from '../../types';
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 
@@ -44,6 +45,7 @@ function blockHours(b: { startTime: string; endTime: string }): number {
 }
 
 export function TimeEconomyScreen({ navigation }: any) {
+  const { t } = useTranslation('ops');
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<'overview' | 'schedule' | 'insights'>('overview');
   const [selectedMember, setSelectedMember] = useState<string | null>(null);
@@ -53,10 +55,14 @@ export function TimeEconomyScreen({ navigation }: any) {
   const [newStart, setNewStart] = useState('09:00');
   const [newEnd, setNewEnd] = useState('10:00');
   const [newMemberIdModal, setNewMemberIdModal] = useState('');
-  const { timeBlocks, addTimeBlock, seedDemoData } = useAutomationStore();
+  const { timeBlocks, hasSeeded, addTimeBlock, seedDemoData } = useAutomationStore();
   const members = useFamilyStore((s) => s.members);
+  const familyId = useFamilyStore((s) => s.family?.id) ?? 'demo-family';
 
-  if (timeBlocks.length === 0) seedDemoData();
+  useEffect(() => {
+    if (!hasSeeded) seedDemoData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const activeMemberId = selectedMember ?? members[0]?.id ?? '';
 
@@ -102,11 +108,11 @@ export function TimeEconomyScreen({ navigation }: any) {
   });
 
   const handleAddBlock = () => {
-    if (!newTitle.trim()) { Alert.alert('Required', 'Please enter a title.'); return; }
+    if (!newTitle.trim()) { Alert.alert(t('common.validationTitle'), t('common.validationMsg')); return; }
     const memberId = newMemberIdModal || members[0]?.id || '';
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     addTimeBlock({
-      familyId: 'demo-family',
+      familyId,
       memberId,
       category: newCategory,
       title: newTitle.trim(),
@@ -136,7 +142,7 @@ export function TimeEconomyScreen({ navigation }: any) {
         <Pressable onPress={() => navigation.goBack()} style={styles.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
-        <Text style={styles.headerTitle}>Time Economy</Text>
+        <Text style={styles.headerTitle}>{t('timeEconomy.title')}</Text>
         <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setNewMemberIdModal(activeMemberId); setShowModal(true); }} style={styles.addBtn}>
           <Ionicons name="add" size={24} color="#fff" />
         </Pressable>
@@ -165,7 +171,7 @@ export function TimeEconomyScreen({ navigation }: any) {
       <Pressable onPress={() => navigation.goBack()} style={styles.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
-      <Text style={styles.headerTitle}>Time Economy</Text>
+      <Text style={styles.headerTitle}>{t('timeEconomy.title')}</Text>
       <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', fontWeight: '600' }}>168h</Text>
     </LinearGradient>
   );

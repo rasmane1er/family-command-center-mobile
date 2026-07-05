@@ -11,11 +11,12 @@ export function getAllowedNotificationTypes(role?: string): NotificationType[] {
       'ai',
       'emergency',
       'achievement',
+      'school',
     ];
   }
 
   if (role === 'child') {
-    return ['task', 'achievement', 'family', 'ai', 'emergency'];
+    return ['task', 'achievement', 'family', 'ai', 'emergency', 'school'];
   }
 
   if (role === 'grandparent') {
@@ -31,5 +32,6 @@ export function getAllowedNotificationTypes(role?: string): NotificationType[] {
     'ai',
     'emergency',
     'achievement',
+    'school',
   ];
 }

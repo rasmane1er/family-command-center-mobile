@@ -13,6 +13,7 @@ import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
 import { useAutomationStore } from '../../store/useAutomationStore';
 import type { DeviceType } from '../../types';
+import { useTranslation } from 'react-i18next';
 
 const DEVICE_ICONS: Record<DeviceType, string> = {
   light: 'bulb',
@@ -37,6 +38,7 @@ const DEVICE_COLORS: Record<DeviceType, string> = {
 };
 
 export function SmartHomeScreen({ navigation }: any) {
+  const { t } = useTranslation('ops');
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<'devices' | 'scenes'>('devices');
   const [selectedRoom, setSelectedRoom] = useState('All');
@@ -84,7 +86,7 @@ export function SmartHomeScreen({ navigation }: any) {
         <Pressable onPress={() => navigation.goBack()} style={styles.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
-        <Text style={styles.headerTitle}>Smart Home</Text>
+        <Text style={styles.headerTitle}>{t('smartHome.title')}</Text>
         <Pressable onPress={() => navigation.navigate('ConnectHueBridge')} style={styles.addBtn}>
           <Ionicons name="add" size={24} color="#fff" />
         </Pressable>
@@ -129,7 +131,7 @@ export function SmartHomeScreen({ navigation }: any) {
       <Pressable onPress={() => navigation.goBack()} style={styles.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
-      <Text style={styles.headerTitle}>Smart Home</Text>
+      <Text style={styles.headerTitle}>{t('smartHome.title')}</Text>
       <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', fontWeight: '600' }}>{activeDevices} active</Text>
     </LinearGradient>
   );
@@ -171,7 +173,12 @@ export function SmartHomeScreen({ navigation }: any) {
 
             {devices.length > 0 && activeTab === 'devices' && (
               <>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={{ marginBottom: 16, maxHeight: 40 }}
+                  contentContainerStyle={{ alignItems: 'center' }}
+                >
                   {rooms.map((room) => (
                     <Pressable
                       key={room}

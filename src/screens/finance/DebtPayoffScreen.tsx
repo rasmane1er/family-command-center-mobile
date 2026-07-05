@@ -34,6 +34,7 @@ import type {
   PaymentDetection,
   PayoffSummary,
 } from '../../types';
+import { useTranslation } from 'react-i18next';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -302,6 +303,7 @@ function AddEditModal({ visible, initial, detectedDebts, familyId, onClose, onSa
 type Tab = 'debts' | 'strategy' | 'timeline';
 
 export function DebtPayoffScreen({ navigation }: { navigation: { goBack: () => void; navigate: (s: string, p?: Record<string, unknown>) => void } }) {
+  const { t } = useTranslation('finance');
   const insets = useSafeAreaInsets();
   const { debts, addDebt, updateDebt, removeDebt, recordPayment } = useFinanceStore();
 
@@ -762,7 +764,7 @@ export function DebtPayoffScreen({ navigation }: { navigation: { goBack: () => v
           <Pressable onPress={() => navigation.goBack()} hitSlop={10}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </Pressable>
-          <Text style={styles.headerTitle}>Debt Payoff</Text>
+          <Text style={styles.headerTitle}>{t('debt.title')}</Text>
           <Pressable onPress={handleSyncBalances} disabled={syncingBalances} hitSlop={10}>
             {syncingBalances
               ? <ActivityIndicator color="#fff" size="small" />

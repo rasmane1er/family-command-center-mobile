@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { usePermissions } from '../../hooks/usePermissions';
@@ -22,9 +23,10 @@ export function RoleGuard({
   allowChild = false,
   allowGrandparent = false,
   permission,
-  title = 'Access Restricted',
-  message = 'This section is not available for the active profile.',
+  title,
+  message,
 }: RoleGuardProps) {
+  const { t } = useTranslation();
   const members = useFamilyStore((s) => s.members);
   const activeMemberId = useFamilyStore((s) => s.activeMemberId);
   const perms = usePermissions();
@@ -55,8 +57,8 @@ export function RoleGuard({
   if (!allowed) {
     return (
       <View style={styles.deniedContainer}>
-        <Text style={styles.deniedTitle}>{title}</Text>
-        <Text style={styles.deniedText}>{message}</Text>
+        <Text style={styles.deniedTitle}>{title ?? t('screens.shared.accessRestrictedTitle')}</Text>
+        <Text style={styles.deniedText}>{message ?? t('screens.shared.accessRestrictedMsg')}</Text>
       </View>
     );
   }

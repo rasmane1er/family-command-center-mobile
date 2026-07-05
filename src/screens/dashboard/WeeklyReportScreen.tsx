@@ -16,12 +16,14 @@ import { useAIStore } from '../../store/useAIStore';
 import { useHabitsStore } from '../../store/useHabitsStore';
 import { useFinancialHealth } from '../../hooks/useFinancialHealth';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 
 export function WeeklyReportScreen({ navigation: navProp }: any) {
   const navHook = useNavigation<any>();
   const navigation = navProp ?? navHook;
+  const { t } = useTranslation('dashboard');
   const insets = useSafeAreaInsets();
   const [weekOffset, setWeekOffset] = useState(0);
 
@@ -81,7 +83,7 @@ export function WeeklyReportScreen({ navigation: navProp }: any) {
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>Weekly Family Report</Text>
+          <Text style={styles.headerTitle}>{t('dashboard.screens.weeklyReport.headerTitle')}</Text>
           <Text style={styles.headerSub}>
             {format(weekStart, 'MMM d')} – {format(weekEnd, 'MMM d, yyyy')}
           </Text>
@@ -98,19 +100,19 @@ export function WeeklyReportScreen({ navigation: navProp }: any) {
 
       <View style={styles.scoreHero}>
         <View style={styles.scoreCenter}>
-          <Text style={styles.scoreLabel}>FAMILY HEALTH SCORE</Text>
+          <Text style={styles.scoreLabel}>{t('weeklyReport.familyScore')}</Text>
           <Text style={styles.scoreValue}>{healthScore.overall}</Text>
           <View style={styles.scoreTrend}>
             <Ionicons name="arrow-up" size={14} color="#4EECD0" />
-            <Text style={styles.scoreTrendText}>+{Math.max(1, Math.round(healthScore.overall * 0.05))} pts</Text>
+            <Text style={styles.scoreTrendText}>{t('dashboard.screens.weeklyReport.scoreTrend', { points: Math.max(1, Math.round(healthScore.overall * 0.05)) })}</Text>
           </View>
         </View>
         <View style={styles.scoreStats}>
           {[
-            { label: 'Tasks Done', value: `${completedTasks}`, icon: 'checkmark-circle' },
-            { label: 'Pending', value: `${pendingTasks}`, icon: 'time' },
-            { label: 'Savings', value: `${Math.round(savingsRate * 100)}%`, icon: 'wallet' },
-            { label: 'Members', value: `${members.length}`, icon: 'people' },
+            { label: t('dashboard.screens.weeklyReport.scoreStatTasksDone'), value: `${completedTasks}`, icon: 'checkmark-circle' },
+            { label: t('dashboard.screens.weeklyReport.scoreStatPending'), value: `${pendingTasks}`, icon: 'time' },
+            { label: t('dashboard.screens.weeklyReport.scoreStatSavings'), value: `${Math.round(savingsRate * 100)}%`, icon: 'wallet' },
+            { label: t('dashboard.screens.weeklyReport.scoreStatMembers'), value: `${members.length}`, icon: 'people' },
           ].map((s) => (
             <View key={s.label} style={styles.scoreStat}>
               <Ionicons name={s.icon as any} size={14} color="rgba(255,255,255,0.6)" />
@@ -182,7 +184,7 @@ export function WeeklyReportScreen({ navigation: navProp }: any) {
         {/* Financial Alerts */}
         {(overdueBills > 0 || dueSoonBills > 0) && (
           <>
-            <Text style={styles.sectionTitle}>Financial Alerts</Text>
+            <Text style={styles.sectionTitle}>{t('weeklyReport.financialAlerts')}</Text>
             {overdueBills > 0 && (
               <Card variant="elevated" style={{ ...styles.alertCard, borderLeftColor: colors.danger }}>
                 <View style={styles.alertRow}>
@@ -217,7 +219,7 @@ export function WeeklyReportScreen({ navigation: navProp }: any) {
         )}
 
         {/* Budget Breakdown from real store */}
-        <Text style={styles.sectionTitle}>Budget This Period</Text>
+        <Text style={styles.sectionTitle}>{t('weeklyReport.budgetPeriod')}</Text>
         <Card variant="elevated" style={styles.budgetCard}>
           {budgetHighlights.map((b) => (
             <View key={b.id} style={styles.budgetRow}>
@@ -296,7 +298,7 @@ export function WeeklyReportScreen({ navigation: navProp }: any) {
         {/* AI Insights from real store */}
         {aiRecs.length > 0 && (
           <>
-            <Text style={styles.sectionTitle}>AI Recommendations</Text>
+            <Text style={styles.sectionTitle}>{t('weeklyReport.aiRecommendations')}</Text>
             {aiRecs.map((insight, i) => (
               <Card key={insight.id} variant="elevated" style={styles.recCard}>
                 <View style={styles.recRow}>

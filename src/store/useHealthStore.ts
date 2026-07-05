@@ -9,6 +9,7 @@ interface HealthState {
   records: HealthRecord[];
   goals: HealthGoal[];
   appointments: HealthAppointment[];
+  hasSeeded: boolean;
   addRecord: (r: Omit<HealthRecord, 'id'>) => void;
   addGoal: (g: Omit<HealthGoal, 'id'>) => void;
   updateGoalProgress: (id: string, current: number) => void;
@@ -25,6 +26,7 @@ export const useHealthStore = create<HealthState>()(
       records: [],
       goals: [],
       appointments: [],
+      hasSeeded: false,
 
       addRecord: (r) =>
         set((s) => ({ records: [{ ...r, id: generateId() }, ...s.records] })),
@@ -96,7 +98,7 @@ export const useHealthStore = create<HealthState>()(
           { id: 'apt4', memberId: 'member-3', type: 'Optometry', date: addDays(44), doctor: 'Dr. Park', icon: 'eye', color: '#8E44AD' },
         ];
 
-        set({ records, goals, appointments });
+        set({ records, goals, appointments, hasSeeded: true });
       },
     }),
     {

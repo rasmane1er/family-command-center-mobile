@@ -1,4 +1,7 @@
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import { mmkvStorage } from '../storage/mmkvStorage';
+import * as homeMaintenanceService from '../services/homeMaintenanceService';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -26,24 +29,48 @@ export interface MaintenanceTask {
 
 interface HomeMaintenanceState {
   tasks: MaintenanceTask[];
-  addTask: (t: Omit<MaintenanceTask, 'id' | 'createdAt'>) => void;
+  isLoaded: boolean;
+  addTask: (t: Omit<MaintenanceTask, 'id' | 'createdAt'>) => Promise<void>;
   updateTask: (id: string, updates: Partial<MaintenanceTask>) => void;
   deleteTask: (id: string) => void;
   completeTask: (id: string) => void;
-  seedDemoData: () => void;
+  fetchFromServer: () => Promise<void>;
 }
 
-export const useHomeMaintenanceStore = create<HomeMaintenanceState>((set) => ({
+export const useHomeMaintenanceStore = create<HomeMaintenanceState>()(
+  persist(
+    (set, get) => ({
   tasks: [],
-  addTask: (t) => set((s) => ({ tasks: [{ ...t, id: generateId(), createdAt: new Date().toISOString() }, ...s.tasks] })),
-  updateTask: (id, updates) => set((s) => ({ tasks: s.tasks.map((t) => t.id === id ? { ...t, ...updates } : t) })),
-  deleteTask: (id) => set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) })),
-  completeTask: (id) => set((s) => {
-    const task = s.tasks.find((t) => t.id === id);
-    if (!task) return s;
-    const updatedTasks = s.tasks.map((t) =>
-      t.id === id ? { ...t, status: 'done' as MaintenanceStatus, completedDate: new Date().toISOString() } : t
-    );
+  isLoaded: false,
+  addTask: async (t) => {
+    const newTask = { ...t, id: generateId(), createdAt: new Date().toISOString() };
+    set((s) => ({ tasks: [newTask, ...s.tasks] }));
+    try {
+      await homeMaintenanceService.createTask(newTask);
+    } catch {
+      set((s) => ({ tasks: s.tasks.filter((x) => x.id !== newTask.id) }));
+    }
+  },
+  updateTask: (id, updates) => {
+    set((s) => ({ tasks: s.tasks.map((t) => t.id === id ? { ...t, ...updates } : t) }));
+    homeMaintenanceService.updateTaskRemote(id, updates).catch(() => {});
+  },
+  deleteTask: (id) => {
+    const prev = get().tasks;
+    set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) }));
+    homeMaintenanceService.deleteTaskRemote(id).catch(() => { set({ tasks: prev }); });
+  },
+  completeTask: (id) => {
+    const task = get().tasks.find((t) => t.id === id);
+    if (!task) return;
+    const completedDate = new Date().toISOString();
+    set((s) => ({
+      tasks: s.tasks.map((t) =>
+        t.id === id ? { ...t, status: 'done' as MaintenanceStatus, completedDate } : t
+      ),
+    }));
+    homeMaintenanceService.updateTaskRemote(id, { status: 'done', completedDate }).catch(() => {});
+
     // Auto-spawn next occurrence for recurring tasks
     if (task.isRecurring && task.recurringInterval && task.dueDate) {
       const intervalDays: Record<string, number> = {
@@ -55,30 +82,31 @@ export const useHomeMaintenanceStore = create<HomeMaintenanceState>((set) => ({
       const days = intervalDays[task.recurringInterval] ?? 90;
       const nextDate = new Date(task.dueDate);
       nextDate.setDate(nextDate.getDate() + days);
+      const nextDueDate = nextDate.toISOString().split('T')[0];
       const nextTask: MaintenanceTask = {
         ...task,
         id: generateId(),
         status: 'pending',
         completedDate: undefined,
-        dueDate: nextDate.toISOString().split('T')[0],
+        dueDate: nextDueDate,
         createdAt: new Date().toISOString(),
       };
-      return { tasks: [...updatedTasks, nextTask] };
+      set((s) => ({ tasks: [...s.tasks, nextTask] }));
+      homeMaintenanceService.completeRecurringRemote(id, { id: nextTask.id, dueDate: nextDueDate }).catch(() => {});
     }
-    return { tasks: updatedTasks };
-  }),
-  seedDemoData: () => {
-    const now = new Date().toISOString();
-    const soon = new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0];
-    const nextMonth = new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0];
-    const tasks: MaintenanceTask[] = [
-      { id: 'mt1', familyId: 'demo-family', title: 'Replace HVAC filter', category: 'hvac', priority: 'high', status: 'pending', dueDate: soon, estimatedCost: 25, isRecurring: true, recurringInterval: 'quarterly', notes: 'Use 16x25x1 MERV 11 filter', createdAt: now },
-      { id: 'mt2', familyId: 'demo-family', title: 'Fix leaking kitchen faucet', category: 'plumbing', priority: 'urgent', status: 'in_progress', estimatedCost: 200, contractor: "Bob's Plumbing (555-0199)", isRecurring: false, createdAt: now },
-      { id: 'mt3', familyId: 'demo-family', title: 'Paint living room', category: 'painting', priority: 'low', status: 'scheduled', dueDate: nextMonth, estimatedCost: 350, notes: 'Sherwin-Williams Repose Gray SW 7015', isRecurring: false, createdAt: now },
-      { id: 'mt4', familyId: 'demo-family', title: 'Gutter cleaning', category: 'exterior', priority: 'medium', status: 'pending', dueDate: nextMonth, estimatedCost: 150, isRecurring: true, recurringInterval: 'biannual', createdAt: now },
-      { id: 'mt5', familyId: 'demo-family', title: 'Lawn fertilization', category: 'lawn', priority: 'low', status: 'done', completedDate: now, actualCost: 80, isRecurring: true, recurringInterval: 'quarterly', createdAt: now },
-      { id: 'mt6', familyId: 'demo-family', title: 'Test smoke detectors', category: 'electrical', priority: 'high', status: 'pending', isRecurring: true, recurringInterval: 'biannual', estimatedCost: 0, createdAt: now },
-    ];
-    set({ tasks });
   },
-}));
+  fetchFromServer: async () => {
+    try {
+      const { tasks } = await homeMaintenanceService.fetchTasks();
+      set({ tasks, isLoaded: true });
+    } catch {
+      set({ isLoaded: true });
+    }
+  },
+    }),
+    {
+      name: 'family-command-center-home-maintenance',
+      storage: createJSONStorage(() => mmkvStorage),
+    }
+  )
+);

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { colors } from '../../theme/colors';
 import { useSubscription } from '../../hooks/useSubscription';
@@ -20,6 +21,7 @@ interface SubscriptionGateProps {
 // — same "static denial screen, wrap the screen in the navigator" pattern,
 // gating on plan instead of family role.
 export function SubscriptionGate({ children, requiredTier, featureName, description }: SubscriptionGateProps) {
+  const { t } = useTranslation();
   const { isAtLeast } = useSubscription();
   const [showUpgrade, setShowUpgrade] = useState(false);
 
@@ -34,12 +36,12 @@ export function SubscriptionGate({ children, requiredTier, featureName, descript
       </LinearGradient>
       <Text style={styles.title}>{featureName}</Text>
       <Text style={styles.subtitle}>
-        {description ?? `This feature is included in the ${TIER_LABELS[requiredTier]} plan.`}
+        {description ?? t('screens.shared.upgradeIncludedInPlan', { tier: TIER_LABELS[requiredTier] })}
       </Text>
       <Pressable style={styles.upgradeBtn} onPress={() => setShowUpgrade(true)}>
         <LinearGradient colors={['#F5A623', '#FF8C42']} style={styles.upgradeBtnGradient}>
           <Text style={styles.upgradeBtnText}>
-            Upgrade to {TIER_LABELS[requiredTier]} — {TIER_PRICES[requiredTier]}
+            {t('screens.shared.upgradeToTierWithPrice', { tier: TIER_LABELS[requiredTier], price: TIER_PRICES[requiredTier] })}
           </Text>
         </LinearGradient>
       </Pressable>

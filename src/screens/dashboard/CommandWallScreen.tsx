@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../../theme/colors';
 import { Card } from '../../components/common/Card';
 import { ProgressBar } from '../../components/common/ProgressBar';
@@ -29,6 +30,7 @@ const WIDGET_COLORS = {
 };
 
 export function CommandWallScreen({ navigation }: any) {
+  const { t } = useTranslation('dashboard');
   const insets = useSafeAreaInsets();
   const family = useFamilyStore((s) => s.family);
   const members = useFamilyStore((s) => s.members);
@@ -46,9 +48,11 @@ const isGrandparent = activeMember?.role === 'grandparent';
   const bills = useFinanceStore((s) => s.bills);
   const insights = useAIStore((s) => s.insights);
   const { rules, listings, conflicts } = useAutomationStore();
-  const { reputationScores, seedDemoData: seedWealth } = useWealthStore();
+  const { reputationScores, isLoaded: isWealthLoaded, fetchFromServer: fetchWealth } = useWealthStore();
 
-  if (reputationScores.length === 0) seedWealth();
+  useEffect(() => {
+    if (!isWealthLoaded) fetchWealth();
+  }, [isWealthLoaded, fetchWealth]);
 
   const today = new Date();
   const visibleTasks =
@@ -83,7 +87,7 @@ const todayEvents = visibleEvents.filter(
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>Command Wall</Text>
+          <Text style={styles.headerTitle}>{t('dashboard.screens.commandWall.headerTitle')}</Text>
           <Text style={styles.headerSub}>{format(today, 'EEEE, MMMM d')}</Text>
         </View>
         <View style={styles.aiDot}>
@@ -110,7 +114,7 @@ const todayEvents = visibleEvents.filter(
       <Pressable onPress={() => navigation.goBack()} style={{ marginRight: 12 }}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
-      <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800', flex: 1 }}>Command Wall</Text>
+      <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800', flex: 1 }}>{t('dashboard.screens.commandWall.headerTitle')}</Text>
       <View style={styles.aiDot}>
         <Ionicons name="sparkles" size={14} color={colors.secondary} />
       </View>
@@ -148,27 +152,27 @@ const todayEvents = visibleEvents.filter(
           <View style={styles.qStat}>
             <Ionicons name="checkbox-outline" size={18} color={WIDGET_COLORS.tasks} />
             <Text style={[styles.qStatVal, { color: WIDGET_COLORS.tasks }]}>{pendingTasks}</Text>
-            <Text style={styles.qStatLabel}>Tasks</Text>
+            <Text style={styles.qStatLabel}>{t('dashboard.screens.commandWall.statTasks')}</Text>
           </View>
           <View style={styles.qStat}>
             <Ionicons name="calendar-outline" size={18} color={WIDGET_COLORS.calendar} />
             <Text style={[styles.qStatVal, { color: WIDGET_COLORS.calendar }]}>{todayEvents.length}</Text>
-            <Text style={styles.qStatLabel}>Events</Text>
+            <Text style={styles.qStatLabel}>{t('dashboard.screens.commandWall.statEvents')}</Text>
           </View>
           <View style={styles.qStat}>
             <Ionicons name="receipt-outline" size={18} color={WIDGET_COLORS.finance} />
             <Text style={[styles.qStatVal, { color: WIDGET_COLORS.finance }]}>{upcomingBills}</Text>
-            <Text style={styles.qStatLabel}>Bills</Text>
+            <Text style={styles.qStatLabel}>{t('dashboard.screens.commandWall.statBills')}</Text>
           </View>
           <View style={styles.qStat}>
             <Ionicons name="flash-outline" size={18} color={WIDGET_COLORS.ai} />
             <Text style={[styles.qStatVal, { color: WIDGET_COLORS.ai }]}>{activeAutomations}</Text>
-            <Text style={styles.qStatLabel}>Automations</Text>
+            <Text style={styles.qStatLabel}>{t('dashboard.screens.commandWall.statAutomations')}</Text>
           </View>
         </View>
 
         {/* Member Status Grid */}
-        <Text style={styles.sectionTitle}>Family Status</Text>
+        <Text style={styles.sectionTitle}>{t('dashboard.screens.commandWall.familyStatus')}</Text>
         <View style={styles.memberGrid}>
           {members.map((m) => {
             const score = reputationScores.find((s) => s.memberId === m.id);
@@ -180,7 +184,7 @@ const todayEvents = visibleEvents.filter(
                 <Text style={styles.memberName}>{m.name.split(' ')[0]}</Text>
                 <View style={[styles.statusDot, { backgroundColor: m.status === 'active' ? colors.success : m.status === 'work' || m.status === 'school' ? colors.warning : colors.textMuted }]} />
                 <Text style={styles.memberStatus}>{m.status}</Text>
-                {score && <Text style={styles.memberScore}>{score.overall} pts</Text>}
+                {score && <Text style={styles.memberScore}>{t('dashboard.screens.commandWall.memberPoints', { score: score.overall })}</Text>}
               </Card>
             );
           })}
@@ -189,7 +193,7 @@ const todayEvents = visibleEvents.filter(
         {/* Today's Events */}
         {todayEvents.length > 0 && (
           <>
-            <Text style={styles.sectionTitle}>Today's Schedule</Text>
+            <Text style={styles.sectionTitle}>{t('dashboard.screens.commandWall.todaysSchedule')}</Text>
             {todayEvents.slice(0, 3).map((e) => (
               <Card key={e.id} style={styles.eventCard} variant="elevated">
                 <View style={[styles.eventDot, { backgroundColor: e.color }]} />
@@ -203,37 +207,37 @@ const todayEvents = visibleEvents.filter(
         )}
 
         {/* Widgets Grid */}
-        <Text style={styles.sectionTitle}>Live Widgets</Text>
+        <Text style={styles.sectionTitle}>{t('dashboard.screens.commandWall.liveWidgets')}</Text>
         <View style={styles.widgetsGrid}>
           <Pressable onPress={() => navigation.navigate('Finance')} style={[styles.widget, styles.widgetLarge, { backgroundColor: WIDGET_COLORS.finance + '12' }]}>
             <Ionicons name="trending-up" size={22} color={WIDGET_COLORS.finance} />
             <Text style={[styles.widgetVal, { color: WIDGET_COLORS.finance }]}>${netWorth > 0 ? (netWorth / 1000).toFixed(0) + 'k' : '0'}</Text>
-            <Text style={styles.widgetLabel}>Net Worth</Text>
+            <Text style={styles.widgetLabel}>{t('dashboard.screens.commandWall.netWorth')}</Text>
           </Pressable>
 
           <View style={[styles.widget, { backgroundColor: WIDGET_COLORS.tasks + '12' }]}>
             <Ionicons name="warning" size={20} color={overdueTasks > 0 ? colors.danger : WIDGET_COLORS.tasks} />
             <Text style={[styles.widgetVal, { color: overdueTasks > 0 ? colors.danger : WIDGET_COLORS.tasks }]}>{overdueTasks}</Text>
-            <Text style={styles.widgetLabel}>Overdue</Text>
+            <Text style={styles.widgetLabel}>{t('dashboard.screens.commandWall.overdue')}</Text>
           </View>
 
           <View style={[styles.widget, { backgroundColor: '#E74C3C12' }]}>
             <Ionicons name="alert-circle" size={20} color={openConflicts > 0 ? colors.danger : colors.success} />
             <Text style={[styles.widgetVal, { color: openConflicts > 0 ? colors.danger : colors.success }]}>{openConflicts}</Text>
-            <Text style={styles.widgetLabel}>Conflicts</Text>
+            <Text style={styles.widgetLabel}>{t('dashboard.screens.commandWall.conflicts')}</Text>
           </View>
 
           <View style={[styles.widget, { backgroundColor: colors.secondary + '12' }]}>
             <Ionicons name="storefront" size={20} color={colors.secondary} />
             <Text style={[styles.widgetVal, { color: colors.secondary }]}>{availableListings}</Text>
-            <Text style={styles.widgetLabel}>Marketplace</Text>
+            <Text style={styles.widgetLabel}>{t('dashboard.screens.commandWall.marketplace')}</Text>
           </View>
         </View>
 
         {/* Top Performer */}
         {topMemberInfo && topMember && (
           <>
-            <Text style={styles.sectionTitle}>This Week's Star</Text>
+            <Text style={styles.sectionTitle}>{t('dashboard.screens.commandWall.thisWeeksStar')}</Text>
             <Card style={styles.starCard} variant="elevated">
               <LinearGradient colors={[colors.secondary + '20', colors.secondary + '05']} style={styles.starGradient}>
                 <Text style={styles.starEmoji}>🏆</Text>
@@ -242,7 +246,7 @@ const todayEvents = visibleEvents.filter(
                 </View>
                 <View>
                   <Text style={styles.starName}>{topMemberInfo.name}</Text>
-                  <Text style={styles.starScore}>{topMember.overall} reputation score • {topMember.weeklyPoints} points this week</Text>
+                  <Text style={styles.starScore}>{t('dashboard.screens.commandWall.starScore', { score: topMember.overall, points: topMember.weeklyPoints })}</Text>
                 </View>
               </LinearGradient>
             </Card>
@@ -250,29 +254,29 @@ const todayEvents = visibleEvents.filter(
         )}
 
         {/* Quick Actions */}
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
+        <Text style={styles.sectionTitle}>{t('dashboard.screens.commandWall.quickActions')}</Text>
         <View style={styles.actionsGrid}>
           {
   (
     isChild
       ? [
-          { label: 'My Homework', icon: 'school', color: '#2980B9', tab: 'Family', screen: 'HomeworkTracker' },
-          { label: 'My Rewards', icon: 'trophy', color: '#F5A623', tab: 'Family', screen: 'Rewards' },
-          { label: 'My Tasks', icon: 'checkbox', color: '#27AE60', tab: 'Family', screen: 'Tasks' },
-          { label: 'Family Board', icon: 'people', color: '#8E44AD', tab: 'Family', screen: 'FamilyBoard' },
+          { label: t('dashboard.screens.commandWall.actionMyHomework'), icon: 'school', color: '#2980B9', tab: 'Family', screen: 'HomeworkTracker' },
+          { label: t('dashboard.screens.commandWall.actionMyRewards'), icon: 'trophy', color: '#F5A623', tab: 'Family', screen: 'Rewards' },
+          { label: t('dashboard.screens.commandWall.actionMyTasks'), icon: 'checkbox', color: '#27AE60', tab: 'Family', screen: 'Tasks' },
+          { label: t('dashboard.screens.commandWall.actionFamilyBoard'), icon: 'people', color: '#8E44AD', tab: 'Family', screen: 'FamilyBoard' },
         ]
       : isGrandparent
         ? [
-            { label: 'Birthdays', icon: 'gift', color: '#E91E63', tab: 'Family', screen: 'BirthdayTracker' },
-            { label: 'Timeline', icon: 'time', color: '#2980B9', tab: 'Family', screen: 'FamilyTimeline' },
-            { label: 'Family Board', icon: 'people', color: '#8E44AD', tab: 'Family', screen: 'FamilyBoard' },
-            { label: 'Events', icon: 'calendar', color: '#27AE60', tab: 'Family', screen: 'Calendar' },
+            { label: t('dashboard.screens.commandWall.actionBirthdays'), icon: 'gift', color: '#E91E63', tab: 'Family', screen: 'BirthdayTracker' },
+            { label: t('dashboard.screens.commandWall.actionTimeline'), icon: 'time', color: '#2980B9', tab: 'Family', screen: 'FamilyTimeline' },
+            { label: t('dashboard.screens.commandWall.actionFamilyBoard'), icon: 'people', color: '#8E44AD', tab: 'Family', screen: 'FamilyBoard' },
+            { label: t('dashboard.screens.commandWall.actionEvents'), icon: 'calendar', color: '#27AE60', tab: 'Family', screen: 'Calendar' },
           ]
         : [
-            { label: 'AI Assistant', icon: 'sparkles', color: '#8E44AD', tab: 'AI Assistant', screen: null },
-            { label: 'Add Task', icon: 'add-circle', color: '#2980B9', tab: 'Family', screen: null },
-            { label: 'View Budget', icon: 'wallet', color: '#27AE60', tab: 'Finance', screen: null },
-            { label: 'Emergency', icon: 'alert-circle', color: '#E74C3C', tab: 'Operations', screen: 'Emergency' },
+            { label: t('dashboard.screens.commandWall.actionAIAssistant'), icon: 'sparkles', color: '#8E44AD', tab: 'AI Assistant', screen: null },
+            { label: t('dashboard.screens.commandWall.actionAddTask'), icon: 'add-circle', color: '#2980B9', tab: 'Family', screen: null },
+            { label: t('dashboard.screens.commandWall.actionViewBudget'), icon: 'wallet', color: '#27AE60', tab: 'Finance', screen: null },
+            { label: t('dashboard.screens.commandWall.actionEmergency'), icon: 'alert-circle', color: '#E74C3C', tab: 'Operations', screen: 'Emergency' },
           ]
          ).map((action, i) => (
             <Pressable key={i} onPress={() =>

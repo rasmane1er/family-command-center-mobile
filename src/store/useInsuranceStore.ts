@@ -1,4 +1,7 @@
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import { mmkvStorage } from '../storage/mmkvStorage';
+import * as insuranceService from '../services/insuranceService';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -27,18 +30,37 @@ export interface InsurancePolicy {
 
 interface InsuranceState {
   policies: InsurancePolicy[];
-  addPolicy: (p: Omit<InsurancePolicy, 'id' | 'createdAt'>) => void;
+  isLoaded: boolean;
+  addPolicy: (p: Omit<InsurancePolicy, 'id' | 'createdAt'>) => Promise<void>;
   updatePolicy: (id: string, updates: Partial<InsurancePolicy>) => void;
   deletePolicy: (id: string) => void;
   getTotalMonthlyPremium: () => number;
-  seedDemoData: () => void;
+  fetchFromServer: () => Promise<void>;
 }
 
-export const useInsuranceStore = create<InsuranceState>((set, get) => ({
+export const useInsuranceStore = create<InsuranceState>()(
+  persist(
+    (set, get) => ({
   policies: [],
-  addPolicy: (p) => set((s) => ({ policies: [{ ...p, id: generateId(), createdAt: new Date().toISOString() }, ...s.policies] })),
-  updatePolicy: (id, updates) => set((s) => ({ policies: s.policies.map((p) => p.id === id ? { ...p, ...updates } : p) })),
-  deletePolicy: (id) => set((s) => ({ policies: s.policies.filter((p) => p.id !== id) })),
+  isLoaded: false,
+  addPolicy: async (p) => {
+    const policy = { ...p, id: generateId(), createdAt: new Date().toISOString() };
+    set((s) => ({ policies: [policy, ...s.policies] }));
+    try {
+      await insuranceService.createPolicy(policy);
+    } catch {
+      set((s) => ({ policies: s.policies.filter((x) => x.id !== policy.id) }));
+    }
+  },
+  updatePolicy: (id, updates) => {
+    set((s) => ({ policies: s.policies.map((p) => p.id === id ? { ...p, ...updates } : p) }));
+    insuranceService.updatePolicyRemote(id, updates).catch(() => {});
+  },
+  deletePolicy: (id) => {
+    const prev = get().policies;
+    set((s) => ({ policies: s.policies.filter((p) => p.id !== id) }));
+    insuranceService.deletePolicyRemote(id).catch(() => { set({ policies: prev }); });
+  },
   getTotalMonthlyPremium: () => {
     const { policies } = get();
     return policies.filter((p) => p.isActive).reduce((sum, p) => {
@@ -46,17 +68,18 @@ export const useInsuranceStore = create<InsuranceState>((set, get) => ({
       return sum + monthly;
     }, 0);
   },
-  seedDemoData: () => {
-    const now = new Date().toISOString();
-    const renewal1 = new Date(Date.now() + 45 * 86400000).toISOString().split('T')[0];
-    const renewal2 = new Date(Date.now() + 180 * 86400000).toISOString().split('T')[0];
-    const policies: InsurancePolicy[] = [
-      { id: 'ins1', familyId: 'demo-family', type: 'health', provider: 'Blue Cross Blue Shield', policyNumber: 'BCBS-2024-4892', premium: 780, premiumFrequency: 'monthly', deductible: 2000, coverageAmount: 1000000, renewalDate: renewal1, membersInsured: ['member-1','member-2','member-3','member-4'], agentName: 'Jane Wilson', agentPhone: '555-0143', color: '#2980B9', isActive: true, createdAt: now },
-      { id: 'ins2', familyId: 'demo-family', type: 'auto', provider: 'State Farm', policyNumber: 'SF-AUTO-78234', premium: 245, premiumFrequency: 'monthly', deductible: 500, renewalDate: renewal2, membersInsured: ['member-1','member-2'], agentName: 'Tom Richards', agentPhone: '555-0166', color: '#E74C3C', isActive: true, createdAt: now },
-      { id: 'ins3', familyId: 'demo-family', type: 'home', provider: 'Allstate', policyNumber: 'ALL-HO-55512', premium: 1450, premiumFrequency: 'annual', deductible: 1000, coverageAmount: 450000, renewalDate: renewal2, membersInsured: ['member-1','member-2'], color: '#27AE60', isActive: true, createdAt: now },
-      { id: 'ins4', familyId: 'demo-family', type: 'life', provider: 'Northwestern Mutual', policyNumber: 'NM-LIFE-33401', premium: 125, premiumFrequency: 'monthly', coverageAmount: 500000, renewalDate: renewal2, membersInsured: ['member-1'], agentName: 'Sarah Chen', agentPhone: '555-0177', color: '#8E44AD', isActive: true, createdAt: now },
-      { id: 'ins5', familyId: 'demo-family', type: 'dental', provider: 'Delta Dental', policyNumber: 'DD-2024-9901', premium: 85, premiumFrequency: 'monthly', deductible: 50, renewalDate: renewal1, membersInsured: ['member-1','member-2','member-3','member-4'], color: '#16A085', isActive: true, createdAt: now },
-    ];
-    set({ policies });
+  fetchFromServer: async () => {
+    try {
+      const { policies } = await insuranceService.fetchPolicies();
+      set({ policies, isLoaded: true });
+    } catch {
+      set({ isLoaded: true });
+    }
   },
-}));
+    }),
+    {
+      name: 'family-command-center-insurance',
+      storage: createJSONStorage(() => mmkvStorage),
+    }
+  )
+);

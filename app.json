@@ -9,12 +9,17 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
+      "image": "./src/assets/icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0F2952"
+      "backgroundColor": "#FFFFFF"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.familycommandcenter.app",
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "config": {
+        "googleMapsApiKey": "AIzaSyCXf-KFuYmIAvNOGmQ3WgnmvCbqjMQoMYs"
+      },
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsLocalNetworking": true
@@ -27,7 +32,22 @@
         "foregroundImage": "./src/assets/icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.familycommandcenter.app"
+      "package": "com.familycommandcenter.app",
+      "googleServicesFile": "./google-services.json",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyDhNVbWQT2Sd4EE6rfJFUuf9-cn3f7PQh4"
+        }
+      },
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_CONTACTS",
+        "android.permission.WRITE_CONTACTS",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
+      ]
     },
     "web": {
       "favicon": "./src/assets/favicon.png"
@@ -63,18 +83,38 @@
       "expo-secure-store",
       "expo-web-browser",
       [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow Family Command Center to use Face ID to unlock the app."
+        }
+      ],
+      [
+        "@react-native-voice/voice",
+        {
+          "microphonePermission": "Allow Family Command Center to access the microphone for voice input to the AI Assistant.",
+          "speechRecognitionPermission": "Allow Family Command Center to recognize your speech for voice input to the AI Assistant."
+        }
+      ],
+      [
         "expo-build-properties",
         {
           "android": {
             "usesCleartextTraffic": true
+          },
+          "ios": {
+            "useFrameworks": "static"
           }
         }
-      ]
+      ],
+      "expo-localization",
+      "@react-native-firebase/app",
+      "@react-native-firebase/messaging"
     ],
     "extra": {
       "eas": {
-        "projectId": "family-command-center"
+        "projectId": "82729187-433d-4547-b35a-8b432f5a1a20"
       }
-    }
+    },
+    "owner": "grasmane"
   }
 }

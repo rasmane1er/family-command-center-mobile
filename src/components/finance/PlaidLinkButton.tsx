@@ -2,13 +2,15 @@ import React, { useState, useCallback } from 'react';
 import { Text, Pressable, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import {
-  createPlaidLinkSession,
+  create,
+  open,
   type LinkSuccess,
   type LinkExit,
 } from 'react-native-plaid-link-sdk';
 import { createLinkToken, exchangeToken } from '../../services/plaidService';
 import { colors } from '../../theme/colors';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   onSuccess?: (institutionName: string) => void;
@@ -24,6 +26,7 @@ const APP_SCHEME = 'familycommandcenter';
 const OAUTH_DEEP_LINK = `${APP_SCHEME}://plaid-oauth`;
 
 export function PlaidLinkButton({ onSuccess, onExit, style }: Props) {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
 
   const handleSuccess = useCallback(
@@ -33,26 +36,29 @@ export function PlaidLinkButton({ onSuccess, onExit, style }: Props) {
         const institutionName = success.metadata.institution?.name;
         const exchanged = await exchangeToken(success.publicToken, institutionId, institutionName);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        Alert.alert('Connected!', `${exchanged.institutionName} is now linked. Syncing transactions…`);
+        Alert.alert(
+          t('screens.shared.plaidConnectedTitle'),
+          t('screens.shared.plaidConnectedMsg', { institutionName: exchanged.institutionName })
+        );
         onSuccess?.(exchanged.institutionName);
       } catch (err: any) {
-        Alert.alert('Error', err.message || 'Failed to finalize bank connection.');
+        Alert.alert(t('screens.shared.plaidErrorTitle'), err.message || t('screens.shared.plaidFinalizeErrorMsg'));
       } finally {
         setLoading(false);
       }
     },
-    [onSuccess],
+    [onSuccess, t],
   );
 
   const handleExit = useCallback(
     (exit: LinkExit) => {
       setLoading(false);
       if (exit.error) {
-        Alert.alert('Connection Failed', exit.error.displayMessage || exit.error.errorMessage);
+        Alert.alert(t('screens.shared.plaidConnectionFailedTitle'), exit.error.displayMessage || exit.error.errorMessage);
       }
       onExit?.();
     },
-    [onExit],
+    [onExit, t],
   );
 
   const handlePress = useCallback(async () => {
@@ -60,18 +66,13 @@ export function PlaidLinkButton({ onSuccess, onExit, style }: Props) {
     setLoading(true);
     try {
       const token = await createLinkToken(OAUTH_DEEP_LINK);
-      const session = await createPlaidLinkSession({
-        token,
-        onSuccess: handleSuccess,
-        onExit: handleExit,
-        onEvent: () => {},
-      });
-      await session.open();
+      create({ token });
+      open({ onSuccess: handleSuccess, onExit: handleExit });
     } catch (err: any) {
       setLoading(false);
-      Alert.alert('Error', err.message || 'Failed to open bank connection.');
+      Alert.alert(t('screens.shared.plaidErrorTitle'), err.message || t('screens.shared.plaidOpenErrorMsg'));
     }
-  }, [loading, handleSuccess, handleExit]);
+  }, [loading, handleSuccess, handleExit, t]);
 
   return (
     <Pressable onPress={handlePress} disabled={loading} style={[styles.btn, style]}>
@@ -81,7 +82,7 @@ export function PlaidLinkButton({ onSuccess, onExit, style }: Props) {
         <Ionicons name="link-outline" size={18} color="#fff" />
       )}
       <Text style={styles.btnText}>
-        {loading ? 'Connecting…' : 'Connect Bank Account'}
+        {loading ? t('screens.shared.plaidConnecting') : t('screens.shared.plaidConnectBank')}
       </Text>
     </Pressable>
   );

@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Modal,
-  TextInput, Alert,
+  TextInput, Alert, ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,6 +16,8 @@ import { Badge } from '../../components/common/Badge';
 import { ProgressBar } from '../../components/common/ProgressBar';
 import { useFamilyGoalsStore, FamilyGoal, GoalCategory, GoalMilestone } from '../../store/useFamilyGoalsStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { useAuthStore } from '../../store/useAuthStore';
+import { useTranslation } from 'react-i18next';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -43,27 +45,23 @@ const CATEGORY_ICONS: Record<GoalCategory, string> = {
   other: 'ellipsis-horizontal',
 };
 
-const CATEGORY_LABELS: Record<GoalCategory, string> = {
-  health: 'Health',
-  finance: 'Finance',
-  education: 'Education',
-  travel: 'Travel',
-  home: 'Home',
-  relationships: 'Relationships',
-  career: 'Career',
-  fun: 'Fun',
-  other: 'Other',
-};
-
 const ALL_CATEGORIES: GoalCategory[] = ['health', 'finance', 'education', 'travel', 'home', 'relationships', 'career', 'fun', 'other'];
 const PRIORITY_COLORS = { low: colors.textMuted, medium: colors.warning, high: colors.danger };
 const COLOR_PALETTE = ['#E74C3C', '#27AE60', '#F5A623', '#2980B9', '#8E44AD', '#E91E63', '#16A085', '#95A5A6'];
 const ICON_OPTIONS = ['airplane', 'car', 'school', 'fitness', 'home', 'heart'];
 
 export function FamilyGoalsScreen({ navigation }: any) {
+  const { t } = useTranslation('family');
   const insets = useSafeAreaInsets();
-  const { goals, addGoal, updateGoal, deleteGoal, toggleMilestone, completeGoal, seedDemoData } = useFamilyGoalsStore();
+  const { goals, addGoal, updateGoal, deleteGoal, toggleMilestone, completeGoal, fetchFromServer, isLoaded } = useFamilyGoalsStore();
   const members = useFamilyStore((s) => s.members);
+  const family = useFamilyStore((s) => s.family);
+  const familyId = useAuthStore((s) => s.familyId);
+
+  useEffect(() => {
+    if (!isLoaded) fetchFromServer(familyId ?? '');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [activeTab, setActiveTab] = useState<'Active' | 'Completed' | 'By Category'>('Active');
   const [selectedCategory, setSelectedCategory] = useState<GoalCategory | 'all'>('all');
@@ -100,12 +98,12 @@ export function FamilyGoalsScreen({ navigation }: any) {
 
   const handleAdd = () => {
     if (!newTitle.trim()) {
-      Alert.alert('Missing Info', 'Please enter a goal title.');
+      Alert.alert(t('family.screens.familyGoals.missingInfoTitle'), t('family.screens.familyGoals.missingInfoMessage'));
       return;
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     addGoal({
-      familyId: 'demo-family',
+      familyId: family?.id ?? 'demo-family',
       title: newTitle.trim(),
       description: newDescription || undefined,
       category: newCategory,
@@ -137,30 +135,43 @@ export function FamilyGoalsScreen({ navigation }: any) {
   };
 
   const handleDelete = (id: string, title: string) => {
-    Alert.alert(`Delete "${title}"?`, 'This cannot be undone.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete', style: 'destructive', onPress: () => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          deleteGoal(id);
-        }
-      },
-    ]);
+    Alert.alert(
+      t('family.screens.familyGoals.deleteGoalTitle', { title }),
+      t('family.screens.familyGoals.deleteGoalMessage'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.delete'), style: 'destructive', onPress: () => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            deleteGoal(id);
+          }
+        },
+      ]
+    );
   };
 
   const handleComplete = (goal: FamilyGoal) => {
-    Alert.alert('Complete Goal?', `Mark "${goal.title}" as completed?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Complete!', onPress: () => {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          completeGoal(goal.id);
-        }
-      },
-    ]);
+    Alert.alert(
+      t('family.screens.familyGoals.completeGoalTitle'),
+      t('family.screens.familyGoals.completeGoalMessage', { title: goal.title }),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('family.screens.familyGoals.completeGoalButton'), onPress: () => {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            completeGoal(goal.id);
+          }
+        },
+      ]
+    );
   };
 
   const tabs = ['Active', 'Completed', 'By Category'] as const;
+  const tabLabelKeys: Record<(typeof tabs)[number], string> = {
+    Active: 'tabActive',
+    Completed: 'tabCompleted',
+    'By Category': 'tabByCategory',
+  };
 
   const categoryGoals = selectedCategory === 'all'
     ? activeGoals
@@ -187,13 +198,13 @@ export function FamilyGoalsScreen({ navigation }: any) {
             </View>
             <View style={styles.goalMetaRow}>
               <Badge
-                label={CATEGORY_LABELS[goal.category]}
+                label={t(`family.screens.familyGoals.categoryLabels.${goal.category}`)}
                 variant="info"
                 size="sm"
               />
               <View style={[styles.priorityDot, { backgroundColor: PRIORITY_COLORS[goal.priority] }]} />
               {goal.targetDate && (
-                <Text style={styles.targetDate}>Target: {goal.targetDate}</Text>
+                <Text style={styles.targetDate}>{t('family.screens.familyGoals.targetDate', { date: goal.targetDate })}</Text>
               )}
             </View>
           </View>
@@ -223,7 +234,7 @@ export function FamilyGoalsScreen({ navigation }: any) {
         {/* Milestones */}
         {goal.milestones.length > 0 && (
           <View style={styles.milestonesSection}>
-            <Text style={styles.milestonesTitle}>Milestones</Text>
+            <Text style={styles.milestonesTitle}>{t('family.screens.familyGoals.milestonesTitle')}</Text>
             {goal.milestones.map((milestone) => (
               <Pressable
                 key={milestone.id}
@@ -248,7 +259,7 @@ export function FamilyGoalsScreen({ navigation }: any) {
         {goal.progress >= 100 && !goal.isCompleted && showComplete && (
           <Pressable onPress={() => handleComplete(goal)} style={[styles.completeBtn, { backgroundColor: goal.color }]}>
             <Ionicons name="trophy" size={16} color="#fff" />
-            <Text style={styles.completeBtnText}>Mark as Complete!</Text>
+            <Text style={styles.completeBtnText}>{t('family.screens.familyGoals.markComplete')}</Text>
           </Pressable>
         )}
 
@@ -256,7 +267,7 @@ export function FamilyGoalsScreen({ navigation }: any) {
         {goal.isCompleted && (
           <View style={styles.completedBadgeRow}>
             <Ionicons name="checkmark-circle" size={20} color={colors.success} />
-            <Text style={styles.completedBadgeText}>Goal Completed!</Text>
+            <Text style={styles.completedBadgeText}>{t('family.screens.familyGoals.goalCompleted')}</Text>
           </View>
         )}
       </Card>
@@ -269,7 +280,7 @@ export function FamilyGoalsScreen({ navigation }: any) {
         <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
-        <Text style={styles.headerTitle}>Family Goals</Text>
+        <Text style={styles.headerTitle}>{t('goals.title')}</Text>
         <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
           <Ionicons name="add" size={26} color="#fff" />
         </Pressable>
@@ -278,22 +289,22 @@ export function FamilyGoalsScreen({ navigation }: any) {
       <View style={styles.summaryRow}>
         <View style={styles.summaryCard}>
           <Text style={styles.summaryValue}>{activeGoals.length}</Text>
-          <Text style={styles.summaryLabel}>Active</Text>
+          <Text style={styles.summaryLabel}>{t('family.screens.familyGoals.summaryActive')}</Text>
         </View>
         <View style={styles.summaryCard}>
           <Text style={styles.summaryValue}>{avgProgress}%</Text>
-          <Text style={styles.summaryLabel}>Avg Progress</Text>
+          <Text style={styles.summaryLabel}>{t('family.screens.familyGoals.summaryAvgProgress')}</Text>
         </View>
         <View style={styles.summaryCard}>
           <Text style={styles.summaryValue}>{completedGoals.length}</Text>
-          <Text style={styles.summaryLabel}>Completed</Text>
+          <Text style={styles.summaryLabel}>{t('family.screens.familyGoals.summaryCompleted')}</Text>
         </View>
       </View>
 
       <View style={styles.tabRow}>
         {tabs.map((tab) => (
           <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
-            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>{tab}</Text>
+            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>{t(`family.screens.familyGoals.${tabLabelKeys[tab]}`)}</Text>
           </Pressable>
         ))}
       </View>
@@ -305,12 +316,21 @@ export function FamilyGoalsScreen({ navigation }: any) {
       <Pressable onPress={() => navigation.goBack()}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
-      <Text style={styles.headerTitle}>Family Goals</Text>
+      <Text style={styles.headerTitle}>{t('goals.title')}</Text>
       <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
         <Ionicons name="add" size={26} color="#fff" />
       </Pressable>
     </LinearGradient>
   );
+
+  if (!isLoaded) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <StatusBar style="light" />
+        <ActivityIndicator size="large" color="#283593" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -325,21 +345,14 @@ export function FamilyGoalsScreen({ navigation }: any) {
         scrollEventThrottle={scrollEventThrottle}
         contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
       >
-        {goals.length === 0 && (
-          <Pressable onPress={seedDemoData} style={styles.seedBtn}>
-            <Ionicons name="flask" size={18} color="#283593" />
-            <Text style={[styles.seedBtnText, { color: '#283593' }]}>Load Demo Data</Text>
-          </Pressable>
-        )}
-
         {/* ACTIVE TAB */}
         {activeTab === 'Active' && (
           <>
             {activeGoals.length === 0 ? (
               <View style={styles.emptyState}>
                 <Ionicons name="flag-outline" size={52} color={colors.textMuted} />
-                <Text style={styles.emptyTitle}>No active goals</Text>
-                <Text style={styles.emptyDesc}>Tap + to add your first family goal.</Text>
+                <Text style={styles.emptyTitle}>{t('family.screens.familyGoals.noActiveGoalsTitle')}</Text>
+                <Text style={styles.emptyDesc}>{t('family.screens.familyGoals.noActiveGoalsDesc')}</Text>
               </View>
             ) : (
               [...activeGoals]
@@ -358,8 +371,8 @@ export function FamilyGoalsScreen({ navigation }: any) {
             {completedGoals.length === 0 ? (
               <View style={styles.emptyState}>
                 <Ionicons name="trophy-outline" size={52} color={colors.textMuted} />
-                <Text style={styles.emptyTitle}>No completed goals yet</Text>
-                <Text style={styles.emptyDesc}>Keep working — your completed goals will appear here!</Text>
+                <Text style={styles.emptyTitle}>{t('family.screens.familyGoals.noCompletedGoalsTitle')}</Text>
+                <Text style={styles.emptyDesc}>{t('family.screens.familyGoals.noCompletedGoalsDesc')}</Text>
               </View>
             ) : (
               completedGoals.map((goal) => (
@@ -395,7 +408,7 @@ export function FamilyGoalsScreen({ navigation }: any) {
                   >
                     <Ionicons name={CATEGORY_ICONS[cat] as any} size={14} color={selectedCategory === cat ? '#fff' : CATEGORY_COLORS[cat]} />
                     <Text style={[styles.categoryChipText, selectedCategory === cat && { color: '#fff' }]}>
-                      {CATEGORY_LABELS[cat]} ({count})
+                      {t(`family.screens.familyGoals.categoryLabels.${cat}`)} ({count})
                     </Text>
                   </Pressable>
                 );
@@ -405,7 +418,7 @@ export function FamilyGoalsScreen({ navigation }: any) {
             {categoryGoals.length === 0 ? (
               <View style={styles.emptyState}>
                 <Ionicons name="flag-outline" size={52} color={colors.textMuted} />
-                <Text style={styles.emptyTitle}>No goals in this category</Text>
+                <Text style={styles.emptyTitle}>{t('family.screens.familyGoals.noCategoryGoalsTitle')}</Text>
               </View>
             ) : (
               categoryGoals.map((goal) => <GoalCard key={goal.id} goal={goal} showComplete />)
@@ -420,33 +433,33 @@ export function FamilyGoalsScreen({ navigation }: any) {
       <Modal visible={showAddModal} animationType="slide" presentationStyle="pageSheet">
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Add Family Goal</Text>
+            <Text style={styles.modalTitle}>{t('family.screens.familyGoals.addFamilyGoal')}</Text>
             <Pressable onPress={() => { resetModal(); setShowAddModal(false); }}>
               <Ionicons name="close" size={24} color={colors.text} />
             </Pressable>
           </View>
 
           <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
-            <Text style={styles.modalLabel}>Title *</Text>
+            <Text style={styles.modalLabel}>{t('family.screens.familyGoals.titleLabel')}</Text>
             <TextInput
               style={styles.modalInput}
               value={newTitle}
               onChangeText={setNewTitle}
-              placeholder="e.g. Hawaii Family Vacation"
+              placeholder={t('family.screens.familyGoals.titlePlaceholder')}
               placeholderTextColor={colors.textMuted}
             />
 
-            <Text style={styles.modalLabel}>Description</Text>
+            <Text style={styles.modalLabel}>{t('family.screens.familyGoals.descriptionLabel')}</Text>
             <TextInput
               style={[styles.modalInput, { height: 70 }]}
               value={newDescription}
               onChangeText={setNewDescription}
-              placeholder="What does success look like?"
+              placeholder={t('family.screens.familyGoals.descriptionPlaceholder')}
               placeholderTextColor={colors.textMuted}
               multiline
             />
 
-            <Text style={styles.modalLabel}>Category</Text>
+            <Text style={styles.modalLabel}>{t('family.screens.familyGoals.categoryLabel')}</Text>
             <View style={styles.categoryGrid}>
               {ALL_CATEGORIES.map((cat) => (
                 <Pressable
@@ -456,13 +469,13 @@ export function FamilyGoalsScreen({ navigation }: any) {
                 >
                   <Ionicons name={CATEGORY_ICONS[cat] as any} size={20} color={newCategory === cat ? CATEGORY_COLORS[cat] : colors.textMuted} />
                   <Text style={[styles.categoryGridLabel, newCategory === cat && { color: CATEGORY_COLORS[cat] }]}>
-                    {CATEGORY_LABELS[cat]}
+                    {t(`family.screens.familyGoals.categoryLabels.${cat}`)}
                   </Text>
                 </Pressable>
               ))}
             </View>
 
-            <Text style={styles.modalLabel}>Icon</Text>
+            <Text style={styles.modalLabel}>{t('family.screens.familyGoals.iconLabel')}</Text>
             <View style={styles.iconRow}>
               {ICON_OPTIONS.map((icon) => (
                 <Pressable
@@ -475,7 +488,7 @@ export function FamilyGoalsScreen({ navigation }: any) {
               ))}
             </View>
 
-            <Text style={styles.modalLabel}>Color</Text>
+            <Text style={styles.modalLabel}>{t('family.screens.familyGoals.colorLabel')}</Text>
             <View style={styles.colorPicker}>
               {COLOR_PALETTE.map((c) => (
                 <Pressable
@@ -486,16 +499,16 @@ export function FamilyGoalsScreen({ navigation }: any) {
               ))}
             </View>
 
-            <Text style={styles.modalLabel}>Target Date (YYYY-MM-DD)</Text>
+            <Text style={styles.modalLabel}>{t('family.screens.familyGoals.targetDateLabel')}</Text>
             <TextInput
               style={styles.modalInput}
               value={newTargetDate}
               onChangeText={setNewTargetDate}
-              placeholder="2025-12-31"
+              placeholder={t('family.screens.familyGoals.targetDatePlaceholder')}
               placeholderTextColor={colors.textMuted}
             />
 
-            <Text style={styles.modalLabel}>Priority</Text>
+            <Text style={styles.modalLabel}>{t('family.screens.familyGoals.priorityLabel')}</Text>
             <View style={styles.chipRow}>
               {(['low', 'medium', 'high'] as const).map((p) => (
                 <Pressable
@@ -504,13 +517,13 @@ export function FamilyGoalsScreen({ navigation }: any) {
                   style={[styles.chip, newPriority === p && { backgroundColor: PRIORITY_COLORS[p], borderColor: PRIORITY_COLORS[p] }]}
                 >
                   <Text style={[styles.chipText, newPriority === p && { color: '#fff' }]}>
-                    {p.charAt(0).toUpperCase() + p.slice(1)}
+                    {t(`family.screens.familyGoals.priorityLabels.${p}`)}
                   </Text>
                 </Pressable>
               ))}
             </View>
 
-            <Text style={styles.modalLabel}>Members Involved</Text>
+            <Text style={styles.modalLabel}>{t('family.screens.familyGoals.membersInvolvedLabel')}</Text>
             {members.map((m) => (
               <Pressable key={m.id} onPress={() => toggleMember(m.id)} style={styles.memberRow}>
                 <View style={[styles.memberAvatar, { backgroundColor: m.avatarColor }]}>
@@ -523,13 +536,13 @@ export function FamilyGoalsScreen({ navigation }: any) {
               </Pressable>
             ))}
 
-            <Text style={styles.modalLabel}>Milestones</Text>
+            <Text style={styles.modalLabel}>{t('family.screens.familyGoals.milestonesLabel')}</Text>
             <View style={styles.milestoneInputRow}>
               <TextInput
                 style={[styles.modalInput, { flex: 1, marginBottom: 0 }]}
                 value={milestoneInput}
                 onChangeText={setMilestoneInput}
-                placeholder="Add a milestone..."
+                placeholder={t('family.screens.familyGoals.milestonePlaceholder')}
                 placeholderTextColor={colors.textMuted}
                 onSubmitEditing={addMilestone}
               />
@@ -552,7 +565,7 @@ export function FamilyGoalsScreen({ navigation }: any) {
               style={[styles.submitBtn, { backgroundColor: newColor }, !newTitle.trim() && styles.submitBtnDisabled]}
             >
               <Ionicons name="flag" size={18} color="#fff" />
-              <Text style={styles.submitBtnText}>Add Goal</Text>
+              <Text style={styles.submitBtnText}>{t('family.screens.familyGoals.addGoalButton')}</Text>
             </Pressable>
 
             <View style={{ height: 40 }} />
@@ -580,7 +593,7 @@ const styles = StyleSheet.create({
   tabText: { fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.6)' },
   tabTextActive: { color: '#fff' },
   content: { padding: 16 },
-  seedBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.card, borderRadius: 12, padding: 14, marginBottom: 16, ...shadows.sm },
+  seedBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.card, borderRadius: 12, padding: 14, marginBottom: 16,marginTop: 16, ...shadows.sm },
   seedBtnText: { fontSize: 14, fontWeight: '600' },
   emptyState: { alignItems: 'center', paddingVertical: 60 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginTop: 14 },

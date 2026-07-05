@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Modal,
   TextInput,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,25 +22,27 @@ import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { useBucketListStore, BucketCategory, BucketItem } from '../../store/useBucketListStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
+import { useTranslation } from 'react-i18next';
 
-const CATEGORY_CONFIG: Record<BucketCategory, { color: string; icon: string; label: string }> = {
-  travel:      { color: '#2980B9', icon: 'airplane',             label: 'Travel' },
-  experience:  { color: '#E91E63', icon: 'star',                 label: 'Experience' },
-  achievement: { color: '#F5A623', icon: 'trophy',               label: 'Achievement' },
-  learn:       { color: '#27AE60', icon: 'school',               label: 'Learn' },
-  give:        { color: '#E74C3C', icon: 'heart',                label: 'Give' },
-  adventure:   { color: '#E67E22', icon: 'compass',              label: 'Adventure' },
-  food:        { color: '#8E44AD', icon: 'restaurant',           label: 'Food' },
-  other:       { color: '#7F8C8D', icon: 'ellipsis-horizontal',  label: 'Other' },
+const CATEGORY_CONFIG: Record<BucketCategory, { color: string; icon: string; labelKey: string }> = {
+  travel:      { color: '#2980B9', icon: 'airplane',             labelKey: 'family.screens.bucketList.categoryTravel' },
+  experience:  { color: '#E91E63', icon: 'star',                 labelKey: 'family.screens.bucketList.categoryExperience' },
+  achievement: { color: '#F5A623', icon: 'trophy',               labelKey: 'family.screens.bucketList.categoryAchievement' },
+  learn:       { color: '#27AE60', icon: 'school',               labelKey: 'family.screens.bucketList.categoryLearn' },
+  give:        { color: '#E74C3C', icon: 'heart',                labelKey: 'family.screens.bucketList.categoryGive' },
+  adventure:   { color: '#E67E22', icon: 'compass',              labelKey: 'family.screens.bucketList.categoryAdventure' },
+  food:        { color: '#8E44AD', icon: 'restaurant',           labelKey: 'family.screens.bucketList.categoryFood' },
+  other:       { color: '#7F8C8D', icon: 'ellipsis-horizontal',  labelKey: 'family.screens.bucketList.categoryOther' },
 };
 
 const CATEGORIES = Object.keys(CATEGORY_CONFIG) as BucketCategory[];
 
 const PRIORITY_CONFIG = {
-  low:    { label: 'Low',    variant: 'neutral' as const,  color: colors.textMuted },
-  medium: { label: 'Medium', variant: 'warning' as const,  color: colors.warning },
-  high:   { label: 'High',   variant: 'danger' as const,   color: colors.danger },
+  low:    { labelKey: 'family.screens.bucketList.priorityLow',    variant: 'neutral' as const,  color: colors.textMuted },
+  medium: { labelKey: 'family.screens.bucketList.priorityMedium', variant: 'warning' as const,  color: colors.warning },
+  high:   { labelKey: 'family.screens.bucketList.priorityHigh',   variant: 'danger' as const,   color: colors.danger },
 };
 
 const EMOJI_OPTIONS = [
@@ -51,13 +54,15 @@ const EMOJI_OPTIONS = [
 type TabType = 'dreams' | 'completed' | 'category';
 
 export function BucketListScreen({ navigation }: any) {
+  const { t } = useTranslation('family');
   const insets = useSafeAreaInsets();
-  const { items, addItem, completeItem, deleteItem } = useBucketListStore();
+  const { items, addItem, completeItem, deleteItem, fetchFromServer, isLoaded } = useBucketListStore();
   const members = useFamilyStore((s) => s.members);
 
-  // Seed if empty
-  const { seedDemoData } = useBucketListStore();
-  if (items.length === 0) seedDemoData();
+  useEffect(() => {
+    fetchFromServer();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [activeTab, setActiveTab] = useState<TabType>('dreams');
   const [selectedCategory, setSelectedCategory] = useState<BucketCategory | null>(null);
@@ -89,16 +94,19 @@ export function BucketListScreen({ navigation }: any) {
 
   const handleComplete = (item: BucketItem) => {
     Alert.alert(
-      'Mark as Done! 🎉',
-      `Congratulations! Did your family really complete "${item.title}"?`,
+      t('family.screens.bucketList.markAsDone'),
+      t('family.screens.bucketList.markDoneMsg', { title: item.title }),
       [
-        { text: 'Not Yet', style: 'cancel' },
+        { text: t('family.screens.bucketList.notYet'), style: 'cancel' },
         {
-          text: 'Yes, we did it! 🎉',
+          text: t('family.screens.bucketList.yesWeDidIt'),
           onPress: () => {
             completeItem(item.id);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            Alert.alert('🎉 Amazing!', `"${item.title}" is now a family achievement!`);
+            Alert.alert(
+              t('family.screens.bucketList.amazingTitle'),
+              t('family.screens.bucketList.amazingMsg', { title: item.title })
+            );
           },
         },
       ]
@@ -106,26 +114,33 @@ export function BucketListScreen({ navigation }: any) {
   };
 
   const handleDelete = (id: string, title: string) => {
-    Alert.alert('Delete Item', `Remove "${title}" from the bucket list?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () => {
-          deleteItem(id);
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Alert.alert(
+      t('family.screens.bucketList.deleteItemTitle'),
+      t('family.screens.bucketList.deleteItemMsg', { title }),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.delete'),
+          style: 'destructive',
+          onPress: () => {
+            deleteItem(id);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          },
         },
-      },
-    ]);
+      ]
+    );
   };
 
   const handleAddItem = () => {
     if (!modalTitle.trim()) {
-      Alert.alert('Missing Info', 'Please enter a title for your bucket list item.');
+      Alert.alert(
+        t('family.screens.bucketList.missingInfoTitle'),
+        t('family.screens.bucketList.missingInfoMsg')
+      );
       return;
     }
     addItem({
-      familyId: 'demo-family',
+      familyId: useAuthStore.getState().familyId ?? 'family',
       title: modalTitle.trim(),
       description: modalDesc.trim() || undefined,
       category: modalCategory,
@@ -171,9 +186,9 @@ export function BucketListScreen({ navigation }: any) {
             <View style={styles.dreamBadgeRow}>
               <View style={[styles.categoryBadge, { backgroundColor: cc.color + '20' }]}>
                 <Ionicons name={cc.icon as any} size={11} color={cc.color} />
-                <Text style={[styles.categoryBadgeText, { color: cc.color }]}>{cc.label}</Text>
+                <Text style={[styles.categoryBadgeText, { color: cc.color }]}>{t(cc.labelKey)}</Text>
               </View>
-              <Badge label={pc.label} variant={pc.variant} size="sm" />
+              <Badge label={t(pc.labelKey)} variant={pc.variant} size="sm" />
             </View>
             <View style={styles.dreamMeta}>
               {item.targetYear ? (
@@ -217,7 +232,7 @@ export function BucketListScreen({ navigation }: any) {
               style={styles.completeBtnGradient}
             >
               <Ionicons name="checkmark" size={14} color="#fff" />
-              <Text style={styles.completeBtnText}>Mark as Done! 🎉</Text>
+              <Text style={styles.completeBtnText}>{t('family.screens.bucketList.markAsDone')}</Text>
             </LinearGradient>
           </Pressable>
           <Pressable
@@ -240,7 +255,7 @@ export function BucketListScreen({ navigation }: any) {
         <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
-        <Text style={styles.headerTitle}>Family Bucket List</Text>
+        <Text style={styles.headerTitle}>{t('family.screens.bucketList.headerTitle')}</Text>
         <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
           <Ionicons name="add" size={22} color="#fff" />
         </Pressable>
@@ -249,22 +264,22 @@ export function BucketListScreen({ navigation }: any) {
       <View style={styles.headerStats}>
         <View style={styles.headerStatBlock}>
           <Text style={styles.headerStatValue}>{items.length}</Text>
-          <Text style={styles.headerStatLabel}>Total Dreams</Text>
+          <Text style={styles.headerStatLabel}>{t('family.screens.bucketList.statTotalDreams')}</Text>
         </View>
         <View style={styles.headerStatDivider} />
         <View style={styles.headerStatBlock}>
           <Text style={styles.headerStatValue}>{completedItems.length}</Text>
-          <Text style={styles.headerStatLabel}>Completed</Text>
+          <Text style={styles.headerStatLabel}>{t('family.screens.bucketList.statCompleted')}</Text>
         </View>
         <View style={styles.headerStatDivider} />
         <View style={styles.headerStatBlock}>
           <Text style={styles.headerStatValue}>${(totalCost / 1000).toFixed(0)}K</Text>
-          <Text style={styles.headerStatLabel}>Est. Cost</Text>
+          <Text style={styles.headerStatLabel}>{t('family.screens.bucketList.statEstCost')}</Text>
         </View>
         <View style={styles.headerStatDivider} />
         <View style={styles.headerStatBlock}>
           <Text style={styles.headerStatValue}>{Math.round(completionPct * 100)}%</Text>
-          <Text style={styles.headerStatLabel}>Done</Text>
+          <Text style={styles.headerStatLabel}>{t('family.screens.bucketList.statDone')}</Text>
         </View>
       </View>
     </LinearGradient>
@@ -275,10 +290,19 @@ export function BucketListScreen({ navigation }: any) {
       <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
-      <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>Bucket List</Text>
-      <Text style={{ fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.8)' }}>{Math.round(completionPct * 100)}% done</Text>
+      <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>{t('family.screens.bucketList.headerTitle')}</Text>
+      <Text style={{ fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.8)' }}>{t('family.screens.bucketList.compactDonePct', { pct: Math.round(completionPct * 100) })}</Text>
     </LinearGradient>
   );
+
+  if (!isLoaded) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <StatusBar style="light" />
+        <ActivityIndicator size="large" color="#7B1FA2" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -296,7 +320,11 @@ export function BucketListScreen({ navigation }: any) {
                   style={[styles.tab, activeTab === tab && styles.tabActive]}
                 >
                   <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-                    {tab === 'dreams' ? 'Dream List' : tab === 'completed' ? 'Completed' : 'By Category'}
+                    {tab === 'dreams'
+                      ? t('family.screens.bucketList.tabDreamList')
+                      : tab === 'completed'
+                      ? t('family.screens.bucketList.tabCompleted')
+                      : t('family.screens.bucketList.tabByCategory')}
                   </Text>
                 </Pressable>
               ))}
@@ -315,8 +343,8 @@ export function BucketListScreen({ navigation }: any) {
             {dreamItems.length === 0 ? (
               <Card style={styles.emptyCard} variant="elevated">
                 <Text style={styles.emptyEmoji}>✨</Text>
-                <Text style={styles.emptyTitle}>No dreams yet!</Text>
-                <Text style={styles.emptyText}>Tap + to start your family bucket list.</Text>
+                <Text style={styles.emptyTitle}>{t('family.screens.bucketList.emptyDreamsTitle')}</Text>
+                <Text style={styles.emptyText}>{t('family.screens.bucketList.emptyDreamsDesc')}</Text>
               </Card>
             ) : (
               dreamItems.map(renderDreamCard)
@@ -330,8 +358,8 @@ export function BucketListScreen({ navigation }: any) {
             {completedItems.length === 0 ? (
               <Card style={styles.emptyCard} variant="elevated">
                 <Text style={styles.emptyEmoji}>🏆</Text>
-                <Text style={styles.emptyTitle}>Nothing completed yet</Text>
-                <Text style={styles.emptyText}>Keep dreaming and doing! Completed items will appear here.</Text>
+                <Text style={styles.emptyTitle}>{t('family.screens.bucketList.emptyCompletedTitle')}</Text>
+                <Text style={styles.emptyText}>{t('family.screens.bucketList.emptyCompletedDesc')}</Text>
               </Card>
             ) : (
               completedItems.map((item) => (
@@ -345,7 +373,7 @@ export function BucketListScreen({ navigation }: any) {
                       </View>
                       {item.completedDate ? (
                         <Text style={styles.completedDate}>
-                          Achieved {format(new Date(item.completedDate), 'MMMM d, yyyy')}
+                          {t('family.screens.bucketList.achievedOn', { date: format(new Date(item.completedDate), 'MMMM d, yyyy') })}
                         </Text>
                       ) : null}
                     </View>
@@ -382,7 +410,7 @@ export function BucketListScreen({ navigation }: any) {
                         <Ionicons name={cc.icon as any} size={20} color={cc.color} />
                       </View>
                       <Text style={[styles.categoryGridLabel, isSelected && { color: cc.color }]}>
-                        {cc.label}
+                        {t(cc.labelKey)}
                       </Text>
                       <Text style={styles.categoryGridCount}>{count}</Text>
                     </Pressable>
@@ -393,8 +421,8 @@ export function BucketListScreen({ navigation }: any) {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>
                 {selectedCategory
-                  ? `${CATEGORY_CONFIG[selectedCategory].label} (${categoryItems.length})`
-                  : `All Dreams (${dreamItems.length})`}
+                  ? `${t(CATEGORY_CONFIG[selectedCategory].labelKey)} (${categoryItems.length})`
+                  : `${t('family.screens.bucketList.allDreams')} (${dreamItems.length})`}
               </Text>
               {categoryItems.length === 0 ? (
                 <Card style={styles.emptyCard} variant="elevated">
@@ -415,7 +443,7 @@ export function BucketListScreen({ navigation }: any) {
       <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet">
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Add Dream</Text>
+            <Text style={styles.modalTitle}>{t('bucketList.addDream')}</Text>
             <Pressable onPress={() => setShowModal(false)}>
               <Ionicons name="close" size={24} color={colors.text} />
             </Pressable>
@@ -472,7 +500,7 @@ export function BucketListScreen({ navigation }: any) {
                     ]}
                   >
                     <Ionicons name={cc.icon as any} size={14} color={isActive ? cc.color : colors.textMuted} />
-                    <Text style={[styles.chipText, isActive && { color: cc.color }]}>{cc.label}</Text>
+                    <Text style={[styles.chipText, isActive && { color: cc.color }]}>{t(cc.labelKey)}</Text>
                   </Pressable>
                 );
               })}
@@ -512,7 +540,7 @@ export function BucketListScreen({ navigation }: any) {
                     ]}
                   >
                     <Text style={[styles.chipText, modalPriority === p && { color: pc.color }]}>
-                      {pc.label}
+                      {t(pc.labelKey)}
                     </Text>
                   </Pressable>
                 );

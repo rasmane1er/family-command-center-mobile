@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { ChatInputBar } from '../../components/ai/ChatInputBar';
 import { useVoiceInput } from '../../hooks/useVoiceInput';
 import { AIResetMenu } from '../../components/ai/AIResetMenu';
@@ -19,15 +19,28 @@ import { chatWithNegotiator, AIMessage } from '../../services/aiService';
 import { useFamilyContextString } from '../../utils/buildFamilyContext';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useTabBarInset } from '../../hooks/useTabBarInset';
+import { useTranslation } from 'react-i18next';
+import { SubscriptionGate } from '../../components/common/SubscriptionGate';
+
+const NS = 'ai.screens.negotiator';
 
 const NEGOTIATION_SCENARIOS = [
-  { id: 's1', title: 'Bill Negotiation Script', desc: 'Lower your cable, insurance or phone bill', icon: 'call', color: '#2980B9', savings: '$240/yr avg', category: 'bills' },
-  { id: 's2', title: 'Salary Negotiation', desc: 'Get the raise you deserve with data-backed scripts', icon: 'briefcase', color: '#27AE60', savings: '14% avg increase', category: 'career' },
-  { id: 's3', title: 'Car Price Negotiator', desc: 'Save thousands on your next vehicle purchase', icon: 'car', color: '#E74C3C', savings: '$3,200 avg savings', category: 'purchase' },
-  { id: 's4', title: 'Contractor Bids', desc: 'Get fair pricing on home repair projects', icon: 'construct', color: '#F5A623', savings: '22% avg savings', category: 'home' },
-  { id: 's5', title: 'Medical Bill Review', desc: 'Dispute and reduce medical bills legally', icon: 'medical', color: '#8E44AD', savings: '$890 avg reduction', category: 'health' },
-  { id: 's6', title: 'Subscription Audit', desc: 'Negotiate better rates or cancel smartly', icon: 'card', color: '#16A085', savings: '$127/mo avg', category: 'subscriptions' },
+  { id: 's1', titleKey: 'scenario1Title', descKey: 'scenario1Desc', icon: 'call', color: '#2980B9', savingsKey: 'scenario1Savings', category: 'bills' },
+  { id: 's2', titleKey: 'scenario2Title', descKey: 'scenario2Desc', icon: 'briefcase', color: '#27AE60', savingsKey: 'scenario2Savings', category: 'career' },
+  { id: 's3', titleKey: 'scenario3Title', descKey: 'scenario3Desc', icon: 'car', color: '#E74C3C', savingsKey: 'scenario3Savings', category: 'purchase' },
+  { id: 's4', titleKey: 'scenario4Title', descKey: 'scenario4Desc', icon: 'construct', color: '#F5A623', savingsKey: 'scenario4Savings', category: 'home' },
+  { id: 's5', titleKey: 'scenario5Title', descKey: 'scenario5Desc', icon: 'medical', color: '#8E44AD', savingsKey: 'scenario5Savings', category: 'health' },
+  { id: 's6', titleKey: 'scenario6Title', descKey: 'scenario6Desc', icon: 'card', color: '#16A085', savingsKey: 'scenario6Savings', category: 'subscriptions' },
 ];
+
+// Bill categories that are realistically negotiable (matches the "Bill
+// Negotiation Script" scenario above) — used to estimate real potential
+// savings from the family's actual bills/subscriptions, instead of a
+// hardcoded placeholder number.
+const NEGOTIABLE_BILL_CATEGORIES = ['Insurance', 'Internet', 'Phone', 'Utilities', 'Subscriptions'];
+// Conservative, commonly-cited average discount achievable by asking a
+// provider to match a competitor's rate or requesting a loyalty discount.
+const ESTIMATED_NEGOTIATION_RATE = 0.1;
 
 type BriefingPriority = 'critical' | 'high' | 'medium' | 'low';
 
@@ -40,6 +53,7 @@ interface BriefingItem {
 }
 
 function useChiefOfStaffBriefings(): BriefingItem[] {
+  const { t } = useTranslation('ai');
   const bills = useFinanceStore((s) => s.bills);
   const vehicles = useOperationsStore((s) => s.vehicles);
   const tasks = useFamilyStore((s) => s.tasks);
@@ -56,7 +70,7 @@ function useChiefOfStaffBriefings(): BriefingItem[] {
     briefings.push({
       time: new Date(alert.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
       priority: 'critical',
-      action: `SOS alert from ${alert.deviceId} — resolve immediately`,
+      action: t(`${NS}.sosAction`, { deviceId: alert.deviceId }),
       icon: 'warning',
       color: '#E74C3C',
     });
@@ -74,7 +88,7 @@ function useChiefOfStaffBriefings(): BriefingItem[] {
     briefings.push({
       time: new Date(bill.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
       priority,
-      action: `${bill.name} ($${bill.amount}) due in ${daysUntil} day${daysUntil !== 1 ? 's' : ''} — schedule payment`,
+      action: t(`${NS}.billDueAction`, { count: daysUntil, name: bill.name, amount: bill.amount }),
       icon: 'cash',
       color: priority === 'critical' ? '#E74C3C' : priority === 'high' ? '#E74C3C' : '#F5A623',
     });
@@ -85,9 +99,9 @@ function useChiefOfStaffBriefings(): BriefingItem[] {
   overdueBills.forEach((bill) => {
     const days = Math.floor((today.getTime() - new Date(bill.dueDate).getTime()) / 86400000);
     briefings.push({
-      time: 'Overdue',
+      time: t(`${NS}.overdueLabel`),
       priority: 'high',
-      action: `${bill.name} ($${bill.amount}) overdue by ${days} day${days !== 1 ? 's' : ''} — pay now`,
+      action: t(`${NS}.billOverdueAction`, { count: days, name: bill.name, amount: bill.amount }),
       icon: 'alert-circle',
       color: '#E74C3C',
     });
@@ -100,9 +114,11 @@ function useChiefOfStaffBriefings(): BriefingItem[] {
     const daysUntil = Math.ceil((next.getTime() - today.getTime()) / 86400000);
     if (next <= in7Days) {
       briefings.push({
-        time: daysUntil <= 0 ? 'Overdue' : `${daysUntil}d`,
+        time: daysUntil <= 0 ? t(`${NS}.overdueLabel`) : `${daysUntil}d`,
         priority: daysUntil <= 0 ? 'high' : 'medium',
-        action: `${v.year} ${v.make} ${v.model} service ${daysUntil <= 0 ? 'overdue' : `due in ${daysUntil} days`} — book service`,
+        action: daysUntil <= 0
+          ? t(`${NS}.vehicleOverdueAction`, { year: v.year, make: v.make, model: v.model })
+          : t(`${NS}.vehicleDueAction`, { year: v.year, make: v.make, model: v.model, days: daysUntil }),
         icon: 'car',
         color: daysUntil <= 0 ? '#E74C3C' : '#F5A623',
       });
@@ -111,14 +127,14 @@ function useChiefOfStaffBriefings(): BriefingItem[] {
 
   // Overdue tasks (max 3)
   const overdueTasks = tasks
-    .filter((t) => t.status !== 'completed' && t.dueDate && new Date(t.dueDate) < today)
+    .filter((task) => task.status !== 'completed' && task.dueDate && new Date(task.dueDate) < today)
     .slice(0, 3);
   overdueTasks.forEach((task) => {
     const days = Math.floor((today.getTime() - new Date(task.dueDate!).getTime()) / 86400000);
     briefings.push({
       time: `${days}d ago`,
       priority: task.priority === 'high' ? 'high' : 'medium',
-      action: `"${task.title}" overdue by ${days} day${days !== 1 ? 's' : ''} — complete now`,
+      action: t(`${NS}.taskOverdueAction`, { count: days, title: task.title }),
       icon: 'checkbox',
       color: task.priority === 'high' ? '#E74C3C' : '#F5A623',
     });
@@ -126,9 +142,9 @@ function useChiefOfStaffBriefings(): BriefingItem[] {
 
   if (briefings.length === 0) {
     briefings.push({
-      time: 'All clear',
+      time: t(`${NS}.allClearLabel`),
       priority: 'low',
-      action: 'No urgent items — your household is running smoothly!',
+      action: t(`${NS}.allClearAction`),
       icon: 'checkmark-circle',
       color: '#27AE60',
     });
@@ -138,6 +154,7 @@ function useChiefOfStaffBriefings(): BriefingItem[] {
 }
 
 export function NegotiatorScreen({ navigation }: any) {
+  const { t } = useTranslation('ai');
   const insets = useSafeAreaInsets();
   const tabBarInset = useTabBarInset();
   const [activeTab, setActiveTab] = useState<'chief' | 'negotiate' | 'conflicts' | 'chat'>('chief');
@@ -149,10 +166,29 @@ export function NegotiatorScreen({ navigation }: any) {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const chatScrollRef = useRef<ScrollView>(null);
   const { conflicts } = useAutomationStore();
+  const { bills, subscriptions } = useFinanceStore();
   const familyContext = useFamilyContextString();
 
   const CHIEF_OF_STAFF_BRIEFINGS = useChiefOfStaffBriefings();
   const openConflicts = conflicts.filter((c) => c.status !== 'resolved');
+
+  // Real estimate, not a hardcoded placeholder — 10% of what's actually
+  // being spent on negotiable bill categories and active subscriptions.
+  // This is genuinely an estimate (nothing here tracks realized outcomes
+  // of an actual negotiation), so it's labeled "Potential Savings" rather
+  // than implying money already saved.
+  const potentialSavings = useMemo(() => {
+    const billSavings = bills
+      .filter((b) => NEGOTIABLE_BILL_CATEGORIES.includes(b.category))
+      .reduce((sum, b) => sum + b.amount * ESTIMATED_NEGOTIATION_RATE, 0);
+    const subSavings = subscriptions
+      .filter((s) => s.isActive)
+      .reduce((sum, s) => {
+        const monthly = s.billingCycle === 'monthly' ? s.amount : s.billingCycle === 'quarterly' ? s.amount / 3 : s.amount / 12;
+        return sum + monthly * ESTIMATED_NEGOTIATION_RATE;
+      }, 0);
+    return Math.round(billSavings + subSavings);
+  }, [bills, subscriptions]);
 
   const handleChatSend = async (text?: string) => {
     const msg = text ?? chatInput.trim();
@@ -172,12 +208,15 @@ export function NegotiatorScreen({ navigation }: any) {
   };
 
   const handleNegotiate = (scenario: typeof NEGOTIATION_SCENARIOS[0]) => {
+    const title = t(`${NS}.${scenario.titleKey}`);
+    const desc = t(`${NS}.${scenario.descKey}`);
+    const savings = t(`${NS}.${scenario.savingsKey}`);
     Alert.alert(
-      scenario.title,
-      `The AI Negotiator will analyze your situation and generate a personalized negotiation script.\n\nAverage result: ${scenario.savings}\n\nThis feature connects to the AI Assistant for a live session.`,
+      title,
+      t(`${NS}.negotiateAlertBody`, { savings }),
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Start Session', onPress: () => { setActiveTab('chat'); handleChatSend(`Help me with: ${scenario.title}. ${scenario.desc}`); } },
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t(`${NS}.startSessionBtn`), onPress: () => { setActiveTab('chat'); handleChatSend(t(`${NS}.helpMeWithMsg`, { title, desc })); } },
       ]
     );
   };
@@ -189,33 +228,33 @@ export function NegotiatorScreen({ navigation }: any) {
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </Pressable>
           <View style={{ flex: 1 }}>
-            <Text style={styles.headerTitle}>AI Chief of Staff</Text>
-            <Text style={styles.headerSub}>Household Negotiator & Advisor</Text>
+            <Text style={styles.headerTitle}>{t('ai.negotiator')}</Text>
+            <Text style={styles.headerSub}>{t(`${NS}.headerSub`)}</Text>
           </View>
           <View style={styles.aiChip}>
             <Ionicons name="sparkles" size={14} color={colors.secondary} />
-            <Text style={styles.aiChipText}>AI Active</Text>
+            <Text style={styles.aiChipText}>{t(`${NS}.aiActive`)}</Text>
           </View>
           <AIResetMenu actions={[
-            { label: 'Clear Chat', description: 'Delete all chat messages', icon: 'chatbubble-outline', danger: true, onPress: () => setChatHistory([]) },
+            { label: t(`${NS}.resetClearChatLabel`), description: t(`${NS}.resetClearChatDesc`), icon: 'chatbubble-outline', danger: true, onPress: () => setChatHistory([]) },
           ]} />
         </View>
 
         <View style={styles.briefingCard}>
-          <Text style={styles.briefingTitle}>Today's Briefing</Text>
+          <Text style={styles.briefingTitle}>{t(`${NS}.briefingTitle`)}</Text>
           <Text style={styles.briefingDate}>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</Text>
           <View style={styles.briefingStats}>
-            <View style={styles.bStat}><Text style={styles.bStatVal}>{CHIEF_OF_STAFF_BRIEFINGS.filter((b) => b.priority === 'high' || b.priority === 'critical').length}</Text><Text style={styles.bStatLabel}>Urgent</Text></View>
-            <View style={styles.bStat}><Text style={styles.bStatVal}>{openConflicts.length}</Text><Text style={styles.bStatLabel}>Open Conflicts</Text></View>
-            <View style={styles.bStat}><Text style={styles.bStatVal}>$367</Text><Text style={styles.bStatLabel}>Savings Found</Text></View>
+            <View style={styles.bStat}><Text style={styles.bStatVal}>{CHIEF_OF_STAFF_BRIEFINGS.filter((b) => b.priority === 'high' || b.priority === 'critical').length}</Text><Text style={styles.bStatLabel}>{t(`${NS}.briefingStatUrgent`)}</Text></View>
+            <View style={styles.bStat}><Text style={styles.bStatVal}>{openConflicts.length}</Text><Text style={styles.bStatLabel}>{t(`${NS}.briefingStatOpenConflicts`)}</Text></View>
+            <View style={styles.bStat}><Text style={styles.bStatVal}>${potentialSavings}</Text><Text style={styles.bStatLabel}>{t(`${NS}.briefingStatPotentialSavings`)}</Text></View>
           </View>
         </View>
-      
+
     <View style={styles.tabs}>
             {(['chief', 'negotiate', 'conflicts', 'chat'] as const).map((tab) => (
               <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
                 <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-                  {tab === 'chief' ? 'Briefing' : tab === 'negotiate' ? 'Scripts' : tab === 'conflicts' ? 'Conflicts' : '✨ Ask AI'}
+                  {tab === 'chief' ? t(`${NS}.tabBriefing`) : tab === 'negotiate' ? t(`${NS}.tabScripts`) : tab === 'conflicts' ? t(`${NS}.tabConflicts`) : t(`${NS}.tabChat`)}
                 </Text>
               </Pressable>
             ))}
@@ -232,12 +271,13 @@ export function NegotiatorScreen({ navigation }: any) {
       <Pressable onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </Pressable>
-      <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>Chief of Staff</Text>
+      <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>{t(`${NS}.compactTitle`)}</Text>
       <View />
     </LinearGradient>
   );
 
   return (
+    <SubscriptionGate requiredTier="premium" featureName="AI Negotiator">
     <View style={styles.container}>
       <StatusBar style="light" />
 
@@ -302,11 +342,11 @@ export function NegotiatorScreen({ navigation }: any) {
                       <View style={[styles.scenarioIcon, { backgroundColor: s.color + '15' }]}>
                         <Ionicons name={s.icon as any} size={24} color={s.color} />
                       </View>
-                      <Text style={styles.scenarioTitle}>{s.title}</Text>
-                      <Text style={styles.scenarioDesc}>{s.desc}</Text>
+                      <Text style={styles.scenarioTitle}>{t(`${NS}.${s.titleKey}`)}</Text>
+                      <Text style={styles.scenarioDesc}>{t(`${NS}.${s.descKey}`)}</Text>
                       <View style={styles.savingsBadge}>
                         <Ionicons name="trending-up" size={12} color={colors.success} />
-                        <Text style={styles.savingsText}>{s.savings}</Text>
+                        <Text style={styles.savingsText}>{t(`${NS}.${s.savingsKey}`)}</Text>
                       </View>
                     </Pressable>
                   ))}
@@ -318,9 +358,9 @@ export function NegotiatorScreen({ navigation }: any) {
                   {openConflicts.length === 0 ? (
                     <View style={styles.emptyState}>
                       <Ionicons name="checkmark-circle" size={60} color={colors.success} />
-                      <Text style={styles.emptyTitle}>No open conflicts!</Text>
+                      <Text style={styles.emptyTitle}>{t(`${NS}.noOpenConflictsTitle`)}</Text>
                       <Text style={styles.emptyDesc}>
-                        Your family is in harmony. The AI will monitor for tension patterns.
+                        {t(`${NS}.noOpenConflictsDesc`)}
                       </Text>
                     </View>
                   ) : (
@@ -358,15 +398,15 @@ export function NegotiatorScreen({ navigation }: any) {
                 <View style={styles.chatPanel}>
                   {chatHistory.length === 0 && (
                     <View style={styles.chatEmpty}>
-                      <Text style={styles.chatEmptyTitle}>AI Negotiation Coach</Text>
+                      <Text style={styles.chatEmptyTitle}>{t(`${NS}.chatEmptyTitle`)}</Text>
                       <Text style={styles.chatEmptyDesc}>
-                        Get personalized scripts and strategies for any negotiation
+                        {t(`${NS}.chatEmptyDesc`)}
                       </Text>
 
                       {[
-                        'How do I negotiate my cable bill down?',
-                        'Give me a salary negotiation script',
-                        'How do I dispute a medical bill?',
+                        t(`${NS}.chatStarter1`),
+                        t(`${NS}.chatStarter2`),
+                        t(`${NS}.chatStarter3`),
                       ].map((q) => (
                         <Pressable key={q} style={styles.chatStarter} onPress={() => handleChatSend(q)}>
                           <Text style={styles.chatStarterText}>{q}</Text>
@@ -425,7 +465,7 @@ export function NegotiatorScreen({ navigation }: any) {
                   onMicCancel={voice.cancel}
                   isListening={voice.isListening}
                   partialTranscript={voice.partial}
-                  placeholder="Describe your negotiation situation..."
+                  placeholder={t(`${NS}.chatPlaceholder`)}
                   bottomPadding={8}
                   accentColor="#0F2952"
                 />
@@ -436,6 +476,7 @@ export function NegotiatorScreen({ navigation }: any) {
       </CollapsibleHeader>
 
     </View>
+    </SubscriptionGate>
   );
 }
 

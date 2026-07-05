@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { mmkvStorage } from '../storage/mmkvStorage';
+import * as shoppingService from '../services/shoppingService';
 
 export type ShopCategory =
   | 'produce' | 'dairy' | 'meat' | 'bakery'
@@ -39,61 +40,65 @@ export interface ShoppingItem {
 interface ShoppingState {
   items: ShoppingItem[];
   budget: number;
-  addItem: (item: Omit<ShoppingItem, 'id' | 'checked'>) => void;
+  isLoaded: boolean;
+  addItem: (item: Omit<ShoppingItem, 'id' | 'checked'>) => Promise<void>;
   toggleItem: (id: string) => void;
   deleteItem: (id: string) => void;
   updateItem: (id: string, updates: Partial<ShoppingItem>) => void;
   clearChecked: () => void;
   setBudget: (amount: number) => void;
-  seedDemoData: () => void;
+  fetchFromServer: () => Promise<void>;
 }
-
-const DEMO: Omit<ShoppingItem, 'id'>[] = [
-  { name: 'Bananas',           category: 'produce',   quantity: 6,  unit: 'ea',     checked: false, estimatedPrice: 1.50 },
-  { name: 'Organic Spinach',   category: 'produce',   quantity: 1,  unit: 'bag',    checked: false, estimatedPrice: 3.99 },
-  { name: 'Cherry Tomatoes',   category: 'produce',   quantity: 1,  unit: 'pint',   checked: false, estimatedPrice: 3.49 },
-  { name: 'Avocados',          category: 'produce',   quantity: 3,  unit: 'ea',     checked: false, estimatedPrice: 4.49 },
-  { name: 'Whole Milk',        category: 'dairy',     quantity: 1,  unit: 'gallon', checked: false, estimatedPrice: 4.29 },
-  { name: 'Greek Yogurt',      category: 'dairy',     quantity: 2,  unit: 'tub',    checked: false, estimatedPrice: 5.98 },
-  { name: 'Cheddar Cheese',    category: 'dairy',     quantity: 1,  unit: 'block',  checked: false, estimatedPrice: 4.99 },
-  { name: 'Butter',            category: 'dairy',     quantity: 1,  unit: 'pack',   checked: true,  estimatedPrice: 3.49 },
-  { name: 'Chicken Breast',    category: 'meat',      quantity: 2,  unit: 'lbs',    checked: false, estimatedPrice: 9.98 },
-  { name: 'Ground Beef',       category: 'meat',      quantity: 1,  unit: 'lb',     checked: false, estimatedPrice: 6.49 },
-  { name: 'Whole Wheat Bread', category: 'bakery',    quantity: 1,  unit: 'loaf',   checked: true,  estimatedPrice: 3.79 },
-  { name: 'Pasta',             category: 'pantry',    quantity: 2,  unit: 'box',    checked: false, estimatedPrice: 3.98 },
-  { name: 'Olive Oil',         category: 'pantry',    quantity: 1,  unit: 'bottle', checked: false, estimatedPrice: 7.99 },
-  { name: 'Orange Juice',      category: 'beverages', quantity: 1,  unit: 'carton', checked: false, estimatedPrice: 4.49 },
-  { name: 'Frozen Peas',       category: 'frozen',    quantity: 1,  unit: 'bag',    checked: false, estimatedPrice: 2.49 },
-  { name: 'Dish Soap',         category: 'household', quantity: 1,  unit: 'bottle', checked: false, estimatedPrice: 2.99 },
-  { name: 'Shampoo',           category: 'personal',  quantity: 1,  unit: 'bottle', checked: false, estimatedPrice: 6.99 },
-];
 
 export const useShoppingStore = create<ShoppingState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       items: [],
       budget: 200,
-      addItem: (item) =>
-        set((s) => ({
-          items: [...s.items, { ...item, id: `shop-${Date.now()}-${Math.random()}`, checked: false }],
-        })),
-      toggleItem: (id) =>
+      isLoaded: false,
+      addItem: async (item) => {
+        const newItem = { ...item, id: `shop-${Date.now()}-${Math.random()}`, checked: false };
+        set((s) => ({ items: [...s.items, newItem] }));
+        try {
+          await shoppingService.createItem(newItem);
+        } catch {
+          set((s) => ({ items: s.items.filter((i) => i.id !== newItem.id) }));
+        }
+      },
+      toggleItem: (id) => {
         set((s) => ({
           items: s.items.map((i) => (i.id === id ? { ...i, checked: !i.checked } : i)),
-        })),
-      deleteItem: (id) => set((s) => ({ items: s.items.filter((i) => i.id !== id) })),
-      updateItem: (id, updates) =>
-        set((s) => ({
-          items: s.items.map((i) => (i.id === id ? { ...i, ...updates } : i)),
-        })),
-      clearChecked: () => set((s) => ({ items: s.items.filter((i) => !i.checked) })),
-      setBudget: (amount) => set({ budget: amount }),
-      seedDemoData: () =>
-        set({
-          items: DEMO.map((item, idx) => ({ ...item, id: `shop-seed-${idx}` })),
-          budget: 200,
-        }),
+        }));
+        const item = get().items.find((i) => i.id === id);
+        if (item) shoppingService.updateItemRemote(id, { checked: item.checked }).catch(() => {});
+      },
+      deleteItem: (id) => {
+        const prev = get().items;
+        set((s) => ({ items: s.items.filter((i) => i.id !== id) }));
+        shoppingService.deleteItemRemote(id).catch(() => { set({ items: prev }); });
+      },
+      updateItem: (id, updates) => {
+        set((s) => ({ items: s.items.map((i) => (i.id === id ? { ...i, ...updates } : i)) }));
+        shoppingService.updateItemRemote(id, updates).catch(() => {});
+      },
+      clearChecked: () => {
+        const toDelete = get().items.filter((i) => i.checked).map((i) => i.id);
+        set((s) => ({ items: s.items.filter((i) => !i.checked) }));
+        toDelete.forEach((id) => shoppingService.deleteItemRemote(id).catch(() => {}));
+      },
+      setBudget: (amount) => {
+        set({ budget: amount });
+        shoppingService.updateBudgetRemote(amount).catch(() => {});
+      },
+      fetchFromServer: async () => {
+        try {
+          const { items, budget } = await shoppingService.fetchItems();
+          set({ items, budget, isLoaded: true });
+        } catch {
+          set({ isLoaded: true });
+        }
+      },
     }),
-    { name: 'shopping-store', storage: createJSONStorage(() => AsyncStorage) }
+    { name: 'shopping-store', storage: createJSONStorage(() => mmkvStorage) }
   )
 );

@@ -1,0 +1,17 @@
+export default {
+  filterAll: 'All',
+  filterAmazing: 'Amazing',
+  headerSub: '{{count}} entries · our story',
+  deleteEntryTitle: 'Delete Entry',
+  deleteEntryMessage: 'Remove "{{title}}"?',
+  emptyTitle: 'Start your story',
+  emptyDesc: 'Write journal entries to capture family moments, thoughts, and memories together.',
+  reactions: 'Reactions',
+  howAreYouFeeling: 'How are you feeling?',
+  pickEmoji: 'Pick an Emoji',
+  titleLabel: 'Title',
+  titlePlaceholder: 'What happened today?',
+  writeItDown: 'Write it down',
+  contentPlaceholder: 'Tell the story...',
+  saveEntry: 'Save Entry',
+};

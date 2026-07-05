@@ -18,6 +18,7 @@ import { shadows } from '../../../theme/spacing';
 import { CollapsibleHeader } from '../../../components/common/CollapsibleHeader';
 import type { ChildDeviceStatus } from '../../../types';
 import { GuardianNative, type NativeAppUsage } from '../../../native/GuardianNative';
+import { useTranslation } from 'react-i18next';
 
 const statusColors: Record<ChildDeviceStatus, string> = {
   online: colors.success,
@@ -51,6 +52,7 @@ function formatLastSeen(iso: string): string {
 }
 
 export function ChildDeviceDetailScreen({ navigation, route }: any) {
+  const { t } = useTranslation('family');
   const insets = useSafeAreaInsets();
   const { deviceId } = route.params ?? {};
 

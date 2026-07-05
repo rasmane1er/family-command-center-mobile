@@ -19,7 +19,6 @@ import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
-import * as WebBrowser from 'expo-web-browser';
 import * as SecureStore from 'expo-secure-store';
 import { Formik, FormikProps } from 'formik';
 import * as Yup from 'yup';
@@ -27,6 +26,7 @@ import { useAuthStore, SignUpData } from '../../store/useAuthStore';
 import { useTheme } from '../../theme/ThemeContext';
 import { populateFromSignUp } from '../../utils/populateFromSignUp';
 import { resetAllStores } from '../../storage/resetAllStores';
+import { useTranslation } from 'react-i18next';
 
 // ─── constants ───────────────────────────────────────────────────────────────
 
@@ -36,18 +36,18 @@ const AVATAR_COLORS = [
 ];
 
 const ROLE_OPTIONS = [
-  { key: 'parent'        as const, label: 'Parent',        icon: 'person-outline'           },
-  { key: 'co_parent'     as const, label: 'Co-Parent',     icon: 'people-outline'           },
-  { key: 'single_parent' as const, label: 'Single Parent', icon: 'person-circle-outline'    },
-  { key: 'guardian'      as const, label: 'Guardian',      icon: 'shield-checkmark-outline' },
-  { key: 'other'         as const, label: 'Other',         icon: 'ellipsis-horizontal'      },
+  { key: 'parent'        as const, labelKey: 'auth.screens.signUp.roleParent',       icon: 'person-outline'           },
+  { key: 'co_parent'     as const, labelKey: 'auth.screens.signUp.roleCoParent',     icon: 'people-outline'           },
+  { key: 'single_parent' as const, labelKey: 'auth.screens.signUp.roleSingleParent', icon: 'person-circle-outline'    },
+  { key: 'guardian'      as const, labelKey: 'auth.screens.signUp.roleGuardian',     icon: 'shield-checkmark-outline' },
+  { key: 'other'         as const, labelKey: 'auth.screens.signUp.roleOther',        icon: 'ellipsis-horizontal'      },
 ] as const;
 
 const GENDER_OPTIONS = [
-  { key: 'male'       as const, label: 'Male'             },
-  { key: 'female'     as const, label: 'Female'           },
-  { key: 'non_binary' as const, label: 'Non-binary'       },
-  { key: 'prefer_not' as const, label: 'Prefer not to say'},
+  { key: 'male'       as const, labelKey: 'auth.screens.signUp.genderMale'      },
+  { key: 'female'     as const, labelKey: 'auth.screens.signUp.genderFemale'    },
+  { key: 'non_binary' as const, labelKey: 'auth.screens.signUp.genderNonBinary' },
+  { key: 'prefer_not' as const, labelKey: 'auth.screens.signUp.genderPreferNot' },
 ] as const;
 
 // ─── yup schemas ─────────────────────────────────────────────────────────────
@@ -81,18 +81,20 @@ const step2Schema = Yup.object({
     .optional(),
 });
 
-const step3Schema = Yup.object({
-  password: Yup.string()
-    .min(8, 'Minimum 8 characters')
-    .test('strength', 'Must contain at least 1 number or special character', (v) =>
-      !v || /[0-9]/.test(v) || /[^a-zA-Z0-9]/.test(v)
-    )
-    .required('Password is required'),
-  confirmPw: Yup.string()
-    .oneOf([Yup.ref('password')], 'Passwords do not match')
-    .required('Please confirm your password'),
-  agreed: Yup.boolean().oneOf([true], 'You must accept the Terms of Service'),
-});
+function makeStep3Schema(t: (key: string) => string) {
+  return Yup.object({
+    password: Yup.string()
+      .min(8, t('auth.screens.signUp.yupMinPassword'))
+      .test('strength', t('auth.screens.signUp.yupPasswordStrength'), (v) =>
+        !v || /[0-9]/.test(v) || /[^a-zA-Z0-9]/.test(v)
+      )
+      .required(t('auth.screens.signUp.yupPasswordRequired')),
+    confirmPw: Yup.string()
+      .oneOf([Yup.ref('password')], t('auth.screens.signUp.yupPasswordsMustMatch'))
+      .required(t('auth.screens.signUp.yupConfirmPasswordRequired')),
+    agreed: Yup.boolean().oneOf([true], t('auth.screens.signUp.yupTermsRequired')),
+  });
+}
 
 // ─── form values ──────────────────────────────────────────────────────────────
 
@@ -115,15 +117,15 @@ const INITIAL: FormValues = {
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
-function pwStrength(pw: string) {
+function pwStrength(pw: string, t: (key: string) => string) {
   if (!pw) return { label: '', color: 'transparent', pct: 0 };
   const hasNumber = /[0-9]/.test(pw);
   const hasSpecial = /[^a-zA-Z0-9]/.test(pw);
   const long = pw.length >= 10;
-  if (pw.length < 8 || (!hasNumber && !hasSpecial)) return { label: 'Weak', color: '#E74C3C', pct: 0.25 };
-  if (pw.length >= 8 && hasNumber && !long) return { label: 'Medium', color: '#F5A623', pct: 0.60 };
-  if (long && hasNumber && hasSpecial) return { label: 'Strong', color: '#27AE60', pct: 1.0 };
-  return { label: 'Medium', color: '#F5A623', pct: 0.60 };
+  if (pw.length < 8 || (!hasNumber && !hasSpecial)) return { label: t('auth.screens.signUp.strengthWeak'), color: '#E74C3C', pct: 0.25 };
+  if (pw.length >= 8 && hasNumber && !long) return { label: t('auth.screens.signUp.strengthMedium'), color: '#F5A623', pct: 0.60 };
+  if (long && hasNumber && hasSpecial) return { label: t('auth.screens.signUp.strengthStrong'), color: '#27AE60', pct: 1.0 };
+  return { label: t('auth.screens.signUp.strengthMedium'), color: '#F5A623', pct: 0.60 };
 }
 
 // ─── makeStyles ───────────────────────────────────────────────────────────────
@@ -335,6 +337,7 @@ function FormField({ label, icon, placeholder, value, onChangeText, onBlur,
 // ─── screen ───────────────────────────────────────────────────────────────────
 
 export default function SignUpScreen({ navigation }: { navigation: any }) {
+  const { t } = useTranslation('auth');
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { signUp } = useAuthStore();
@@ -352,29 +355,30 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
   const [loading, setLoading]     = useState(false);
 
   const formikRef = useRef<FormikProps<FormValues>>(null);
+  const step3Schema = React.useMemo(() => makeStep3Schema(t), [t]);
 
   // ── photo picker ──────────────────────────────────────────────────────────
 
   const pickPhoto = () => {
-    Alert.alert('Profile Photo', 'Choose how to add your photo', [
+    Alert.alert(t('auth.screens.signUp.photoAlertTitle'), t('auth.screens.signUp.photoAlertMsg'), [
       {
-        text: 'Take Photo', onPress: async () => {
+        text: t('auth.screens.signUp.takePhoto'), onPress: async () => {
           const { status } = await ImagePicker.requestCameraPermissionsAsync();
-          if (status !== 'granted') { Alert.alert('Permission Needed', 'Camera access is required.'); return; }
+          if (status !== 'granted') { Alert.alert(t('auth.screens.signUp.permissionNeededTitle'), t('auth.screens.signUp.cameraPermissionMsg')); return; }
           const r = await ImagePicker.launchCameraAsync({ mediaTypes: 'images', allowsEditing: true, aspect: [1, 1], quality: 0.8 });
           if (!r.canceled && r.assets[0]) setAvatarUri(r.assets[0].uri);
         },
       },
       {
-        text: 'Choose from Library', onPress: async () => {
+        text: t('auth.screens.signUp.chooseFromLibrary'), onPress: async () => {
           const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-          if (status !== 'granted') { Alert.alert('Permission Needed', 'Photo library access is required.'); return; }
+          if (status !== 'granted') { Alert.alert(t('auth.screens.signUp.permissionNeededTitle'), t('auth.screens.signUp.libraryPermissionMsg')); return; }
           const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: 'images', allowsEditing: true, aspect: [1, 1], quality: 0.8 });
           if (!r.canceled && r.assets[0]) setAvatarUri(r.assets[0].uri);
         },
       },
-      { text: 'Remove Photo', style: 'destructive', onPress: () => setAvatarUri(null) },
-      { text: 'Cancel', style: 'cancel' },
+      { text: t('auth.screens.signUp.removePhoto'), style: 'destructive', onPress: () => setAvatarUri(null) },
+      { text: t('auth.screens.signUp.cancel'), style: 'cancel' },
     ]);
   };
 
@@ -388,16 +392,16 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
       fk.setFieldTouched('email', true);
 
       const errors: string[] = [];
-      if (!fk.values.firstName.trim()) errors.push('First name is required.');
-      if (!fk.values.lastName.trim())  errors.push('Last name is required.');
-      if (!fk.values.email.trim() || !fk.values.email.includes('@')) errors.push('A valid email is required.');
+      if (!fk.values.firstName.trim()) errors.push(t('auth.screens.signUp.firstNameRequired'));
+      if (!fk.values.lastName.trim())  errors.push(t('auth.screens.signUp.lastNameRequired'));
+      if (!fk.values.email.trim() || !fk.values.email.includes('@')) errors.push(t('auth.screens.signUp.validEmailRequired'));
       if (fk.values.dateOfBirth && !/^(0[1-9]|1[0-2])\/(0[1-9]|[12]\d|3[01])\/\d{4}$/.test(fk.values.dateOfBirth)) {
-        errors.push('Date of birth must be MM/DD/YYYY.');
+        errors.push(t('auth.screens.signUp.dobFormatError'));
       }
 
       if (errors.length > 0) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        Alert.alert('Please fix the following', errors.join('\n'));
+        Alert.alert(t('auth.screens.signUp.fixFollowingTitle'), errors.join('\n'));
         return;
       }
 
@@ -413,11 +417,11 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
 
       if (!fk.values.familyName.trim()) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        Alert.alert('Required', 'Please enter a family name.');
+        Alert.alert(t('auth.screens.signUp.requiredTitle'), t('auth.screens.signUp.familyNameRequiredMsg'));
         return;
       }
       if (fk.values.zipCode && !/^\d{5}(-\d{4})?$/.test(fk.values.zipCode)) {
-        Alert.alert('Invalid ZIP', 'ZIP code must be 5 digits (e.g. 10001).');
+        Alert.alert(t('auth.screens.signUp.invalidZipTitle'), t('auth.screens.signUp.invalidZipMsg'));
         return;
       }
     }
@@ -460,7 +464,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
 
     if (!result.success) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Sign Up Failed', result.error ?? 'An unexpected error occurred.');
+      Alert.alert(t('auth.screens.signUp.signUpFailedTitle'), result.error ?? t('auth.screens.signUp.genericError'));
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       // Store biometric preference and credentials if enabled
@@ -482,7 +486,11 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
 
   const StepBar = () => (
     <View style={s.stepRow}>
-      {(['You', 'Family', 'Security'] as const).map((label, idx) => {
+      {([
+        t('auth.screens.signUp.stepYou'),
+        t('auth.screens.signUp.stepFamily'),
+        t('auth.screens.signUp.stepSecurity'),
+      ] as const).map((label, idx) => {
         const n = idx + 1;
         const isActive = n === step;
         const isDone   = n < step;
@@ -513,7 +521,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
 
     return (
       <>
-        <Text style={s.secTitle}>Profile Photo</Text>
+        <Text style={s.secTitle}>{t('auth.screens.signUp.sectionProfilePhoto')}</Text>
         <View style={s.avatarWrap}>
           <Pressable onPress={pickPhoto} style={{ position: 'relative' }}>
             <View style={[s.avatarCircle, { backgroundColor: avatarUri ? 'transparent' : avatarColor }]}>
@@ -526,12 +534,12 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
               <Ionicons name="camera" size={16} color="#fff" />
             </View>
           </Pressable>
-          <Text style={s.avatarHint}>{avatarUri ? 'Tap to change' : 'Tap to add a photo'}</Text>
+          <Text style={s.avatarHint}>{avatarUri ? t('auth.screens.signUp.tapToChange') : t('auth.screens.signUp.tapToAddPhoto')}</Text>
         </View>
 
         {!avatarUri && (
           <>
-            <Text style={s.colorLabel}>Or choose a color</Text>
+            <Text style={s.colorLabel}>{t('auth.screens.signUp.orChooseColor')}</Text>
             <View style={s.colorRow}>
               {AVATAR_COLORS.map(c => (
                 <Pressable key={c}
@@ -546,45 +554,45 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
           </>
         )}
 
-        <Text style={s.secTitle}>Personal Information</Text>
+        <Text style={s.secTitle}>{t('auth.screens.signUp.sectionPersonalInfo')}</Text>
 
         {/* First / Last name side-by-side */}
         <View style={s.halfRow}>
           <View style={s.halfField}>
-            <FormField label="First Name" icon="person-outline" placeholder="John"
+            <FormField label={t('auth.screens.signUp.firstNameLabel')} icon="person-outline" placeholder={t('auth.screens.signUp.firstNamePlaceholder')}
               value={fk.values.firstName}
-              onChangeText={t => fk.setFieldValue('firstName', t)}
+              onChangeText={val => fk.setFieldValue('firstName', val)}
               onBlur={() => fk.setFieldTouched('firstName', true)}
               error={fk.errors.firstName} touched={fk.touched.firstName}
               colors={colors} s={s} />
           </View>
           <View style={s.halfField}>
-            <FormField label="Last Name" icon="person-outline" placeholder="Doe"
+            <FormField label={t('auth.screens.signUp.lastNameLabel')} icon="person-outline" placeholder={t('auth.screens.signUp.lastNamePlaceholder')}
               value={fk.values.lastName}
-              onChangeText={t => fk.setFieldValue('lastName', t)}
+              onChangeText={val => fk.setFieldValue('lastName', val)}
               onBlur={() => fk.setFieldTouched('lastName', true)}
               error={fk.errors.lastName} touched={fk.touched.lastName}
               colors={colors} s={s} />
           </View>
         </View>
 
-        <FormField label="Email Address" icon="mail-outline" placeholder="john@example.com"
+        <FormField label={t('auth.screens.signUp.emailLabel')} icon="mail-outline" placeholder={t('auth.screens.signUp.emailPlaceholder')}
           value={fk.values.email}
-          onChangeText={t => fk.setFieldValue('email', t)}
+          onChangeText={val => fk.setFieldValue('email', val)}
           onBlur={() => fk.setFieldTouched('email', true)}
           error={fk.errors.email} touched={fk.touched.email}
           keyboardType="email-address" autoCapitalize="none"
           colors={colors} s={s} />
 
-        <FormField label="Phone Number" icon="call-outline" placeholder="+1 (555) 000-0000"
+        <FormField label={t('auth.screens.signUp.phoneLabel')} icon="call-outline" placeholder={t('auth.screens.signUp.phonePlaceholder')}
           value={fk.values.phone}
-          onChangeText={t => fk.setFieldValue('phone', t)}
+          onChangeText={val => fk.setFieldValue('phone', val)}
           onBlur={() => fk.setFieldTouched('phone', true)}
           error={fk.errors.phone} touched={fk.touched.phone}
           keyboardType="phone-pad" autoCapitalize="none" optional
           colors={colors} s={s} />
 
-        <FormField label="Date of Birth" icon="calendar-outline" placeholder="MM/DD/YYYY"
+        <FormField label={t('auth.screens.signUp.dobLabel')} icon="calendar-outline" placeholder={t('auth.screens.signUp.dobPlaceholder')}
           value={fk.values.dateOfBirth}
           onChangeText={(raw) => {
             const digits = raw.replace(/\D/g, '').slice(0, 8);
@@ -598,44 +606,44 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
           keyboardType="numeric" autoCapitalize="none" optional
           colors={colors} s={s} />
 
-        <Text style={s.secTitle}>Gender</Text>
+        <Text style={s.secTitle}>{t('auth.screens.signUp.sectionGender')}</Text>
         <View style={[s.chipRow, { marginBottom: 16 }]}>
           {GENDER_OPTIONS.map(g => (
             <Pressable key={g.key}
               style={[s.chip, gender === g.key && s.chipOn]}
               onPress={() => setGender(prev => prev === g.key ? undefined : g.key)}>
-              <Text style={[s.chipText, gender === g.key && s.chipTextOn]}>{g.label}</Text>
+              <Text style={[s.chipText, gender === g.key && s.chipTextOn]}>{t(g.labelKey)}</Text>
             </Pressable>
           ))}
         </View>
 
-        <Text style={s.secTitle}>About You</Text>
-        <FormField label="Occupation" icon="briefcase-outline" placeholder="e.g. Software Engineer"
+        <Text style={s.secTitle}>{t('auth.screens.signUp.sectionAboutYou')}</Text>
+        <FormField label={t('auth.screens.signUp.occupationLabel')} icon="briefcase-outline" placeholder={t('auth.screens.signUp.occupationPlaceholder')}
           value={fk.values.occupation}
-          onChangeText={t => fk.setFieldValue('occupation', t)}
+          onChangeText={val => fk.setFieldValue('occupation', val)}
           onBlur={() => fk.setFieldTouched('occupation', true)}
           error={fk.errors.occupation} touched={fk.touched.occupation}
           optional colors={colors} s={s} />
 
-        <FormField label="Bio" icon="chatbubble-ellipses-outline"
-          placeholder="Tell your family a bit about yourself…"
+        <FormField label={t('auth.screens.signUp.bioLabel')} icon="chatbubble-ellipses-outline"
+          placeholder={t('auth.screens.signUp.bioPlaceholder')}
           value={fk.values.bio}
-          onChangeText={t => fk.setFieldValue('bio', t)}
+          onChangeText={val => fk.setFieldValue('bio', val)}
           onBlur={() => fk.setFieldTouched('bio', true)}
           error={fk.errors.bio} touched={fk.touched.bio}
           multiline maxLength={300} optional colors={colors} s={s} />
 
         <Pressable style={s.fullBtn} onPress={() => advanceStep(fk, 2)}>
           <LinearGradient colors={['#1E4A8A', '#0F2952']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.fullBtnGrad}>
-            <Text style={s.fullBtnText}>Next: Family Setup</Text>
+            <Text style={s.fullBtnText}>{t('auth.screens.signUp.nextFamilySetup')}</Text>
             <Ionicons name="arrow-forward" size={18} color="#fff" />
           </LinearGradient>
         </Pressable>
 
         <View style={s.footerRow}>
           <Text style={s.footerText}>
-            Already have an account?{' '}
-            <Text style={s.footerLink} onPress={() => navigation.navigate('SignIn')}>Sign In</Text>
+            {t('auth.screens.signUp.alreadyHaveAccount')}{' '}
+            <Text style={s.footerLink} onPress={() => navigation.navigate('SignIn')}>{t('auth.screens.signUp.signInLink')}</Text>
           </Text>
         </View>
       </>
@@ -646,39 +654,39 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
 
   const renderStep2 = (fk: FormikProps<FormValues>) => (
     <>
-      <Text style={s.secTitle}>Family Details</Text>
-      <FormField label="Family Name" icon="home-outline" placeholder="The Smith Family"
+      <Text style={s.secTitle}>{t('auth.screens.signUp.sectionFamilyDetails')}</Text>
+      <FormField label={t('auth.screens.signUp.familyNameLabel')} icon="home-outline" placeholder={t('auth.screens.signUp.familyNamePlaceholder')}
         value={fk.values.familyName}
-        onChangeText={t => fk.setFieldValue('familyName', t)}
+        onChangeText={val => fk.setFieldValue('familyName', val)}
         onBlur={() => fk.setFieldTouched('familyName', true)}
         error={fk.errors.familyName} touched={fk.touched.familyName}
         colors={colors} s={s} />
 
-      <FormField label="Family Motto" icon="chatbox-ellipses-outline" placeholder="Together we thrive"
+      <FormField label={t('auth.screens.signUp.familyMottoLabel')} icon="chatbox-ellipses-outline" placeholder={t('auth.screens.signUp.familyMottoPlaceholder')}
         value={fk.values.familyMotto}
-        onChangeText={t => fk.setFieldValue('familyMotto', t)}
+        onChangeText={val => fk.setFieldValue('familyMotto', val)}
         onBlur={() => fk.setFieldTouched('familyMotto', true)}
         error={fk.errors.familyMotto} touched={fk.touched.familyMotto}
         optional colors={colors} s={s} />
 
-      <Text style={s.secTitle}>Your Role</Text>
+      <Text style={s.secTitle}>{t('auth.screens.signUp.sectionYourRole')}</Text>
       <View style={s.roleGrid}>
         {ROLE_OPTIONS.map(opt => (
           <Pressable key={opt.key}
             style={[s.roleChip, familyRole === opt.key && s.roleChipOn]}
             onPress={() => setFamilyRole(opt.key)}>
             <Ionicons name={opt.icon as any} size={16} color={familyRole === opt.key ? '#fff' : colors.textSecondary} />
-            <Text style={[s.roleChipText, familyRole === opt.key && s.roleChipTextOn]}>{opt.label}</Text>
+            <Text style={[s.roleChipText, familyRole === opt.key && s.roleChipTextOn]}>{t(opt.labelKey)}</Text>
           </Pressable>
         ))}
       </View>
 
-      <Text style={[s.secTitle, { marginTop: 10 }]}>Number of Children</Text>
+      <Text style={[s.secTitle, { marginTop: 10 }]}>{t('auth.screens.signUp.sectionNumberOfChildren')}</Text>
       <View style={s.fieldWrap}>
         <View style={s.stepperRow}>
           <Ionicons name="people-outline" size={18} color={colors.textMuted} />
           <Text style={s.stepperLabel}>
-            {numChildren === 0 ? 'None' : `${numChildren} ${numChildren === 1 ? 'child' : 'children'}`}
+            {numChildren === 0 ? t('auth.screens.signUp.none') : t('auth.screens.signUp.child', { count: numChildren })}
           </Text>
           <View style={s.stepperControls}>
             <Pressable style={s.stepperBtn} onPress={() => setNumChildren(n => Math.max(0, n - 1))}>
@@ -692,34 +700,34 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
         </View>
       </View>
 
-      <Text style={[s.secTitle, { marginTop: 6 }]}>Home Address</Text>
-      <FormField label="Street Address" icon="location-outline" placeholder="123 Main St"
+      <Text style={[s.secTitle, { marginTop: 6 }]}>{t('auth.screens.signUp.sectionHomeAddress')}</Text>
+      <FormField label={t('auth.screens.signUp.streetAddressLabel')} icon="location-outline" placeholder={t('auth.screens.signUp.streetAddressPlaceholder')}
         value={fk.values.streetAddress}
-        onChangeText={t => fk.setFieldValue('streetAddress', t)}
+        onChangeText={val => fk.setFieldValue('streetAddress', val)}
         onBlur={() => fk.setFieldTouched('streetAddress', true)}
         error={fk.errors.streetAddress} touched={fk.touched.streetAddress}
         optional colors={colors} s={s} />
 
-      <FormField label="City" icon="business-outline" placeholder="New York"
+      <FormField label={t('auth.screens.signUp.cityLabel')} icon="business-outline" placeholder={t('auth.screens.signUp.cityPlaceholder')}
         value={fk.values.city}
-        onChangeText={t => fk.setFieldValue('city', t)}
+        onChangeText={val => fk.setFieldValue('city', val)}
         onBlur={() => fk.setFieldTouched('city', true)}
         error={fk.errors.city} touched={fk.touched.city}
         optional colors={colors} s={s} />
 
       <View style={s.halfRow}>
         <View style={s.halfField}>
-          <FormField label="State" icon="map-outline" placeholder="NY"
+          <FormField label={t('auth.screens.signUp.stateLabel')} icon="map-outline" placeholder={t('auth.screens.signUp.statePlaceholder')}
             value={fk.values.state}
-            onChangeText={t => fk.setFieldValue('state', t.toUpperCase().slice(0, 2))}
+            onChangeText={val => fk.setFieldValue('state', val.toUpperCase().slice(0, 2))}
             onBlur={() => fk.setFieldTouched('state', true)}
             error={fk.errors.state} touched={fk.touched.state}
             autoCapitalize="characters" optional colors={colors} s={s} />
         </View>
         <View style={s.halfField}>
-          <FormField label="ZIP Code" icon="mail-outline" placeholder="10001"
+          <FormField label={t('auth.screens.signUp.zipCodeLabel')} icon="mail-outline" placeholder={t('auth.screens.signUp.zipCodePlaceholder')}
             value={fk.values.zipCode}
-            onChangeText={t => fk.setFieldValue('zipCode', t)}
+            onChangeText={val => fk.setFieldValue('zipCode', val)}
             onBlur={() => fk.setFieldTouched('zipCode', true)}
             error={fk.errors.zipCode} touched={fk.touched.zipCode}
             keyboardType="numeric" autoCapitalize="none" optional
@@ -727,17 +735,17 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
         </View>
       </View>
 
-      <Text style={[s.secTitle, { marginTop: 6 }]}>Emergency Contact</Text>
-      <FormField label="Contact Name" icon="person-add-outline" placeholder="Jane Doe"
+      <Text style={[s.secTitle, { marginTop: 6 }]}>{t('auth.screens.signUp.sectionEmergencyContact')}</Text>
+      <FormField label={t('auth.screens.signUp.contactNameLabel')} icon="person-add-outline" placeholder={t('auth.screens.signUp.contactNamePlaceholder')}
         value={fk.values.ecName}
-        onChangeText={t => fk.setFieldValue('ecName', t)}
+        onChangeText={val => fk.setFieldValue('ecName', val)}
         onBlur={() => fk.setFieldTouched('ecName', true)}
         error={fk.errors.ecName} touched={fk.touched.ecName}
         optional colors={colors} s={s} />
 
-      <FormField label="Contact Phone" icon="call-outline" placeholder="+1 (555) 999-0000"
+      <FormField label={t('auth.screens.signUp.contactPhoneLabel')} icon="call-outline" placeholder={t('auth.screens.signUp.contactPhonePlaceholder')}
         value={fk.values.ecPhone}
-        onChangeText={t => fk.setFieldValue('ecPhone', t)}
+        onChangeText={val => fk.setFieldValue('ecPhone', val)}
         onBlur={() => fk.setFieldTouched('ecPhone', true)}
         error={fk.errors.ecPhone} touched={fk.touched.ecPhone}
         keyboardType="phone-pad" autoCapitalize="none" optional
@@ -745,11 +753,11 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
 
       <View style={s.navRow}>
         <Pressable style={s.backBtn} onPress={() => setStep(1)}>
-          <Text style={s.backBtnText}>← Back</Text>
+          <Text style={s.backBtnText}>{t('auth.screens.signUp.backButton')}</Text>
         </Pressable>
         <Pressable style={s.nextBtn} onPress={() => advanceStep(fk, 3)}>
           <LinearGradient colors={['#1E4A8A', '#0F2952']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.nextBtnGrad}>
-            <Text style={s.nextBtnText}>Next: Security →</Text>
+            <Text style={s.nextBtnText}>{t('auth.screens.signUp.nextSecurity')}</Text>
           </LinearGradient>
         </Pressable>
       </View>
@@ -759,24 +767,24 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
   // ── step 3 ────────────────────────────────────────────────────────────────
 
   const renderStep3 = (fk: FormikProps<FormValues>) => {
-    const str = pwStrength(fk.values.password);
+    const str = pwStrength(fk.values.password, t);
     const pwMatch   = fk.values.confirmPw.length > 0 && fk.values.password === fk.values.confirmPw;
     const pwNoMatch = fk.values.confirmPw.length > 0 && fk.values.password !== fk.values.confirmPw;
 
     return (
       <>
-        <Text style={s.secTitle}>Create Password</Text>
+        <Text style={s.secTitle}>{t('auth.screens.signUp.sectionCreatePassword')}</Text>
 
         <View style={s.fieldWrap}>
-          <Text style={s.fieldLabel}>Password</Text>
+          <Text style={s.fieldLabel}>{t('auth.password')}</Text>
           <View style={[s.inputRow, fk.touched.password && fk.errors.password ? s.inputRowError : null]}>
             <Ionicons name="lock-closed-outline" size={18} color={colors.textMuted} />
             <TextInput
               style={s.textInput}
-              placeholder="Minimum 8 characters"
+              placeholder={t('auth.screens.signUp.passwordPlaceholder')}
               placeholderTextColor={colors.textMuted}
               value={fk.values.password}
-              onChangeText={t => fk.setFieldValue('password', t)}
+              onChangeText={val => fk.setFieldValue('password', val)}
               onBlur={() => fk.setFieldTouched('password', true)}
               secureTextEntry={!showPw}
               autoCapitalize="none"
@@ -798,15 +806,15 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
         </View>
 
         <View style={s.fieldWrap}>
-          <Text style={s.fieldLabel}>Confirm Password</Text>
+          <Text style={s.fieldLabel}>{t('auth.screens.signUp.confirmPasswordLabel')}</Text>
           <View style={[s.inputRow, fk.touched.confirmPw && fk.errors.confirmPw ? s.inputRowError : null]}>
             <Ionicons name="lock-closed-outline" size={18} color={colors.textMuted} />
             <TextInput
               style={s.textInput}
-              placeholder="Re-enter your password"
+              placeholder={t('auth.screens.signUp.confirmPasswordPlaceholder')}
               placeholderTextColor={colors.textMuted}
               value={fk.values.confirmPw}
-              onChangeText={t => fk.setFieldValue('confirmPw', t)}
+              onChangeText={val => fk.setFieldValue('confirmPw', val)}
               onBlur={() => fk.setFieldTouched('confirmPw', true)}
               secureTextEntry={!showCpw}
               autoCapitalize="none"
@@ -816,45 +824,45 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
               <Ionicons name={showCpw ? 'eye-off-outline' : 'eye-outline'} size={18} color={colors.textMuted} />
             </Pressable>
           </View>
-          {pwMatch   && <Text style={[s.matchHint, { color: '#27AE60' }]}>✓ Passwords match</Text>}
-          {pwNoMatch && <Text style={[s.matchHint, { color: '#E74C3C' }]}>✗ Passwords don't match</Text>}
+          {pwMatch   && <Text style={[s.matchHint, { color: '#27AE60' }]}>{t('auth.screens.signUp.passwordsMatch')}</Text>}
+          {pwNoMatch && <Text style={[s.matchHint, { color: '#E74C3C' }]}>{t('auth.screens.signUp.passwordsNoMatch')}</Text>}
           {fk.touched.confirmPw && fk.errors.confirmPw && <Text style={s.errorText}>{fk.errors.confirmPw}</Text>}
         </View>
 
-        <Text style={[s.secTitle, { marginTop: 4 }]}>Security Options</Text>
+        <Text style={[s.secTitle, { marginTop: 4 }]}>{t('auth.screens.signUp.sectionSecurityOptions')}</Text>
         <View style={s.toggleRow}>
           <View style={s.toggleLeft}>
             <Ionicons name="finger-print-outline" size={20} color={colors.primary} />
-            <Text style={s.toggleLabel}>Enable Face ID / Touch ID</Text>
+            <Text style={s.toggleLabel}>{t('auth.screens.signUp.enableBiometric')}</Text>
           </View>
           <Switch value={biometric} onValueChange={setBiometric}
             trackColor={{ false: colors.border, true: colors.primary + '60' }}
             thumbColor={biometric ? colors.primary : colors.textMuted} />
         </View>
 
-        <Text style={[s.secTitle, { marginTop: 16 }]}>Terms</Text>
+        <Text style={[s.secTitle, { marginTop: 16 }]}>{t('auth.screens.signUp.sectionTerms')}</Text>
         <Pressable style={s.termsRow} onPress={() => fk.setFieldValue('agreed', !fk.values.agreed)}>
           <View style={[s.checkbox, fk.values.agreed && s.checkboxOn]}>
             {fk.values.agreed && <Ionicons name="checkmark" size={14} color="#fff" />}
           </View>
           <Text style={s.termsText}>
-            I agree to the{' '}
-            <Text style={s.termsLink} onPress={() => WebBrowser.openBrowserAsync('https://familycommandcenter.app/terms')}>Terms of Service</Text>
-            {' '}and{' '}
-            <Text style={s.termsLink} onPress={() => WebBrowser.openBrowserAsync('https://familycommandcenter.app/privacy')}>Privacy Policy</Text>
+            {t('auth.screens.signUp.agreeToThe')}{' '}
+            <Text style={s.termsLink} onPress={() => navigation.navigate('TermsOfService')}>{t('auth.screens.signUp.termsOfService')}</Text>
+            {' '}{t('auth.screens.signUp.and')}{' '}
+            <Text style={s.termsLink} onPress={() => navigation.navigate('PrivacyPolicy')}>{t('auth.screens.signUp.privacyPolicy')}</Text>
           </Text>
         </Pressable>
         {fk.touched.agreed && fk.errors.agreed && <Text style={s.errorText}>{String(fk.errors.agreed)}</Text>}
 
         <View style={s.navRow}>
           <Pressable style={s.backBtn} onPress={() => setStep(2)}>
-            <Text style={s.backBtnText}>← Back</Text>
+            <Text style={s.backBtnText}>{t('auth.screens.signUp.backButton')}</Text>
           </Pressable>
           <Pressable style={s.nextBtn} disabled={loading} onPress={() => fk.handleSubmit()}>
             <LinearGradient colors={['#F5A623', '#FF8C42']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.nextBtnGrad}>
               {loading
                 ? <ActivityIndicator color="#fff" size="small" />
-                : <Text style={s.nextBtnText}>Create Account</Text>
+                : <Text style={s.nextBtnText}>{t('auth.createAccount')}</Text>
               }
             </LinearGradient>
           </Pressable>

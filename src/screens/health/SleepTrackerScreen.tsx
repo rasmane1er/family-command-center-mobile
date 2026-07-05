@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -23,20 +23,21 @@ import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useSleepStore, SleepQuality } from '../../store/useSleepStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 
-const QUALITY_CONFIG: Record<SleepQuality, { emoji: string; label: string; color: string }> = {
-  1: { emoji: '😩', label: 'Terrible', color: '#E74C3C' },
-  2: { emoji: '😔', label: 'Poor', color: '#E67E22' },
-  3: { emoji: '😐', label: 'Fair', color: '#F5A623' },
-  4: { emoji: '😊', label: 'Good', color: '#A8D5A2' },
-  5: { emoji: '😄', label: 'Excellent', color: '#27AE60' },
+const QUALITY_CONFIG: Record<SleepQuality, { emoji: string; labelKey: string; color: string }> = {
+  1: { emoji: '😩', labelKey: 'qualityTerrible', color: '#E74C3C' },
+  2: { emoji: '😔', labelKey: 'qualityPoor', color: '#E67E22' },
+  3: { emoji: '😐', labelKey: 'qualityFair', color: '#F5A623' },
+  4: { emoji: '😊', labelKey: 'qualityGood', color: '#A8D5A2' },
+  5: { emoji: '😄', labelKey: 'qualityExcellent', color: '#27AE60' },
 };
 
-const RECOMMENDED: Record<string, { range: string; label: string }> = {
-  'member-1': { range: '7–9 hrs', label: 'Adult' },
-  'member-2': { range: '7–9 hrs', label: 'Adult' },
-  'member-3': { range: '8–10 hrs', label: 'Teen' },
-  'member-4': { range: '9–12 hrs', label: 'Child' },
+const RECOMMENDED: Record<string, { range: string; labelKey: string }> = {
+  'member-1': { range: '7–9 hrs', labelKey: 'ageAdult' },
+  'member-2': { range: '7–9 hrs', labelKey: 'ageAdult' },
+  'member-3': { range: '8–10 hrs', labelKey: 'ageTeen' },
+  'member-4': { range: '9–12 hrs', labelKey: 'ageChild' },
 };
 
 function calcDuration(bedtime: string, wakeTime: string): number {
@@ -63,38 +64,25 @@ function getTrendEmoji(avg: number): string {
   return '😩';
 }
 
-const SLEEP_TIPS: Record<string, string[]> = {
-  'member-1': [
-    'Adults need 7–9 hrs. Try to go to bed before 11 PM for best recovery.',
-    'Avoid screens 30 minutes before bedtime to improve sleep quality.',
-    'Consistent wake times — even on weekends — anchor your sleep cycle.',
-  ],
-  'member-2': [
-    'Adults benefit from a cool bedroom (65–68°F) for deeper sleep.',
-    'Limit caffeine after 2 PM to avoid disrupting your sleep onset.',
-    'A short relaxation routine before bed can improve overall sleep quality.',
-  ],
-  'member-3': [
-    'Teens need 8–10 hrs. Prioritize sleep during school weeks.',
-    'Blue light from phones after 9 PM can delay your natural sleep by 1–2 hrs.',
-    'Getting sunlight in the morning helps set a healthy sleep-wake rhythm.',
-  ],
-  'member-4': [
-    'Children need 9–12 hrs for healthy growth and brain development.',
-    'A consistent bedtime routine builds healthy sleep habits for life.',
-    'Limit exciting activities in the hour before bedtime for easier wind-down.',
-  ],
+const SLEEP_TIP_KEYS: Record<string, string[]> = {
+  'member-1': ['member1Tip1', 'member1Tip2', 'member1Tip3'],
+  'member-2': ['member2Tip1', 'member2Tip2', 'member2Tip3'],
+  'member-3': ['member3Tip1', 'member3Tip2', 'member3Tip3'],
+  'member-4': ['member4Tip1', 'member4Tip2', 'member4Tip3'],
 };
 
 export function SleepTrackerScreen({ navigation: navProp }: any) {
   const { colors } = useTheme();
   const navHook = useNavigation<any>();
   const navigation = navProp ?? navHook;
+  const { t } = useTranslation('health');
   const insets = useSafeAreaInsets();
-  const { logs, addLog, deleteLog, getAverageSleep, seedDemoData } = useSleepStore();
+  const { logs, addLog, deleteLog, getAverageSleep, seedDemoData, hasSeeded } = useSleepStore();
   const members = useFamilyStore((s) => s.members);
 
-  if (logs.length === 0) seedDemoData();
+  useEffect(() => {
+    if (!hasSeeded) seedDemoData();
+  }, [hasSeeded, seedDemoData]);
 
   const [selectedMemberId, setSelectedMemberId] = useState<string>(
     members[0]?.id ?? 'member-1'
@@ -140,13 +128,14 @@ export function SleepTrackerScreen({ navigation: navProp }: any) {
     null as (typeof validLogs)[0]
   );
 
-  const tips = SLEEP_TIPS[selectedMemberId] ?? SLEEP_TIPS['member-1'];
-  const recommended = RECOMMENDED[selectedMemberId] ?? { range: '7–9 hrs', label: 'Adult' };
+  const tipKeys = SLEEP_TIP_KEYS[selectedMemberId] ?? SLEEP_TIP_KEYS['member-1'];
+  const tips = tipKeys.map((key) => t(`health.screens.sleepTracker.${key}`));
+  const recommended = RECOMMENDED[selectedMemberId] ?? { range: '7–9 hrs', labelKey: 'ageAdult' };
 
   const handleAddLog = () => {
     const duration = calcDuration(modalBedtime, modalWakeTime);
     if (duration <= 0) {
-      Alert.alert('Invalid Times', 'Please enter valid bedtime and wake time in HH:MM format.');
+      Alert.alert(t('health.screens.sleepTracker.invalidTimesTitle'), t('health.screens.sleepTracker.invalidTimesMsg'));
       return;
     }
     addLog({
@@ -166,10 +155,10 @@ export function SleepTrackerScreen({ navigation: navProp }: any) {
   };
 
   const handleDelete = (id: string) => {
-    Alert.alert('Delete Log', 'Remove this sleep log?', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('health.screens.sleepTracker.deleteLogTitle'), t('health.screens.sleepTracker.deleteLogMsg'), [
+      { text: t('health.screens.sleepTracker.cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: t('health.screens.sleepTracker.delete'),
         style: 'destructive',
         onPress: () => {
           deleteLog(id);
@@ -185,7 +174,7 @@ export function SleepTrackerScreen({ navigation: navProp }: any) {
   const screenHeader = (
     <View>
       <PremiumHeader
-        title="Sleep Tracker"
+        title={t('sleep.title')}
         onBack={() => navigation.goBack()}
         colors={['#1A1A2E', '#16213E', '#0F3460']}
         rightAction={
@@ -203,17 +192,17 @@ export function SleepTrackerScreen({ navigation: navProp }: any) {
         <View style={s.headerStats}>
           <View style={s.headerStatBlock}>
             <Text style={s.headerStatValue}>{familyAvg.toFixed(1)}h</Text>
-            <Text style={s.headerStatLabel}>Family Avg Sleep</Text>
+            <Text style={s.headerStatLabel}>{t('health.screens.sleepTracker.familyAvgSleep')}</Text>
           </View>
           <View style={s.headerStatDivider} />
           <View style={s.headerStatBlock}>
             <Text style={s.headerTrendEmoji}>{getTrendEmoji(familyAvg)}</Text>
-            <Text style={s.headerStatLabel}>Weekly Trend</Text>
+            <Text style={s.headerStatLabel}>{t('health.screens.sleepTracker.weeklyTrend')}</Text>
           </View>
           <View style={s.headerStatDivider} />
           <View style={s.headerStatBlock}>
             <Text style={s.headerStatValue}>{recommended.range}</Text>
-            <Text style={s.headerStatLabel}>{recommended.label} Rec.</Text>
+            <Text style={s.headerStatLabel}>{t('health.screens.sleepTracker.ageRec', { label: t(`health.screens.sleepTracker.${recommended.labelKey}`) })}</Text>
           </View>
         </View>
       </PremiumHeader>
@@ -237,7 +226,7 @@ export function SleepTrackerScreen({ navigation: navProp }: any) {
                 {m.name.split(' ')[0]}
               </Text>
               <Text style={[s.memberTabAvg, isActive && s.memberTabAvgActive]}>
-                {avg > 0 ? `${avg.toFixed(1)}h avg` : 'No data'}
+                {avg > 0 ? t('health.screens.sleepTracker.avgSuffix', { avg: avg.toFixed(1) }) : t('health.screens.sleepTracker.noData')}
               </Text>
             </Pressable>
           );
@@ -251,7 +240,7 @@ export function SleepTrackerScreen({ navigation: navProp }: any) {
       <Pressable onPress={() => navigation.goBack()} style={s.addBtn}>
         <Ionicons name="arrow-back" size={20} color="#fff" />
       </Pressable>
-      <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700', flex: 1, marginLeft: 8 }}>Sleep Tracker</Text>
+      <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700', flex: 1, marginLeft: 8 }}>{t('sleep.title')}</Text>
       <Pressable onPress={() => { setModalMemberId(selectedMemberId); setShowModal(true); }} style={s.addBtn}>
         <Ionicons name="add" size={22} color="#fff" />
       </Pressable>
@@ -271,7 +260,7 @@ export function SleepTrackerScreen({ navigation: navProp }: any) {
         contentContainerStyle={{ paddingBottom: 100, paddingTop: contentPaddingTop }}>
         {/* 7-Night Bar Chart */}
         <View style={s.section}>
-          <Text style={s.sectionTitle}>Last 7 Nights</Text>
+          <Text style={s.sectionTitle}>{t('health.screens.sleepTracker.sectionLast7Nights')}</Text>
           <Card style={s.chartCard} variant="elevated">
             {last7Days.map((date, i) => {
               const log = last7Logs[i];
@@ -304,30 +293,30 @@ export function SleepTrackerScreen({ navigation: navProp }: any) {
 
         {/* Weekly Summary */}
         <View style={s.section}>
-          <Text style={s.sectionTitle}>Weekly Summary</Text>
+          <Text style={s.sectionTitle}>{t('health.screens.sleepTracker.sectionWeeklySummary')}</Text>
           <Card style={s.summaryCard} variant="elevated">
             <View style={s.summaryGrid}>
               <View style={s.summaryStat}>
                 <Text style={s.summaryValue}>{avgDuration > 0 ? avgDuration.toFixed(1) : '—'}</Text>
-                <Text style={s.summaryLabel}>Avg Hours</Text>
+                <Text style={s.summaryLabel}>{t('health.screens.sleepTracker.avgHours')}</Text>
               </View>
               <View style={s.summaryStat}>
                 <Text style={s.summaryValue}>
                   {avgQuality > 0 ? '⭐'.repeat(Math.round(avgQuality)) : '—'}
                 </Text>
-                <Text style={s.summaryLabel}>Avg Quality</Text>
+                <Text style={s.summaryLabel}>{t('health.screens.sleepTracker.avgQuality')}</Text>
               </View>
               <View style={s.summaryStat}>
                 <Text style={s.summaryValue}>
                   {bestLog ? `${bestLog.durationHours}h` : '—'}
                 </Text>
-                <Text style={s.summaryLabel}>Best Night</Text>
+                <Text style={s.summaryLabel}>{t('health.screens.sleepTracker.bestNight')}</Text>
               </View>
               <View style={s.summaryStat}>
                 <Text style={s.summaryValue}>
                   {worstLog ? `${worstLog.durationHours}h` : '—'}
                 </Text>
-                <Text style={s.summaryLabel}>Worst Night</Text>
+                <Text style={s.summaryLabel}>{t('health.screens.sleepTracker.worstNight')}</Text>
               </View>
             </View>
           </Card>
@@ -335,7 +324,7 @@ export function SleepTrackerScreen({ navigation: navProp }: any) {
 
         {/* Sleep Insights */}
         <View style={s.section}>
-          <Text style={s.sectionTitle}>Sleep Insights</Text>
+          <Text style={s.sectionTitle}>{t('health.screens.sleepTracker.sectionSleepInsights')}</Text>
           {tips.map((tip, i) => (
             <Card key={i} style={s.tipCard} variant="elevated">
               <View style={s.tipRow}>
@@ -350,10 +339,10 @@ export function SleepTrackerScreen({ navigation: navProp }: any) {
 
         {/* Recent Logs */}
         <View style={s.section}>
-          <Text style={s.sectionTitle}>Recent Logs</Text>
+          <Text style={s.sectionTitle}>{t('health.screens.sleepTracker.sectionRecentLogs')}</Text>
           {memberLogs.length === 0 && (
             <Card style={s.emptyCard} variant="elevated">
-              <Text style={s.emptyText}>No sleep logs yet. Tap + to add one!</Text>
+              <Text style={s.emptyText}>{t('health.screens.sleepTracker.emptyLogs')}</Text>
             </Card>
           )}
           {memberLogs.slice(0, 10).map((log) => {
@@ -387,7 +376,7 @@ export function SleepTrackerScreen({ navigation: navProp }: any) {
                       }
                       size="sm"
                     />
-                    <Text style={[s.logQualityLabel, { color: qc.color }]}>{qc.label}</Text>
+                    <Text style={[s.logQualityLabel, { color: qc.color }]}>{t(`health.screens.sleepTracker.${qc.labelKey}`)}</Text>
                     <Pressable onPress={() => handleDelete(log.id)} style={s.deleteBtn}>
                       <Ionicons name="trash-outline" size={14} color={colors.textMuted} />
                     </Pressable>
@@ -405,13 +394,13 @@ export function SleepTrackerScreen({ navigation: navProp }: any) {
       <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet">
         <View style={s.modalContainer}>
           <View style={s.modalHeader}>
-            <Text style={s.modalTitle}>Log Sleep</Text>
+            <Text style={s.modalTitle}>{t('health.screens.sleepTracker.logSleepTitle')}</Text>
             <Pressable onPress={() => setShowModal(false)}>
               <Ionicons name="close" size={24} color={colors.text} />
             </Pressable>
           </View>
           <ScrollView contentContainerStyle={s.modalContent}>
-            <Text style={s.fieldLabel}>Family Member</Text>
+            <Text style={s.fieldLabel}>{t('health.screens.sleepTracker.familyMemberLabel')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.modalMemberScroll}>
               {members.map((m) => (
                 <Pressable
@@ -430,31 +419,31 @@ export function SleepTrackerScreen({ navigation: navProp }: any) {
               ))}
             </ScrollView>
 
-            <Text style={s.fieldLabel}>Date (YYYY-MM-DD)</Text>
+            <Text style={s.fieldLabel}>{t('health.screens.sleepTracker.dateLabel')}</Text>
             <TextInput
               style={s.textInput}
               value={modalDate}
               onChangeText={setModalDate}
-              placeholder="2026-06-23"
+              placeholder={t('health.screens.sleepTracker.datePlaceholder')}
               placeholderTextColor={colors.textMuted}
             />
 
-            <Text style={s.fieldLabel}>Bedtime (HH:MM)</Text>
+            <Text style={s.fieldLabel}>{t('health.screens.sleepTracker.bedtimeLabel')}</Text>
             <TextInput
               style={s.textInput}
               value={modalBedtime}
               onChangeText={setModalBedtime}
-              placeholder="22:30"
+              placeholder={t('health.screens.sleepTracker.bedtimePlaceholder')}
               placeholderTextColor={colors.textMuted}
               keyboardType="numbers-and-punctuation"
             />
 
-            <Text style={s.fieldLabel}>Wake Time (HH:MM)</Text>
+            <Text style={s.fieldLabel}>{t('health.screens.sleepTracker.wakeTimeLabel')}</Text>
             <TextInput
               style={s.textInput}
               value={modalWakeTime}
               onChangeText={setModalWakeTime}
-              placeholder="06:30"
+              placeholder={t('health.screens.sleepTracker.wakeTimePlaceholder')}
               placeholderTextColor={colors.textMuted}
               keyboardType="numbers-and-punctuation"
             />
@@ -463,12 +452,12 @@ export function SleepTrackerScreen({ navigation: navProp }: any) {
               <View style={s.durationPreview}>
                 <Ionicons name="time-outline" size={16} color="#7B8FD4" />
                 <Text style={s.durationPreviewText}>
-                  Duration: {calcDuration(modalBedtime, modalWakeTime).toFixed(1)} hours
+                  {t('health.screens.sleepTracker.durationPreview', { hours: calcDuration(modalBedtime, modalWakeTime).toFixed(1) })}
                 </Text>
               </View>
             )}
 
-            <Text style={s.fieldLabel}>Sleep Quality</Text>
+            <Text style={s.fieldLabel}>{t('health.screens.sleepTracker.sleepQualityLabel')}</Text>
             <View style={s.qualityRow}>
               {([1, 2, 3, 4, 5] as SleepQuality[]).map((q) => {
                 const qc = QUALITY_CONFIG[q];
@@ -483,19 +472,19 @@ export function SleepTrackerScreen({ navigation: navProp }: any) {
                   >
                     <Text style={s.qualityEmoji}>{qc.emoji}</Text>
                     <Text style={[s.qualityLabel, modalQuality === q && { color: qc.color }]}>
-                      {qc.label}
+                      {t(`health.screens.sleepTracker.${qc.labelKey}`)}
                     </Text>
                   </Pressable>
                 );
               })}
             </View>
 
-            <Text style={s.fieldLabel}>Notes (optional)</Text>
+            <Text style={s.fieldLabel}>{t('health.screens.sleepTracker.notesLabel')}</Text>
             <TextInput
               style={[s.textInput, s.textInputMultiline]}
               value={modalNotes}
               onChangeText={setModalNotes}
-              placeholder="How did you sleep? Any disturbances?"
+              placeholder={t('health.screens.sleepTracker.notesPlaceholder')}
               placeholderTextColor={colors.textMuted}
               multiline
               numberOfLines={3}
@@ -507,7 +496,7 @@ export function SleepTrackerScreen({ navigation: navProp }: any) {
                 style={s.saveBtnGradient}
               >
                 <Ionicons name="moon" size={18} color="#fff" />
-                <Text style={s.saveBtnText}>Save Sleep Log</Text>
+                <Text style={s.saveBtnText}>{t('health.screens.sleepTracker.saveSleepLog')}</Text>
               </LinearGradient>
             </Pressable>
           </ScrollView>

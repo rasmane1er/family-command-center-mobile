@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useNotificationsStore } from '../../store/useNotificationsStore';
 import { Button } from '../../components/common/Button';
 import { useJoinRequestsStore } from '../../store/useJoinRequestsStore';
@@ -20,6 +21,14 @@ type JoinRole = 'parent' | 'child' | 'guardian' | 'grandparent' | 'caregiver';
 const ROLES: JoinRole[] = ['parent', 'child', 'guardian', 'grandparent', 'caregiver'];
 
 export function JoinFamilyScreen({ navigation }: any) {
+  const { t } = useTranslation('family');
+  const ROLE_LABELS: Record<JoinRole, string> = {
+    parent: t('family.screens.joinFamily.roleParent'),
+    child: t('family.screens.joinFamily.roleChild'),
+    guardian: t('family.screens.joinFamily.roleGuardian'),
+    grandparent: t('family.screens.joinFamily.roleGrandparent'),
+    caregiver: t('family.screens.joinFamily.roleCaregiver'),
+  };
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
@@ -39,7 +48,10 @@ export function JoinFamilyScreen({ navigation }: any) {
       const parsed = JSON.parse(data);
 
       if (parsed?.type !== 'family-invite' || !parsed?.familyId) {
-        Alert.alert('Invalid QR Code', 'This is not a valid Family Command Center invite.');
+        Alert.alert(
+          t('family.screens.joinFamily.invalidQrTitle'),
+          t('family.screens.joinFamily.invalidQrFamilyMsg')
+        );
         setScanned(false);
         return;
       }
@@ -49,7 +61,10 @@ export function JoinFamilyScreen({ navigation }: any) {
       setRequesterRole('child');
       setShowJoinModal(true);
     } catch {
-      Alert.alert('Invalid QR Code', 'This QR code could not be read.');
+      Alert.alert(
+        t('family.screens.joinFamily.invalidQrTitle'),
+        t('family.screens.joinFamily.invalidQrUnreadableMsg')
+      );
       setScanned(false);
     }
   };
@@ -58,24 +73,30 @@ export function JoinFamilyScreen({ navigation }: any) {
     if (!inviteData?.familyId) return;
 
     if (!requesterName.trim()) {
-      Alert.alert('Name Required', 'Please enter your name to request access.');
+      Alert.alert(
+        t('family.screens.joinFamily.nameRequiredTitle'),
+        t('family.screens.joinFamily.nameRequiredMsg')
+      );
       return;
     }
 
     addRequest({
       familyId: inviteData.familyId,
-      familyName: inviteData.familyName ?? 'Family',
+      familyName: inviteData.familyName ?? t('family.screens.joinFamily.defaultFamilyFallback'),
       requesterName: requesterName.trim(),
       requesterRole,
     });
 
     addNotification({
   type: 'family',
-  title: 'New Join Request',
-  body: `${requesterName.trim()} requested to join ${inviteData.familyName ?? 'your family'}.`,
+  title: t('family.screens.joinFamily.notificationTitle'),
+  body: t('family.screens.joinFamily.notificationBody', {
+    name: requesterName.trim(),
+    familyName: inviteData.familyName ?? t('family.screens.joinFamily.defaultFamilyYourFamily'),
+  }),
   isRead: false,
   action: {
-    label: 'Review Request',
+    label: t('family.screens.joinFamily.notificationActionLabel'),
     route: 'JoinRequests',
   },
 });
@@ -84,7 +105,7 @@ export function JoinFamilyScreen({ navigation }: any) {
 
     navigation.navigate('FamilyProfiles', {
       joinedFamilyId: inviteData.familyId,
-      joinedFamilyName: inviteData.familyName ?? 'Family',
+      joinedFamilyName: inviteData.familyName ?? t('family.screens.joinFamily.defaultFamilyFallback'),
     });
   };
 
@@ -95,11 +116,11 @@ export function JoinFamilyScreen({ navigation }: any) {
   if (!permission.granted) {
     return (
       <View style={styles.permissionContainer}>
-        <Text style={styles.permissionTitle}>Camera Permission Needed</Text>
+        <Text style={styles.permissionTitle}>{t('family.screens.joinFamily.permissionTitle')}</Text>
         <Text style={styles.permissionSubtitle}>
-          Allow camera access to scan a family invite QR code.
+          {t('family.screens.joinFamily.permissionSubtitle')}
         </Text>
-        <Button title="Allow Camera" onPress={requestPermission} fullWidth />
+        <Button title={t('family.screens.joinFamily.allowCamera')} onPress={requestPermission} fullWidth />
       </View>
     );
   }
@@ -119,8 +140,8 @@ export function JoinFamilyScreen({ navigation }: any) {
         <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </Pressable>
-        <Text style={styles.title}>Scan Family QR Code</Text>
-        <Text style={styles.subtitle}>Point your camera at the invite QR code.</Text>
+        <Text style={styles.title}>{t('family.screens.joinFamily.title')}</Text>
+        <Text style={styles.subtitle}>{t('family.screens.joinFamily.subtitle')}</Text>
 
         <View style={styles.scanFrame}>
           <View style={[styles.corner, styles.cornerTopLeft]} />
@@ -131,7 +152,7 @@ export function JoinFamilyScreen({ navigation }: any) {
 
         {scanned && (
           <Button
-            title="Scan Again"
+            title={t('family.screens.joinFamily.scanAgain')}
             onPress={() => {
               setScanned(false);
               setShowJoinModal(false);
@@ -155,22 +176,24 @@ export function JoinFamilyScreen({ navigation }: any) {
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <Ionicons name="people-circle-outline" size={42} color={colors.primary} />
-            <Text style={styles.modalTitle}>Join Family</Text>
+            <Text style={styles.modalTitle}>{t('family.screens.joinFamily.modalTitle')}</Text>
             <Text style={styles.modalSubtitle}>
-              Request access to {inviteData?.familyName ?? 'this family'}.
+              {t('family.screens.joinFamily.modalSubtitle', {
+                familyName: inviteData?.familyName ?? t('family.screens.joinFamily.defaultFamilyName'),
+              })}
             </Text>
 
-            <Text style={styles.label}>Your Name</Text>
+            <Text style={styles.label}>{t('family.screens.joinFamily.yourName')}</Text>
             <TextInput
               style={styles.input}
-              placeholder="e.g. Alex Johnson"
+              placeholder={t('family.screens.joinFamily.namePlaceholder')}
               value={requesterName}
               onChangeText={setRequesterName}
               placeholderTextColor={colors.textMuted}
               autoFocus
             />
 
-            <Text style={styles.label}>Role</Text>
+            <Text style={styles.label}>{t('family.screens.joinFamily.role')}</Text>
             <View style={styles.roleGrid}>
               {ROLES.map((role) => (
                 <Pressable
@@ -184,14 +207,14 @@ export function JoinFamilyScreen({ navigation }: any) {
                       requesterRole === role && styles.roleChipTextActive,
                     ]}
                   >
-                    {role.charAt(0).toUpperCase() + role.slice(1)}
+                    {ROLE_LABELS[role]}
                   </Text>
                 </Pressable>
               ))}
             </View>
 
             <Button
-              title="Submit Join Request"
+              title={t('family.screens.joinFamily.submitJoinRequest')}
               onPress={submitJoinRequest}
               fullWidth
               disabled={!requesterName.trim()}
@@ -199,7 +222,7 @@ export function JoinFamilyScreen({ navigation }: any) {
             />
 
             <Button
-              title="Cancel"
+              title={t('family.screens.joinFamily.cancel')}
               variant="ghost"
               onPress={() => {
                 setShowJoinModal(false);

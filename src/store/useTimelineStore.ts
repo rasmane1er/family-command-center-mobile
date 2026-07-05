@@ -19,6 +19,7 @@ export interface TimelineEntry {
 
 interface TimelineState {
   entries: TimelineEntry[];
+  hasSeeded: boolean;
   addEntry: (entry: Omit<TimelineEntry, 'id'>) => void;
   deleteEntry: (id: string) => void;
   seedDemoData: () => void;
@@ -111,6 +112,7 @@ export const useTimelineStore = create<TimelineState>()(
   persist(
     (set) => ({
       entries: [],
+      hasSeeded: false,
       addEntry: (entry) =>
         set((s) => ({
           entries: [{ ...entry, id: `timeline-${Date.now()}` }, ...s.entries].sort(
@@ -123,6 +125,7 @@ export const useTimelineStore = create<TimelineState>()(
           entries: DEMO.map((e, i) => ({ ...e, id: `timeline-seed-${i}` })).sort(
             (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
           ),
+          hasSeeded: true,
         }),
     }),
     { name: 'timeline-store', storage: createJSONStorage(() => AsyncStorage) }

@@ -13,6 +13,7 @@ import { useOperationsStore } from '../../store/useOperationsStore';
 import { useMemoryStore } from '../../store/useMemoryStore';
 import { useLegacyStore } from '../../store/useLegacyStore';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
+import { useTranslation } from 'react-i18next';
 
 type ResultCategory =
   | 'member'
@@ -36,23 +37,24 @@ interface SearchResult {
   routeParams?: any;
 }
 
-const CAT_CONFIG: Record<ResultCategory, { icon: string; color: string; label: string }> = {
-  member: { icon: 'person', color: '#8E44AD', label: 'Member' },
-  task: { icon: 'checkbox', color: '#2980B9', label: 'Task' },
-  event: { icon: 'calendar', color: '#F5A623', label: 'Event' },
-  bill: { icon: 'receipt', color: '#E74C3C', label: 'Bill' },
-  transaction: { icon: 'card', color: '#27AE60', label: 'Transaction' },
-  pantry: { icon: 'nutrition', color: '#E67E22', label: 'Pantry' },
-  document: { icon: 'document-text', color: '#1565C0', label: 'Document' },
-  memory: { icon: 'albums', color: '#6A1B9A', label: 'Memory' },
-  legacy: { icon: 'library', color: '#7B2D8B', label: 'Legacy' },
+const CAT_CONFIG: Record<ResultCategory, { icon: string; color: string; labelKey: ResultCategory }> = {
+  member: { icon: 'person', color: '#8E44AD', labelKey: 'member' },
+  task: { icon: 'checkbox', color: '#2980B9', labelKey: 'task' },
+  event: { icon: 'calendar', color: '#F5A623', labelKey: 'event' },
+  bill: { icon: 'receipt', color: '#E74C3C', labelKey: 'bill' },
+  transaction: { icon: 'card', color: '#27AE60', labelKey: 'transaction' },
+  pantry: { icon: 'nutrition', color: '#E67E22', labelKey: 'pantry' },
+  document: { icon: 'document-text', color: '#1565C0', labelKey: 'document' },
+  memory: { icon: 'albums', color: '#6A1B9A', labelKey: 'memory' },
+  legacy: { icon: 'library', color: '#7B2D8B', labelKey: 'legacy' },
 };
 
-const RECENT_SEARCHES = ['Budget this month', 'Aiden homework', 'Car insurance', 'Hawaii vacation fund'];
+const RECENT_SEARCH_KEYS = ['budget', 'homework', 'carInsurance', 'vacationFund'] as const;
 
 export function SearchScreen({ navigation: navProp }: any) {
   const navHook = useNavigation<any>();
   const navigation = navProp ?? navHook;
+  const { t } = useTranslation('dashboard');
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const [query, setQuery] = useState('');
@@ -91,7 +93,7 @@ export function SearchScreen({ navigation: navProp }: any) {
     if (isChild) {
       return [
         {
-          label: 'My Tasks',
+          label: t('dashboard.screens.search.browse.myTasks'),
           icon: 'checkbox',
           color: '#2980B9',
           bg: '#EBF5FB',
@@ -106,7 +108,7 @@ export function SearchScreen({ navigation: navProp }: any) {
           },
         },
         {
-          label: 'My Calendar',
+          label: t('dashboard.screens.search.browse.myCalendar'),
           icon: 'calendar',
           color: '#F5A623',
           bg: '#FEF3E2',
@@ -114,7 +116,7 @@ export function SearchScreen({ navigation: navProp }: any) {
           params: { screen: 'Calendar' },
         },
         {
-          label: 'Homework',
+          label: t('dashboard.screens.search.browse.homework'),
           icon: 'school',
           color: '#1565C0',
           bg: '#E3F2FD',
@@ -129,7 +131,7 @@ export function SearchScreen({ navigation: navProp }: any) {
           },
         },
         {
-          label: 'Rewards',
+          label: t('dashboard.screens.search.browse.rewards'),
           icon: 'trophy',
           color: '#F5A623',
           bg: '#FEF3E2',
@@ -149,7 +151,7 @@ export function SearchScreen({ navigation: navProp }: any) {
     if (isGrandparent) {
       return [
         {
-          label: 'Calendar',
+          label: t('dashboard.screens.search.browse.calendar'),
           icon: 'calendar',
           color: '#F5A623',
           bg: '#FEF3E2',
@@ -157,7 +159,7 @@ export function SearchScreen({ navigation: navProp }: any) {
           params: { screen: 'Calendar' },
         },
         {
-          label: 'Family Board',
+          label: t('dashboard.screens.search.browse.familyBoard'),
           icon: 'people',
           color: '#8E44AD',
           bg: '#F5EEF8',
@@ -165,7 +167,7 @@ export function SearchScreen({ navigation: navProp }: any) {
           params: { screen: 'FamilyBoard' },
         },
         {
-          label: 'Timeline',
+          label: t('dashboard.screens.search.browse.timeline'),
           icon: 'time',
           color: '#2980B9',
           bg: '#EBF5FB',
@@ -173,7 +175,7 @@ export function SearchScreen({ navigation: navProp }: any) {
           params: { screen: 'FamilyTimeline' },
         },
         {
-          label: 'Legacy',
+          label: t('dashboard.screens.search.browse.legacy'),
           icon: 'library',
           color: '#7B2D8B',
           bg: '#F5EEF8',
@@ -185,7 +187,7 @@ export function SearchScreen({ navigation: navProp }: any) {
 
     return [
       {
-        label: 'Tasks',
+        label: t('dashboard.screens.search.browse.tasks'),
         icon: 'checkbox',
         color: '#2980B9',
         bg: '#EBF5FB',
@@ -193,7 +195,7 @@ export function SearchScreen({ navigation: navProp }: any) {
         params: { screen: 'Tasks' },
       },
       {
-        label: 'Calendar',
+        label: t('dashboard.screens.search.browse.calendar'),
         icon: 'calendar',
         color: '#F5A623',
         bg: '#FEF3E2',
@@ -201,14 +203,14 @@ export function SearchScreen({ navigation: navProp }: any) {
         params: { screen: 'Calendar' },
       },
       {
-        label: 'Finance',
+        label: t('dashboard.screens.search.browse.finance'),
         icon: 'wallet',
         color: '#27AE60',
         bg: '#D5F5E3',
         route: 'Finance',
       },
       {
-        label: 'Pantry',
+        label: t('dashboard.screens.search.browse.pantry'),
         icon: 'nutrition',
         color: '#E67E22',
         bg: '#FEF0E2',
@@ -216,7 +218,7 @@ export function SearchScreen({ navigation: navProp }: any) {
         params: { screen: 'Pantry' },
       },
       {
-        label: 'Documents',
+        label: t('dashboard.screens.search.browse.documents'),
         icon: 'document-text',
         color: '#1565C0',
         bg: '#E3F2FD',
@@ -224,7 +226,7 @@ export function SearchScreen({ navigation: navProp }: any) {
         params: { screen: 'Documents' },
       },
       {
-        label: 'AI Memory',
+        label: t('dashboard.screens.search.browse.aiMemory'),
         icon: 'albums',
         color: '#6A1B9A',
         bg: '#F3E5F5',
@@ -232,13 +234,13 @@ export function SearchScreen({ navigation: navProp }: any) {
         params: { screen: 'AIMemory' },
       },
     ];
-  }, [isChild, isGrandparent, activeMember]);
+  }, [isChild, isGrandparent, activeMember, t]);
 
   const placeholder = isChild
-    ? 'Search my tasks, homework, events...'
+    ? t('dashboard.screens.search.placeholderChild')
     : isGrandparent
-      ? 'Search family events, memories, timeline...'
-      : 'Search everything — tasks, bills, pantry...';
+      ? t('dashboard.screens.search.placeholderGrandparent')
+      : t('dashboard.screens.search.placeholderDefault');
 
   const results: SearchResult[] = useMemo(() => {
     if (query.trim().length < 2) return [];
@@ -291,7 +293,7 @@ export function SearchScreen({ navigation: navProp }: any) {
           id: e.id,
           category: 'event',
           title: e.title,
-          subtitle: e.location || 'No location',
+          subtitle: e.location || t('dashboard.screens.search.noLocation'),
           icon: 'calendar',
           color: e.color || '#F5A623',
           route: 'Family',
@@ -424,6 +426,7 @@ export function SearchScreen({ navigation: navProp }: any) {
     isChild,
     isGrandparent,
     activeMember,
+    t,
   ]);
 
   const grouped = useMemo(() => {
@@ -470,7 +473,7 @@ export function SearchScreen({ navigation: navProp }: any) {
       </View>
 
       <Pressable onPress={() => navigation.goBack()} style={dynStyles.cancelBtn}>
-        <Text style={dynStyles.cancelText}>Cancel</Text>
+        <Text style={dynStyles.cancelText}>{t('dashboard.screens.search.cancel')}</Text>
       </Pressable>
     </View>
   );
@@ -497,7 +500,7 @@ export function SearchScreen({ navigation: navProp }: any) {
         </Text>
       </View>
       <Pressable onPress={() => navigation.goBack()} style={dynStyles.cancelBtn}>
-        <Text style={dynStyles.cancelText}>Cancel</Text>
+        <Text style={dynStyles.cancelText}>{t('dashboard.screens.search.cancel')}</Text>
       </Pressable>
     </View>
   );
@@ -518,17 +521,20 @@ export function SearchScreen({ navigation: navProp }: any) {
       >
         {query.trim().length < 2 ? (
           <>
-            <Text style={dynStyles.sectionLabel}>Recent Searches</Text>
+            <Text style={dynStyles.sectionLabel}>{t('search.recentSearches')}</Text>
 
-            {RECENT_SEARCHES.map((s) => (
-              <Pressable key={s} onPress={() => setQuery(s)} style={dynStyles.recentRow}>
-                <Ionicons name="time-outline" size={16} color={colors.textMuted} />
-                <Text style={dynStyles.recentText}>{s}</Text>
-                <Ionicons name="arrow-forward" size={14} color={colors.textMuted} />
-              </Pressable>
-            ))}
+            {RECENT_SEARCH_KEYS.map((key) => {
+              const label = t(`dashboard.screens.search.recentSearchSuggestions.${key}`);
+              return (
+                <Pressable key={key} onPress={() => setQuery(label)} style={dynStyles.recentRow}>
+                  <Ionicons name="time-outline" size={16} color={colors.textMuted} />
+                  <Text style={dynStyles.recentText}>{label}</Text>
+                  <Ionicons name="arrow-forward" size={14} color={colors.textMuted} />
+                </Pressable>
+              );
+            })}
 
-            <Text style={[dynStyles.sectionLabel, { marginTop: 24 }]}>Browse Sections</Text>
+            <Text style={[dynStyles.sectionLabel, { marginTop: 24 }]}>{t('search.browseSections')}</Text>
 
             <View style={dynStyles.browseGrid}>
               {browseSections.map((b) => (
@@ -546,13 +552,13 @@ export function SearchScreen({ navigation: navProp }: any) {
         ) : results.length === 0 ? (
           <View style={dynStyles.noResults}>
             <Ionicons name="search-outline" size={56} color={colors.textMuted} />
-            <Text style={dynStyles.noResultsTitle}>No results for "{query}"</Text>
-            <Text style={dynStyles.noResultsDesc}>Try searching with different keywords</Text>
+            <Text style={dynStyles.noResultsTitle}>{t('dashboard.screens.search.noResultsForQuery', { query })}</Text>
+            <Text style={dynStyles.noResultsDesc}>{t('search.tryDifferent')}</Text>
           </View>
         ) : (
           <>
             <Text style={dynStyles.resultCount}>
-              {results.length} result{results.length !== 1 ? 's' : ''} found
+              {t('dashboard.screens.search.resultsFound', { count: results.length })}
             </Text>
 
             {(Object.entries(grouped) as [ResultCategory, SearchResult[]][]).map(([cat, items]) => {
@@ -562,7 +568,7 @@ export function SearchScreen({ navigation: navProp }: any) {
                 <View key={cat}>
                   <View style={dynStyles.catHeader}>
                     <Ionicons name={cfg.icon as any} size={14} color={cfg.color} />
-                    <Text style={[dynStyles.catLabel, { color: cfg.color }]}>{cfg.label}s</Text>
+                    <Text style={[dynStyles.catLabel, { color: cfg.color }]}>{t(`dashboard.screens.search.categories.${cfg.labelKey}`)}s</Text>
                     <Text style={dynStyles.catCount}>{items.length}</Text>
                   </View>
 

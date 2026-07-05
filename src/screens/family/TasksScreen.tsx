@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Modal, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Modal, TextInput, Image, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { colors } from '../../theme/colors';
@@ -14,8 +14,10 @@ import type { Task, TaskPriority } from '../../types';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { pickTaskCompletionPhoto } from '../../utils/pickTaskPhoto';
+import { useTranslation } from 'react-i18next';
 
-const FILTERS = ['All', 'Pending', 'Completed', 'Overdue'];
+const FILTERS = ['All', 'Pending', 'Needs Review', 'Completed', 'Overdue'];
 const PRIORITIES: TaskPriority[] = ['urgent', 'high', 'medium', 'low'];
 
 const priorityColors = {
@@ -26,19 +28,26 @@ const priorityColors = {
 };
 
 export function TasksScreen({ navigation, route }: any) {
+  const { t } = useTranslation('family');
   const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState('All');
   const [showAddModal, setShowAddModal] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskPriority, setNewTaskPriority] = useState<TaskPriority>('medium');
   const [selectedMember, setSelectedMember] = useState<string | null>(null);
+  const [newTaskRequiresApproval, setNewTaskRequiresApproval] = useState(false);
+  const [previewPhotoUrl, setPreviewPhotoUrl] = useState<string | null>(null);
 
   const tasks = useFamilyStore((s) => s.tasks);
   const memberId = route?.params?.memberId;
   const role = route?.params?.role;
   const members = useFamilyStore((s) => s.members);
+  const family = useFamilyStore((s) => s.family);
   const addTask = useFamilyStore((s) => s.addTask);
   const completeTask = useFamilyStore((s) => s.completeTask);
+  const submitTaskForApproval = useFamilyStore((s) => s.submitTaskForApproval);
+  const approveTask = useFamilyStore((s) => s.approveTask);
+  const rejectTask = useFamilyStore((s) => s.rejectTask);
   const deleteTask = useFamilyStore((s) => s.deleteTask);
 
  const visibleTasks =
@@ -50,6 +59,7 @@ const filteredTasks = visibleTasks
   .filter((t) => {
     if (filter === 'All') return true;
     if (filter === 'Pending') return t.status === 'pending';
+    if (filter === 'Needs Review') return t.status === 'pending_approval';
     if (filter === 'Completed') return t.status === 'completed';
     if (filter === 'Overdue') return t.status === 'overdue';
     return true;
@@ -63,7 +73,7 @@ const filteredTasks = visibleTasks
     if (!newTaskTitle.trim()) return;
     const task: Task = {
       id: `task-${Date.now()}`,
-      familyId: 'demo-family',
+      familyId: family?.id ?? 'demo-family',
       title: newTaskTitle.trim(),
       assignedTo: selectedMember ? [selectedMember] : [],
       priority: newTaskPriority,
@@ -73,12 +83,31 @@ const filteredTasks = visibleTasks
       points: newTaskPriority === 'urgent' ? 100 : newTaskPriority === 'high' ? 50 : newTaskPriority === 'medium' ? 30 : 15,
       createdAt: new Date().toISOString(),
       createdBy: members[0]?.id || 'user',
+      requiresApproval: newTaskRequiresApproval,
     };
     addTask(task);
     setNewTaskTitle('');
     setNewTaskPriority('medium');
     setSelectedMember(null);
+    setNewTaskRequiresApproval(false);
     setShowAddModal(false);
+  };
+
+  const handleTaskPress = async (task: Task, assigneeId: string) => {
+    if (task.status === 'completed' || task.status === 'pending_approval') return;
+    if (task.requiresApproval) {
+      const photoUrl = await pickTaskCompletionPhoto();
+      submitTaskForApproval(task.id, assigneeId, photoUrl ?? undefined);
+    } else {
+      completeTask(task.id, assigneeId);
+    }
+  };
+
+  const handleReject = (task: Task) => {
+    Alert.alert('Send back to pending?', `"${task.title}" will go back to your kid's list so they can redo it.`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Send Back', style: 'destructive', onPress: () => rejectTask(task.id) },
+    ]);
   };
 
   const stats = {
@@ -90,7 +119,7 @@ const filteredTasks = visibleTasks
 
   const screenHeader = (
         <PremiumHeader
-          title="Family Tasks"
+          title={t('tasks.title')}
           onBack={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()}
           rightAction={
             <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
@@ -101,9 +130,9 @@ const filteredTasks = visibleTasks
           <View style={styles.statsRow}>
             {[
               { label: 'Total', value: stats.total, color: 'rgba(255,255,255,0.8)' },
-              { label: 'Done', value: stats.completed, color: colors.success },
-              { label: 'Pending', value: stats.pending, color: colors.secondary },
-              { label: 'Overdue', value: stats.overdue, color: colors.danger },
+              { label: t('tasks.completed'), value: stats.completed, color: colors.success },
+              { label: t('tasks.pending'), value: stats.pending, color: colors.secondary },
+              { label: t('tasks.overdue'), value: stats.overdue, color: colors.danger },
             ].map((s, i) => (
               <View key={i} style={styles.statChip}>
                 <Text style={[styles.statValue, { color: s.color }]}>{s.value}</Text>
@@ -157,18 +186,28 @@ const filteredTasks = visibleTasks
         ) : (
           filteredTasks.map((task) => {
             const assignees = members.filter((m) => task.assignedTo?.includes(m.id));
+            const assigneeId = assignees[0]?.id || members[0]?.id || '';
+            const isPendingApproval = task.status === 'pending_approval';
+            const isDone = task.status === 'completed';
             return (
               <Card key={task.id} style={styles.taskCard} variant="elevated">
                 <View style={styles.taskRow}>
                   <Pressable
-                    onPress={() => task.status !== 'completed' && completeTask(task.id, assignees[0]?.id || members[0]?.id || '')}
-                    style={[styles.checkCircle, task.status === 'completed' && styles.checkCircleComplete, { borderColor: priorityColors[task.priority] }]}
+                    onPress={() => handleTaskPress(task, assigneeId)}
+                    disabled={isPendingApproval}
+                    style={[
+                      styles.checkCircle,
+                      isDone && styles.checkCircleComplete,
+                      isPendingApproval && styles.checkCirclePending,
+                      { borderColor: isPendingApproval ? '#F5A623' : priorityColors[task.priority] },
+                    ]}
                   >
-                    {task.status === 'completed' && <Ionicons name="checkmark" size={16} color="#fff" />}
+                    {isDone && <Ionicons name="checkmark" size={16} color="#fff" />}
+                    {isPendingApproval && <Ionicons name="hourglass-outline" size={14} color="#F5A623" />}
                   </Pressable>
 
                   <View style={{ flex: 1, marginLeft: 14 }}>
-                    <Text style={[styles.taskTitle, task.status === 'completed' && styles.taskTitleDone]}>
+                    <Text style={[styles.taskTitle, isDone && styles.taskTitleDone]}>
                       {task.title}
                     </Text>
                     {task.description && (
@@ -187,6 +226,34 @@ const filteredTasks = visibleTasks
                       <View style={styles.dueDateRow}>
                         <Ionicons name="calendar-outline" size={12} color={colors.textMuted} />
                         <Text style={styles.dueDate}>Due {format(new Date(task.dueDate), 'MMM d, yyyy')}</Text>
+                      </View>
+                    )}
+                    {task.rejectionNote !== undefined && task.status === 'pending' && (
+                      <Text style={styles.rejectedHint}>Sent back — try again</Text>
+                    )}
+
+                    {isPendingApproval && (
+                      <View style={styles.reviewBox}>
+                        <View style={styles.reviewRow}>
+                          <Ionicons name="hourglass-outline" size={13} color="#B85C00" />
+                          <Text style={styles.reviewText}>Waiting for approval</Text>
+                          {task.completionPhotoUrl && (
+                            <Pressable onPress={() => setPreviewPhotoUrl(task.completionPhotoUrl ?? null)}>
+                              <Image source={{ uri: task.completionPhotoUrl }} style={styles.reviewThumb} />
+                            </Pressable>
+                          )}
+                        </View>
+                        {role !== 'child' && (
+                          <View style={styles.reviewActions}>
+                            <Pressable onPress={() => approveTask(task.id)} style={styles.approveBtn}>
+                              <Ionicons name="checkmark" size={14} color="#fff" />
+                              <Text style={styles.approveBtnText}>Approve</Text>
+                            </Pressable>
+                            <Pressable onPress={() => handleReject(task)} style={styles.rejectBtn}>
+                              <Text style={styles.rejectBtnText}>Send Back</Text>
+                            </Pressable>
+                          </View>
+                        )}
                       </View>
                     )}
                   </View>
@@ -245,9 +312,26 @@ const filteredTasks = visibleTasks
             ))}
           </ScrollView>
 
-          <Button title="Add Task" onPress={handleAddTask} fullWidth size="lg" disabled={!newTaskTitle.trim()} />
+          <Pressable onPress={() => setNewTaskRequiresApproval((v) => !v)} style={styles.approveToggleRow}>
+            <Ionicons name={newTaskRequiresApproval ? 'checkbox' : 'square-outline'} size={22} color={newTaskRequiresApproval ? colors.primary : colors.textMuted} />
+            <View style={{ flex: 1, marginLeft: 10 }}>
+              <Text style={styles.approveToggleTitle}>Require approval before points</Text>
+              <Text style={styles.approveToggleDesc}>Task moves to a review queue instead of completing instantly — good for chores you want to check.</Text>
+            </View>
+          </Pressable>
+
+          <Button title="Add Task" onPress={handleAddTask} fullWidth size="lg" disabled={!newTaskTitle.trim()} style={{ marginTop: 8 }} />
           <Button title="Cancel" onPress={() => setShowAddModal(false)} variant="ghost" fullWidth style={{ marginTop: 8 }} />
         </View>
+      </Modal>
+
+      <Modal visible={!!previewPhotoUrl} transparent animationType="fade" onRequestClose={() => setPreviewPhotoUrl(null)}>
+        <Pressable style={styles.photoPreviewBackdrop} onPress={() => setPreviewPhotoUrl(null)}>
+          {previewPhotoUrl && <Image source={{ uri: previewPhotoUrl }} style={styles.photoPreviewImage} resizeMode="contain" />}
+          <Pressable onPress={() => setPreviewPhotoUrl(null)} style={styles.photoPreviewClose}>
+            <Ionicons name="close" size={24} color="#fff" />
+          </Pressable>
+        </Pressable>
       </Modal>
     </View>
   );
@@ -270,8 +354,10 @@ const styles = StyleSheet.create({
   taskRow: { flexDirection: 'row', alignItems: 'flex-start' },
   checkCircle: { width: 28, height: 28, borderRadius: 14, borderWidth: 2.5, alignItems: 'center', justifyContent: 'center', marginTop: 2 },
   checkCircleComplete: { backgroundColor: colors.success, borderColor: colors.success },
+  checkCirclePending: { backgroundColor: '#FEF3E2' },
   taskTitle: { fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: 5 },
   taskTitleDone: { textDecorationLine: 'line-through', color: colors.textSecondary },
+  rejectedHint: { fontSize: 11, color: colors.danger, fontWeight: '600', marginTop: 2, marginBottom: 4 },
   taskDesc: { fontSize: 13, color: colors.textSecondary, marginBottom: 6 },
   taskMeta: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 4, marginBottom: 6 },
   taskPoints: { fontSize: 11, color: colors.success, fontWeight: '700', marginLeft: 4 },
@@ -294,4 +380,23 @@ const styles = StyleSheet.create({
   assignChip: { alignItems: 'center', marginRight: 12, padding: 10, borderRadius: 12, borderWidth: 1.5, borderColor: 'transparent' },
   assignChipActive: { borderColor: colors.primary, backgroundColor: '#E8EEF9' },
   assignName: { fontSize: 11, color: colors.textSecondary, marginTop: 4 },
+  approveToggleRow: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: colors.card, borderRadius: 12, padding: 12, borderWidth: 1.5, borderColor: colors.border },
+  approveToggleTitle: { fontSize: 13, fontWeight: '700', color: colors.text, marginBottom: 3 },
+  approveToggleDesc: { fontSize: 11, color: colors.textSecondary, lineHeight: 15 },
+
+  /* ── Review / approval box ── */
+  reviewBox: { backgroundColor: '#FEF3E2', borderRadius: 12, padding: 10, marginTop: 8, gap: 8 },
+  reviewRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  reviewText: { flex: 1, fontSize: 12, fontWeight: '700', color: '#B85C00' },
+  reviewThumb: { width: 40, height: 40, borderRadius: 8 },
+  reviewActions: { flexDirection: 'row', gap: 8 },
+  approveBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, backgroundColor: colors.success, borderRadius: 10, paddingVertical: 8 },
+  approveBtnText: { fontSize: 12, fontWeight: '700', color: '#fff' },
+  rejectBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 10, paddingVertical: 8, borderWidth: 1.5, borderColor: colors.danger },
+  rejectBtnText: { fontSize: 12, fontWeight: '700', color: colors.danger },
+
+  /* ── Photo preview modal ── */
+  photoPreviewBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.9)', alignItems: 'center', justifyContent: 'center' },
+  photoPreviewImage: { width: '92%', height: '70%' },
+  photoPreviewClose: { position: 'absolute', top: 60, right: 20, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' },
 });

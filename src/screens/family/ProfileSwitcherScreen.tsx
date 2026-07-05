@@ -21,10 +21,12 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { colors } from '../../theme/colors';
 import type { FamilyMember } from '../../types';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
+import { useTranslation } from 'react-i18next';
 
 const PIN_LENGTH = 4;
 
 export function ProfileSwitcherScreen({ navigation, route }: any) {
+  const { t } = useTranslation('family');
   const insets = useSafeAreaInsets();
   const members = useFamilyStore((s) => s.members);
   const activeMemberId = useFamilyStore((s) => s.activeMemberId);
@@ -173,7 +175,7 @@ export function ProfileSwitcherScreen({ navigation, route }: any) {
       <Pressable onPress={goBackOrHome} style={styles.backBtn}>
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </Pressable>
-      <Text style={styles.headerTitle}>Switch Profile</Text>
+      <Text style={styles.headerTitle}>{t('profileSwitcher.title')}</Text>
       <View style={{ width: 40 }} />
     </LinearGradient>
   );
@@ -183,7 +185,7 @@ export function ProfileSwitcherScreen({ navigation, route }: any) {
       <Pressable onPress={goBackOrHome} style={styles.backBtn}>
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </Pressable>
-      <Text style={styles.headerTitle}>Switch Profile</Text>
+      <Text style={styles.headerTitle}>{t('profileSwitcher.title')}</Text>
       <View style={{ width: 40 }} />
     </View>
   );

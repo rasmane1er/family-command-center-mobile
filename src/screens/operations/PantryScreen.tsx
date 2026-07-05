@@ -11,10 +11,12 @@ import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
 import { useOperationsStore } from '../../store/useOperationsStore';
 import { useShoppingStore } from '../../store/useShoppingStore';
+import { useFamilyStore } from '../../store/useFamilyStore';
 import type { PantryItem } from '../../types';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -32,6 +34,7 @@ const categoryIcons: Record<string, string> = {
 };
 
 export function PantryScreen({ navigation }: any) {
+  const { t } = useTranslation('ops');
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const [search, setSearch] = useState('');
@@ -47,12 +50,13 @@ export function PantryScreen({ navigation }: any) {
 
   const { pantryItems, updatePantryItem, addPantryItem, deletePantryItem } = useOperationsStore();
   const { addItem: addShoppingItem } = useShoppingStore();
+  const familyId = useFamilyStore((s) => s.family?.id) ?? 'demo-family';
 
   const handleAdd = () => {
     if (!newName.trim()) return;
     const item: PantryItem = {
       id: generateId(),
-      familyId: 'demo-family',
+      familyId,
       name: newName.trim(),
       category: newCategory,
       quantity: parseInt(newQuantity, 10) || 1,
@@ -138,9 +142,13 @@ export function PantryScreen({ navigation }: any) {
 
   const screenHeader = (
         <PremiumHeader
-          title="Pantry"
+          title={t('ops.pantry')}
           colors={['#27AE60', '#1ABC9C']}
-          onBack={() => navigation.goBack()}
+          // Pantry isn't the Operations tab's root screen — if it's reached
+          // via a direct cross-tab jump (e.g. the AI Assistant header's
+          // "pantry" shortcut) before that tab has ever been opened, there's
+          // no dashboard underneath it yet to pop back to.
+          onBack={() => (navigation.canGoBack() ? navigation.goBack() : navigation.navigate('OperationsDashboard'))}
           rightAction={
             <View style={s.headerActions}>
               <Pressable onPress={handleAutoRestock} style={s.actionBtn}><Ionicons name="cart-outline" size={22} color="#fff" /></Pressable>

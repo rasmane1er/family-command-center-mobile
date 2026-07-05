@@ -18,6 +18,7 @@ import { useTimelineStore } from '../../store/useTimelineStore';
 import { useFamilyMeetingsStore } from '../../store/useFamilyMeetingsStore';
 import { Avatar } from '../../components/common/Avatar';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
+import { useTranslation } from 'react-i18next';
 
 interface Achievement {
   id: string;
@@ -97,6 +98,7 @@ function useRealAchievements(): Achievement[] {
 const CATEGORIES = ['All', 'Tasks', 'Finance', 'Health', 'Family', 'Habits', 'Safety', 'Operations'];
 
 export function AchievementsScreen({ navigation }: any) {
+  const { t } = useTranslation('family');
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<'all' | 'unlocked' | 'progress'>('all');
   const [category, setCategory] = useState('All');
@@ -125,7 +127,7 @@ export function AchievementsScreen({ navigation }: any) {
         <Pressable onPress={() => navigation.goBack()} style={styles.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
-        <Text style={styles.headerTitle}>Achievements</Text>
+        <Text style={styles.headerTitle}>{t('achievements.title')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -153,7 +155,7 @@ export function AchievementsScreen({ navigation }: any) {
       <Pressable onPress={() => navigation.goBack()} style={styles.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
-      <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>Achievements</Text>
+      <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>{t('achievements.title')}</Text>
       <Text style={{ fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.8)' }}>{totalPoints} pts</Text>
     </LinearGradient>
   );

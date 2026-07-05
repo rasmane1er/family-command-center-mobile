@@ -1,4 +1,7 @@
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import { mmkvStorage } from '../storage/mmkvStorage';
+import { apiRequest } from '../api/client';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -23,31 +26,89 @@ export interface BucketItem {
 
 interface BucketListState {
   items: BucketItem[];
-  addItem: (item: Omit<BucketItem, 'id' | 'createdAt'>) => void;
-  updateItem: (id: string, updates: Partial<BucketItem>) => void;
-  completeItem: (id: string) => void;
-  deleteItem: (id: string) => void;
-  seedDemoData: () => void;
+  isLoaded: boolean;
+  addItem: (item: Omit<BucketItem, 'id' | 'createdAt'>) => Promise<void>;
+  updateItem: (id: string, updates: Partial<BucketItem>) => Promise<void>;
+  completeItem: (id: string) => Promise<void>;
+  deleteItem: (id: string) => Promise<void>;
+  fetchFromServer: () => Promise<void>;
 }
 
-export const useBucketListStore = create<BucketListState>((set) => ({
-  items: [],
-  addItem: (item) => set((s) => ({ items: [{ ...item, id: generateId(), createdAt: new Date().toISOString() }, ...s.items] })),
-  updateItem: (id, updates) => set((s) => ({ items: s.items.map((i) => i.id === id ? { ...i, ...updates } : i) })),
-  completeItem: (id) => set((s) => ({ items: s.items.map((i) => i.id === id ? { ...i, isCompleted: true, completedDate: new Date().toISOString() } : i) })),
-  deleteItem: (id) => set((s) => ({ items: s.items.filter((i) => i.id !== id) })),
-  seedDemoData: () => {
-    const now = new Date().toISOString();
-    const items: BucketItem[] = [
-      { id: 'bl1', familyId: 'demo-family', title: 'See the Northern Lights in Iceland', description: 'Chase the aurora borealis as a family adventure', category: 'travel', targetYear: 2026, estimatedCost: 8000, membersInterested: ['member-1','member-2','member-3','member-4'], priority: 'high', isCompleted: false, emoji: '🌌', createdAt: now },
-      { id: 'bl2', familyId: 'demo-family', title: 'Learn to surf together', description: 'Take a week-long surf camp in Costa Rica', category: 'adventure', targetYear: 2025, estimatedCost: 5000, membersInterested: ['member-1','member-2','member-3'], priority: 'medium', isCompleted: false, emoji: '🏄', createdAt: now },
-      { id: 'bl3', familyId: 'demo-family', title: 'Visit all 50 US states', category: 'travel', estimatedCost: 15000, membersInterested: ['member-1','member-2','member-3','member-4'], priority: 'low', isCompleted: false, emoji: '🗺️', createdAt: now },
-      { id: 'bl4', familyId: 'demo-family', title: 'Volunteer at a food bank together', category: 'give', targetYear: 2024, estimatedCost: 0, membersInterested: ['member-1','member-2','member-3','member-4'], priority: 'high', isCompleted: false, emoji: '🤝', createdAt: now },
-      { id: 'bl5', familyId: 'demo-family', title: 'Run a 5K race together', category: 'achievement', targetYear: 2024, estimatedCost: 120, membersInterested: ['member-1','member-2','member-3'], priority: 'high', isCompleted: false, emoji: '🏃', createdAt: now },
-      { id: 'bl6', familyId: 'demo-family', title: 'Cook a meal from every continent', category: 'food', estimatedCost: 300, membersInterested: ['member-1','member-2','member-3','member-4'], priority: 'medium', isCompleted: false, emoji: '🍳', createdAt: now },
-      { id: 'bl7', familyId: 'demo-family', title: 'Visit Disneyland', category: 'experience', targetYear: 2024, estimatedCost: 3500, membersInterested: ['member-1','member-2','member-3','member-4'], priority: 'high', isCompleted: true, completedDate: new Date(Date.now() - 60 * 86400000).toISOString(), emoji: '🏰', createdAt: now },
-      { id: 'bl8', familyId: 'demo-family', title: 'Learn a second language as a family', description: 'Take Spanish lessons together for one year', category: 'learn', targetYear: 2025, estimatedCost: 800, membersInterested: ['member-1','member-2','member-3','member-4'], priority: 'medium', isCompleted: false, emoji: '🌍', createdAt: now },
-    ];
-    set({ items });
-  },
-}));
+export const useBucketListStore = create<BucketListState>()(
+  persist(
+    (set, get) => ({
+      items: [],
+      isLoaded: false,
+
+      fetchFromServer: async () => {
+        try {
+          const data = await apiRequest<{ items: BucketItem[] }>('/bucketList');
+          set({ items: data.items ?? [], isLoaded: true });
+        } catch {
+          set({ isLoaded: true });
+        }
+      },
+
+      addItem: async (item) => {
+        const tempId = generateId();
+        const optimistic: BucketItem = { ...item, id: tempId, createdAt: new Date().toISOString() };
+        set((s) => ({ items: [optimistic, ...s.items] }));
+        try {
+          const created = await apiRequest<BucketItem>('/bucketList', {
+            method: 'POST',
+            body: JSON.stringify({
+              title: item.title,
+              category: item.category,
+              targetDate: item.targetYear ? `${item.targetYear}-01-01` : undefined,
+            }),
+          });
+          set((s) => ({ items: s.items.map((i) => (i.id === tempId ? { ...optimistic, id: created.id ?? tempId } : i)) }));
+        } catch {
+          set((s) => ({ items: s.items.filter((i) => i.id !== tempId) }));
+        }
+      },
+
+      updateItem: async (id, updates) => {
+        const prev = get().items.find((i) => i.id === id);
+        set((s) => ({ items: s.items.map((i) => (i.id === id ? { ...i, ...updates } : i)) }));
+        try {
+          const updated = await apiRequest<BucketItem>(`/bucketList/${id}`, {
+            method: 'PATCH',
+            body: JSON.stringify(updates),
+          });
+          set((s) => ({ items: s.items.map((i) => (i.id === id ? { ...i, ...updated } : i)) }));
+        } catch {
+          if (prev) set((s) => ({ items: s.items.map((i) => (i.id === id ? prev : i)) }));
+        }
+      },
+
+      completeItem: async (id) => {
+        const completedDate = new Date().toISOString();
+        set((s) => ({ items: s.items.map((i) => (i.id === id ? { ...i, isCompleted: true, completedDate } : i)) }));
+        try {
+          await apiRequest(`/bucketList/${id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ isCompleted: true, completedDate }),
+          });
+        } catch {
+          set((s) => ({ items: s.items.map((i) => (i.id === id ? { ...i, isCompleted: false, completedDate: undefined } : i)) }));
+        }
+      },
+
+      deleteItem: async (id) => {
+        const prev = get().items;
+        set((s) => ({ items: s.items.filter((i) => i.id !== id) }));
+        try {
+          await apiRequest(`/bucketList/${id}`, { method: 'DELETE' });
+        } catch {
+          set({ items: prev });
+        }
+      },
+    }),
+    {
+      name: 'family-command-center-bucketlist',
+      storage: createJSONStorage(() => mmkvStorage),
+      partialize: (s) => ({ items: s.items }),
+    }
+  )
+);

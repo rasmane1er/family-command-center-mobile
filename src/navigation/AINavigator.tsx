@@ -1,5 +1,6 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 
 import { RoleGuard } from '../components/auth/RoleGuard';
 import { SubscriptionGate } from '../components/common/SubscriptionGate';
@@ -14,6 +15,7 @@ import { FamilySafetyAssistantScreen } from '../screens/ai/FamilySafetyAssistant
 const Stack = createNativeStackNavigator();
 
 export function AINavigator() {
+  const { t } = useTranslation('ai');
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="AIAssistant" component={AIAssistantScreen} />
@@ -23,8 +25,8 @@ export function AINavigator() {
           <RoleGuard
             allowParent
             allowGrandparent
-            title="AI Memory Restricted"
-            message="AI Memory is available to parents, guardians, admins, and grandparents."
+            title={t('gates.memoryRestrictedTitle')}
+            message={t('gates.memoryRestrictedMsg')}
           >
             <AIMemoryScreen {...props} />
           </RoleGuard>
@@ -35,8 +37,8 @@ export function AINavigator() {
         {(props) => (
           <RoleGuard
             allowParent
-            title="Parenting Coach Restricted"
-            message="Parenting Coach is only available to parents, guardians, or admins."
+            title={t('gates.coachRestrictedTitle')}
+            message={t('gates.coachRestrictedMsg')}
           >
             <ParentingCoachScreen {...props} />
           </RoleGuard>
@@ -47,8 +49,8 @@ export function AINavigator() {
         {(props) => (
           <RoleGuard
             allowParent
-            title="Negotiator Restricted"
-            message="Family negotiation tools are only available to parents, guardians, or admins."
+            title={t('gates.negotiatorRestrictedTitle')}
+            message={t('gates.negotiatorRestrictedMsg')}
           >
             <NegotiatorScreen {...props} />
           </RoleGuard>
@@ -57,11 +59,11 @@ export function AINavigator() {
 
       <Stack.Screen name="DigitalTwin">
         {(props) => (
-          <SubscriptionGate requiredTier="family_pro" featureName="Family Digital Twin">
+          <SubscriptionGate requiredTier="family_pro" featureName={t('gates.digitalTwinFeatureName')}>
             <RoleGuard
               allowParent
-              title="Digital Twin Restricted"
-              message="The Family Digital Twin is only available to parents, guardians, or admins."
+              title={t('gates.digitalTwinRestrictedTitle')}
+              message={t('gates.digitalTwinRestrictedMsg')}
             >
               <DigitalTwinScreen {...props} />
             </RoleGuard>
@@ -74,8 +76,8 @@ export function AINavigator() {
           <RoleGuard
             allowParent
             allowGrandparent
-            title="Family Safety Assistant Restricted"
-            message="The Family Safety Assistant is only available to parents, guardians, admins, and grandparents."
+            title={t('gates.safetyRestrictedTitle')}
+            message={t('gates.safetyRestrictedMsg')}
           >
             <FamilySafetyAssistantScreen {...props} />
           </RoleGuard>

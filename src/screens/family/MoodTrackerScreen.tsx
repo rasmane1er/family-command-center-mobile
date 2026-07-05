@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -11,6 +11,7 @@ import { Avatar } from '../../components/common/Avatar';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useMoodStore, MoodLevel } from '../../store/useMoodStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { useTranslation } from 'react-i18next';
 
 const MOOD_CONFIG: Record<MoodLevel, { emoji: string; label: string; color: string; bg: string }> = {
   1: { emoji: '😔', label: 'Rough Day', color: '#E74C3C', bg: '#FDEDEC' },
@@ -37,13 +38,16 @@ function getWeekDates(): string[] {
 }
 
 export function MoodTrackerScreen({ navigation }: any) {
+  const { t } = useTranslation('family');
   const insets = useSafeAreaInsets();
   const [selectedMember, setSelectedMember] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const members = useFamilyStore((s) => s.members);
-  const { entries, addMoodEntry, getTodayMood, getMemberHistory, seedDemoData } = useMoodStore();
+  const { entries, addMoodEntry, deleteMoodEntry, getTodayMood, getMemberHistory, seedDemoData, hasSeeded } = useMoodStore();
 
-  if (entries.length === 0) seedDemoData();
+  useEffect(() => {
+    if (!hasSeeded) seedDemoData();
+  }, [hasSeeded, seedDemoData]);
 
   const weekDates = getWeekDates();
   const today = new Date().toISOString().split('T')[0];
@@ -191,7 +195,17 @@ export function MoodTrackerScreen({ navigation }: any) {
               const isToday = date === today;
               const cfg = entry ? MOOD_CONFIG[entry.level] : null;
               return (
-                <View key={date} style={styles.historyDay}>
+                <Pressable
+                  key={date}
+                  style={styles.historyDay}
+                  onLongPress={() => {
+                    if (!entry) return;
+                    Alert.alert('Delete Mood Entry', `Remove the mood logged for ${format(new Date(date + 'T12:00:00'), 'EEEE')}?`, [
+                      { text: 'Cancel', style: 'cancel' },
+                      { text: 'Delete', style: 'destructive', onPress: () => deleteMoodEntry(entry.id) },
+                    ]);
+                  }}
+                >
                   <Text style={[styles.historyDate, isToday && styles.historyDateToday]}>
                     {format(new Date(date + 'T12:00:00'), 'EEE')}
                   </Text>
@@ -199,7 +213,7 @@ export function MoodTrackerScreen({ navigation }: any) {
                     <Text style={styles.historyEmoji}>{cfg?.emoji || '—'}</Text>
                   </View>
                   <Text style={styles.historyNum}>{entry?.level || ''}</Text>
-                </View>
+                </Pressable>
               );
             })}
           </View>

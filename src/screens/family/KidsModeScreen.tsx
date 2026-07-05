@@ -15,6 +15,9 @@ import { Avatar } from '../../components/common/Avatar';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { useMoodStore, MoodLevel } from '../../store/useMoodStore';
 import { useHabitsStore } from '../../store/useHabitsStore';
+import { pickTaskCompletionPhoto } from '../../utils/pickTaskPhoto';
+import type { Task } from '../../types';
+import { useTranslation } from 'react-i18next';
 
 const MOOD_CONFIG: Record<MoodLevel, { emoji: string; label: string; color: string; bg: string }> = {
   1: { emoji: '😔', label: 'Not great', color: '#E74C3C', bg: '#FDEDEC' },
@@ -28,7 +31,7 @@ const QUEST_COLORS = ['#E74C3C', '#E67E22', '#F5A623', '#27AE60', '#2980B9', '#8
 const XP_PER_TASK = 50;
 const XP_PER_HABIT = 30;
 
-function PointsBurst({ show }: { show: boolean }) {
+function PointsBurst({ show, points }: { show: boolean; points: number }) {
   const anim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     if (show) {
@@ -45,28 +48,35 @@ function PointsBurst({ show }: { show: boolean }) {
       style={[styles.burst, { opacity: anim, transform: [{ scale: anim }] }]}
       pointerEvents="none"
     >
-      <Text style={styles.burstText}>+{XP_PER_TASK} XP! 🎉</Text>
+      <Text style={styles.burstText}>+{points} XP! 🎉</Text>
     </Animated.View>
   );
 }
 
 export function KidsModeScreen({ navigation }: any) {
+  const { t } = useTranslation('family');
   const insets = useSafeAreaInsets();
   const members = useFamilyStore((s) => s.members);
   const tasks = useFamilyStore((s) => s.tasks);
-  const completeTask = useFamilyStore((s) => s.updateTask);
+  // Previously aliased to updateTask and patched { status: 'completed' }
+  // directly — that bypassed completeTask's point-awarding entirely, so
+  // "completing" a quest here never actually added to activeKid.points
+  // even though the UI showed a "+50 XP!" burst every time. Using the
+  // real actions now, same as TasksScreen.tsx, so there's one path that
+  // decides what a completed task is worth.
+  const completeTask = useFamilyStore((s) => s.completeTask);
+  const submitTaskForApproval = useFamilyStore((s) => s.submitTaskForApproval);
   const { getTodayMood, addMoodEntry, seedDemoData: seedMood } = useMoodStore();
-  const { habits, isCompletedToday, completeHabit, uncompleteHabit, seedDemoData: seedHabits } = useHabitsStore();
+  const { habits, isCompletedToday, completeHabit, uncompleteHabit } = useHabitsStore();
   const [selectedKid, setSelectedKid] = useState<string | null>(null);
   const [showBurst, setShowBurst] = useState(false);
+  const [burstPoints, setBurstPoints] = useState(XP_PER_TASK);
   const today = new Date().toISOString().split('T')[0];
 
   const kids = members.filter((m) => m.role === 'child');
   const activeKid = selectedKid ? members.find((m) => m.id === selectedKid) : (kids[0] || members[0]);
 
   if (!getTodayMood(activeKid?.id || '')) seedMood();
-  if (habits.length === 0) seedHabits();
-
   const myTasks = tasks.filter(
     (t) => activeKid && t.assignedTo?.includes(activeKid.id) && t.status !== 'completed'
   ).slice(0, 6);
@@ -82,9 +92,19 @@ export function KidsModeScreen({ navigation }: any) {
   const level = Math.floor(xp / 500) + 1;
   const xpProgress = (xp % 500) / 500;
 
-  const handleCompleteTask = (taskId: string) => {
+  const handleQuestPress = async (task: Task) => {
+    if (!activeKid || task.status === 'pending_approval') return;
+
+    if (task.requiresApproval) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      const photoUrl = await pickTaskCompletionPhoto();
+      submitTaskForApproval(task.id, activeKid.id, photoUrl ?? undefined);
+      return;
+    }
+
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    completeTask(taskId, { status: 'completed' });
+    completeTask(task.id, activeKid.id);
+    setBurstPoints(task.points);
     setShowBurst(true);
     setTimeout(() => setShowBurst(false), 1200);
   };
@@ -175,7 +195,7 @@ export function KidsModeScreen({ navigation }: any) {
     <View style={styles.container}>
       <StatusBar style="light" />
 
-      <PointsBurst show={showBurst} />
+      <PointsBurst show={showBurst} points={burstPoints} />
 
       <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
         {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
@@ -233,29 +253,34 @@ export function KidsModeScreen({ navigation }: any) {
 
         {myTasks.map((task, i) => {
           const questColor = QUEST_COLORS[i % QUEST_COLORS.length];
+          const awaitingApproval = task.status === 'pending_approval';
           return (
-            <Pressable key={task.id} onPress={() => handleCompleteTask(task.id)} style={styles.questCard}>
-              <LinearGradient colors={[questColor + '15', questColor + '08']} style={styles.questGrad}>
-                <View style={[styles.questIcon, { backgroundColor: questColor + '20' }]}>
+            <Pressable key={task.id} onPress={() => handleQuestPress(task)} disabled={awaitingApproval} style={styles.questCard}>
+              <LinearGradient colors={awaitingApproval ? ['#F5A62315', '#F5A62308'] : [questColor + '15', questColor + '08']} style={styles.questGrad}>
+                <View style={[styles.questIcon, { backgroundColor: (awaitingApproval ? '#F5A623' : questColor) + '20' }]}>
                   <Ionicons
-                    name={task.category === 'chores' ? 'home' : task.category === 'school' ? 'school' : task.category === 'health' ? 'fitness' : 'checkbox'}
+                    name={awaitingApproval ? 'hourglass-outline' : task.category === 'chores' ? 'home' : task.category === 'school' ? 'school' : task.category === 'health' ? 'fitness' : 'checkbox'}
                     size={22}
-                    color={questColor}
+                    color={awaitingApproval ? '#F5A623' : questColor}
                   />
                 </View>
                 <View style={{ flex: 1, marginLeft: 14 }}>
                   <Text style={styles.questTitle}>{task.title}</Text>
-                  {task.dueDate && (
+                  {awaitingApproval ? (
+                    <Text style={styles.questWaiting}>Waiting for a parent to approve</Text>
+                  ) : task.dueDate ? (
                     <Text style={styles.questDue}>Due {format(new Date(task.dueDate), 'MMM d')}</Text>
-                  )}
+                  ) : null}
                 </View>
                 <View style={styles.questReward}>
-                  <Text style={styles.questXP}>+{XP_PER_TASK}</Text>
+                  <Text style={styles.questXP}>+{task.points}</Text>
                   <Text style={styles.questXPLabel}>XP</Text>
                 </View>
-                <View style={[styles.questCheck, { borderColor: questColor }]}>
-                  <Ionicons name="checkmark" size={16} color={questColor} />
-                </View>
+                {!awaitingApproval && (
+                  <View style={[styles.questCheck, { borderColor: questColor }]}>
+                    <Ionicons name="checkmark" size={16} color={questColor} />
+                  </View>
+                )}
               </LinearGradient>
             </Pressable>
           );
@@ -386,6 +411,7 @@ const styles = StyleSheet.create({
   questIcon: { width: 46, height: 46, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   questTitle: { fontSize: 15, fontWeight: '700', color: colors.text, marginBottom: 2 },
   questDue: { fontSize: 12, color: colors.textSecondary },
+  questWaiting: { fontSize: 12, color: '#B85C00', fontWeight: '600' },
   questReward: { alignItems: 'center', marginHorizontal: 8 },
   questXP: { fontSize: 18, fontWeight: '800', color: '#F5A623' },
   questXPLabel: { fontSize: 9, color: colors.textMuted, fontWeight: '700' },

@@ -23,6 +23,7 @@ import { useUtilityStore } from '../../store/useUtilityStore';
 import { getDetectedUtilities } from '../../services/autoFillService';
 import type { DetectedUtility } from '../../services/autoFillService';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
+import { useTranslation } from 'react-i18next';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -71,8 +72,14 @@ function inferUtilityType(type: string): UtilityType {
 }
 
 export function UtilityTrackerScreen({ navigation }: any) {
+  const { t } = useTranslation('finance');
   const insets = useSafeAreaInsets();
-  const { bills, addBill, markPaid, deleteBill, getMonthlyTotal, getAverageForType, getCurrentMonthTotal, seedDemoData } = useUtilityStore();
+  const { bills, addBill, markPaid, deleteBill, getMonthlyTotal, getAverageForType, getCurrentMonthTotal, isLoaded, fetchFromServer } = useUtilityStore();
+
+  useEffect(() => {
+    if (!isLoaded) fetchFromServer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [activeTab, setActiveTab] = useState<'This Month' | 'Trends' | 'By Type'>('This Month');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -267,10 +274,7 @@ export function UtilityTrackerScreen({ navigation }: any) {
         <View style={styles.emptyState}>
           <Ionicons name="flash-outline" size={56} color={colors.textMuted} />
           <Text style={styles.emptyTitle}>No bills for this month</Text>
-          <Text style={styles.emptyDesc}>Tap + to add a bill or load demo data.</Text>
-          <Pressable onPress={seedDemoData} style={styles.demoBtn}>
-            <Text style={styles.demoBtnText}>Load Demo Data</Text>
-          </Pressable>
+          <Text style={styles.emptyDesc}>Tap + to add a bill.</Text>
         </View>
       ) : (
         thisMonthBills.map((bill) => (
@@ -399,7 +403,7 @@ export function UtilityTrackerScreen({ navigation }: any) {
           <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </Pressable>
-          <Text style={styles.headerTitle}>Utility Tracker</Text>
+          <Text style={styles.headerTitle}>{t('utility.title')}</Text>
           <Pressable
             onPress={() => {
               loadDetectedUtilities();

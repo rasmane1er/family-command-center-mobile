@@ -19,9 +19,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+import * as Clipboard from 'expo-clipboard';
 import { useTheme } from '../../theme/ThemeContext';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useChatStore } from '../../store/useChatStore';
+
+const SUPPORT_EMAIL = 'support@familycommandcenter.app';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -436,7 +439,7 @@ function AccordionItem({
 
 export default function HelpSupportScreen({ navigation }: { navigation: any }) {
   const insets = useSafeAreaInsets();
-  const { t } = useTranslation();
+  const { t } = useTranslation('settings');
   const { colors } = useTheme();
   const s = makeStyles(colors);
 
@@ -470,7 +473,7 @@ export default function HelpSupportScreen({ navigation }: { navigation: any }) {
   // continue the conversation from Live Chat.
   async function handleSendMessage() {
     if (!subject.trim() || !message.trim()) {
-      Alert.alert('Missing Fields', 'Please fill in both the subject and message before sending.');
+      Alert.alert(t('helpSupport.missingFieldsTitle'), t('helpSupport.missingFieldsMsg'));
       return;
     }
     setIsSending(true);
@@ -481,35 +484,54 @@ export default function HelpSupportScreen({ navigation }: { navigation: any }) {
       setMessage('');
       setSelectedCategory('General');
       Alert.alert(
-        'Message Sent!',
-        "We'll reply to your account email within 24 hours. You can also continue this conversation in Live Chat.",
+        t('helpSupport.sentTitle'),
+        t('helpSupport.sentMsg'),
         [
-          { text: 'View in Live Chat', onPress: () => navigation.navigate('LiveChat') },
-          { text: 'OK', style: 'cancel' },
+          { text: t('helpSupport.viewInLiveChat'), onPress: () => navigation.navigate('LiveChat') },
+          { text: t('common.ok'), style: 'cancel' },
         ],
       );
     } catch {
-      Alert.alert('Couldn\'t Send', 'We couldn\'t reach the support server. Check your connection and try again.');
+      Alert.alert(t('helpSupport.sendFailedTitle'), t('helpSupport.sendFailedMsg'));
     } finally {
       setIsSending(false);
     }
   }
 
   // ── Quick contact handlers ────────────────────────────────────────────────
-  function openEmail() {
-    Linking.openURL('mailto:support@familycommandcenter.app?subject=Support%20Request').catch(() =>
-      Alert.alert('Error', 'Unable to open your email app.'),
+  async function openEmail() {
+    const url = `mailto:${SUPPORT_EMAIL}?subject=Support%20Request`;
+    try {
+      const canOpen = await Linking.canOpenURL(url);
+      if (!canOpen) {
+        offerCopyEmail();
+        return;
+      }
+      await Linking.openURL(url);
+    } catch {
+      offerCopyEmail();
+    }
+  }
+
+  function offerCopyEmail() {
+    Alert.alert(
+      t('helpSupport.noMailAppTitle'),
+      t('helpSupport.noMailAppMsg'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('helpSupport.copyEmail'),
+          onPress: async () => {
+            await Clipboard.setStringAsync(SUPPORT_EMAIL);
+            Alert.alert(t('helpSupport.emailCopiedTitle'), t('helpSupport.emailCopiedMsg'));
+          },
+        },
+      ],
     );
   }
 
   function openLiveChat() {
     navigation.navigate('LiveChat');
-  }
-
-  function openCommunity() {
-    Linking.openURL('https://community.familycommandcenter.app').catch(() =>
-      Alert.alert('Error', 'Unable to open the community link.'),
-    );
   }
 
   const screenHeader = (
@@ -519,8 +541,8 @@ export default function HelpSupportScreen({ navigation }: { navigation: any }) {
           <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
         <View style={s.headerTitleBlock}>
-          <Text style={s.headerTitle}>Help & Support</Text>
-          <Text style={s.headerSubtitle}>We're here to help</Text>
+          <Text style={s.headerTitle}>{t('helpSupport.title')}</Text>
+          <Text style={s.headerSubtitle}>{t('helpSupport.subtitle')}</Text>
         </View>
       </View>
 
@@ -529,7 +551,7 @@ export default function HelpSupportScreen({ navigation }: { navigation: any }) {
         <Ionicons name="search" size={18} color="#94A3B8" />
         <TextInput
           style={s.searchInput}
-          placeholder="Search FAQs…"
+          placeholder={t('helpSupport.searchPlaceholder')}
           placeholderTextColor="#94A3B8"
           value={searchText}
           onChangeText={setSearchText}
@@ -550,7 +572,7 @@ export default function HelpSupportScreen({ navigation }: { navigation: any }) {
       <TouchableOpacity activeOpacity={0.7} style={s.backButton} onPress={() => navigation.goBack()}>
         <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
       </TouchableOpacity>
-      <Text style={[s.headerTitle, { flex: 1, marginLeft: 8 }]}>Help & Support</Text>
+      <Text style={[s.headerTitle, { flex: 1, marginLeft: 8 }]}>{t('helpSupport.title')}</Text>
     </View>
   );
 
@@ -572,27 +594,20 @@ export default function HelpSupportScreen({ navigation }: { navigation: any }) {
       >
         {/* ── Quick Contact ── */}
         <View style={s.section}>
-          <Text style={s.sectionLabel}>Contact Us</Text>
+          <Text style={s.sectionLabel}>{t('helpSupport.contactUs')}</Text>
           <View style={s.contactRow}>
             <TouchableOpacity activeOpacity={0.75} style={s.contactCard} onPress={openEmail}>
               <View style={s.contactIconCircle}>
                 <Ionicons name="mail-outline" size={24} color={colors.primary} />
               </View>
-              <Text style={s.contactLabel}>Email Us</Text>
+              <Text style={s.contactLabel}>{t('helpSupport.emailUs')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity activeOpacity={0.75} style={s.contactCard} onPress={openLiveChat}>
               <View style={s.contactIconCircle}>
                 <Ionicons name="chatbubble-ellipses-outline" size={24} color={colors.primary} />
               </View>
-              <Text style={s.contactLabel}>Live Chat</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity activeOpacity={0.75} style={s.contactCard} onPress={openCommunity}>
-              <View style={s.contactIconCircle}>
-                <Ionicons name="globe-outline" size={24} color={colors.primary} />
-              </View>
-              <Text style={s.contactLabel}>Community</Text>
+              <Text style={s.contactLabel}>{t('helpSupport.liveChat')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -630,7 +645,7 @@ export default function HelpSupportScreen({ navigation }: { navigation: any }) {
 
         {/* ── Submit a Ticket ── */}
         <View style={s.section}>
-          <Text style={s.sectionLabel}>Submit a Ticket</Text>
+          <Text style={s.sectionLabel}>{t('helpSupport.submitTicket')}</Text>
           <View style={s.ticketCard}>
             <Text style={[s.ticketFieldLabel, { marginTop: 0 }]}>Subject</Text>
             <TextInput
@@ -687,7 +702,7 @@ export default function HelpSupportScreen({ navigation }: { navigation: any }) {
 
         {/* ── Footer ── */}
         <View style={s.footer}>
-          <Text style={s.footerText}>Version 1.0.0 • Family Command Center</Text>
+          <Text style={s.footerText}>{t('helpSupport.version')}</Text>
           <Text style={s.footerText}>📱 Available on iOS & Android</Text>
         </View>
       </ScrollView>

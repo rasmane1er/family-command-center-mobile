@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, TextInput, Modal,
-  KeyboardAvoidingView, Platform, Alert, Switch,
+  KeyboardAvoidingView, Platform, Alert, Switch, RefreshControl,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,6 +15,7 @@ import { Badge } from '../../components/common/Badge';
 import { useFamilyBoardStore, BoardPost, PostPriority, PostCategory } from '../../store/useFamilyBoardStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
+import { useTranslation } from 'react-i18next';
 
 type FilterType = 'all' | 'pinned' | 'announcement' | 'reminder' | 'rule';
 
@@ -132,6 +133,7 @@ function PostDetailModal({
   onDelete: (id: string) => void;
   onTogglePin: (id: string) => void;
 }) {
+  const { t } = useTranslation('family');
   const members = useFamilyStore((s) => s.members);
   const me = members[0];
 
@@ -199,7 +201,7 @@ function PostDetailModal({
 
           <Pressable
             onPress={() => {
-              Alert.alert('Delete Post', 'Remove this post from the board?', [
+              Alert.alert(t('common.deleteTitle'), 'Remove this post from the board?', [
                 { text: 'Cancel', style: 'cancel' },
                 {
                   text: 'Delete', style: 'destructive', onPress: () => {
@@ -380,11 +382,21 @@ function AddPostModal({
 }
 
 export function FamilyBoardScreen({ navigation }: any) {
+  const { t } = useTranslation('family');
   const insets = useSafeAreaInsets();
-  const { posts, addPost, togglePin, addReaction, deletePost, getActivePosts, seedDemoData } = useFamilyBoardStore();
+  const { posts, addPost, togglePin, addReaction, deletePost, getActivePosts, fetchFromServer, hydratePosts, isHydrating, isLoaded } = useFamilyBoardStore();
   const [filter, setFilter] = useState<FilterType>('all');
   const [showAdd, setShowAdd] = useState(false);
   const [selectedPost, setSelectedPost] = useState<BoardPost | null>(null);
+
+  useEffect(() => {
+    fetchFromServer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const onRefresh = useCallback(() => {
+    fetchFromServer();
+  }, [fetchFromServer]);
 
   const activePosts = useMemo(() => getActivePosts(), [posts]);
 
@@ -428,20 +440,20 @@ export function FamilyBoardScreen({ navigation }: any) {
               <Ionicons name="add" size={22} color="#fff" />
             </Pressable>
           </View>
-    
-  <View style={styles.filtersBar}>
-          {FILTERS.map((f) => (
-            <Pressable
-              key={f.key}
-              onPress={() => setFilter(f.key)}
-              style={[styles.filterChip, filter === f.key && styles.filterChipActive]}
-            >
-              <Text style={[styles.filterChipText, filter === f.key && styles.filterChipTextActive]}>
-                {f.label}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
+
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filtersBar}>
+            {FILTERS.map((f) => (
+              <Pressable
+                key={f.key}
+                onPress={() => setFilter(f.key)}
+                style={[styles.filterChip, filter === f.key && styles.filterChipActive]}
+              >
+                <Text style={[styles.filterChipText, filter === f.key && styles.filterChipTextActive]}>
+                  {f.label}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
     </LinearGradient>
   );
   const screenCompact = (
@@ -466,17 +478,25 @@ export function FamilyBoardScreen({ navigation }: any) {
 
       <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
         {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
-          <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]} showsVerticalScrollIndicator={false} onScroll={onScroll} onScrollEndDrag={onScrollEndDrag} onMomentumScrollEnd={onMomentumScrollEnd} scrollEventThrottle={scrollEventThrottle}>
-        {activePosts.length === 0 && (
+          <ScrollView
+            contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+            showsVerticalScrollIndicator={false}
+            onScroll={onScroll}
+            onScrollEndDrag={onScrollEndDrag}
+            onMomentumScrollEnd={onMomentumScrollEnd}
+            scrollEventThrottle={scrollEventThrottle}
+            refreshControl={<RefreshControl refreshing={isHydrating} onRefresh={onRefresh} tintColor={colors.primary} />}
+          >
+        {activePosts.length === 0 && isLoaded && (
           <View style={styles.emptyState}>
             <Text style={{ fontSize: 60 }}>📋</Text>
             <Text style={styles.emptyTitle}>Board is Empty</Text>
             <Text style={styles.emptyDesc}>Post announcements, reminders, and updates for the whole family</Text>
             <Pressable
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); seedDemoData(); }}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setShowAdd(true); }}
               style={styles.demoBtn}
             >
-              <Text style={styles.demoBtnText}>Load Demo Data</Text>
+              <Text style={styles.demoBtnText}>Add First Post</Text>
             </Pressable>
           </View>
         )}
@@ -539,23 +559,23 @@ const styles = StyleSheet.create({
   backBtn: {
     width: 38, height: 38, borderRadius: 10,
     backgroundColor: 'rgba(255,255,255,0.15)',
-    alignItems: 'center', justifyContent: 'center', marginRight: 12,
+    alignItems: 'center', justifyContent: 'center', marginRight: 12,marginBottom: 44,
   },
   headerTitle: { fontSize: 18, fontWeight: '800', color: '#fff' },
-  headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 2 },
+  headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 2 ,marginBottom: 44},
   addBtn: {
-    width: 38, height: 38, borderRadius: 10,
+    width: 38, height: 38, borderRadius: 10,marginBottom: 44,
     backgroundColor: 'rgba(255,255,255,0.15)',
     alignItems: 'center', justifyContent: 'center',
   },
-  filtersBar: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 12, paddingVertical: 8, gap: 8, backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border },
+  filtersBar: { flexDirection: 'row', gap: 8, paddingBottom: 4 },
   filterChip: {
-    paddingHorizontal: 14, paddingVertical: 6,
-    borderRadius: 20, backgroundColor: colors.border,
+    paddingHorizontal: 14, paddingVertical: 7,
+    borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.12)',
   },
-  filterChipActive: { backgroundColor: '#1B2838' },
-  filterChipText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
-  filterChipTextActive: { color: '#fff' },
+  filterChipActive: { backgroundColor: '#fff' },
+  filterChipText: { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.8)' },
+  filterChipTextActive: { color: '#162447' },
   content: { padding: 16 },
   postCardWrapper: {
     flexDirection: 'row', marginBottom: 12,

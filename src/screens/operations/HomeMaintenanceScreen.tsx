@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -30,6 +30,7 @@ import {
   MaintenanceTask,
 } from '../../store/useHomeMaintenanceStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { useTranslation } from 'react-i18next';
 
 const CATEGORIES: { value: MaintenanceCategory; label: string; icon: string }[] = [
   { value: 'plumbing', label: 'Plumbing', icon: 'water' },
@@ -126,8 +127,14 @@ const SEASON_LABELS: Record<number, string> = {
 };
 
 export function HomeMaintenanceScreen({ navigation }: any) {
+  const { t } = useTranslation('ops');
   const insets = useSafeAreaInsets();
-  const { tasks, addTask, updateTask, deleteTask, completeTask, seedDemoData } = useHomeMaintenanceStore();
+  const { tasks, addTask, updateTask, deleteTask, completeTask, isLoaded, fetchFromServer } = useHomeMaintenanceStore();
+
+  useEffect(() => {
+    if (!isLoaded) fetchFromServer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const family = useFamilyStore((s) => s.family);
 
   const [activeTab, setActiveTab] = useState<'pending' | 'done' | 'recurring'>('pending');
@@ -184,7 +191,7 @@ export function HomeMaintenanceScreen({ navigation }: any) {
   };
 
   const handleDelete = (task: MaintenanceTask) => {
-    Alert.alert('Delete Task', `Delete "${task.title}"?`, [
+    Alert.alert(t('common.deleteTitle'), `Delete "${task.title}"?`, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete', style: 'destructive', onPress: () => {
@@ -337,7 +344,7 @@ export function HomeMaintenanceScreen({ navigation }: any) {
         <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
-        <Text style={styles.headerTitle}>Home Maintenance</Text>
+        <Text style={styles.headerTitle}>{t('ops.homeMaintenance')}</Text>
         <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
           <Ionicons name="add" size={26} color="#fff" />
         </Pressable>
@@ -383,7 +390,7 @@ export function HomeMaintenanceScreen({ navigation }: any) {
       <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
-      <Text style={styles.headerTitle}>Home Maintenance</Text>
+      <Text style={styles.headerTitle}>{t('ops.homeMaintenance')}</Text>
       <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: '600' }}>{pendingTasks.length} pending</Text>
     </LinearGradient>
   );
@@ -435,7 +442,6 @@ export function HomeMaintenanceScreen({ navigation }: any) {
                 <Ionicons name="home-outline" size={64} color={colors.textMuted} />
                 <Text style={styles.emptyTitle}>No pending tasks</Text>
                 <Text style={styles.emptyDesc}>Your home is in great shape!</Text>
-                <Button title="Add Demo Data" onPress={() => { seedDemoData(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} variant="ghost" style={{ marginTop: 12 }} />
               </View>
             )}
             {pendingTasks.map((t) => renderTaskCard(t))}

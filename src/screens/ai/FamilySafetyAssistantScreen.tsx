@@ -25,6 +25,9 @@ import { shadows } from '../../theme/spacing';
 import type { ChatMessage } from '../../types';
 import { useTabBarInset } from '../../hooks/useTabBarInset';
 import { chatWithSafetyAssistant } from '../../services/aiService';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
+import { SubscriptionGate } from '../../components/common/SubscriptionGate';
 
 const PURPLE = '#8E44AD';
 const PURPLE_LIGHT = '#F3E8FA';
@@ -32,45 +35,44 @@ const PURPLE_MID = '#C39BD3';
 
 type ContextMode = 'general' | 'location' | 'screentime' | 'alerts';
 
-const CONTEXT_TABS: { key: ContextMode; label: string }[] = [
-  { key: 'general', label: 'General' },
-  { key: 'location', label: 'Location' },
-  { key: 'screentime', label: 'Screen Time' },
-  { key: 'alerts', label: 'Alerts' },
+const NS = 'ai.screens.familySafetyAssistant';
+
+const CONTEXT_TABS: { key: ContextMode; labelKey: string }[] = [
+  { key: 'general', labelKey: 'tabGeneral' },
+  { key: 'location', labelKey: 'tabLocation' },
+  { key: 'screentime', labelKey: 'tabScreenTime' },
+  { key: 'alerts', labelKey: 'tabAlerts' },
 ];
 
-const STARTER_MESSAGES: Record<ContextMode, string> = {
-  general:
-    "Hi! I'm your Family Safety Assistant. I can help with parenting advice, guardian insights, and safety recommendations. What would you like to know?",
-  location:
-    "I can help you understand your child's location patterns and geofence alerts. What would you like to know about their whereabouts?",
-  screentime:
-    "Let's talk about screen time. I can analyze usage patterns and suggest healthy limits for your family.",
-  alerts:
-    "I'll help you review and respond to safety alerts. Ask me about any SOS events or approval requests.",
+const STARTER_MESSAGE_KEYS: Record<ContextMode, string> = {
+  general: 'starterGeneral',
+  location: 'starterLocation',
+  screentime: 'starterScreenTime',
+  alerts: 'starterAlerts',
 };
 
-const QUICK_PROMPTS = [
-  'Where is my child right now?',
-  'How much screen time today?',
-  'Any safety alerts?',
-  'Suggest bedtime rules',
-  'What apps is my child using most?',
-  'Tips for healthy screen habits',
+const QUICK_PROMPT_KEYS = [
+  'quickPrompt1',
+  'quickPrompt2',
+  'quickPrompt3',
+  'quickPrompt4',
+  'quickPrompt5',
+  'quickPrompt6',
 ];
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
-function buildStarterMessage(mode: ContextMode): ChatMessage {
+function buildStarterMessage(mode: ContextMode, t: TFunction): ChatMessage {
   return {
     id: generateId(),
     role: 'assistant',
-    content: STARTER_MESSAGES[mode],
+    content: t(`${NS}.${STARTER_MESSAGE_KEYS[mode]}`),
     timestamp: new Date().toISOString(),
   };
 }
 
 export function FamilySafetyAssistantScreen({ navigation }: any) {
+  const { t } = useTranslation('ai');
   const insets = useSafeAreaInsets();
   const flatListRef = useRef<FlatList>(null);
 
@@ -82,7 +84,7 @@ export function FamilySafetyAssistantScreen({ navigation }: any) {
   const childMembers = members.filter((m) => m.role === 'child');
 
   const [contextMode, setContextMode] = useState<ContextMode>('general');
-  const [messages, setMessages] = useState<ChatMessage[]>([buildStarterMessage('general')]);
+  const [messages, setMessages] = useState<ChatMessage[]>([buildStarterMessage('general', t)]);
   const [input, setInput] = useState('');
   const voice = useVoiceInput({ onResult: (text) => sendMessage(text) });
   const [isLoading, setIsLoading] = useState(false);
@@ -97,7 +99,7 @@ export function FamilySafetyAssistantScreen({ navigation }: any) {
 
   const switchTab = (mode: ContextMode) => {
     setContextMode(mode);
-    setMessages([buildStarterMessage(mode)]);
+    setMessages([buildStarterMessage(mode, t)]);
   };
 
   const buildContextString = () => {
@@ -177,8 +179,8 @@ export function FamilySafetyAssistantScreen({ navigation }: any) {
       let suggestions = result.suggestions;
 
       if (result.error) {
-        reply = getFallbackResponse(trimmed, contextMode);
-        suggestions = getFallbackSuggestions(contextMode);
+        reply = getFallbackResponse(trimmed, contextMode, t);
+        suggestions = getFallbackSuggestions(contextMode, t);
       }
 
       const assistantMsg: ChatMessage = {
@@ -194,9 +196,9 @@ export function FamilySafetyAssistantScreen({ navigation }: any) {
       const assistantMsg: ChatMessage = {
         id: generateId(),
         role: 'assistant',
-        content: getFallbackResponse(trimmed, contextMode),
+        content: getFallbackResponse(trimmed, contextMode, t),
         timestamp: new Date().toISOString(),
-        suggestions: getFallbackSuggestions(contextMode),
+        suggestions: getFallbackSuggestions(contextMode, t),
       };
       setMessages((prev) => [...prev.filter((m) => !m.isLoading), assistantMsg]);
     } finally {
@@ -240,6 +242,7 @@ export function FamilySafetyAssistantScreen({ navigation }: any) {
   const tabBarHeight = useTabBarInset();
 
   return (
+    <SubscriptionGate requiredTier="premium" featureName="Family Safety AI">
     <View style={[styles.container, { paddingBottom: tabBarHeight }]}>
       <StatusBar style="light" />
 
@@ -253,11 +256,11 @@ export function FamilySafetyAssistantScreen({ navigation }: any) {
             <Ionicons name="shield-checkmark" size={22} color={PURPLE_MID} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.headerTitle}>Family Safety AI</Text>
-            <Text style={styles.headerSubtitle}>Powered by guardian insights</Text>
+            <Text style={styles.headerTitle}>{t('familySafety.title')}</Text>
+            <Text style={styles.headerSubtitle}>{t('familySafety.powered')}</Text>
           </View>
           <AIResetMenu actions={[
-            { label: 'Reset Conversation', description: 'Clear all messages and start fresh', icon: 'refresh-outline', danger: true, onPress: () => { setMessages([buildStarterMessage(contextMode)]); setInput(''); } },
+            { label: t(`${NS}.resetLabel`), description: t(`${NS}.resetDesc`), icon: 'refresh-outline', danger: true, onPress: () => { setMessages([buildStarterMessage(contextMode, t)]); setInput(''); } },
           ]} />
         </View>
 
@@ -274,7 +277,7 @@ export function FamilySafetyAssistantScreen({ navigation }: any) {
               onPress={() => switchTab(tab.key)}
             >
               <Text style={[styles.tabText, contextMode === tab.key && styles.tabTextActive]}>
-                {tab.label}
+                {t(`${NS}.${tab.labelKey}`)}
               </Text>
             </Pressable>
           ))}
@@ -294,11 +297,14 @@ export function FamilySafetyAssistantScreen({ navigation }: any) {
             style={styles.quickPromptsScroll}
             contentContainerStyle={styles.quickPromptsRow}
           >
-            {QUICK_PROMPTS.map((p) => (
-              <Pressable key={p} style={styles.quickChip} onPress={() => sendMessage(p)}>
-                <Text style={styles.quickChipText} numberOfLines={1}>{p}</Text>
-              </Pressable>
-            ))}
+            {QUICK_PROMPT_KEYS.map((k) => {
+              const p = t(`${NS}.${k}`);
+              return (
+                <Pressable key={k} style={styles.quickChip} onPress={() => sendMessage(p)}>
+                  <Text style={styles.quickChipText} numberOfLines={1}>{p}</Text>
+                </Pressable>
+              );
+            })}
           </ScrollView>
         )}
 
@@ -322,45 +328,46 @@ export function FamilySafetyAssistantScreen({ navigation }: any) {
           onMicCancel={voice.cancel}
           isListening={voice.isListening}
           partialTranscript={voice.partial}
-          placeholder="Ask about family safety..."
+          placeholder={t(`${NS}.placeholder`)}
           disabled={isLoading}
           bottomPadding={8}
           accentColor="#8E44AD"
         />
       </KeyboardAvoidingView>
     </View>
+    </SubscriptionGate>
   );
 }
 
-function getFallbackResponse(input: string, mode: ContextMode): string {
+function getFallbackResponse(input: string, mode: ContextMode, t: TFunction): string {
   const lower = input.toLowerCase();
   if (lower.includes('location') || lower.includes('where')) {
-    return "Based on your guardian dashboard, I can see your monitored devices. For real-time location data, please check the Guardian Dashboard for the latest check-in information.";
+    return t(`${NS}.fallbackLocation`);
   }
   if (lower.includes('screen time') || lower.includes('screen')) {
-    return "Your active screen time rules are configured in the Guardian settings. I recommend reviewing daily limits and ensuring bedtime rules are set for school nights.";
+    return t(`${NS}.fallbackScreenTime`);
   }
   if (lower.includes('alert') || lower.includes('sos')) {
-    return "I'll help you review safety alerts. Please check the Guardian Dashboard for any active SOS events or pending approvals that need your attention.";
+    return t(`${NS}.fallbackAlerts`);
   }
   if (lower.includes('bedtime') || lower.includes('rules')) {
-    return "For healthy screen habits, I recommend: no screens 1 hour before bed, daily limits of 2 hours on school days, and designated tech-free zones like the dinner table.";
+    return t(`${NS}.fallbackBedtime`);
   }
-  const modeDefaults: Record<ContextMode, string> = {
-    general: "I'm your Family Safety Assistant. I can help with parenting advice, screen time rules, location monitoring, and guardian insights. What would you like to explore?",
-    location: "I can help interpret location patterns and geofence alerts from your guardian data. What would you like to know?",
-    screentime: "I can help you set up healthy screen time limits and review usage patterns for your family.",
-    alerts: "I'm ready to help you review and respond to any safety alerts or pending approvals.",
+  const modeDefaultKeys: Record<ContextMode, string> = {
+    general: 'fallbackDefaultGeneral',
+    location: 'fallbackDefaultLocation',
+    screentime: 'fallbackDefaultScreenTime',
+    alerts: 'fallbackDefaultAlerts',
   };
-  return modeDefaults[mode];
+  return t(`${NS}.${modeDefaultKeys[mode]}`);
 }
 
-function getFallbackSuggestions(mode: ContextMode): string[] {
+function getFallbackSuggestions(mode: ContextMode, t: TFunction): string[] {
   const map: Record<ContextMode, string[]> = {
-    general: ['How much screen time today?', 'Any safety alerts?', 'Suggest bedtime rules'],
-    location: ['Show geofence zones', 'When was last check-in?', 'Set up a new zone'],
-    screentime: ['Set a daily limit', 'What apps are used most?', 'Tips for healthy habits'],
-    alerts: ['Review pending approvals', 'Show SOS history', 'How to respond to alerts?'],
+    general: [t(`${NS}.fallbackSuggestionGeneral1`), t(`${NS}.fallbackSuggestionGeneral2`), t(`${NS}.fallbackSuggestionGeneral3`)],
+    location: [t(`${NS}.fallbackSuggestionLocation1`), t(`${NS}.fallbackSuggestionLocation2`), t(`${NS}.fallbackSuggestionLocation3`)],
+    screentime: [t(`${NS}.fallbackSuggestionScreenTime1`), t(`${NS}.fallbackSuggestionScreenTime2`), t(`${NS}.fallbackSuggestionScreenTime3`)],
+    alerts: [t(`${NS}.fallbackSuggestionAlerts1`), t(`${NS}.fallbackSuggestionAlerts2`), t(`${NS}.fallbackSuggestionAlerts3`)],
   };
   return map[mode];
 }

@@ -1,5 +1,6 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 
 import { RoleGuard } from '../components/auth/RoleGuard';
 import { SubscriptionGate } from '../components/common/SubscriptionGate';
@@ -25,15 +26,17 @@ import { HomeMaintenanceScreen } from '../screens/operations/HomeMaintenanceScre
 import { ChildcareManagerScreen } from '../screens/operations/ChildcareManagerScreen';
 import { HomeInventoryScreen } from '../screens/operations/HomeInventoryScreen';
 import { CarpoolManagerScreen } from '../screens/operations/CarpoolManagerScreen';
+import { TasksScreen } from '../screens/family/TasksScreen';
 
 const Stack = createNativeStackNavigator();
 
 export function OperationsNavigator() {
+  const { t } = useTranslation('ops');
   return (
     <RoleGuard
       allowParent
-      title="Operations Restricted"
-      message="Operations tools are only available to parents, guardians, or admins."
+      title={t('gates.restrictedTitle')}
+      message={t('gates.restrictedMsg')}
     >
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="OperationsDashboard" component={OperationsDashboardScreen} />
@@ -42,7 +45,7 @@ export function OperationsNavigator() {
 
         <Stack.Screen name="MealPlanning">
           {(props) => (
-            <SubscriptionGate requiredTier="premium" featureName="Meal Planning">
+            <SubscriptionGate requiredTier="premium" featureName={t('gates.mealPlanningFeature')}>
               <MealPlanningScreen {...props} />
             </SubscriptionGate>
           )}
@@ -50,7 +53,7 @@ export function OperationsNavigator() {
 
         <Stack.Screen name="Documents">
           {(props) => (
-            <SubscriptionGate requiredTier="premium" featureName="Document Vault">
+            <SubscriptionGate requiredTier="premium" featureName={t('gates.documentVaultFeature')}>
               <DocumentsScreen {...props} />
             </SubscriptionGate>
           )}
@@ -62,20 +65,26 @@ export function OperationsNavigator() {
 
         <Stack.Screen name="Automation">
           {(props) => (
-            <SubscriptionGate requiredTier="family_pro" featureName="Smart Automation">
+            <SubscriptionGate requiredTier="family_pro" featureName={t('gates.smartAutomationFeature')}>
               <AutomationScreen {...props} />
             </SubscriptionGate>
           )}
         </Stack.Screen>
 
         <Stack.Screen name="Marketplace" component={MarketplaceScreen} />
+        {/* Also registered here (in addition to FamilyNavigator) so
+            Marketplace's "Open in Tasks" can do a plain same-stack
+            navigation.navigate('Tasks') instead of hopping into a sibling
+            tab's nested stack — same screen, same store, just reachable
+            without cross-navigator ambiguity from this stack too. */}
+        <Stack.Screen name="Tasks" component={TasksScreen} />
         <Stack.Screen name="TimeEconomy" component={TimeEconomyScreen} />
         <Stack.Screen name="SmartHome" component={SmartHomeScreen} />
         <Stack.Screen name="ConnectHueBridge" component={ConnectHueBridgeScreen} />
 
         <Stack.Screen name="ShoppingList">
           {(props) => (
-            <SubscriptionGate requiredTier="premium" featureName="Shopping Intelligence">
+            <SubscriptionGate requiredTier="premium" featureName={t('gates.shoppingIntelligenceFeature')}>
               <ShoppingListScreen {...props} />
             </SubscriptionGate>
           )}
@@ -85,7 +94,7 @@ export function OperationsNavigator() {
 
         <Stack.Screen name="TravelPlanning">
           {(props) => (
-            <SubscriptionGate requiredTier="family_pro" featureName="Travel Planning">
+            <SubscriptionGate requiredTier="family_pro" featureName={t('gates.travelPlanningFeature')}>
               <TravelPlanningScreen {...props} />
             </SubscriptionGate>
           )}
@@ -93,7 +102,7 @@ export function OperationsNavigator() {
 
         <Stack.Screen name="PetTracker">
           {(props) => (
-            <SubscriptionGate requiredTier="premium" featureName="Pet Tracker">
+            <SubscriptionGate requiredTier="premium" featureName={t('gates.petTrackerFeature')}>
               <PetTrackerScreen {...props} />
             </SubscriptionGate>
           )}
@@ -103,7 +112,7 @@ export function OperationsNavigator() {
 
         <Stack.Screen name="ChildcareManager">
           {(props) => (
-            <SubscriptionGate requiredTier="family_pro" featureName="Childcare Manager">
+            <SubscriptionGate requiredTier="family_pro" featureName={t('gates.childcareManagerFeature')}>
               <ChildcareManagerScreen {...props} />
             </SubscriptionGate>
           )}
@@ -111,7 +120,7 @@ export function OperationsNavigator() {
 
         <Stack.Screen name="HomeInventory">
           {(props) => (
-            <SubscriptionGate requiredTier="premium" featureName="Home Inventory">
+            <SubscriptionGate requiredTier="premium" featureName={t('gates.homeInventoryFeature')}>
               <HomeInventoryScreen {...props} />
             </SubscriptionGate>
           )}

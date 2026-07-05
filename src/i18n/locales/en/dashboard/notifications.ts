@@ -1,0 +1,15 @@
+export default {
+  headerTitle: 'Notifications',
+  unreadCount: '{{count}} unread',
+  markAllRead: 'Mark all read',
+  clearAll: 'Clear all',
+  filterAll: 'All',
+  filterUnread: 'Unread ({{count}})',
+  deleteTitle: 'Delete Notification',
+  deleteMsg: 'Remove this notification?',
+  clearAllTitle: 'Clear All Notifications',
+  clearAllMsg: 'This will permanently remove all notifications. This cannot be undone.',
+  emptyTitle: 'No {{filterLabel}}notifications',
+  emptyDesc: "You're all caught up! Notifications about tasks, bills, and family events will appear here.",
+  hint: 'Long press a notification to delete it',
+};

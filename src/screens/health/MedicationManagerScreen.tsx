@@ -23,21 +23,23 @@ import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useMedicationStore, MedFrequency, Medication } from '../../store/useMedicationStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
-const FREQ_OPTIONS: { value: MedFrequency; label: string; times: number }[] = [
-  { value: 'daily', label: 'Once Daily', times: 1 },
-  { value: 'twice_daily', label: 'Twice Daily', times: 2 },
-  { value: 'weekly', label: 'Weekly', times: 1 },
-  { value: 'as_needed', label: 'As Needed', times: 0 },
-  { value: 'monthly', label: 'Monthly', times: 1 },
+const FREQ_OPTIONS: { value: MedFrequency; labelKey: string; times: number }[] = [
+  { value: 'daily', labelKey: 'freqOnceDaily', times: 1 },
+  { value: 'twice_daily', labelKey: 'freqTwiceDaily', times: 2 },
+  { value: 'weekly', labelKey: 'freqWeekly', times: 1 },
+  { value: 'as_needed', labelKey: 'freqAsNeeded', times: 0 },
+  { value: 'monthly', labelKey: 'freqMonthly', times: 1 },
 ];
 
 const COLOR_PRESETS = ['#2980B9', '#F5A623', '#E74C3C', '#8E44AD', '#27AE60', '#16A085'];
 
-function freqLabel(f: MedFrequency): string {
-  return FREQ_OPTIONS.find((o) => o.value === f)?.label ?? f;
+function freqLabel(f: MedFrequency, t: (key: string) => string): string {
+  const key = FREQ_OPTIONS.find((o) => o.value === f)?.labelKey;
+  return key ? t(`health.screens.medicationManager.${key}`) : f;
 }
 
 function daysUntilRefill(refillDate?: string): number | null {
@@ -70,6 +72,7 @@ export function MedicationManagerScreen({ navigation: navProp }: any) {
   const { colors } = useTheme();
   const navHook = useNavigation<any>();
   const navigation = navProp ?? navHook;
+  const { t } = useTranslation('health');
   const insets = useSafeAreaInsets();
   const { medications, logs, addMedication, deleteMedication, logDose, seedDemoData } = useMedicationStore();
   const members = useFamilyStore((s) => s.members);
@@ -130,15 +133,19 @@ export function MedicationManagerScreen({ navigation: navProp }: any) {
   };
 
   const handleDelete = (med: Medication) => {
-    Alert.alert('Remove Medication', `Remove ${med.name}?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Remove', style: 'destructive', onPress: () => {
-          deleteMedication(med.id);
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Alert.alert(
+      t('health.screens.medicationManager.removeMedicationTitle'),
+      t('health.screens.medicationManager.removeMedicationMsg', { name: med.name }),
+      [
+        { text: t('health.screens.medicationManager.cancel'), style: 'cancel' },
+        {
+          text: t('health.screens.medicationManager.remove'), style: 'destructive', onPress: () => {
+            deleteMedication(med.id);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          },
         },
-      },
-    ]);
+      ]
+    );
   };
 
   // Group meds by member
@@ -155,7 +162,7 @@ export function MedicationManagerScreen({ navigation: navProp }: any) {
 
   const screenHeader = (
     <PremiumHeader
-      title="Medications"
+      title={t('health.screens.medicationManager.headerTitle')}
       onBack={() => navigation.goBack()}
       colors={['#880E4F', '#AD1457']}
       rightAction={
@@ -167,17 +174,17 @@ export function MedicationManagerScreen({ navigation: navProp }: any) {
       <View style={s.headerStats}>
         <View style={s.headerStat}>
           <Text style={s.headerStatNum}>{activeMeds.length}</Text>
-          <Text style={s.headerStatLabel}>Active</Text>
+          <Text style={s.headerStatLabel}>{t('health.screens.medicationManager.statActive')}</Text>
         </View>
         <View style={s.headerStatDivider} />
         <View style={s.headerStat}>
           <Text style={[s.headerStatNum, refillsDueThisWeek > 0 && s.alertNum]}>{refillsDueThisWeek}</Text>
-          <Text style={s.headerStatLabel}>Refills Due</Text>
+          <Text style={s.headerStatLabel}>{t('health.screens.medicationManager.statRefillsDue')}</Text>
         </View>
         <View style={s.headerStatDivider} />
         <View style={s.headerStat}>
           <Text style={s.headerStatNum}>{logs.filter((l) => new Date(l.takenAt).toDateString() === new Date().toDateString()).length}</Text>
-          <Text style={s.headerStatLabel}>Doses Today</Text>
+          <Text style={s.headerStatLabel}>{t('health.screens.medicationManager.statDosesToday')}</Text>
         </View>
       </View>
     </PremiumHeader>
@@ -188,7 +195,7 @@ export function MedicationManagerScreen({ navigation: navProp }: any) {
       <Pressable onPress={() => navigation.goBack()} style={s.addBtn}>
         <Ionicons name="arrow-back" size={20} color="#fff" />
       </Pressable>
-      <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700', flex: 1, marginLeft: 8 }}>Medications</Text>
+      <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700', flex: 1, marginLeft: 8 }}>{t('health.screens.medicationManager.headerTitle')}</Text>
       <Pressable onPress={() => setShowAddModal(true)} style={s.addBtn}>
         <Ionicons name="add" size={22} color="#fff" />
       </Pressable>
@@ -200,9 +207,9 @@ export function MedicationManagerScreen({ navigation: navProp }: any) {
       {activeMeds.length === 0 && (
         <View style={s.emptyState}>
           <Ionicons name="medkit-outline" size={64} color={colors.textMuted} />
-          <Text style={s.emptyTitle}>No medications</Text>
-          <Text style={s.emptyDesc}>Track family medications and dosage schedules</Text>
-          <Button title="Add Demo Data" onPress={() => { seedDemoData(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} variant="ghost" style={{ marginTop: 12 }} />
+          <Text style={s.emptyTitle}>{t('health.screens.medicationManager.emptyMedsTitle')}</Text>
+          <Text style={s.emptyDesc}>{t('health.screens.medicationManager.emptyMedsDesc')}</Text>
+          <Button title={t('health.screens.medicationManager.addDemoData')} onPress={() => { seedDemoData(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} variant="ghost" style={{ marginTop: 12 }} />
         </View>
       )}
 
@@ -214,8 +221,8 @@ export function MedicationManagerScreen({ navigation: navProp }: any) {
               <View style={[s.memberAvatar, { backgroundColor: member?.avatarColor ?? colors.textMuted }]}>
                 <Text style={s.memberAvatarText}>{(member?.name ?? '?').charAt(0)}</Text>
               </View>
-              <Text style={s.memberName}>{member?.name ?? 'Unknown'}</Text>
-              <Badge label={`${meds.length} med${meds.length !== 1 ? 's' : ''}`} variant="neutral" size="sm" />
+              <Text style={s.memberName}>{member?.name ?? t('health.screens.medicationManager.unknownMember')}</Text>
+              <Badge label={t('health.screens.medicationManager.medsCount', { count: meds.length })} variant="neutral" size="sm" />
             </View>
             {meds.map((med) => renderMedCard(med))}
           </View>
@@ -224,7 +231,7 @@ export function MedicationManagerScreen({ navigation: navProp }: any) {
 
       {unassignedMeds.length > 0 && (
         <View style={s.memberSection}>
-          <Text style={s.memberName}>Other</Text>
+          <Text style={s.memberName}>{t('health.screens.medicationManager.otherSection')}</Text>
           {unassignedMeds.map((med) => renderMedCard(med))}
         </View>
       )}
@@ -243,7 +250,7 @@ export function MedicationManagerScreen({ navigation: navProp }: any) {
           <View style={[s.pillDot, { backgroundColor: med.color }]} />
           <View style={s.medInfo}>
             <Text style={s.medName}>{med.name}</Text>
-            <Text style={s.medDosage}>{med.dosage} — {freqLabel(med.frequency)}</Text>
+            <Text style={s.medDosage}>{med.dosage} — {freqLabel(med.frequency, t)}</Text>
           </View>
           <Pressable onPress={() => handleDelete(med)} style={s.deleteBtn}>
             <Ionicons name="trash-outline" size={16} color={colors.danger} />
@@ -256,7 +263,7 @@ export function MedicationManagerScreen({ navigation: navProp }: any) {
 
         {pillsProgress !== null && (
           <View style={s.pillsRow}>
-            <Text style={s.pillsLabel}>{med.pillsRemaining} pills remaining</Text>
+            <Text style={s.pillsLabel}>{t('health.screens.medicationManager.pillsRemaining', { count: med.pillsRemaining })}</Text>
             <ProgressBar progress={pillsProgress} color={med.color} height={6} style={s.progressBar} />
           </View>
         )}
@@ -266,7 +273,7 @@ export function MedicationManagerScreen({ navigation: navProp }: any) {
             <View style={s.metaRow}>
               <Ionicons name="reload-outline" size={13} color={refillSoon ? colors.danger : colors.textMuted} />
               <Text style={[s.metaText, refillSoon && s.refillSoonText]}>
-                Refill {refillDays <= 0 ? 'overdue' : `in ${refillDays} day${refillDays !== 1 ? 's' : ''}`}
+                {refillDays <= 0 ? t('health.screens.medicationManager.refillOverdue') : t('health.screens.medicationManager.refillInDays', { count: refillDays })}
                 {med.refillDate ? ` (${formatDate(med.refillDate)})` : ''}
               </Text>
             </View>
@@ -287,7 +294,7 @@ export function MedicationManagerScreen({ navigation: navProp }: any) {
 
         <View style={s.medActions}>
           <Button
-            title="Log Dose"
+            title={t('health.screens.medicationManager.logDose')}
             onPress={() => handleLogDose(med)}
             size="sm"
             leftIcon={<Ionicons name="checkmark-circle-outline" size={14} color="#fff" />}
@@ -316,13 +323,18 @@ export function MedicationManagerScreen({ navigation: navProp }: any) {
           <View style={s.scheduleInfoRow}>
             <Ionicons name="calendar-outline" size={20} color={'#AD1457'} />
             <Text style={s.scheduleInfoText}>
-              Today's Schedule — {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+              {t('health.screens.medicationManager.todaysSchedule', { date: new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) })}
             </Text>
           </View>
         </Card>
 
         {(['Morning', 'Afternoon', 'Evening'] as const).map((slot) => {
           const slotMeds = slots[slot];
+          const slotLabel = slot === 'Morning'
+            ? t('health.screens.medicationManager.slotMorning')
+            : slot === 'Afternoon'
+              ? t('health.screens.medicationManager.slotAfternoon')
+              : t('health.screens.medicationManager.slotEvening');
           return (
             <View key={slot} style={s.slotSection}>
               <View style={s.slotHeader}>
@@ -331,11 +343,11 @@ export function MedicationManagerScreen({ navigation: navProp }: any) {
                   size={18}
                   color={colors.textSecondary}
                 />
-                <Text style={s.slotTitle}>{slot}</Text>
+                <Text style={s.slotTitle}>{slotLabel}</Text>
                 <Badge label={`${slotMeds.length}`} variant="neutral" size="sm" />
               </View>
               {slotMeds.length === 0 ? (
-                <Text style={s.slotEmpty}>No medications</Text>
+                <Text style={s.slotEmpty}>{t('health.screens.medicationManager.noMedicationsSlot')}</Text>
               ) : (
                 slotMeds.map((med) => {
                   const member = members.find((m) => m.id === med.memberId);
@@ -351,7 +363,7 @@ export function MedicationManagerScreen({ navigation: navProp }: any) {
                         <View style={s.scheduleInfo}>
                           <Text style={[s.scheduleMedName, taken && s.doneText]}>{med.name}</Text>
                           <Text style={s.scheduleDosage}>{med.dosage}</Text>
-                          {member ? <Text style={s.scheduleMember}>For: {member.name}</Text> : null}
+                          {member ? <Text style={s.scheduleMember}>{t('health.screens.medicationManager.forMember', { name: member.name })}</Text> : null}
                         </View>
                         {taken ? (
                           <View style={s.takenBadge}>
@@ -396,14 +408,14 @@ export function MedicationManagerScreen({ navigation: navProp }: any) {
                 <View style={s.logRow}>
                   <View style={[s.logDot, { backgroundColor: med?.color ?? colors.textMuted }]} />
                   <View style={s.logInfo}>
-                    <Text style={s.logMedName}>{med?.name ?? 'Unknown'}</Text>
-                    <Text style={s.logMeta}>{med?.dosage} — {member?.name ?? 'Unknown'}</Text>
+                    <Text style={s.logMedName}>{med?.name ?? t('health.screens.medicationManager.unknownMember')}</Text>
+                    <Text style={s.logMeta}>{med?.dosage} — {member?.name ?? t('health.screens.medicationManager.unknownMember')}</Text>
                     <Text style={s.logTime}>{formatTime(log.takenAt)}</Text>
                   </View>
                   <View style={[s.logStatus, { backgroundColor: log.doseTaken ? colors.success + '20' : colors.danger + '20' }]}>
                     <Ionicons name={log.doseTaken ? 'checkmark-circle' : 'close-circle'} size={16} color={log.doseTaken ? colors.success : colors.danger} />
                     <Text style={[s.logStatusText, { color: log.doseTaken ? colors.success : colors.danger }]}>
-                      {log.doseTaken ? 'Taken' : 'Skipped'}
+                      {log.doseTaken ? t('health.screens.medicationManager.statusTaken') : t('health.screens.medicationManager.statusSkipped')}
                     </Text>
                   </View>
                 </View>
@@ -419,13 +431,13 @@ export function MedicationManagerScreen({ navigation: navProp }: any) {
         {logs.length === 0 && (
           <View style={s.emptyState}>
             <Ionicons name="time-outline" size={64} color={colors.textMuted} />
-            <Text style={s.emptyTitle}>No dose history</Text>
-            <Text style={s.emptyDesc}>Logged doses will appear here</Text>
+            <Text style={s.emptyTitle}>{t('health.screens.medicationManager.emptyHistoryTitle')}</Text>
+            <Text style={s.emptyDesc}>{t('health.screens.medicationManager.emptyHistoryDesc')}</Text>
           </View>
         )}
-        {renderLogGroup('Today', todayLogs)}
-        {renderLogGroup('Yesterday', yesterdayLogs)}
-        {renderLogGroup('This Week', weekLogs)}
+        {renderLogGroup(t('health.screens.medicationManager.groupToday'), todayLogs)}
+        {renderLogGroup(t('health.screens.medicationManager.groupYesterday'), yesterdayLogs)}
+        {renderLogGroup(t('health.screens.medicationManager.groupThisWeek'), weekLogs)}
       </View>
     );
   };
@@ -441,7 +453,7 @@ export function MedicationManagerScreen({ navigation: navProp }: any) {
             style={[s.tab, activeTab === tab && s.tabActive]}
           >
             <Text style={[s.tabText, activeTab === tab && s.tabTextActive]}>
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              {tab === 'active' ? t('health.screens.medicationManager.tabActive') : tab === 'schedule' ? t('health.screens.medicationManager.tabSchedule') : t('health.screens.medicationManager.tabHistory')}
             </Text>
           </Pressable>
         ))}
@@ -466,9 +478,9 @@ export function MedicationManagerScreen({ navigation: navProp }: any) {
       <Modal visible={showAddModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowAddModal(false)}>
         <ScrollView style={s.modal} contentContainerStyle={{ paddingBottom: 40 }}>
           <View style={s.modalHandle} />
-          <Text style={s.modalTitle}>Add Medication</Text>
+          <Text style={s.modalTitle}>{t('health.screens.medicationManager.addMedicationTitle')}</Text>
 
-          <Text style={s.modalLabel}>Family Member *</Text>
+          <Text style={s.modalLabel}>{t('health.screens.medicationManager.familyMemberLabel')}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
             {members.map((m) => (
               <Pressable
@@ -484,13 +496,13 @@ export function MedicationManagerScreen({ navigation: navProp }: any) {
             ))}
           </ScrollView>
 
-          <Text style={s.modalLabel}>Medication Name *</Text>
-          <TextInput style={s.modalInput} placeholder="e.g. Lisinopril" value={formName} onChangeText={setFormName} placeholderTextColor={colors.textMuted} autoFocus />
+          <Text style={s.modalLabel}>{t('health.screens.medicationManager.medicationNameLabel')}</Text>
+          <TextInput style={s.modalInput} placeholder={t('health.screens.medicationManager.medicationNamePlaceholder')} value={formName} onChangeText={setFormName} placeholderTextColor={colors.textMuted} autoFocus />
 
-          <Text style={s.modalLabel}>Dosage *</Text>
-          <TextInput style={s.modalInput} placeholder="e.g. 10mg" value={formDosage} onChangeText={setFormDosage} placeholderTextColor={colors.textMuted} />
+          <Text style={s.modalLabel}>{t('health.screens.medicationManager.dosageLabel')}</Text>
+          <TextInput style={s.modalInput} placeholder={t('health.screens.medicationManager.dosagePlaceholder')} value={formDosage} onChangeText={setFormDosage} placeholderTextColor={colors.textMuted} />
 
-          <Text style={s.modalLabel}>Frequency</Text>
+          <Text style={s.modalLabel}>{t('health.screens.medicationManager.frequencyLabel')}</Text>
           <View style={s.freqGrid}>
             {FREQ_OPTIONS.map((f) => (
               <Pressable
@@ -498,27 +510,27 @@ export function MedicationManagerScreen({ navigation: navProp }: any) {
                 onPress={() => setFormFrequency(f.value)}
                 style={[s.freqChip, formFrequency === f.value && s.freqChipActive]}
               >
-                <Text style={[s.freqChipLabel, formFrequency === f.value && s.freqChipLabelActive]}>{f.label}</Text>
+                <Text style={[s.freqChipLabel, formFrequency === f.value && s.freqChipLabelActive]}>{t(`health.screens.medicationManager.${f.labelKey}`)}</Text>
               </Pressable>
             ))}
           </View>
 
-          <Text style={s.modalLabel}>Instructions</Text>
-          <TextInput style={[s.modalInput, s.modalTextarea]} placeholder="e.g. Take with water in the morning" value={formInstructions} onChangeText={setFormInstructions} multiline numberOfLines={2} placeholderTextColor={colors.textMuted} />
+          <Text style={s.modalLabel}>{t('health.screens.medicationManager.instructionsLabel')}</Text>
+          <TextInput style={[s.modalInput, s.modalTextarea]} placeholder={t('health.screens.medicationManager.instructionsPlaceholder')} value={formInstructions} onChangeText={setFormInstructions} multiline numberOfLines={2} placeholderTextColor={colors.textMuted} />
 
-          <Text style={s.modalLabel}>Doctor / Prescriber</Text>
-          <TextInput style={s.modalInput} placeholder="Dr. Martinez" value={formDoctor} onChangeText={setFormDoctor} placeholderTextColor={colors.textMuted} />
+          <Text style={s.modalLabel}>{t('health.screens.medicationManager.doctorLabel')}</Text>
+          <TextInput style={s.modalInput} placeholder={t('health.screens.medicationManager.doctorPlaceholder')} value={formDoctor} onChangeText={setFormDoctor} placeholderTextColor={colors.textMuted} />
 
-          <Text style={s.modalLabel}>Pharmacy</Text>
-          <TextInput style={s.modalInput} placeholder="CVS Pharmacy" value={formPharmacy} onChangeText={setFormPharmacy} placeholderTextColor={colors.textMuted} />
+          <Text style={s.modalLabel}>{t('health.screens.medicationManager.pharmacyLabel')}</Text>
+          <TextInput style={s.modalInput} placeholder={t('health.screens.medicationManager.pharmacyPlaceholder')} value={formPharmacy} onChangeText={setFormPharmacy} placeholderTextColor={colors.textMuted} />
 
-          <Text style={s.modalLabel}>Refill Date (YYYY-MM-DD)</Text>
-          <TextInput style={s.modalInput} placeholder="2024-07-15" value={formRefillDate} onChangeText={setFormRefillDate} placeholderTextColor={colors.textMuted} />
+          <Text style={s.modalLabel}>{t('health.screens.medicationManager.refillDateLabel')}</Text>
+          <TextInput style={s.modalInput} placeholder={t('health.screens.medicationManager.refillDatePlaceholder')} value={formRefillDate} onChangeText={setFormRefillDate} placeholderTextColor={colors.textMuted} />
 
-          <Text style={s.modalLabel}>Pills Remaining</Text>
-          <TextInput style={s.modalInput} placeholder="e.g. 30" value={formPills} onChangeText={setFormPills} keyboardType="number-pad" placeholderTextColor={colors.textMuted} />
+          <Text style={s.modalLabel}>{t('health.screens.medicationManager.pillsRemainingLabel')}</Text>
+          <TextInput style={s.modalInput} placeholder={t('health.screens.medicationManager.pillsRemainingPlaceholder')} value={formPills} onChangeText={setFormPills} keyboardType="number-pad" placeholderTextColor={colors.textMuted} />
 
-          <Text style={s.modalLabel}>Color</Text>
+          <Text style={s.modalLabel}>{t('health.screens.medicationManager.colorLabel')}</Text>
           <View style={s.colorRow}>
             {COLOR_PRESETS.map((c) => (
               <Pressable
@@ -529,8 +541,8 @@ export function MedicationManagerScreen({ navigation: navProp }: any) {
             ))}
           </View>
 
-          <Button title="Add Medication" onPress={handleAdd} fullWidth size="lg" disabled={!formName.trim() || !formDosage.trim() || !formMemberId} style={{ marginTop: 16 }} />
-          <Button title="Cancel" onPress={() => { resetForm(); setShowAddModal(false); }} variant="ghost" fullWidth style={{ marginTop: 8 }} />
+          <Button title={t('health.screens.medicationManager.addMedicationButton')} onPress={handleAdd} fullWidth size="lg" disabled={!formName.trim() || !formDosage.trim() || !formMemberId} style={{ marginTop: 16 }} />
+          <Button title={t('health.screens.medicationManager.cancelButton')} onPress={() => { resetForm(); setShowAddModal(false); }} variant="ghost" fullWidth style={{ marginTop: 8 }} />
         </ScrollView>
       </Modal>
     </View>

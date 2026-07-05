@@ -3,32 +3,30 @@ import { View, Text, StyleSheet, ScrollView, Animated, Dimensions, Pressable, Al
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
 import { Button } from '../../components/common/Button';
 import { useFamilyStore } from '../../store/useFamilyStore';
-import { useFinanceStore } from '../../store/useFinanceStore';
-import { useOperationsStore } from '../../store/useOperationsStore';
 import { useAIStore } from '../../store/useAIStore';
 import { useAppStore } from '../../store/useAppStore';
 
 const { width } = Dimensions.get('window');
 
 const features = [
-  { icon: 'people', color: '#4ECDC4', bg: '#E8F8F7', title: 'Family Dashboard', desc: 'Track every member\'s schedule, health, and goals in one place.' },
-  { icon: 'wallet', color: '#F5A623', bg: '#FEF3E2', title: 'Finance Center', desc: 'Budget, bills, subscriptions, and investments — all unified.' },
-  { icon: 'grid', color: '#27AE60', bg: '#D5F5E3', title: 'Home Operations', desc: 'Pantry, meals, vehicles, and documents — always organized.' },
-  { icon: 'sparkles', color: '#0F2952', bg: '#E8EEF9', title: 'AI Chief of Staff', desc: 'Your personal AI that manages the household and gives smart insights.' },
-  { icon: 'trophy', color: '#FFD700', bg: '#FFFACC', title: 'Rewards System', desc: 'Motivate kids with points, badges, and custom rewards.' },
-  { icon: 'shield-checkmark', color: '#E74C3C', bg: '#FDEDEC', title: 'Safety & Emergency', desc: 'Emergency contacts, medical info, and safety protocols ready.' },
+  { icon: 'people', color: '#4ECDC4', bg: '#E8F8F7', titleKey: 'featureDashboardTitle', descKey: 'featureDashboardDesc' },
+  { icon: 'wallet', color: '#F5A623', bg: '#FEF3E2', titleKey: 'featureFinanceTitle', descKey: 'featureFinanceDesc' },
+  { icon: 'grid', color: '#27AE60', bg: '#D5F5E3', titleKey: 'featureOpsTitle', descKey: 'featureOpsDesc' },
+  { icon: 'sparkles', color: '#0F2952', bg: '#E8EEF9', titleKey: 'featureAiTitle', descKey: 'featureAiDesc' },
+  { icon: 'trophy', color: '#FFD700', bg: '#FFFACC', titleKey: 'featureRewardsTitle', descKey: 'featureRewardsDesc' },
+  { icon: 'shield-checkmark', color: '#E74C3C', bg: '#FDEDEC', titleKey: 'featureSafetyTitle', descKey: 'featureSafetyDesc' },
 ];
 
 export function WelcomeScreen({ navigation }: any) {
+  const { t } = useTranslation('onboarding');
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(40)).current;
   const seedDemoFamily = useFamilyStore((s) => s.seedDemoData);
-  const seedDemoFinance = useFinanceStore((s) => s.seedDemoData);
-  const seedDemoOps = useOperationsStore((s) => s.seedDemoData);
   const seedDemoAI = useAIStore((s) => s.seedDemoInsights);
   const setOnboarded = useAppStore((s) => s.setOnboarded);
 
@@ -43,16 +41,14 @@ export function WelcomeScreen({ navigation }: any) {
 
   const handleDemoMode = () => {
     Alert.alert(
-      'Demo Mode',
-      'Demo data is temporary and will be lost when you create a real account. Continue?',
+      t('onboarding.screens.welcome.demoAlertTitle'),
+      t('onboarding.screens.welcome.demoAlertMsg'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('onboarding.screens.welcome.demoAlertCancel'), style: 'cancel' },
         {
-          text: 'Continue',
+          text: t('onboarding.screens.welcome.demoAlertContinue'),
           onPress: () => {
             seedDemoFamily();
-            seedDemoFinance();
-            seedDemoOps();
             seedDemoAI();
             setOnboarded(true);
           },
@@ -68,12 +64,12 @@ export function WelcomeScreen({ navigation }: any) {
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <LinearGradient colors={['#0F2952', '#1E4A8A']} style={styles.header}>
           <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-            <Text style={styles.headerGreeting}>Welcome to</Text>
-            <Text style={styles.headerTitle}>Family Command{'\n'}Center™</Text>
-            <Text style={styles.headerSub}>The all-in-one household operating system</Text>
+            <Text style={styles.headerGreeting}>{t('onboarding.screens.welcome.headerGreeting')}</Text>
+            <Text style={styles.headerTitle}>{t('onboarding.screens.welcome.headerTitle')}</Text>
+            <Text style={styles.headerSub}>{t('onboarding.screens.welcome.headerSub')}</Text>
           </Animated.View>
         </LinearGradient>
-        <Text style={styles.sectionTitle}>Everything your family needs</Text>
+        <Text style={styles.sectionTitle}>{t('onboarding.screens.welcome.sectionTitle')}</Text>
 
         <View style={styles.featuresGrid}>
           {features.map((f, i) => (
@@ -91,37 +87,36 @@ export function WelcomeScreen({ navigation }: any) {
               <View style={[styles.featureIcon, { backgroundColor: f.bg }]}>
                 <Ionicons name={f.icon as any} size={22} color={f.color} />
               </View>
-              <Text style={styles.featureTitle}>{f.title}</Text>
-              <Text style={styles.featureDesc}>{f.desc}</Text>
+              <Text style={styles.featureTitle}>{t(`onboarding.screens.welcome.${f.titleKey}`)}</Text>
+              <Text style={styles.featureDesc}>{t(`onboarding.screens.welcome.${f.descKey}`)}</Text>
             </Animated.View>
           ))}
         </View>
 
         <View style={styles.ctaArea}>
-          <Button title="Set Up My Family" onPress={handleStartSetup} fullWidth size="lg" />
+          <Button title={t('onboarding.screens.welcome.setupButton')} onPress={handleStartSetup} fullWidth size="lg" />
           <View style={styles.divider}>
             <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or</Text>
+            <Text style={styles.dividerText}>{t('onboarding.screens.welcome.orDivider')}</Text>
             <View style={styles.dividerLine} />
           </View>
           <Pressable onPress={handleDemoMode} style={styles.demoButton}>
             <Ionicons name="play-circle-outline" size={20} color={colors.primary} />
-            <Text style={styles.demoText}>Explore with Demo Data</Text>
+            <Text style={styles.demoText}>{t('onboarding.screens.welcome.demoButton')}</Text>
           </Pressable>
         </View>
 
         <View style={styles.tierBadges}>
-          {['Free', 'Premium', 'Family Pro'].map((t, i) => (
+          {[t('onboarding.screens.welcome.tierFree'), t('onboarding.screens.welcome.tierPremium'), t('onboarding.screens.welcome.tierFamilyPro')].map((tier, i) => (
             <View key={i} style={[styles.tierBadge, i === 1 && styles.tierBadgeHighlight]}>
-              <Text style={[styles.tierText, i === 1 && styles.tierTextHighlight]}>{t}</Text>
-              {i === 1 && <Text style={styles.popularTag}>Popular</Text>}
+              <Text style={[styles.tierText, i === 1 && styles.tierTextHighlight]}>{tier}</Text>
+              {i === 1 && <Text style={styles.popularTag}>{t('onboarding.screens.welcome.popularTag')}</Text>}
             </View>
           ))}
         </View>
 
         <Text style={styles.footer}>
-          No credit card required  •  Setup takes 3 minutes{'\n'}
-          Your data stays private and secure
+          {t('onboarding.screens.welcome.footer')}
         </Text>
       </ScrollView>
     </View>

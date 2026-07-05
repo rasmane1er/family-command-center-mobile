@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,6 +15,7 @@ import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useLegacyStore } from '../../store/useLegacyStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import type { LegacyItemType } from '../../types';
+import { useTranslation } from 'react-i18next';
 
 const ADD_TYPES: LegacyItemType[] = ['story', 'milestone', 'tradition', 'letter', 'recipe'];
 
@@ -39,6 +40,7 @@ const FILTER_TYPES: { key: 'all' | LegacyItemType; label: string }[] = [
 ];
 
 export function LegacyVaultScreen({ navigation }: any) {
+  const { t } = useTranslation('family');
   const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<'all' | LegacyItemType>('all');
   const [showModal, setShowModal] = useState(false);
@@ -47,8 +49,12 @@ export function LegacyVaultScreen({ navigation }: any) {
   const [newType, setNewType] = useState<LegacyItemType>('story');
   const [newMemberId, setNewMemberId] = useState<string | null>(null);
 
-  const { items, toggleFeatured, addReaction, addItem, seedDemoData } = useLegacyStore();
+  const { items, toggleFeatured, addReaction, addItem, deleteItem, seedDemoData, hasSeeded } = useLegacyStore();
   const members = useFamilyStore((s) => s.members);
+
+  useEffect(() => {
+    if (!hasSeeded) seedDemoData();
+  }, [hasSeeded, seedDemoData]);
 
   const handleAddItem = () => {
     if (!newTitle.trim()) return;
@@ -67,8 +73,6 @@ export function LegacyVaultScreen({ navigation }: any) {
     setShowModal(false);
   };
 
-  if (items.length === 0) seedDemoData();
-
   const getMemberName = (id?: string) => members.find((m) => m.id === id)?.name ?? 'Family';
 
   const filtered = filter === 'all' ? items : items.filter((i) => i.type === filter);
@@ -81,7 +85,7 @@ export function LegacyVaultScreen({ navigation }: any) {
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>Legacy Vault</Text>
+          <Text style={styles.headerTitle}>{t('legacyVault.title')}</Text>
           <Text style={styles.headerSub}>Family stories • Traditions • Milestones</Text>
         </View>
         <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
@@ -123,7 +127,7 @@ export function LegacyVaultScreen({ navigation }: any) {
       <Pressable onPress={() => navigation.goBack()} style={styles.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
-      <Text style={styles.headerTitle}>Legacy Vault</Text>
+      <Text style={styles.headerTitle}>{t('legacyVault.title')}</Text>
       <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
         <Ionicons name="add" size={24} color="#fff" />
       </Pressable>
@@ -174,8 +178,18 @@ export function LegacyVaultScreen({ navigation }: any) {
                   <Text style={styles.itemTitle}>{item.title}</Text>
                   <Text style={styles.itemMeta}>{getMemberName(item.memberId)} {item.date ? `• ${new Date(item.date).getFullYear()}` : ''}</Text>
                 </View>
-                <Pressable onPress={() => toggleFeatured(item.id)}>
+                <Pressable onPress={() => toggleFeatured(item.id)} style={{ marginRight: 12 }}>
                   <Ionicons name={item.isFeatured ? 'star' : 'star-outline'} size={20} color={item.isFeatured ? colors.secondary : colors.textMuted} />
+                </Pressable>
+                <Pressable
+                  onPress={() => {
+                    Alert.alert('Delete Entry', `Remove "${item.title}" from the vault?`, [
+                      { text: 'Cancel', style: 'cancel' },
+                      { text: 'Delete', style: 'destructive', onPress: () => deleteItem(item.id) },
+                    ]);
+                  }}
+                >
+                  <Ionicons name="trash-outline" size={20} color={colors.textMuted} />
                 </Pressable>
               </View>
               <Text style={styles.itemContent} numberOfLines={3}>{item.content}</Text>

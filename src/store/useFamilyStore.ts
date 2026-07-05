@@ -5,6 +5,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import type { Family, FamilyMember, Task, CalendarEvent, Goal, Reward, Achievement } from '../types';
 import { defaultPermissionsForRole } from '../types';
 import { colors } from '../theme/colors';
+import * as calendarService from '../services/calendarService';
 
 interface FamilyState {
   family: Family | null;
@@ -29,9 +30,23 @@ interface FamilyState {
   completeTask: (id: string, memberId: string) => void;
   deleteTask: (id: string) => void;
 
+  // Approval workflow for requiresApproval tasks — submitTaskForApproval
+  // never awards points itself; approveTask is the only path that does,
+  // by delegating to the exact same completeTask above (one place, not
+  // two, decides what "completed" means and what it's worth).
+  submitTaskForApproval: (id: string, memberId: string, photoUrl?: string) => void;
+  approveTask: (id: string) => void;
+  rejectTask: (id: string, note?: string) => void;
+
   addEvent: (e: CalendarEvent) => void;
   updateEvent: (id: string, updates: Partial<CalendarEvent>) => void;
   deleteEvent: (id: string) => void;
+  // Pulls events from the backend so events another family member added on
+  // their own device actually show up here — local addEvent/updateEvent/
+  // deleteEvent above already write through to the same backend, this is
+  // the read side of that same real (not just queued-and-forgotten) sync.
+  hydrateEvents: () => Promise<void>;
+  isHydratingEvents: boolean;
 
   addGoal: (g: Goal) => void;
   updateGoal: (id: string, updates: Partial<Goal>) => void;
@@ -39,6 +54,11 @@ interface FamilyState {
 
   addReward: (r: Reward) => void;
   redeemReward: (id: string) => void;
+  // Wipes a member's reward records entirely (both history and any
+  // still-unredeemed catalog entries tied to them) — used by the "Clear
+  // History" action in Rewards Center, scoped per-child to match how the
+  // rest of that screen is already scoped.
+  clearRewardHistory: (memberId: string) => void;
   awardPoints: (memberId: string, points: number) => void;
 
   seedDemoData: () => void;
@@ -53,6 +73,7 @@ export const useFamilyStore = create<FamilyState>()(
   members: [],
   tasks: [],
   events: [],
+  isHydratingEvents: false,
   goals: [],
   rewards: [],
   achievements: [],
@@ -105,6 +126,42 @@ export const useFamilyStore = create<FamilyState>()(
       }));
     }
   },
+  submitTaskForApproval: (id, memberId, photoUrl) =>
+    set((s) => ({
+      tasks: s.tasks.map((t) =>
+        t.id === id
+          ? {
+              ...t,
+              status: 'pending_approval',
+              submittedBy: memberId,
+              submittedAt: new Date().toISOString(),
+              ...(photoUrl ? { completionPhotoUrl: photoUrl } : {}),
+              rejectionNote: undefined,
+            }
+          : t
+      ),
+    })),
+  approveTask: (id) => {
+    const task = get().tasks.find((t) => t.id === id);
+    // Delegates to completeTask so point-awarding only ever happens in one
+    // place, regardless of whether a task skipped approval or went through it.
+    if (task?.submittedBy) get().completeTask(id, task.submittedBy);
+  },
+  rejectTask: (id, note) =>
+    set((s) => ({
+      tasks: s.tasks.map((t) =>
+        t.id === id
+          ? {
+              ...t,
+              status: 'pending',
+              submittedBy: undefined,
+              submittedAt: undefined,
+              completionPhotoUrl: undefined,
+              rejectionNote: note,
+            }
+          : t
+      ),
+    })),
   deleteTask: (id) => {
   set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) }));
 
@@ -117,16 +174,33 @@ export const useFamilyStore = create<FamilyState>()(
 
   addEvent: (e) => {
   set((s) => ({ events: [...s.events, e] }));
-
-  enqueueSync({
-    entity: 'family',
-    action: 'create',
-    payload: { type: 'event', data: e },
+  // e.id is client-generated and sent through unchanged as the row's real
+  // primary key (the backend accepts a caller-supplied id) — no separate
+  // local-id-to-server-id reconciliation needed, unlike Guardian devices.
+  calendarService.createEvent(e).catch(() => {
+    // best-effort — event still lives locally; hydrateEvents() will pick up
+    // the authoritative copy next time this device is online.
   });
 },
-  updateEvent: (id, updates) =>
-    set((s) => ({ events: s.events.map((e) => (e.id === id ? { ...e, ...updates } : e)) })),
-  deleteEvent: (id) => set((s) => ({ events: s.events.filter((e) => e.id !== id) })),
+  updateEvent: (id, updates) => {
+    set((s) => ({ events: s.events.map((e) => (e.id === id ? { ...e, ...updates } : e)) }));
+    calendarService.updateEventRemote(id, updates).catch(() => {});
+  },
+  deleteEvent: (id) => {
+    set((s) => ({ events: s.events.filter((e) => e.id !== id) }));
+    calendarService.deleteEventRemote(id).catch(() => {});
+  },
+  hydrateEvents: async () => {
+    set({ isHydratingEvents: true });
+    try {
+      const { events } = await calendarService.fetchEvents();
+      set({ events });
+    } catch {
+      // offline or backend unreachable — keep whatever is already local.
+    } finally {
+      set({ isHydratingEvents: false });
+    }
+  },
 
   addGoal: (g) => {
   set((s) => ({ goals: [...s.goals, g] }));
@@ -148,6 +222,8 @@ export const useFamilyStore = create<FamilyState>()(
         r.id === id ? { ...r, isRedeemed: true, redeemedAt: new Date().toISOString() } : r
       ),
     })),
+  clearRewardHistory: (memberId) =>
+    set((s) => ({ rewards: s.rewards.filter((r) => r.memberId !== memberId) })),
   awardPoints: (memberId, points) =>
     set((s) => ({
       members: s.members.map((m) => (m.id === memberId ? { ...m, points: m.points + points } : m)),

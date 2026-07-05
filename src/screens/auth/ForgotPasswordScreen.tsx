@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useTheme } from '../../theme/ThemeContext';
 
@@ -25,6 +26,7 @@ interface Props {
 }
 
 export default function ForgotPasswordScreen({ navigation }: Props) {
+  const { t } = useTranslation('auth');
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const { resetPassword } = useAuthStore();
@@ -65,7 +67,7 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
 
   const handleReset = async () => {
     if (!email.trim()) {
-      Alert.alert('Missing Email', 'Please enter your email address.');
+      Alert.alert(t('auth.screens.forgotPassword.missingEmailTitle'), t('auth.screens.forgotPassword.missingEmailMsg'));
       return;
     }
     setLoading(true);
@@ -74,7 +76,7 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
 
     if (!result.success) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Reset Failed', result.error ?? 'An unexpected error occurred.');
+      Alert.alert(t('auth.screens.forgotPassword.resetFailedTitle'), result.error ?? t('auth.screens.forgotPassword.genericError'));
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setSent(true);
@@ -142,14 +144,14 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
 
           {/* Card */}
           <View style={[styles.card, { backgroundColor: colors.card }]}>
-            <Text style={[styles.cardTitle, { color: colors.text }]}>Reset Password</Text>
+            <Text style={[styles.cardTitle, { color: colors.text }]}>{t('auth.screens.forgotPassword.title')}</Text>
             <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
-              Enter your email and we'll help you reset your password.
+              {t('auth.screens.forgotPassword.subtitle')}
             </Text>
 
             {/* Email field */}
             <View style={styles.fieldGroup}>
-              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Email Address</Text>
+              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>{t('auth.screens.forgotPassword.emailLabel')}</Text>
               <View
                 style={[
                   styles.inputRow,
@@ -167,7 +169,7 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
                 />
                 <TextInput
                   style={[styles.textInput, { color: colors.text }]}
-                  placeholder="you@example.com"
+                  placeholder={t('auth.screens.forgotPassword.emailPlaceholder')}
                   placeholderTextColor={colors.textSecondary}
                   value={email}
                   onChangeText={setEmail}
@@ -188,7 +190,7 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
               <View style={styles.successBanner}>
                 <Ionicons name="checkmark-circle" size={18} color="#10B981" />
                 <Text style={styles.successText}>
-                  Password reset email sent. Check your inbox.
+                  {t('auth.screens.forgotPassword.successMessage')}
                 </Text>
               </View>
             )}
@@ -198,11 +200,11 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
               <View style={styles.resendRow}>
                 {countdown > 0 ? (
                   <Text style={[styles.resendCountdown, { color: colors.textSecondary }]}>
-                    Resend in {countdownLabel}…
+                    {t('auth.screens.forgotPassword.resendIn', { countdown: countdownLabel })}
                   </Text>
                 ) : (
                   <Pressable onPress={handleResend}>
-                    <Text style={[styles.resendLink, { color: colors.primary }]}>Resend email</Text>
+                    <Text style={[styles.resendLink, { color: colors.primary }]}>{t('auth.screens.forgotPassword.resendLink')}</Text>
                   </Pressable>
                 )}
               </View>
@@ -232,7 +234,7 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
                     <>
                       <Ionicons name="send-outline" size={16} color="#FFFFFF" style={{ marginRight: 8 }} />
                       <Text style={styles.primaryButtonText}>
-                        {sent ? 'Email Sent' : 'Send Reset Link'}
+                        {sent ? t('auth.screens.forgotPassword.emailSentButton') : t('auth.screens.forgotPassword.sendButton')}
                       </Text>
                     </>
                   )}
@@ -250,7 +252,7 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
             >
               <Ionicons name="arrow-back-outline" size={15} color={colors.primary} />
               <Text style={[styles.backToSignInText, { color: colors.primary }]}>
-                Back to Sign In
+                {t('auth.screens.forgotPassword.backToSignIn')}
               </Text>
             </Pressable>
           </View>

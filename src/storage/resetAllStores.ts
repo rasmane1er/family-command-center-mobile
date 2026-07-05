@@ -42,6 +42,7 @@ import { useWealthStore }         from '../store/useWealthStore';
 import { useWorkoutStore }        from '../store/useWorkoutStore';
 import { useFamilyMeetingsStore } from '../store/useFamilyMeetingsStore';
 import { useEmergencyStore, DEFAULT_CHECKLIST } from '../store/useEmergencyStore';
+import { useMilitaryStore } from '../store/useMilitaryStore';
 
 // MMKV keys to preserve across resets (auth + app settings)
 const PRESERVE_KEYS = new Set([
@@ -82,6 +83,8 @@ export function resetAllStores() {
 
   useEmergencyStore.setState({ checklist: DEFAULT_CHECKLIST } as any);
 
+  useMilitaryStore.setState({ deployments: [], pcsMoves: [], readiness: null } as any);
+
   useOperationsStore.setState({
     pantryItems: [], documents: [], shoppingLists: [],
     mealPlans: [], assets: [], vehicles: [],
@@ -95,14 +98,14 @@ export function resetAllStores() {
 
   useHabitsStore.setState({ habits: [] } as any);
 
-  useShoppingStore.setState({ items: [], budget: 0 } as any);
+  useShoppingStore.setState({ items: [], budget: 0, hasSeeded: false } as any);
 
   useActivitiesStore.setState({ activities: [] } as any);
 
-  useAllowanceStore.setState({ configs: [], transactions: [] } as any);
+  useAllowanceStore.setState({ configs: [], transactions: [], hasSeeded: false } as any);
 
   useAutomationStore.setState({
-    rules: [], listings: [], conflicts: [], timeBlocks: [], devices: [],
+    rules: [], listings: [], conflicts: [], timeBlocks: [], devices: [], hasSeeded: false,
     hueBridgeIp: null, hueConnected: false, hueScenes: [], isRefreshingHue: false,
   } as any);
 
@@ -112,15 +115,15 @@ export function resetAllStores() {
 
   useCarpoolStore.setState({ routes: [] } as any);
 
-  useChildcareStore.setState({ caregivers: [], bookings: [] } as any);
+  useChildcareStore.setState({ caregivers: [], bookings: [], hasSeeded: false } as any);
 
   useChoreStore.setState({ chores: [] } as any);
 
-  useFamilyBoardStore.setState({ posts: [] } as any);
+  useFamilyBoardStore.setState({ posts: [], hasSeeded: false } as any);
 
-  useFamilyGoalsStore.setState({ goals: [] } as any);
+  useFamilyGoalsStore.setState({ goals: [], hasSeeded: false } as any);
 
-  useGiftStore.setState({ gifts: [] } as any);
+  useGiftStore.setState({ gifts: [], hasSeeded: false } as any);
 
   useGuardianStore.setState({
     devices: [], geofenceZones: [], screenTimeRules: [], appUsage: [],
@@ -130,7 +133,7 @@ export function resetAllStores() {
 
   useHomeInventoryStore.setState({ items: [] } as any);
 
-  useHomeMaintenanceStore.setState({ tasks: [] } as any);
+  useHomeMaintenanceStore.setState({ tasks: [], hasSeeded: false } as any);
 
   useHomeworkStore.setState({ assignments: [] } as any);
 
@@ -150,15 +153,15 @@ export function resetAllStores() {
 
   usePollsStore.setState({ polls: [] } as any);
 
-  useRecipesStore.setState({ recipes: [] } as any);
+  useRecipesStore.setState({ recipes: [], hasSeeded: false } as any);
 
-  useSchoolStore.setState({ subjects: [], assignments: [] } as any);
+  useSchoolStore.setState({ subjects: [], assignments: [], hasSeeded: false } as any);
 
   useSleepStore.setState({ logs: [] } as any);
 
   useTimelineStore.setState({ entries: [] } as any);
 
-  useTravelStore.setState({ trips: [] } as any);
+  useTravelStore.setState({ trips: [], hasSeeded: false } as any);
 
   useUtilityStore.setState({ bills: [] } as any);
 

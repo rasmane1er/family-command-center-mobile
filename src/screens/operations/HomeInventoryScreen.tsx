@@ -20,7 +20,9 @@ import { shadows } from '../../theme/spacing';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { useHomeInventoryStore } from '../../store/useHomeInventoryStore';
+import { useFamilyStore } from '../../store/useFamilyStore';
 import { getRetailPurchases, type RetailPurchase } from '../../services/autoFillService';
+import { useTranslation } from 'react-i18next';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -126,8 +128,10 @@ const ALL_CATEGORIES: ItemCategory[] = [
 const ALL_CONDITIONS: ItemCondition[] = ['excellent', 'good', 'fair', 'poor'];
 
 export function HomeInventoryScreen({ navigation }: any) {
+  const { t } = useTranslation('ops');
   const insets = useSafeAreaInsets();
   const { items, addItem, updateItem, deleteItem, getTotalValue, getItemsByRoom, seedDemoData } = useHomeInventoryStore();
+  const familyId = useFamilyStore((s) => s.family?.id) ?? 'demo-family';
 
   const [activeTab, setActiveTab] = useState<'By Room' | 'All Items' | 'Value Report'>('By Room');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -215,14 +219,14 @@ export function HomeInventoryScreen({ navigation }: any) {
 
   const handleAddItem = () => {
     if (!newName.trim()) {
-      Alert.alert('Invalid Input', 'Please enter an item name.');
+      Alert.alert(t('common.validationTitle'), t('common.validationMsg'));
       return;
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const purchasePrice = parseFloat(newPurchasePrice);
     const currentValue = parseFloat(newCurrentValue);
     addItem({
-      familyId: 'demo-family',
+      familyId,
       room: newRoom,
       name: newName.trim(),
       brand: newBrand.trim() || undefined,
@@ -437,7 +441,7 @@ export function HomeInventoryScreen({ navigation }: any) {
         <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
-        <Text style={styles.headerTitle}>Home Inventory</Text>
+        <Text style={styles.headerTitle}>{t('homeInventory.title')}</Text>
         <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
           <Ionicons name="add" size={26} color="#fff" />
         </Pressable>
@@ -484,7 +488,7 @@ export function HomeInventoryScreen({ navigation }: any) {
       <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
-      <Text style={[styles.headerTitle, { flex: 1, textAlign: 'center' }]}>Home Inventory</Text>
+      <Text style={[styles.headerTitle, { flex: 1, textAlign: 'center' }]}>{t('homeInventory.title')}</Text>
       <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>{items.length} items</Text>
     </LinearGradient>
   );

@@ -17,6 +17,7 @@ import { ProgressBar } from '../../components/common/ProgressBar';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { calculatePayoffPlan } from '../../services/debtService';
 import type { Debt, DebtType, PayoffPlanMonth } from '../../types';
+import { useTranslation } from 'react-i18next';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -65,6 +66,7 @@ interface Props {
 }
 
 export function DebtDetailScreen({ navigation, route }: Props) {
+  const { t } = useTranslation('finance');
   const insets = useSafeAreaInsets();
   const { debts, recordPayment } = useFinanceStore();
   const debtId = route.params?.debtId ?? '';

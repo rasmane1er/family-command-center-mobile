@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import { mmkvStorage } from '../storage/mmkvStorage';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -56,7 +58,9 @@ interface HomeInventoryState {
   seedDemoData: () => void;
 }
 
-export const useHomeInventoryStore = create<HomeInventoryState>((set, get) => ({
+export const useHomeInventoryStore = create<HomeInventoryState>()(
+  persist(
+    (set, get) => ({
   items: [],
 
   addItem: (i) =>
@@ -248,4 +252,10 @@ export const useHomeInventoryStore = create<HomeInventoryState>((set, get) => ({
     ];
     set({ items });
   },
-}));
+    }),
+    {
+      name: 'family-command-center-home-inventory',
+      storage: createJSONStorage(() => mmkvStorage),
+    }
+  )
+);

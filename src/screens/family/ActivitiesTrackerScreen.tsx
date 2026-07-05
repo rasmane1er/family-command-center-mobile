@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -28,6 +28,7 @@ import {
 } from '../../store/useActivitiesStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
+import { useTranslation } from 'react-i18next';
 
 const ALL_DAYS: DayOfWeek[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -62,6 +63,7 @@ function getTodayDayOfWeek(): DayOfWeek {
 }
 
 export function ActivitiesTrackerScreen({ navigation }: any) {
+  const { t } = useTranslation('family');
   const insets = useSafeAreaInsets();
   const members = useFamilyStore((s) => s.members);
 
@@ -72,6 +74,7 @@ export function ActivitiesTrackerScreen({ navigation }: any) {
     deleteActivity,
     getTotalMonthlyCost,
     seedDemoData,
+    hasSeeded,
   } = useActivitiesStore();
 
   const [selectedMemberId, setSelectedMemberId] = useState<string | 'all'>('all');
@@ -93,7 +96,9 @@ export function ActivitiesTrackerScreen({ navigation }: any) {
   const [modalEquipment, setModalEquipment] = useState('');
   const [modalNotes, setModalNotes] = useState('');
 
-  if (activities.length === 0) seedDemoData();
+  useEffect(() => {
+    if (!hasSeeded) seedDemoData();
+  }, [hasSeeded, seedDemoData]);
 
   const filteredActivities = useMemo(() => {
     if (selectedMemberId === 'all') return activities;
@@ -117,7 +122,7 @@ export function ActivitiesTrackerScreen({ navigation }: any) {
   }, [activities, members]);
 
   const handleDelete = (a: Activity) => {
-    Alert.alert('Delete Activity', `Remove "${a.name}" from activities?`, [
+    Alert.alert(t('common.deleteTitle'), `Remove "${a.name}" from activities?`, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
@@ -278,7 +283,7 @@ export function ActivitiesTrackerScreen({ navigation }: any) {
         <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
-        <Text style={styles.headerTitle}>Activities</Text>
+        <Text style={styles.headerTitle}>{t('activities.title')}</Text>
         <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
           <Ionicons name="add" size={22} color="#fff" />
         </Pressable>
@@ -306,7 +311,7 @@ export function ActivitiesTrackerScreen({ navigation }: any) {
       <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
-      <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>Activities</Text>
+      <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>{t('activities.title')}</Text>
       <Text style={{ fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.8)' }}>${totalCost}/mo</Text>
     </LinearGradient>
   );
@@ -366,7 +371,7 @@ export function ActivitiesTrackerScreen({ navigation }: any) {
         {isEmpty && (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyEmoji}>🎯</Text>
-            <Text style={styles.emptyTitle}>No activities yet</Text>
+            <Text style={styles.emptyTitle}>{t('activities.noActivities')}</Text>
             <Text style={styles.emptyDesc}>Tap + to add activities or load sample data.</Text>
             <Button
               title="Load Demo Data"
@@ -472,7 +477,7 @@ export function ActivitiesTrackerScreen({ navigation }: any) {
       >
         <ScrollView style={styles.modal} contentContainerStyle={{ paddingBottom: 60 }}>
           <View style={styles.modalHandle} />
-          <Text style={styles.modalTitle}>Add Activity</Text>
+          <Text style={styles.modalTitle}>{t('activities.addActivity')}</Text>
 
           <Text style={styles.modalLabel}>Member</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>

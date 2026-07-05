@@ -16,13 +16,26 @@ import { colors } from '../../../theme/colors';
 import { shadows } from '../../../theme/spacing';
 import { CollapsibleHeader } from '../../../components/common/CollapsibleHeader';
 import type { ParentApprovalRequest } from '../../../types';
+import { useTranslation } from 'react-i18next';
 
-const TYPE_LABELS: Record<ParentApprovalRequest['type'], string> = {
-  app_install: 'App Install',
-  screen_time_extension: 'Screen Time +',
-  location_override: 'Location Override',
-  purchase: 'Purchase',
-  website: 'Website',
+const TYPE_LABEL_KEYS: Record<ParentApprovalRequest['type'], string> = {
+  app_install: 'family.screens.approvalRequests.typeAppInstall',
+  screen_time_extension: 'family.screens.approvalRequests.typeScreenTimeExtension',
+  location_override: 'family.screens.approvalRequests.typeLocationOverride',
+  purchase: 'family.screens.approvalRequests.typePurchase',
+  website: 'family.screens.approvalRequests.typeWebsite',
+};
+
+const FILTER_LABEL_KEYS: Record<FilterTab, string> = {
+  pending: 'family.screens.approvalRequests.filterPending',
+  approved: 'family.screens.approvalRequests.filterApproved',
+  denied: 'family.screens.approvalRequests.filterDenied',
+};
+
+const FILTER_NAME_KEYS: Record<FilterTab, string> = {
+  pending: 'family.screens.approvalRequests.filterNamePending',
+  approved: 'family.screens.approvalRequests.filterNameApproved',
+  denied: 'family.screens.approvalRequests.filterNameDenied',
 };
 
 const TYPE_ICONS: Record<ParentApprovalRequest['type'], string> = {
@@ -54,6 +67,7 @@ function formatTime(iso: string): string {
 type FilterTab = 'pending' | 'approved' | 'denied';
 
 export function ApprovalRequestsScreen({ navigation }: any) {
+  const { t } = useTranslation('family');
   const insets = useSafeAreaInsets();
   const approvalRequests = useGuardianStore((s) => s.approvalRequests);
   const respondToApproval = useGuardianStore((s) => s.respondToApproval);
@@ -63,7 +77,8 @@ export function ApprovalRequestsScreen({ navigation }: any) {
   const [filter, setFilter] = useState<FilterTab>('pending');
 
   const getMemberName = (memberId: string) =>
-    members.find((m) => m.id === memberId)?.name ?? 'Unknown';
+    members.find((m) => m.id === memberId)?.name ??
+    t('family.screens.approvalRequests.unknown');
 
   const getMemberColor = (memberId: string) =>
     members.find((m) => m.id === memberId)?.avatarColor ?? '#94A3B8';
@@ -88,17 +103,17 @@ export function ApprovalRequestsScreen({ navigation }: any) {
   }[] = [
     {
       key: 'pending',
-      label: `Pending (${counts.pending})`,
+      label: t(FILTER_LABEL_KEYS.pending, { count: counts.pending }),
       color: colors.warning,
     },
     {
       key: 'approved',
-      label: `Approved (${counts.approved})`,
+      label: t(FILTER_LABEL_KEYS.approved, { count: counts.approved }),
       color: colors.success,
     },
     {
       key: 'denied',
-      label: `Denied (${counts.denied})`,
+      label: t(FILTER_LABEL_KEYS.denied, { count: counts.denied }),
       color: colors.danger,
     },
   ];
@@ -121,10 +136,10 @@ export function ApprovalRequestsScreen({ navigation }: any) {
         </Pressable>
 
         <View style={styles.headerTextWrap}>
-          <Text style={styles.headerEyebrow}>Parent Control Center</Text>
-          <Text style={styles.headerTitle}>Approval Requests</Text>
+          <Text style={styles.headerEyebrow}>{t('family.screens.approvalRequests.headerEyebrow')}</Text>
+          <Text style={styles.headerTitle}>{t('family.screens.approvalRequests.headerTitle')}</Text>
           <Text style={styles.headerSubtitle}>
-            Review and approve requests instantly
+            {t('family.screens.approvalRequests.headerSubtitle')}
           </Text>
         </View>
 
@@ -173,7 +188,7 @@ export function ApprovalRequestsScreen({ navigation }: any) {
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </Pressable>
 
-      <Text style={styles.compactTitle}>Approval Requests</Text>
+      <Text style={styles.compactTitle}>{t('family.screens.approvalRequests.headerTitle')}</Text>
 
       {counts.pending > 0 ? (
         <View style={styles.badgePremium}>
@@ -225,12 +240,16 @@ export function ApprovalRequestsScreen({ navigation }: any) {
                   color={colors.textMuted}
                 />
                 <Text style={styles.emptyTitle}>
-                  No {filter} requests
+                  {t('family.screens.approvalRequests.emptyTitle', {
+                    filter: t(FILTER_NAME_KEYS[filter]),
+                  })}
                 </Text>
                 <Text style={styles.emptyDesc}>
                   {filter === 'pending'
-                    ? 'All clear — no requests waiting.'
-                    : `No ${filter} requests to show.`}
+                    ? t('family.screens.approvalRequests.emptyDescPending')
+                    : t('family.screens.approvalRequests.emptyDescOther', {
+                        filter: t(FILTER_NAME_KEYS[filter]),
+                      })}
                 </Text>
               </View>
             )}
@@ -287,7 +306,7 @@ export function ApprovalRequestsScreen({ navigation }: any) {
                           { color: typeColor },
                         ]}
                       >
-                        {TYPE_LABELS[req.type]}
+                        {t(TYPE_LABEL_KEYS[req.type])}
                       </Text>
                     </View>
                   </View>
@@ -314,7 +333,7 @@ export function ApprovalRequestsScreen({ navigation }: any) {
                           size={16}
                           color={colors.danger}
                         />
-                        <Text style={styles.denyBtnText}>Deny</Text>
+                        <Text style={styles.denyBtnText}>{t('family.screens.approvalRequests.deny')}</Text>
                       </Pressable>
 
                       <Pressable
@@ -333,7 +352,7 @@ export function ApprovalRequestsScreen({ navigation }: any) {
                           color="#fff"
                         />
                         <Text style={styles.approveBtnText}>
-                          Approve
+                          {t('family.screens.approvalRequests.approve')}
                         </Text>
                       </Pressable>
                     </View>
@@ -342,8 +361,8 @@ export function ApprovalRequestsScreen({ navigation }: any) {
                   {req.status !== 'pending' && req.respondedAt && (
                     <Text style={styles.respondedAt}>
                       {req.status === 'approved'
-                        ? 'Approved'
-                        : 'Denied'}{' '}
+                        ? t('family.screens.approvalRequests.approvedAt')
+                        : t('family.screens.approvalRequests.deniedAt')}{' '}
                       {formatTime(req.respondedAt)}
                     </Text>
                   )}

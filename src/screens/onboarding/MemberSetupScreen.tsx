@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-nati
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../../theme/colors';
 import { Avatar } from '../../components/common/Avatar';
 import { Input } from '../../components/common/Input';
@@ -12,14 +13,15 @@ import { useFamilyStore } from '../../store/useFamilyStore';
 import type { FamilyMember, MemberRole } from '../../types';
 import { defaultPermissionsForRole } from '../../types';
 
-const roles: { value: MemberRole; label: string; icon: string }[] = [
-  { value: 'parent', label: 'Parent', icon: 'person' },
-  { value: 'child', label: 'Child', icon: 'happy' },
-  { value: 'guardian', label: 'Guardian', icon: 'shield' },
-  { value: 'grandparent', label: 'Grandparent', icon: 'people' },
+const roles: { value: MemberRole; labelKey: string; icon: string }[] = [
+  { value: 'parent', labelKey: 'roleParent', icon: 'person' },
+  { value: 'child', labelKey: 'roleChild', icon: 'happy' },
+  { value: 'guardian', labelKey: 'roleGuardian', icon: 'shield' },
+  { value: 'grandparent', labelKey: 'roleGrandparent', icon: 'people' },
 ];
 
 export function MemberSetupScreen({ navigation }: any) {
+  const { t } = useTranslation('onboarding');
   const [members, setMembers] = useState<FamilyMember[]>([]);
   const [name, setName] = useState('');
   const [role, setRole] = useState<MemberRole>('parent');
@@ -57,9 +59,11 @@ export function MemberSetupScreen({ navigation }: any) {
 
   const removeMember = (id: string) => setMembers(members.filter((m) => m.id !== id));
 
+  const roleLabelKeyByValue = Object.fromEntries(roles.map((r) => [r.value, r.labelKey])) as Record<MemberRole, string>;
+
   const handleNext = () => {
     if (members.length === 0) {
-      Alert.alert('Add Members', 'Please add at least one family member to continue.');
+      Alert.alert(t('onboarding.screens.memberSetup.addMembersAlertTitle'), t('onboarding.screens.memberSetup.addMembersAlertMsg'));
       return;
     }
     members.forEach(addMember);
@@ -75,9 +79,9 @@ export function MemberSetupScreen({ navigation }: any) {
           <Pressable onPress={() => navigation.goBack()} style={styles.back}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </Pressable>
-          <View style={styles.stepBadge}><Text style={styles.stepText}>Step 2 of 7</Text></View>
-          <Text style={styles.headerTitle}>Family Members</Text>
-          <Text style={styles.headerSub}>Add everyone in your household</Text>
+          <View style={styles.stepBadge}><Text style={styles.stepText}>{t('onboarding.screens.memberSetup.stepBadge')}</Text></View>
+          <Text style={styles.headerTitle}>{t('onboarding.screens.memberSetup.title')}</Text>
+          <Text style={styles.headerSub}>{t('onboarding.screens.memberSetup.subtitle')}</Text>
         </LinearGradient>
         <View style={styles.progressBar}>
           <View style={[styles.progressFill, { width: '28%' }]} />
@@ -85,14 +89,14 @@ export function MemberSetupScreen({ navigation }: any) {
 
         {members.length > 0 && (
           <View style={styles.membersList}>
-            <Text style={styles.sectionLabel}>Added Members ({members.length})</Text>
+            <Text style={styles.sectionLabel}>{t('onboarding.screens.memberSetup.addedMembersLabel', { count: members.length })}</Text>
             {members.map((m) => (
               <Card key={m.id} style={styles.memberCard} variant="elevated">
                 <View style={styles.memberRow}>
                   <Avatar name={m.name} color={m.avatarColor} size={44} />
                   <View style={{ flex: 1, marginLeft: 12 }}>
                     <Text style={styles.memberName}>{m.name}</Text>
-                    <Text style={styles.memberRole}>{m.role.charAt(0).toUpperCase() + m.role.slice(1)}</Text>
+                    <Text style={styles.memberRole}>{t(`onboarding.screens.memberSetup.${roleLabelKeyByValue[m.role]}`)}</Text>
                   </View>
                   <Pressable onPress={() => removeMember(m.id)}>
                     <Ionicons name="trash-outline" size={20} color={colors.danger} />
@@ -103,7 +107,7 @@ export function MemberSetupScreen({ navigation }: any) {
           </View>
         )}
 
-        <Text style={styles.sectionLabel}>Add a Member</Text>
+        <Text style={styles.sectionLabel}>{t('onboarding.screens.memberSetup.addAMemberLabel')}</Text>
 
         <View style={styles.roleSelector}>
           {roles.map((r) => (
@@ -113,29 +117,29 @@ export function MemberSetupScreen({ navigation }: any) {
               style={[styles.roleChip, role === r.value && styles.roleChipActive]}
             >
               <Ionicons name={r.icon as any} size={16} color={role === r.value ? '#fff' : colors.textSecondary} />
-              <Text style={[styles.roleText, role === r.value && styles.roleTextActive]} numberOfLines={1} adjustsFontSizeToFit>{r.label}</Text>
+              <Text style={[styles.roleText, role === r.value && styles.roleTextActive]} numberOfLines={1} adjustsFontSizeToFit>{t(`onboarding.screens.memberSetup.${r.labelKey}`)}</Text>
             </Pressable>
           ))}
         </View>
 
         <Input
-          label="Name *"
-          placeholder='e.g., "Sarah"'
+          label={t('onboarding.screens.memberSetup.nameLabel')}
+          placeholder={t('onboarding.screens.memberSetup.namePlaceholder')}
           value={name}
           onChangeText={setName}
           leftIcon="person-outline"
           autoCapitalize="words"
         />
         <Input
-          label="Date of Birth (optional)"
-          placeholder="YYYY-MM-DD"
+          label={t('onboarding.screens.memberSetup.dobLabel')}
+          placeholder={t('onboarding.screens.memberSetup.dobPlaceholder')}
           value={dob}
           onChangeText={setDob}
           leftIcon="calendar-outline"
         />
         <Input
-          label="Email (optional)"
-          placeholder="member@example.com"
+          label={t('onboarding.screens.memberSetup.emailLabel')}
+          placeholder={t('onboarding.screens.memberSetup.emailPlaceholder')}
           value={email}
           onChangeText={setEmail}
           leftIcon="mail-outline"
@@ -144,7 +148,7 @@ export function MemberSetupScreen({ navigation }: any) {
         />
 
         <Button
-          title={`Add ${name || 'Member'}`}
+          title={name ? t('onboarding.screens.memberSetup.addMemberButton', { name }) : t('onboarding.screens.memberSetup.addMemberButton', { name: t('onboarding.screens.memberSetup.addMemberButtonDefault') })}
           onPress={addMemberLocal}
           variant="secondary"
           fullWidth
@@ -154,7 +158,7 @@ export function MemberSetupScreen({ navigation }: any) {
         />
 
         <Button
-          title="Next: Home Setup"
+          title={t('onboarding.screens.memberSetup.nextButton')}
           onPress={handleNext}
           fullWidth
           size="lg"
@@ -163,7 +167,7 @@ export function MemberSetupScreen({ navigation }: any) {
         />
 
         <Pressable onPress={handleNext} style={styles.skipButton}>
-          <Text style={styles.skipText}>Skip for now</Text>
+          <Text style={styles.skipText}>{t('onboarding.screens.memberSetup.skipForNow')}</Text>
         </Pressable>
       </ScrollView>
     </View>

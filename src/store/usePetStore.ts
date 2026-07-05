@@ -1,4 +1,7 @@
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import { mmkvStorage } from '../storage/mmkvStorage';
+import * as petService from '../services/petService';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -34,35 +37,67 @@ export interface PetEvent {
 interface PetState {
   pets: Pet[];
   events: PetEvent[];
-  addPet: (p: Omit<Pet, 'id'>) => void;
+  isLoaded: boolean;
+  addPet: (p: Omit<Pet, 'id'>) => Promise<void>;
   deletePet: (id: string) => void;
-  addEvent: (e: Omit<PetEvent, 'id'>) => void;
+  addEvent: (e: Omit<PetEvent, 'id'>) => Promise<void>;
   toggleEvent: (id: string) => void;
   deleteEvent: (id: string) => void;
-  seedDemoData: () => void;
+  fetchFromServer: () => Promise<void>;
 }
 
-export const usePetStore = create<PetState>((set) => ({
+export const usePetStore = create<PetState>()(
+  persist(
+    (set, get) => ({
   pets: [],
   events: [],
-  addPet: (p) => set((s) => ({ pets: [{ ...p, id: generateId() }, ...s.pets] })),
-  deletePet: (id) => set((s) => ({ pets: s.pets.filter((p) => p.id !== id), events: s.events.filter((e) => e.petId !== id) })),
-  addEvent: (e) => set((s) => ({ events: [{ ...e, id: generateId() }, ...s.events] })),
-  toggleEvent: (id) => set((s) => ({ events: s.events.map((e) => e.id === id ? { ...e, isDone: !e.isDone } : e) })),
-  deleteEvent: (id) => set((s) => ({ events: s.events.filter((e) => e.id !== id) })),
-  seedDemoData: () => {
-    const pets: Pet[] = [
-      { id: 'pet1', familyId: 'demo-family', name: 'Buddy', species: 'dog', breed: 'Golden Retriever', dateOfBirth: '2020-03-15', weight: 65, vetName: 'Dr. Smith', vetPhone: '555-0180', avatarColor: '#F5A623', emoji: '🐕', notes: 'Loves fetch, allergic to chicken' },
-      { id: 'pet2', familyId: 'demo-family', name: 'Luna', species: 'cat', breed: 'Tabby Mix', dateOfBirth: '2021-07-20', weight: 9, vetName: 'Dr. Smith', vetPhone: '555-0180', avatarColor: '#8E44AD', emoji: '🐈', notes: 'Indoor only, shy around strangers' },
-    ];
-    const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
-    const nextWeek = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
-    const events: PetEvent[] = [
-      { id: 'ev1', petId: 'pet1', type: 'vet', title: "Buddy's Annual Checkup", date: nextWeek, isDone: false, cost: 120, notes: 'Bring vaccination records' },
-      { id: 'ev2', petId: 'pet1', type: 'grooming', title: 'Grooming appointment', date: tomorrow, isDone: false, cost: 65 },
-      { id: 'ev3', petId: 'pet2', type: 'vaccine', title: "Luna's Rabies Booster", date: nextWeek, isDone: false, cost: 45 },
-      { id: 'ev4', petId: 'pet1', type: 'medication', title: 'Heartworm medication', date: new Date().toISOString().split('T')[0], isDone: true, cost: 25, notes: 'Monthly - Heartgard Plus' },
-    ];
-    set({ pets, events });
+  isLoaded: false,
+  addPet: async (p) => {
+    const newPet = { ...p, id: generateId() };
+    set((s) => ({ pets: [newPet, ...s.pets] }));
+    try {
+      await petService.createPet(newPet);
+    } catch {
+      set((s) => ({ pets: s.pets.filter((x) => x.id !== newPet.id) }));
+    }
   },
-}));
+  deletePet: (id) => {
+    const prev = get().pets;
+    const prevEvents = get().events;
+    set((s) => ({ pets: s.pets.filter((p) => p.id !== id), events: s.events.filter((e) => e.petId !== id) }));
+    petService.deletePetRemote(id).catch(() => { set({ pets: prev, events: prevEvents }); });
+  },
+  addEvent: async (e) => {
+    const newEvent = { ...e, id: generateId() };
+    set((s) => ({ events: [newEvent, ...s.events] }));
+    try {
+      await petService.createEvent(newEvent);
+    } catch {
+      set((s) => ({ events: s.events.filter((x) => x.id !== newEvent.id) }));
+    }
+  },
+  toggleEvent: (id) => {
+    set((s) => ({ events: s.events.map((e) => e.id === id ? { ...e, isDone: !e.isDone } : e) }));
+    const event = get().events.find((e) => e.id === id);
+    if (event) petService.updateEventRemote(id, { isDone: event.isDone }).catch(() => {});
+  },
+  deleteEvent: (id) => {
+    const prev = get().events;
+    set((s) => ({ events: s.events.filter((e) => e.id !== id) }));
+    petService.deleteEventRemote(id).catch(() => { set({ events: prev }); });
+  },
+  fetchFromServer: async () => {
+    try {
+      const { pets, events } = await petService.fetchPets();
+      set({ pets, events, isLoaded: true });
+    } catch {
+      set({ isLoaded: true });
+    }
+  },
+    }),
+    {
+      name: 'family-command-center-pets',
+      storage: createJSONStorage(() => mmkvStorage),
+    }
+  )
+);

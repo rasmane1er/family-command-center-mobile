@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -28,6 +28,7 @@ import {
   type AssignmentPriority,
 } from '../../store/useHomeworkStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { useTranslation } from 'react-i18next';
 
 const SUBJECT_COLORS: SubjectColor[] = [
   '#E74C3C',
@@ -89,6 +90,7 @@ const PRIORITY_VARIANTS: Record<AssignmentPriority, 'success' | 'warning' | 'dan
 };
 
 export function HomeworkTrackerScreen({ navigation, route }: any) {
+  const { t } = useTranslation('family');
   const insets = useSafeAreaInsets();
   const members = useFamilyStore((s) => s.members);
   const memberId = route?.params?.memberId;
@@ -108,8 +110,14 @@ const visibleChildren =
     deleteAssignment,
     getGPAForMember,
     getOverdueCount,
-    seedDemoData,
+    isLoaded,
+    fetchFromServer,
   } = useHomeworkStore();
+
+  useEffect(() => {
+    if (!isLoaded) fetchFromServer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [selectedMemberId, setSelectedMemberId] = useState<string>(
   memberId ?? visibleChildren[0]?.id ?? 'member-3'
@@ -273,7 +281,7 @@ const visibleChildren =
         <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
-        <Text style={styles.headerTitle}>Homework Tracker</Text>
+        <Text style={styles.headerTitle}>{t('homework.title')}</Text>
         <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
           <Ionicons name="add" size={22} color="#fff" />
         </Pressable>
@@ -330,7 +338,7 @@ const visibleChildren =
       <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
-      <Text style={styles.headerTitle}>Homework Tracker</Text>
+      <Text style={styles.headerTitle}>{t('homework.title')}</Text>
       <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
         <Ionicons name="add" size={22} color="#fff" />
       </Pressable>
@@ -357,13 +365,7 @@ const visibleChildren =
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyEmoji}>📚</Text>
             <Text style={styles.emptyTitle}>No assignments yet</Text>
-            <Text style={styles.emptyDesc}>Tap + to add assignments or load sample data.</Text>
-            <Button
-              title="Load Demo Data"
-              onPress={() => { seedDemoData(); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); }}
-              variant="primary"
-              style={{ marginTop: 16, alignSelf: 'center' }}
-            />
+            <Text style={styles.emptyDesc}>Tap + to add an assignment.</Text>
           </View>
         )}
 
@@ -442,7 +444,7 @@ const visibleChildren =
       >
         <ScrollView style={styles.modal} contentContainerStyle={{ paddingBottom: 60 }}>
           <View style={styles.modalHandle} />
-          <Text style={styles.modalTitle}>Add Assignment</Text>
+          <Text style={styles.modalTitle}>{t('homework.addAssignment')}</Text>
 
           <Text style={styles.modalLabel}>Member</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>

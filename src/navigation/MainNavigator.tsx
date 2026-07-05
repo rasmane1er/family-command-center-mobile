@@ -1,11 +1,14 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 
 import { TabNavigator } from './TabNavigator';
 
 import { SettingsScreen } from '../screens/settings/SettingsScreen';
 import HelpSupportScreen from '../screens/settings/HelpSupportScreen';
 import { LiveChatScreen } from '../screens/settings/LiveChatScreen';
+import { PrivacyPolicyScreen } from '../screens/settings/PrivacyPolicyScreen';
+import { TermsOfServiceScreen } from '../screens/settings/TermsOfServiceScreen';
 import { HealthHubScreen } from '../screens/health/HealthHubScreen';
 import { MedicationManagerScreen } from '../screens/health/MedicationManagerScreen';
 import { SleepTrackerScreen } from '../screens/health/SleepTrackerScreen';
@@ -16,6 +19,11 @@ import { NotificationsScreen } from '../screens/dashboard/NotificationsScreen';
 import { SearchScreen } from '../screens/dashboard/SearchScreen';
 import { WeeklyReportScreen } from '../screens/dashboard/WeeklyReportScreen';
 import { GeofenceScreen } from '../screens/family/guardian/GeofenceScreen';
+import { MilitaryHubScreen } from '../screens/family/military/MilitaryHubScreen';
+import { DeploymentTrackerScreen } from '../screens/family/military/DeploymentTrackerScreen';
+import { PCSMoveScreen } from '../screens/family/military/PCSMoveScreen';
+import { FamilyReadinessScreen } from '../screens/family/military/FamilyReadinessScreen';
+import { SubscriptionGate } from '../components/common/SubscriptionGate';
 
 import { useFamilyStore } from '../store/useFamilyStore';
 
@@ -58,6 +66,7 @@ function ProtectedRoute({
 }
 
 export function MainNavigator() {
+  const { t } = useTranslation('onboarding');
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {/* Core */}
@@ -151,12 +160,59 @@ export function MainNavigator() {
         options={{ animation: 'slide_from_right' }}
       />
 
+      <Stack.Screen
+        name="PrivacyPolicy"
+        component={PrivacyPolicyScreen}
+        options={{ animation: 'slide_from_right' }}
+      />
+
+      <Stack.Screen
+        name="TermsOfService"
+        component={TermsOfServiceScreen}
+        options={{ animation: 'slide_from_right' }}
+      />
+
       {/* Full-screen map screens — no tab bar */}
       <Stack.Screen
         name="Geofence"
         component={GeofenceScreen}
         options={{ animation: 'slide_from_right' }}
       />
+
+      {/* Military family tools — Family Pro only, same gating pattern as
+          the other tier-gated feature groups below (see FinanceNavigator /
+          OperationsNavigator). */}
+      <Stack.Screen name="MilitaryHub" options={{ animation: 'slide_from_right' }}>
+        {(props) => (
+          <SubscriptionGate requiredTier="family_pro" featureName={t('military.title')}>
+            <MilitaryHubScreen {...props} />
+          </SubscriptionGate>
+        )}
+      </Stack.Screen>
+
+      <Stack.Screen name="DeploymentTracker" options={{ animation: 'slide_from_right' }}>
+        {(props) => (
+          <SubscriptionGate requiredTier="family_pro" featureName={t('military.deployment')}>
+            <DeploymentTrackerScreen {...props} />
+          </SubscriptionGate>
+        )}
+      </Stack.Screen>
+
+      <Stack.Screen name="PCSMove" options={{ animation: 'slide_from_right' }}>
+        {(props) => (
+          <SubscriptionGate requiredTier="family_pro" featureName={t('military.pcsFeature')}>
+            <PCSMoveScreen {...props} />
+          </SubscriptionGate>
+        )}
+      </Stack.Screen>
+
+      <Stack.Screen name="FamilyReadiness" options={{ animation: 'slide_from_right' }}>
+        {(props) => (
+          <SubscriptionGate requiredTier="family_pro" featureName={t('military.readinessFeature')}>
+            <FamilyReadinessScreen {...props} />
+          </SubscriptionGate>
+        )}
+      </Stack.Screen>
 
     </Stack.Navigator>
   );

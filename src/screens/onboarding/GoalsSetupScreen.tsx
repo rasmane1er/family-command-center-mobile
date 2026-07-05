@@ -3,31 +3,29 @@ import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../../theme/colors';
 import { Button } from '../../components/common/Button';
 import { Card } from '../../components/common/Card';
 import { useAppStore } from '../../store/useAppStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
-import { useFinanceStore } from '../../store/useFinanceStore';
-import { useOperationsStore } from '../../store/useOperationsStore';
 import { useAIStore } from '../../store/useAIStore';
 import { useFamilyGoalsStore, type GoalCategory } from '../../store/useFamilyGoalsStore';
 
-const suggestedGoals: { icon: string; color: string; bg: string; title: string; desc: string; category: GoalCategory }[] = [
-  { icon: 'shield', color: '#27AE60', bg: '#D5F5E3', title: 'Build Emergency Fund', desc: '3-6 months of expenses', category: 'finance' },
-  { icon: 'airplane', color: '#45B7D1', bg: '#D6EAF8', title: 'Family Vacation', desc: 'Plan your next adventure', category: 'travel' },
-  { icon: 'school', color: '#F5A623', bg: '#FEF3E2', title: "Kids' Education Fund", desc: '529 savings plan', category: 'education' },
-  { icon: 'home', color: '#DDA0DD', bg: '#F5E6FF', title: 'Home Improvement', desc: 'Renovations & upgrades', category: 'home' },
-  { icon: 'fitness', color: '#E74C3C', bg: '#FDEDEC', title: 'Family Fitness', desc: 'Health & wellness goals', category: 'health' },
-  { icon: 'car', color: '#2980B9', bg: '#D6EAF8', title: 'New Vehicle Fund', desc: 'Save for your next car', category: 'other' },
+const suggestedGoals: { icon: string; color: string; bg: string; title: string; titleKey: string; desc: string; descKey: string; category: GoalCategory }[] = [
+  { icon: 'shield', color: '#27AE60', bg: '#D5F5E3', title: 'Build Emergency Fund', titleKey: 'goalEmergencyFundTitle', desc: '3-6 months of expenses', descKey: 'goalEmergencyFundDesc', category: 'finance' },
+  { icon: 'airplane', color: '#45B7D1', bg: '#D6EAF8', title: 'Family Vacation', titleKey: 'goalVacationTitle', desc: 'Plan your next adventure', descKey: 'goalVacationDesc', category: 'travel' },
+  { icon: 'school', color: '#F5A623', bg: '#FEF3E2', title: "Kids' Education Fund", titleKey: 'goalEducationTitle', desc: '529 savings plan', descKey: 'goalEducationDesc', category: 'education' },
+  { icon: 'home', color: '#DDA0DD', bg: '#F5E6FF', title: 'Home Improvement', titleKey: 'goalHomeImprovementTitle', desc: 'Renovations & upgrades', descKey: 'goalHomeImprovementDesc', category: 'home' },
+  { icon: 'fitness', color: '#E74C3C', bg: '#FDEDEC', title: 'Family Fitness', titleKey: 'goalFitnessTitle', desc: 'Health & wellness goals', descKey: 'goalFitnessDesc', category: 'health' },
+  { icon: 'car', color: '#2980B9', bg: '#D6EAF8', title: 'New Vehicle Fund', titleKey: 'goalVehicleTitle', desc: 'Save for your next car', descKey: 'goalVehicleDesc', category: 'other' },
 ];
 
 export function GoalsSetupScreen({ navigation }: any) {
+  const { t } = useTranslation('onboarding');
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
   const setOnboarded = useAppStore((s) => s.setOnboarded);
   const seedDemoFamily = useFamilyStore((s) => s.seedDemoData);
-  const seedDemoFinance = useFinanceStore((s) => s.seedDemoData);
-  const seedDemoOps = useOperationsStore((s) => s.seedDemoData);
   const seedDemoAI = useAIStore((s) => s.seedDemoInsights);
   const family = useFamilyStore((s) => s.family);
   const addGoal = useFamilyGoalsStore((s) => s.addGoal);
@@ -41,8 +39,6 @@ export function GoalsSetupScreen({ navigation }: any) {
   const handleFinish = () => {
     if (!family) {
       seedDemoFamily();
-      seedDemoFinance();
-      seedDemoOps();
       seedDemoAI();
     }
 
@@ -54,8 +50,8 @@ export function GoalsSetupScreen({ navigation }: any) {
       if (!goal) return;
       addGoal({
         familyId: family?.id ?? 'demo-family',
-        title: goal.title,
-        description: goal.desc,
+        title: t(`onboarding.screens.goalsSetup.${goal.titleKey}`),
+        description: t(`onboarding.screens.goalsSetup.${goal.descKey}`),
         category: goal.category,
         progress: 0,
         milestones: [],
@@ -81,18 +77,18 @@ export function GoalsSetupScreen({ navigation }: any) {
               <Ionicons name="arrow-back" size={24} color="#fff" />
             </Pressable>
             <Pressable onPress={handleFinish} style={styles.skipBtn}>
-              <Text style={styles.skipBtnText}>SKIP</Text>
+              <Text style={styles.skipBtnText}>{t('onboarding.screens.goalsSetup.skipBadge')}</Text>
             </Pressable>
           </View>
-          <View style={styles.stepBadge}><Text style={styles.stepText}>Step 7 of 7</Text></View>
-          <Text style={styles.headerTitle}>Family Goals</Text>
-          <Text style={styles.headerSub}>What are you working toward?</Text>
+          <View style={styles.stepBadge}><Text style={styles.stepText}>{t('onboarding.screens.goalsSetup.stepBadge')}</Text></View>
+          <Text style={styles.headerTitle}>{t('onboarding.screens.goalsSetup.title')}</Text>
+          <Text style={styles.headerSub}>{t('onboarding.screens.goalsSetup.subtitle')}</Text>
         </LinearGradient>
         <View style={styles.progressBar}>
           <View style={[styles.progressFill, { width: '100%' }]} />
         </View>
 
-        <Text style={styles.sectionLabel}>Select goals to track (pick any)</Text>
+        <Text style={styles.sectionLabel}>{t('onboarding.screens.goalsSetup.sectionLabel')}</Text>
 
         <View style={styles.goalsGrid}>
           {suggestedGoals.map((g) => (
@@ -104,8 +100,8 @@ export function GoalsSetupScreen({ navigation }: any) {
               <View style={[styles.goalIcon, { backgroundColor: g.bg }]}>
                 <Ionicons name={g.icon as any} size={24} color={g.color} />
               </View>
-              <Text style={styles.goalTitle}>{g.title}</Text>
-              <Text style={styles.goalDesc}>{g.desc}</Text>
+              <Text style={styles.goalTitle}>{t(`onboarding.screens.goalsSetup.${g.titleKey}`)}</Text>
+              <Text style={styles.goalDesc}>{t(`onboarding.screens.goalsSetup.${g.descKey}`)}</Text>
               {selectedGoals.includes(g.title) && (
                 <View style={styles.checkmark}>
                   <Ionicons name="checkmark-circle" size={22} color={colors.success} />
@@ -121,16 +117,16 @@ export function GoalsSetupScreen({ navigation }: any) {
               <Ionicons name="rocket" size={28} color={colors.secondary} />
             </View>
             <View style={{ flex: 1, marginLeft: 14 }}>
-              <Text style={styles.readyTitle}>You're all set!</Text>
+              <Text style={styles.readyTitle}>{t('onboarding.screens.goalsSetup.readyTitle')}</Text>
               <Text style={styles.readyDesc}>
-                Your Family Command Center is ready. The AI will learn your patterns and provide personalized insights.
+                {t('onboarding.screens.goalsSetup.readyDesc')}
               </Text>
             </View>
           </View>
         </Card>
 
         <Button
-          title="Launch Family Command Center"
+          title={t('onboarding.screens.goalsSetup.launchButton')}
           onPress={handleFinish}
           fullWidth
           size="lg"
@@ -138,7 +134,7 @@ export function GoalsSetupScreen({ navigation }: any) {
           leftIcon={<Ionicons name="rocket-outline" size={20} color="#fff" style={{ marginRight: 8 }} />}
         />
         <Text style={styles.footer}>
-          You can always add more details in Settings
+          {t('onboarding.screens.goalsSetup.footer')}
         </Text>
       </ScrollView>
     </View>

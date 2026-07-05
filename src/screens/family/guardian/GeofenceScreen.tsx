@@ -9,23 +9,18 @@ import {
   TextInput,
   View,
 } from "react-native";
-import MapView, { Circle, Marker, type Region } from "react-native-maps";
+import MapView, { Circle, Marker, PROVIDER_GOOGLE, type Region } from "react-native-maps";
 import Slider from "@react-native-community/slider";
 import * as Location from "expo-location";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 
 import { useGuardianStore } from "../../../store/useGuardianStore";
 import { useFamilyStore } from "../../../store/useFamilyStore";
 import { colors } from "../../../theme/colors";
 import { shadows } from "../../../theme/spacing";
 import type { GeofenceAction, GeofenceZone } from "../../../types";
-
-const ACTION_OPTIONS: { value: GeofenceAction; label: string }[] = [
-  { value: "alert_entry", label: "Alert on Entry" },
-  { value: "alert_exit", label: "Alert on Exit" },
-  { value: "alert_both", label: "Alert on Both" },
-];
 
 const ZONE_COLORS = [
   "#E74C3C",
@@ -35,6 +30,7 @@ const ZONE_COLORS = [
   "#8E44AD",
   "#00BCD4",
   "#FF6B6B",
+  "#4A7C59",
 ];
 
 const ZONE_ICONS = [
@@ -45,6 +41,7 @@ const ZONE_ICONS = [
   "library",
   "location",
   "star",
+  "shield",
 ];
 
 function RadiusLabel({ radius }: { radius: number }) {
@@ -69,8 +66,15 @@ interface DraftZone {
   linkedMembers: string[];
 }
 
+const ACTION_OPTIONS: { value: GeofenceAction; labelKey: string }[] = [
+  { value: "alert_entry", labelKey: "actionAlertEntry" },
+  { value: "alert_exit", labelKey: "actionAlertExit" },
+  { value: "alert_both", labelKey: "actionAlertBoth" },
+];
+
 export function GeofenceScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation('family');
   const mapRef = useRef<MapView>(null);
 
   const zones = useGuardianStore((s) => s.geofenceZones);
@@ -122,7 +126,7 @@ export function GeofenceScreen({ navigation }: any) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const startNewZone = () => {
+  const startNewZone = (preset?: "dutyStation") => {
     const center = childMarkers[0]
       ? { lat: childMarkers[0].lat, lng: childMarkers[0].lng }
       : { lat: initialRegion.latitude, lng: initialRegion.longitude };
@@ -131,11 +135,14 @@ export function GeofenceScreen({ navigation }: any) {
     setDraftZone({
       lat: center.lat,
       lng: center.lng,
-      radius: 500,
-      name: "",
+      // Duty stations / installations are much larger than a home or
+      // school zone, so the preset starts with a bigger radius instead of
+      // making the user drag the slider every time.
+      radius: preset === "dutyStation" ? 2000 : 500,
+      name: preset === "dutyStation" ? "Duty Station" : "",
       action: "alert_both",
-      color: ZONE_COLORS[0],
-      icon: ZONE_ICONS[0],
+      color: preset === "dutyStation" ? "#4A7C59" : ZONE_COLORS[0],
+      icon: preset === "dutyStation" ? "shield" : ZONE_ICONS[0],
       linkedMembers: [],
     });
   };
@@ -163,7 +170,7 @@ export function GeofenceScreen({ navigation }: any) {
   const saveDraft = () => {
     if (!draftZone) return;
     if (!draftZone.name.trim()) {
-      Alert.alert("Validation", "Please enter a zone name.");
+      Alert.alert(t('common.validationTitle'), t('common.validationMsg'));
       return;
     }
 
@@ -199,7 +206,7 @@ export function GeofenceScreen({ navigation }: any) {
   };
 
   const handleDelete = (zone: GeofenceZone) => {
-    Alert.alert("Delete Zone", `Remove "${zone.name}" geofence?`, [
+    Alert.alert(t('common.deleteTitle'), `Remove "${zone.name}" geofence?`, [
       { text: "Cancel", style: "cancel" },
       {
         text: "Delete",
@@ -242,7 +249,7 @@ export function GeofenceScreen({ navigation }: any) {
         400,
       );
     } catch {
-      Alert.alert("Error", "Could not get your current location.");
+      Alert.alert(t('common.error'), t('common.errorLocation'));
     } finally {
       setLocating(false);
     }
@@ -260,7 +267,11 @@ export function GeofenceScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      <MapView ref={mapRef} style={StyleSheet.absoluteFill} initialRegion={initialRegion}>
+      {/* Explicit Google Maps on both platforms — without this, iOS quietly
+          falls back to Apple Maps (no key needed) while Android renders a
+          blank map without a Google Maps API key configured in app.json,
+          so the two platforms looked and behaved differently. */}
+      <MapView ref={mapRef} provider={PROVIDER_GOOGLE} style={StyleSheet.absoluteFill} initialRegion={initialRegion}>
         {zones.map((zone) => (
           <React.Fragment key={zone.id}>
             <Circle
@@ -338,9 +349,17 @@ export function GeofenceScreen({ navigation }: any) {
       </View>
 
       {!draftZone && (
-        <Pressable style={[styles.fab, { bottom: insets.bottom + 24 }, shadows.card]} onPress={startNewZone}>
-          <Ionicons name="add" size={26} color="#fff" />
-        </Pressable>
+        <>
+          <Pressable style={[styles.fab, { bottom: insets.bottom + 24 }, shadows.card]} onPress={() => startNewZone()}>
+            <Ionicons name="add" size={26} color="#fff" />
+          </Pressable>
+          <Pressable
+            style={[styles.fabSecondary, { bottom: insets.bottom + 90 }, shadows.card]}
+            onPress={() => startNewZone("dutyStation")}
+          >
+            <Ionicons name="shield" size={20} color="#fff" />
+          </Pressable>
+        </>
       )}
 
       {showZonesList && !draftZone && (
@@ -367,7 +386,10 @@ export function GeofenceScreen({ navigation }: any) {
                   <Text style={styles.zoneName}>{zone.name}</Text>
                   <Text style={styles.zoneMeta}>
                     <RadiusLabel radius={zone.radius} /> ·{" "}
-                    {ACTION_OPTIONS.find((a) => a.value === zone.action)?.label ?? zone.action}
+                    {(() => {
+                      const opt = ACTION_OPTIONS.find((a) => a.value === zone.action);
+                      return opt ? t(`family.screens.geofence.${opt.labelKey}`) : zone.action;
+                    })()}
                   </Text>
                   {zone.linkedMembers.length > 0 && (
                     <Text style={styles.zoneMembers}>
@@ -431,7 +453,7 @@ export function GeofenceScreen({ navigation }: any) {
               thumbTintColor={draftZone.color}
             />
 
-            <Text style={styles.fieldLabel}>Alert Trigger</Text>
+            <Text style={styles.fieldLabel}>{t('family.screens.geofence.alertTriggerLabel')}</Text>
             <View style={styles.optionRow}>
               {ACTION_OPTIONS.map((opt) => (
                 <Pressable
@@ -440,7 +462,7 @@ export function GeofenceScreen({ navigation }: any) {
                   style={[styles.optionChip, draftZone.action === opt.value && styles.optionChipActive]}
                 >
                   <Text style={[styles.optionChipText, draftZone.action === opt.value && styles.optionChipTextActive]}>
-                    {opt.label}
+                    {t(`family.screens.geofence.${opt.labelKey}`)}
                   </Text>
                 </Pressable>
               ))}
@@ -564,6 +586,17 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 28,
     backgroundColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  fabSecondary: {
+    position: "absolute",
+    right: 26,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#4A7C59",
     alignItems: "center",
     justifyContent: "center",
   },

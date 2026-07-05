@@ -22,6 +22,7 @@ import { colors } from '../../../theme/colors';
 import { shadows } from '../../../theme/spacing';
 import { CollapsibleHeader } from '../../../components/common/CollapsibleHeader';
 import type { DayOfWeek, ScheduledDowntime, ScreenTimeRule } from '../../../types';
+import { useTranslation } from 'react-i18next';
 
 const ALL_DAYS: DayOfWeek[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
@@ -48,6 +49,7 @@ function formatLimit(mins: number) {
 }
 
 export function ScreenTimeScreen({ navigation }: any) {
+  const { t } = useTranslation('family');
   const insets = useSafeAreaInsets();
 
   const rules = useGuardianStore((s) => s.screenTimeRules);
@@ -131,7 +133,7 @@ export function ScreenTimeScreen({ navigation }: any) {
     if (!activeMemberId) return;
 
     if (!dtLabel.trim()) {
-      Alert.alert('Validation', 'Please enter a label for this downtime window.');
+      Alert.alert(t('common.validationTitle'), t('common.validationMsg'));
       return;
     }
 
@@ -172,7 +174,7 @@ export function ScreenTimeScreen({ navigation }: any) {
   const handleDeleteDowntime = (dtId: string) => {
     if (!memberRule) return;
 
-    Alert.alert('Remove', 'Remove this downtime window?', [
+    Alert.alert(t('common.removeTitle'), t('common.removeConfirmMsg'), [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Remove',
@@ -237,14 +239,14 @@ export function ScreenTimeScreen({ navigation }: any) {
         });
       }
     } catch (e: any) {
-      Alert.alert('Error', e?.message ?? 'Failed to open app picker');
+      Alert.alert(t('common.error'), e?.message ?? t('common.errorOpeningApp'));
     } finally {
       setIosPickerLoading(false);
     }
   };
 
   const handleIOSClearRestrictions = async () => {
-    Alert.alert('Clear Restrictions', 'Remove all iOS app restrictions?', [
+    Alert.alert(t('common.clearTitle'), t('common.clearConfirmMsg'), [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Clear',
@@ -282,7 +284,7 @@ export function ScreenTimeScreen({ navigation }: any) {
 
         <View style={styles.headerTextBlock}>
           <Text style={styles.headerEyebrow}>Guardian Controls</Text>
-          <Text style={styles.headerTitle}>Screen Time</Text>
+          <Text style={styles.headerTitle}>{t('guardian.screenTime')}</Text>
           <Text style={styles.headerSubtitle}>
             {activeMember
               ? `Manage limits for ${activeMember.name}`
@@ -361,7 +363,7 @@ export function ScreenTimeScreen({ navigation }: any) {
       </Pressable>
 
       <View style={styles.compactTitleBlock}>
-        <Text style={styles.compactTitle}>Screen Time</Text>
+        <Text style={styles.compactTitle}>{t('guardian.screenTime')}</Text>
         <Text style={styles.compactSubtitle}>
           {activeMember?.name ?? 'Guardian rules'}
         </Text>

@@ -1,0 +1,94 @@
+export default {
+  finance: {
+    title: 'Finance', netWorth: 'Total Net Worth', income: 'Income', expenses: 'Expenses',
+    savings: 'Savings', accounts: 'Accounts', budget: 'Budget', bills: 'Bills',
+    subscriptions: 'Subscriptions', assets: 'Assets', goals: 'Financial Goals',
+    transactions: 'Recent Transactions', tools: 'Finance Tools',
+    addAccount: 'Add Account', addGoal: 'Add Goal', viewAll: 'View All',
+    balance: 'Balance', overdue: 'overdue', thisMonth: 'this month',
+    remaining: 'remaining', spent: 'spent', of: 'of', left: 'left',
+    budgetStatus: 'Budget Status',
+    screens: {
+      assets: {
+        categoryRealEstate: 'Real Estate', categoryVehicle: 'Vehicle', categoryInvestments: 'Investments',
+        categoryJewelry: 'Jewelry', categoryElectronics: 'Electronics', categoryFurniture: 'Furniture',
+        categoryCollectibles: 'Collectibles', categoryOther: 'Other',
+        confirmDeleteTitle: 'Delete {{name}}?', confirmDeleteMsg: 'Remove this asset permanently?',
+        invalidInputTitle: 'Invalid Input', invalidInputMsg: 'Please enter a valid name and value',
+        vehicleAssetTitle: 'Vehicle Asset', vehicleAssetMsg: 'Vehicle added as asset',
+      },
+      receiptScanner: {
+        cameraPermissionTitle: 'Camera Permission',
+        cameraPermissionMsgAskAgain: 'Allow camera access to scan receipts',
+        cameraPermissionMsgBlocked: 'Camera access is blocked. Enable it in Settings.',
+        cameraUnavailableTitle: 'Camera Unavailable',
+        cameraUnavailableMsgDev: 'Camera is not available in the simulator',
+        cameraUnavailableMsgProd: 'Camera could not be started',
+        libraryErrorTitle: 'Error', libraryErrorMsg: 'Could not open photo library',
+        scanFailed: 'Receipt scan failed. Try again.',
+      },
+    },
+  },
+  budget: {
+    title: 'Budget', addCategory: 'Add Category', noBudgets: 'No budget set up yet',
+    spent: 'Spent', remaining: 'Remaining', total: 'Total Budget',
+    onTrack: 'On Track', overBudget: 'Over Budget',
+  },
+  bills: {
+    title: 'Bills', addBill: 'Add Bill', noBills: 'No bills added yet',
+    due: 'Due', overdue: 'Overdue', paid: 'Paid', upcoming: 'Upcoming',
+    autopay: 'Autopay', dueDate: 'Due Date', amount: 'Amount',
+  },
+  transactions: {
+    title: 'Transactions', addTransaction: 'Add Transaction', noTransactions: 'No transactions yet',
+    income: 'Income', expense: 'Expense', amount: 'Amount', description: 'Description',
+    category: 'Category', date: 'Date', filter: 'Filter', all: 'All',
+    searchTransactions: 'Search transactions…',
+  },
+  subscriptions: {
+    title: 'Subscriptions', addSubscription: 'Add Subscription', noSubscriptions: 'No subscriptions yet',
+    monthly: 'Monthly', annual: 'Annual', totalMonthly: 'Total Monthly Cost',
+    renewsOn: 'Renews On', cancelled: 'Cancelled', active: 'Active',
+    trial: 'Trial', paused: 'Paused',
+  },
+  debt: {
+    title: 'Debt Payoff', totalDebt: 'Total Debt', addDebt: 'Add Debt',
+    noDebts: 'No debts added', snowball: 'Snowball', avalanche: 'Avalanche',
+    payoff: 'Payoff Date', monthlyPayment: 'Monthly Payment', interest: 'Interest Rate',
+    balance: 'Balance', minPayment: 'Min Payment', detailsTitle: 'Debt Details',
+  },
+  insurance: {
+    title: 'Insurance Manager', addPolicy: 'Add Policy', noPolicies: 'No policies yet',
+    type: 'Type', provider: 'Provider', premium: 'Premium', renewalDate: 'Renewal Date',
+    coverage: 'Coverage', deductible: 'Deductible',
+  },
+  spending: {
+    title: 'Spending Insights', byCategory: 'By Category', trends: 'Trends',
+    topCategories: 'Top Categories', monthlyAverage: 'Monthly Average',
+    thisMonth: 'This Month', lastMonth: 'Last Month', noData: 'No spending data yet',
+  },
+  tax: {
+    title: 'Tax Center', addDocument: 'Add Document', noDocuments: 'No tax documents yet',
+    year: 'Tax Year', type: 'Type', deductions: 'Deductions', income: 'Income',
+    refund: 'Refund', owed: 'Amount Owed',
+  },
+  utility: {
+    title: 'Utility Tracker', addBill: 'Add Bill', noBills: 'No utility bills yet',
+    electricity: 'Electricity', water: 'Water', gas: 'Gas', internet: 'Internet',
+    monthlyAverage: 'Monthly Average', thisMonth: 'This Month',
+  },
+  wealth: {
+    title: 'Wealth Builder', netWorth: 'Net Worth', assets: 'Assets', liabilities: 'Liabilities',
+    investments: 'Investments', addAsset: 'Add Asset', addLiability: 'Add Liability',
+    growthRate: 'Growth Rate', projections: 'Projections',
+  },
+  connectBank: {
+    title: 'Connect Bank', subtitle: 'Link your accounts for automatic tracking',
+    connect: 'Connect with Plaid', privacy: 'Your data is encrypted and secure',
+    connected: 'Connected', disconnect: 'Disconnect', addAccount: 'Add Account',
+  },
+  gates: {
+    financeToolsTitle: 'Finance Tools',
+    financeToolsDesc: 'Budgeting, bills, debt payoff, bank sync, and every other finance tool are included in the Premium plan.',
+  },
+} as const;

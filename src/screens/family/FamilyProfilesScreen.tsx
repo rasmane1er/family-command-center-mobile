@@ -134,7 +134,7 @@ const QUICK_NAV = [
 export function FamilyProfilesScreen({ navigation, route }: any) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
-  const { t } = useTranslation();
+  const { t } = useTranslation('family');
 
   const statusColors = {
     active: colors.success,
@@ -181,8 +181,8 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
     }
     if (route?.params?.joinedFamilyId) {
       Alert.alert(
-        'Join Request Sent',
-        `Your request to join ${route.params.joinedFamilyName} has been created.`
+        t('family.screens.familyProfiles.joinRequestSentTitle'),
+        t('family.screens.familyProfiles.joinRequestSentMsg', { familyName: route.params.joinedFamilyName })
       );
       navigation.setParams?.({
         joinedFamilyId: undefined,
@@ -233,7 +233,7 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
   const handleCopyInvite = async () => {
     const inviteLink = `familycommand://join/${family?.id}`;
     await Clipboard.setStringAsync(inviteLink);
-    Alert.alert('Copied', 'Invite link copied to clipboard');
+    Alert.alert(t('family.screens.familyProfiles.copiedTitle'), t('family.screens.familyProfiles.copiedMsg'));
   };
 
   const handleShareInvite = async () => {
@@ -241,12 +241,12 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
       const inviteLink = `https://familycommandcenter.app/join/${family?.id ?? 'demo-family'}`;
       await Clipboard.setStringAsync(inviteLink);
       Alert.alert(
-        'Invite Link Ready',
-        'The invite link was copied. Paste it into Messages, WhatsApp, email, or any app to invite someone.',
-        [{ text: 'OK' }]
+        t('family.screens.familyProfiles.inviteLinkReadyTitle'),
+        t('family.screens.familyProfiles.inviteLinkReadyMsg'),
+        [{ text: t('family.screens.familyProfiles.okButton') }]
       );
     } catch {
-      Alert.alert('Invite Error', 'Could not create invite link.');
+      Alert.alert(t('family.screens.familyProfiles.inviteErrorTitle'), t('family.screens.familyProfiles.inviteErrorMsg'));
     }
   };
 
@@ -254,7 +254,7 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
     try {
       const permission = await Contacts.requestPermissionsAsync();
       if (permission.status !== 'granted') {
-        Alert.alert('Permission Needed', 'Please allow Contacts access to import family members.');
+        Alert.alert(t('family.screens.familyProfiles.permissionNeededTitle'), t('family.screens.familyProfiles.permissionNeededMsg'));
         return;
       }
       const result = await Contacts.getContactsAsync({
@@ -263,12 +263,12 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
       });
       const contacts = result.data.filter((contact) => contact.name);
       Alert.alert(
-        'Contacts Ready',
-        `${contacts.length} contacts found. Next we will build the contact picker screen.`
+        t('family.screens.familyProfiles.contactsReadyTitle'),
+        t('family.screens.familyProfiles.contactsReadyMsg', { count: contacts.length })
       );
     } catch (error) {
       console.log('Import contacts error:', error);
-      Alert.alert('Import Failed', 'Contacts could not be loaded on this device.');
+      Alert.alert(t('family.screens.familyProfiles.importFailedTitle'), t('family.screens.familyProfiles.importFailedMsg'));
     }
   };
 
@@ -301,7 +301,7 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
             <View style={dynStyles.headerLeft}>
               <Text style={dynStyles.headerTitle}>{t('family.title')}</Text>
               <Text style={dynStyles.headerSubtitle}>
-                {members.length} {members.length === 1 ? 'member' : 'members'}
+                {t('family.screens.familyProfiles.memberCount', { count: members.length })}
                 {family?.name ? ` · ${family.name}` : ''}
               </Text>
             </View>
@@ -324,9 +324,9 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
           {/* Stats row */}
           <View style={dynStyles.statsRow}>
             {[
-              { icon: 'checkmark-done-circle', value: pendingTasks, label: 'Tasks' },
-              { icon: 'calendar', value: todayEvents, label: 'Events Today' },
-              { icon: 'trophy', value: `${healthScore}`, label: 'Family Score' },
+              { icon: 'checkmark-done-circle', value: pendingTasks, label: t('family.screens.familyProfiles.statTasks') },
+              { icon: 'calendar', value: todayEvents, label: t('family.screens.familyProfiles.statEventsToday') },
+              { icon: 'trophy', value: `${healthScore}`, label: t('family.screens.familyProfiles.statFamilyScore') },
             ].map((stat) => (
               <View key={stat.label} style={dynStyles.statPill}>
                 <Ionicons name={stat.icon as any} size={14} color="rgba(255,255,255,0.75)" />
@@ -430,10 +430,10 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
                 {/* Points & level */}
                 <View style={dynStyles.memberCardStats}>
                   <Text style={[dynStyles.memberCardPoints, isActive && dynStyles.memberCardPointsActive]}>
-                    {member.points.toLocaleString()} pts
+                    {t('family.screens.familyProfiles.pointsSuffix', { points: member.points.toLocaleString() })}
                   </Text>
                   <Text style={[dynStyles.memberCardLevel, isActive && dynStyles.memberCardLevelActive]}>
-                    Lv {member.level}
+                    {t('family.screens.familyProfiles.levelPrefix', { level: member.level })}
                   </Text>
                 </View>
 
@@ -458,15 +458,15 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
             <View style={dynStyles.addMemberIcon}>
               <Ionicons name="person-add-outline" size={24} color="#1E4A8A" />
             </View>
-            <Text style={dynStyles.addMemberLabel}>Add Member</Text>
+            <Text style={dynStyles.addMemberLabel}>{t('family.screens.familyProfiles.addMemberLabel')}</Text>
           </Pressable>
         </ScrollView>
 
         {members.length === 0 && (
           <View style={dynStyles.emptyState}>
             <Ionicons name="people-outline" size={60} color={colors.textMuted} />
-            <Text style={dynStyles.emptyTitle}>No family members yet</Text>
-            <Text style={dynStyles.emptyDesc}>Add family members to get started</Text>
+            <Text style={dynStyles.emptyTitle}>{t('family.screens.familyProfiles.emptyStateTitle')}</Text>
+            <Text style={dynStyles.emptyDesc}>{t('family.screens.familyProfiles.emptyStateDesc')}</Text>
           </View>
         )}
 
@@ -478,8 +478,8 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
                 <Ionicons name="heart" size={20} color="#E53935" />
               </View>
               <View>
-                <Text style={dynStyles.healthTitle}>Family Health Score</Text>
-                <Text style={dynStyles.healthSubtitle}>Based on tasks, goals & activity</Text>
+                <Text style={dynStyles.healthTitle}>{t('family.screens.familyProfiles.healthCardTitle')}</Text>
+                <Text style={dynStyles.healthSubtitle}>{t('family.screens.familyProfiles.healthCardSubtitle')}</Text>
               </View>
             </View>
             <Text style={dynStyles.healthScore}>{healthScore}/100</Text>
@@ -520,8 +520,8 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
                 <Ionicons name="shield-checkmark" size={26} color="#fff" />
               </View>
               <View style={dynStyles.guardianText}>
-                <Text style={dynStyles.guardianTitle}>Family Guardian</Text>
-                <Text style={dynStyles.guardianDesc}>Parental controls, screen time & location</Text>
+                <Text style={dynStyles.guardianTitle}>{t('family.screens.familyProfiles.guardianCardTitle')}</Text>
+                <Text style={dynStyles.guardianDesc}>{t('family.screens.familyProfiles.guardianCardDesc')}</Text>
               </View>
             </View>
             <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.6)" />
@@ -562,9 +562,9 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
       >
         <View style={dynStyles.inviteOverlay}>
           <View style={dynStyles.inviteCard}>
-            <Text style={dynStyles.modalTitle}>Invite Family</Text>
+            <Text style={dynStyles.modalTitle}>{t('family.screens.familyProfiles.inviteModalTitle')}</Text>
             <Button
-              title="Switch Active Profile"
+              title={t('family.screens.familyProfiles.switchProfileButton')}
               onPress={() => {
                 setShowInviteOptions(false);
                 navigation.navigate('ProfileSwitcher');
@@ -573,7 +573,7 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
               style={{ marginBottom: 12 }}
             />
             <Button
-              title="Show QR Invite Code"
+              title={t('family.screens.familyProfiles.showQrInviteButton')}
               onPress={() => {
                 setShowInviteOptions(false);
                 navigation.navigate('FamilyInviteQR');
@@ -582,7 +582,7 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
               style={{ marginBottom: 12 }}
             />
             <Button
-              title="Scan QR Invite"
+              title={t('family.screens.familyProfiles.scanQrInviteButton')}
               onPress={() => {
                 setShowInviteOptions(false);
                 navigation.navigate('JoinFamily');
@@ -591,7 +591,7 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
               style={{ marginBottom: 12 }}
             />
             <Button
-              title={`View Join Requests (${pendingRequestsCount})`}
+              title={t('family.screens.familyProfiles.viewJoinRequestsButton', { count: pendingRequestsCount })}
               onPress={() => {
                 setShowInviteOptions(false);
                 navigation.navigate('JoinRequests');
@@ -600,25 +600,25 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
               style={{ marginBottom: 12 }}
             />
             <Button
-              title="Copy Invite Link"
+              title={t('family.screens.familyProfiles.copyInviteLinkButton')}
               onPress={handleShareInvite}
               fullWidth
               style={{ marginBottom: 12 }}
             />
             <Button
-              title="Copy Family Join Code"
+              title={t('family.screens.familyProfiles.copyJoinCodeButton')}
               onPress={handleCopyInvite}
               fullWidth
               style={{ marginBottom: 12 }}
             />
             <Button
-              title="Import Contacts"
+              title={t('family.screens.familyProfiles.importContactsButton')}
               onPress={handleImportContacts}
               fullWidth
               style={{ marginBottom: 12 }}
             />
             <Button
-              title="Add Manually"
+              title={t('family.screens.familyProfiles.addManuallyButton')}
               onPress={() => {
                 setShowInviteOptions(false);
                 setShowModal(true);
@@ -627,7 +627,7 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
               style={{ marginBottom: 12 }}
             />
             <Button
-              title="Cancel"
+              title={t('family.screens.familyProfiles.cancelButton')}
               variant="ghost"
               onPress={() => setShowInviteOptions(false)}
               fullWidth
@@ -646,9 +646,9 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
         <ScrollView style={dynStyles.modal} contentContainerStyle={{ paddingBottom: 40 }}>
           <View style={dynStyles.modalHandle} />
 
-          <Text style={dynStyles.modalTitle}>Invite Family Member</Text>
+          <Text style={dynStyles.modalTitle}>{t('family.screens.familyProfiles.addMemberModalTitle')}</Text>
           <Text style={dynStyles.modalSubtitle}>
-            Add someone to your household profile and assign their role.
+            {t('family.screens.familyProfiles.addMemberModalSubtitle')}
           </Text>
 
           {newName.trim() && (
@@ -658,17 +658,17 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
             </View>
           )}
 
-          <Text style={dynStyles.modalLabel}>Full Name *</Text>
+          <Text style={dynStyles.modalLabel}>{t('family.screens.familyProfiles.fullNameLabel')}</Text>
           <TextInput
             style={dynStyles.modalInput}
-            placeholder="e.g. Alex Johnson"
+            placeholder={t('family.screens.familyProfiles.fullNamePlaceholder')}
             value={newName}
             onChangeText={setNewName}
             placeholderTextColor={colors.textMuted}
             autoFocus
           />
 
-          <Text style={dynStyles.modalLabel}>Role</Text>
+          <Text style={dynStyles.modalLabel}>{t('family.screens.familyProfiles.roleLabel')}</Text>
           <View style={dynStyles.roleGrid}>
             {MEMBER_ROLES.map((role) => (
               <Pressable
@@ -683,7 +683,7 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
             ))}
           </View>
 
-          <Text style={dynStyles.modalLabel}>Avatar Color</Text>
+          <Text style={dynStyles.modalLabel}>{t('family.screens.familyProfiles.avatarColorLabel')}</Text>
           <View style={dynStyles.colorRow}>
             {AVATAR_COLORS.map((color) => (
               <Pressable

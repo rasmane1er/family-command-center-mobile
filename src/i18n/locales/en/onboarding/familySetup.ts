@@ -1,0 +1,15 @@
+export default {
+  stepBadge: 'Step 1 of 7',
+  title: 'Your Family',
+  subtitle: 'Tell us about your household',
+  familyNameLabel: 'Family Name *',
+  familyNamePlaceholder: 'e.g., "The Johnson Family"',
+  mottoLabel: 'Family Motto (optional)',
+  mottoPlaceholder: 'e.g., "Stronger Together"',
+  addressLabel: 'Home Address (optional)',
+  addressPlaceholder: '123 Main Street, City, State',
+  currencyLabel: 'Currency',
+  militaryTitle: 'Military Family Mode',
+  militaryDesc: 'Special features for active duty & veteran families',
+  nextButton: 'Next: Add Family Members',
+};

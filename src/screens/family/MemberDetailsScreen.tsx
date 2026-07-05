@@ -10,12 +10,14 @@ import { Card } from '../../components/common/Card';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { colors } from '../../theme/colors';
+import { useTranslation } from 'react-i18next';
 
 const LOVE_LANGUAGES = ['Words of Affirmation', 'Acts of Service', 'Receiving Gifts', 'Quality Time', 'Physical Touch'];
 
 export function MemberDetailsScreen({ route, navigation: navProp }: any) {
   const navHook = useNavigation<any>();
   const navigation = navProp ?? navHook;
+  const { t } = useTranslation('family');
   const insets = useSafeAreaInsets();
   const { memberId } = route.params;
 
@@ -104,7 +106,7 @@ export function MemberDetailsScreen({ route, navigation: navProp }: any) {
           scrollEventThrottle={scrollEventThrottle}
         >
         <Card style={styles.card}>
-          <Text style={styles.cardTitle}>Overview</Text>
+          <Text style={styles.cardTitle}>{t('memberDetails.overview')}</Text>
           <View style={styles.overviewGrid}>
             {[
               { icon: 'checkbox-outline', label: 'Pending Tasks', value: pendingTasks, color: colors.primary },
@@ -124,7 +126,7 @@ export function MemberDetailsScreen({ route, navigation: navProp }: any) {
         </Card>
 
         <Card style={styles.card}>
-          <Text style={styles.cardTitle}>Love Language</Text>
+          <Text style={styles.cardTitle}>{t('memberDetails.loveLanguage')}</Text>
           <Text style={styles.loveLanguageHint}>
             How {member.name} best feels appreciated. Tap to set.
           </Text>
@@ -146,9 +148,9 @@ export function MemberDetailsScreen({ route, navigation: navProp }: any) {
         </Card>
 
         <Card style={styles.card}>
-          <Text style={styles.cardTitle}>Assigned Tasks</Text>
+          <Text style={styles.cardTitle}>{t('memberDetails.assignedTasks')}</Text>
           {tasks.length === 0 ? (
-            <Text style={styles.empty}>No tasks assigned.</Text>
+            <Text style={styles.empty}>{t('memberDetails.noTasks')}</Text>
           ) : (
             tasks.slice(0, 5).map((task) => {
               const prioColor =
@@ -173,9 +175,9 @@ export function MemberDetailsScreen({ route, navigation: navProp }: any) {
         </Card>
 
         <Card style={styles.card}>
-          <Text style={styles.cardTitle}>Upcoming Events</Text>
+          <Text style={styles.cardTitle}>{t('memberDetails.upcomingEvents')}</Text>
           {events.length === 0 ? (
-            <Text style={styles.empty}>No events scheduled.</Text>
+            <Text style={styles.empty}>{t('memberDetails.noEvents')}</Text>
           ) : (
             events.slice(0, 5).map((event) => (
               <View key={event.id} style={styles.item}>

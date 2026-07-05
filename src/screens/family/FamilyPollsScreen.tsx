@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, TextInput, Modal,
   KeyboardAvoidingView, Platform, Alert,
@@ -9,6 +9,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatDistanceToNow } from 'date-fns';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../../theme/colors';
 import { Card } from '../../components/common/Card';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
@@ -48,6 +49,7 @@ function PollCard({ poll, memberId, onVote, onClose, onDelete }: {
   onClose: () => void;
   onDelete: () => void;
 }) {
+  const { t } = useTranslation('family');
   const totalVotes = poll.options.reduce((s, o) => s + o.votes.length, 0);
   const myVotedOption = poll.options.find((o) => o.votes.includes(memberId));
   const catCfg = CAT_CONFIG[poll.category];
@@ -93,15 +95,21 @@ function PollCard({ poll, memberId, onVote, onClose, onDelete }: {
             />
           ))}
           <View style={styles.resultFooter}>
-            <Text style={styles.totalVotes}>{totalVotes} vote{totalVotes !== 1 ? 's' : ''} total</Text>
-            {myVotedOption && <Text style={styles.myVote}>You voted: {myVotedOption.emoji} {myVotedOption.text}</Text>}
+            <Text style={styles.totalVotes}>
+              {t('family.screens.familyPolls.totalVotesLabel', { count: totalVotes })}
+            </Text>
+            {myVotedOption && (
+              <Text style={styles.myVote}>
+                {t('family.screens.familyPolls.myVoteLabel', { emoji: myVotedOption.emoji, text: myVotedOption.text })}
+              </Text>
+            )}
           </View>
         </View>
       )}
 
       {poll.isActive && (
         <Pressable onPress={onClose} style={styles.closeVotingBtn}>
-          <Text style={styles.closeVotingText}>Close Poll</Text>
+          <Text style={styles.closeVotingText}>{t('family.screens.familyPolls.closeVotingBtn')}</Text>
         </Pressable>
       )}
     </Card>
@@ -109,8 +117,9 @@ function PollCard({ poll, memberId, onVote, onClose, onDelete }: {
 }
 
 export function FamilyPollsScreen({ navigation }: any) {
+  const { t } = useTranslation('family');
   const insets = useSafeAreaInsets();
-  const { polls, castVote, closePoll, addPoll, deletePoll, seedDemoData } = usePollsStore();
+  const { polls, castVote, closePoll, addPoll, deletePoll, fetchFromServer, isLoaded } = usePollsStore();
   const members = useFamilyStore((s) => s.members);
   const [showCreate, setShowCreate] = useState(false);
   const [activeTab, setActiveTab] = useState<'active' | 'closed'>('active');
@@ -121,7 +130,10 @@ export function FamilyPollsScreen({ navigation }: any) {
   const [options, setOptions] = useState(['', '', '']);
   const [emoji, setEmoji] = useState('🗳️');
 
-  if (polls.length === 0) seedDemoData();
+  useEffect(() => {
+    fetchFromServer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const activePolls = polls.filter((p) => p.isActive);
   const closedPolls = polls.filter((p) => !p.isActive);
@@ -133,9 +145,9 @@ export function FamilyPollsScreen({ navigation }: any) {
   };
 
   const handleDelete = (pollId: string, question: string) => {
-    Alert.alert('Delete Poll', `Remove "${question}"?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning); deletePoll(pollId); } },
+    Alert.alert(t('family.screens.familyPolls.deletePollTitle'), t('family.screens.familyPolls.deletePollMsg', { question }), [
+      { text: t('family.screens.familyPolls.cancel'), style: 'cancel' },
+      { text: t('family.screens.familyPolls.delete'), style: 'destructive', onPress: () => { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning); deletePoll(pollId); } },
     ]);
   };
 
@@ -169,8 +181,8 @@ export function FamilyPollsScreen({ navigation }: any) {
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>Family Polls</Text>
-          <Text style={styles.headerSub}>{activePolls.length} active · {closedPolls.length} closed</Text>
+          <Text style={styles.headerTitle}>{t('family.screens.familyPolls.headerTitle')}</Text>
+          <Text style={styles.headerSub}>{t('family.screens.familyPolls.headerSub', { activeCount: activePolls.length, closedCount: closedPolls.length })}</Text>
         </View>
         <Pressable onPress={() => setShowCreate(true)} style={styles.addBtn}>
           <Ionicons name="add" size={22} color="#fff" />
@@ -179,9 +191,9 @@ export function FamilyPollsScreen({ navigation }: any) {
 
       <View style={styles.statsRow}>
         {[
-          { label: 'Active Polls', value: activePolls.length, icon: 'radio-button-on' },
-          { label: 'Total Votes', value: polls.reduce((s, p) => s + p.options.reduce((os, o) => os + o.votes.length, 0), 0), icon: 'hand-left' },
-          { label: 'Decisions Made', value: closedPolls.length, icon: 'checkmark-circle' },
+          { label: t('family.screens.familyPolls.statActivePolls'), value: activePolls.length, icon: 'radio-button-on' },
+          { label: t('family.screens.familyPolls.statTotalVotes'), value: polls.reduce((s, p) => s + p.options.reduce((os, o) => os + o.votes.length, 0), 0), icon: 'hand-left' },
+          { label: t('family.screens.familyPolls.statDecisionsMade'), value: closedPolls.length, icon: 'checkmark-circle' },
         ].map((s, i) => (
           <View key={i} style={[styles.statItem, i < 2 && styles.statBorder]}>
             <Text style={styles.statVal}>{s.value}</Text>
@@ -194,7 +206,9 @@ export function FamilyPollsScreen({ navigation }: any) {
             {(['active', 'closed'] as const).map((tab) => (
               <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
                 <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-                  {tab === 'active' ? `Active (${activePolls.length})` : `Closed (${closedPolls.length})`}
+                  {tab === 'active'
+                    ? t('family.screens.familyPolls.tabActive', { count: activePolls.length })
+                    : t('family.screens.familyPolls.tabClosed', { count: closedPolls.length })}
                 </Text>
               </Pressable>
             ))}
@@ -207,7 +221,7 @@ export function FamilyPollsScreen({ navigation }: any) {
       <Pressable onPress={() => navigation.goBack()} style={styles.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
-      <Text style={styles.headerTitle}>Family Polls</Text>
+      <Text style={styles.headerTitle}>{t('family.screens.familyPolls.headerTitle')}</Text>
       <Pressable onPress={() => setShowCreate(true)} style={styles.addBtn}>
         <Ionicons name="add" size={22} color="#fff" />
       </Pressable>
@@ -236,15 +250,15 @@ export function FamilyPollsScreen({ navigation }: any) {
             poll={poll}
             memberId={me?.id || 'member-1'}
             onVote={(optId) => handleVote(poll.id, optId)}
-            onClose={() => { Alert.alert('Close Poll', 'Stop accepting votes?', [{ text: 'Cancel', style: 'cancel' }, { text: 'Close', onPress: () => closePoll(poll.id) }]); }}
+            onClose={() => { Alert.alert(t('family.screens.familyPolls.closePollTitle'), t('family.screens.familyPolls.closePollMsg'), [{ text: t('family.screens.familyPolls.cancel'), style: 'cancel' }, { text: t('family.screens.familyPolls.close'), onPress: () => closePoll(poll.id) }]); }}
             onDelete={() => handleDelete(poll.id, poll.question)}
           />
         ))}
         {displayed.length === 0 && (
           <View style={styles.empty}>
             <Text style={{ fontSize: 48 }}>🗳️</Text>
-            <Text style={styles.emptyTitle}>{activeTab === 'active' ? 'No active polls' : 'No closed polls yet'}</Text>
-            <Text style={styles.emptyDesc}>{activeTab === 'active' ? 'Tap + to start a family vote!' : 'Close active polls to see results here.'}</Text>
+            <Text style={styles.emptyTitle}>{activeTab === 'active' ? t('family.screens.familyPolls.emptyTitleActive') : t('family.screens.familyPolls.emptyTitleClosed')}</Text>
+            <Text style={styles.emptyDesc}>{activeTab === 'active' ? t('family.screens.familyPolls.emptyDescActive') : t('family.screens.familyPolls.emptyDescClosed')}</Text>
           </View>
         )}
       </ScrollView>
@@ -256,23 +270,23 @@ export function FamilyPollsScreen({ navigation }: any) {
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
           <View style={styles.modal}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Create a Poll</Text>
+              <Text style={styles.modalTitle}>{t('family.screens.familyPolls.createPollTitle')}</Text>
               <Pressable onPress={() => setShowCreate(false)}>
                 <Ionicons name="close" size={24} color={colors.text} />
               </Pressable>
             </View>
             <ScrollView contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">
-              <Text style={styles.modalLabel}>Question *</Text>
+              <Text style={styles.modalLabel}>{t('family.screens.familyPolls.questionLabel')}</Text>
               <TextInput
                 style={styles.modalInput}
                 value={question}
                 onChangeText={setQuestion}
-                placeholder="e.g. Where should we go this weekend?"
+                placeholder={t('family.screens.familyPolls.questionPlaceholder')}
                 placeholderTextColor={colors.textMuted}
                 multiline
                 autoFocus
               />
-              <Text style={styles.modalLabel}>Options (at least 2)</Text>
+              <Text style={styles.modalLabel}>{t('family.screens.familyPolls.optionsLabel')}</Text>
               {options.map((opt, i) => (
                 <View key={i} style={styles.optionInput}>
                   <Text style={styles.optionNum}>{i + 1}.</Text>
@@ -280,7 +294,7 @@ export function FamilyPollsScreen({ navigation }: any) {
                     style={[styles.modalInput, { flex: 1 }]}
                     value={opt}
                     onChangeText={(v) => setOptions(options.map((o, idx) => idx === i ? v : o))}
-                    placeholder={`Option ${i + 1}`}
+                    placeholder={t('family.screens.familyPolls.optionPlaceholder', { num: i + 1 })}
                     placeholderTextColor={colors.textMuted}
                   />
                 </View>
@@ -288,7 +302,7 @@ export function FamilyPollsScreen({ navigation }: any) {
               {options.length < 4 && (
                 <Pressable onPress={() => setOptions([...options, ''])} style={styles.addOptionBtn}>
                   <Ionicons name="add-circle-outline" size={18} color={colors.primary} />
-                  <Text style={styles.addOptionText}>Add another option</Text>
+                  <Text style={styles.addOptionText}>{t('family.screens.familyPolls.addAnotherOption')}</Text>
                 </Pressable>
               )}
               <Pressable
@@ -297,7 +311,7 @@ export function FamilyPollsScreen({ navigation }: any) {
                 style={[styles.createBtn, (!question.trim() || options.filter((o) => o.trim()).length < 2) && styles.createBtnDisabled]}
               >
                 <Ionicons name="radio-button-on" size={18} color="#fff" />
-                <Text style={styles.createBtnText}>Start Poll</Text>
+                <Text style={styles.createBtnText}>{t('family.screens.familyPolls.startPoll')}</Text>
               </Pressable>
             </ScrollView>
           </View>

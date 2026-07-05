@@ -3,11 +3,31 @@ import { useNotificationsStore } from '../store/useNotificationsStore';
 import { useGuardianStore } from '../store/useGuardianStore';
 import { useFinanceStore } from '../store/useFinanceStore';
 import { useFamilyStore } from '../store/useFamilyStore';
+import { useChildcareStore } from '../store/useChildcareStore';
+import { useSchoolStore } from '../store/useSchoolStore';
+import { useFamilyBoardStore } from '../store/useFamilyBoardStore';
+import { useAllowanceStore } from '../store/useAllowanceStore';
+import { useGiftStore } from '../store/useGiftStore';
 
 const SCAN_INTERVAL_MS = 5 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const BILL_DUE_SOON_DAYS = 3;
+const SCHOOL_DUE_SOON_DAYS = 3;
 const GOAL_MILESTONES = [25, 50, 75, 100];
+const CHILDCARE_UPCOMING_HOURS = 24;
+const ALLOWANCE_DUE_DAYS = 7;
+const GIFT_BIRTHDAY_LEAD_DAYS = 14;
+
+// Next occurrence of a member's birthday from `now` — dateOfBirth only
+// carries month/day meaningfully here (the year is their birth year, not
+// this year's), so this re-anchors it to whichever of this-year/next-year
+// hasn't passed yet.
+function nextBirthday(dateOfBirth: string, now: Date): Date {
+  const dob = new Date(dateOfBirth);
+  const thisYear = new Date(now.getFullYear(), dob.getMonth(), dob.getDate());
+  if (thisYear.getTime() >= new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()) return thisYear;
+  return new Date(now.getFullYear() + 1, dob.getMonth(), dob.getDate());
+}
 
 // Periodic scanner for real, already-existing app state — mirrors the
 // pattern in useGuardianCommandPolling.ts (mount once, re-scan on an
@@ -17,12 +37,36 @@ const GOAL_MILESTONES = [25, 50, 75, 100];
 // useNotificationsStore's notifiedSourceKeys so re-scanning doesn't spam
 // duplicates; keys clear when their underlying condition resolves so a
 // future recurrence of the same id can notify again.
+// Bookings store time as a display string ("6:00 PM"), so this mirrors the
+// same parsing ChildcareManagerScreen.tsx uses for its own hours-worked
+// calculation — kept local rather than imported since hooks shouldn't
+// depend on a screen module.
+function parseBookingStartMs(date: string, startTime: string): number | null {
+  const match = startTime.trim().toUpperCase().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/);
+  if (!match) return null;
+  let hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  const meridiem = match[3];
+  if (meridiem === 'PM' && hours !== 12) hours += 12;
+  if (meridiem === 'AM' && hours === 12) hours = 0;
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return null;
+  d.setHours(hours, minutes, 0, 0);
+  return d.getTime();
+}
+
 function scan() {
   const notif = useNotificationsStore.getState();
   const guardian = useGuardianStore.getState();
   const finance = useFinanceStore.getState();
   const family = useFamilyStore.getState();
+  const childcare = useChildcareStore.getState();
+  const school = useSchoolStore.getState();
+  const board = useFamilyBoardStore.getState();
+  const allowance = useAllowanceStore.getState();
+  const gifts = useGiftStore.getState();
   const now = Date.now();
+  const nowDate = new Date(now);
 
   guardian.sosAlerts.forEach((alert) => {
     const key = `sos-${alert.id}`;
@@ -131,6 +175,142 @@ function scan() {
         body: `You've saved $${goal.savedAmount.toLocaleString()} of your $${goal.targetAmount.toLocaleString()} ${goal.name} goal.`,
         action: { label: 'View Goals', route: 'Finance' },
       });
+    });
+  });
+
+  childcare.bookings.forEach((booking) => {
+    const key = `childcare-upcoming-${booking.id}`;
+    if (booking.status !== 'upcoming') {
+      if (notif.hasBeenNotified(key)) notif.clearNotified(key);
+      return;
+    }
+
+    const startMs = parseBookingStartMs(booking.date, booking.startTime);
+    if (startMs === null) return;
+    const hoursUntil = (startMs - now) / (60 * 60 * 1000);
+    if (hoursUntil < 0 || hoursUntil > CHILDCARE_UPCOMING_HOURS) return;
+    if (notif.hasBeenNotified(key)) return;
+
+    const caregiver = childcare.caregivers.find((c) => c.id === booking.caregiverId);
+    notif.markNotified(key);
+    notif.addNotification({
+      type: 'family',
+      isRead: false,
+      title: '👶 Childcare Booking Soon',
+      body: `${caregiver?.name ?? 'Caregiver'} starts at ${booking.startTime} on ${booking.date}.`,
+      action: { label: 'View Booking', route: 'ChildcareManager' },
+    });
+  });
+
+  school.assignments.forEach((assignment) => {
+    const overdueKey = `school-overdue-${assignment.id}`;
+    const dueSoonKey = `school-duesoon-${assignment.id}`;
+
+    if (assignment.status === 'completed') {
+      if (notif.hasBeenNotified(overdueKey)) notif.clearNotified(overdueKey);
+      if (notif.hasBeenNotified(dueSoonKey)) notif.clearNotified(dueSoonKey);
+      return;
+    }
+
+    const daysUntilDue = (new Date(assignment.dueDate).getTime() - now) / DAY_MS;
+
+    if (daysUntilDue < 0 && !notif.hasBeenNotified(overdueKey)) {
+      notif.markNotified(overdueKey);
+      notif.addNotification({
+        type: 'school',
+        isRead: false,
+        title: '📚 Assignment Overdue',
+        body: `"${assignment.title}" (${assignment.subject}) is overdue.`,
+        action: { label: 'View Assignments', route: 'SchoolCenter' },
+        memberId: assignment.memberId,
+      });
+    } else if (daysUntilDue >= 0 && daysUntilDue <= SCHOOL_DUE_SOON_DAYS && !notif.hasBeenNotified(dueSoonKey)) {
+      const days = Math.max(0, Math.ceil(daysUntilDue));
+      notif.markNotified(dueSoonKey);
+      notif.addNotification({
+        type: 'school',
+        isRead: false,
+        title: '📚 Assignment Due Soon',
+        body: `"${assignment.title}" (${assignment.subject}) is due in ${days} day${days === 1 ? '' : 's'}.`,
+        action: { label: 'View Assignments', route: 'SchoolCenter' },
+        memberId: assignment.memberId,
+      });
+    }
+  });
+
+  // Urgent or pinned board posts get a real notification — no clearing
+  // needed since a post's urgency/pinned state isn't something that
+  // "resolves" the way an overdue bill or task does. Works for posts
+  // synced in from another family member's device too, since this reads
+  // the same store hydratePosts() populates.
+  board.posts.forEach((post) => {
+    if (post.priority !== 'urgent' && !post.isPinned) return;
+    const key = `board-post-${post.id}`;
+    if (notif.hasBeenNotified(key)) return;
+
+    notif.markNotified(key);
+    notif.addNotification({
+      type: 'family',
+      isRead: false,
+      title: post.priority === 'urgent' ? '🚨 Urgent Announcement' : '📌 Pinned Announcement',
+      body: post.title,
+      action: { label: 'View Board', route: 'FamilyBoard' },
+    });
+  });
+
+  allowance.configs.forEach((config) => {
+    const key = `allowance-due-${config.id}`;
+    if (!config.isActive) {
+      if (notif.hasBeenNotified(key)) notif.clearNotified(key);
+      return;
+    }
+
+    const daysSincePaid = config.lastPaidDate
+      ? (now - new Date(config.lastPaidDate).getTime()) / DAY_MS
+      : Infinity;
+
+    if (daysSincePaid < ALLOWANCE_DUE_DAYS) {
+      if (notif.hasBeenNotified(key)) notif.clearNotified(key);
+      return;
+    }
+    if (notif.hasBeenNotified(key)) return;
+
+    const member = family.members.find((m) => m.id === config.memberId);
+    notif.markNotified(key);
+    notif.addNotification({
+      type: 'family',
+      isRead: false,
+      title: '💰 Allowance Due',
+      body: `${member?.name ?? 'A family member'}'s weekly $${config.weeklyAmount.toFixed(2)} allowance hasn't been paid in over a week.`,
+      action: { label: 'View Allowance', route: 'Allowance' },
+      memberId: config.memberId,
+    });
+  });
+
+  family.members.forEach((member) => {
+    if (!member.dateOfBirth) return;
+    const key = `gift-birthday-${member.id}`;
+
+    const upcoming = nextBirthday(member.dateOfBirth, nowDate);
+    const daysUntil = (upcoming.getTime() - nowDate.getTime()) / DAY_MS;
+
+    const hasGiftIdea = gifts.gifts.some((g) => g.forMemberId === member.id && g.occasion === 'birthday' && g.status !== 'given');
+
+    if (daysUntil < 0 || daysUntil > GIFT_BIRTHDAY_LEAD_DAYS || hasGiftIdea) {
+      if (notif.hasBeenNotified(key)) notif.clearNotified(key);
+      return;
+    }
+    if (notif.hasBeenNotified(key)) return;
+
+    const days = Math.max(0, Math.ceil(daysUntil));
+    notif.markNotified(key);
+    notif.addNotification({
+      type: 'family',
+      isRead: false,
+      title: '🎂 Birthday Coming Up',
+      body: `${member.name}'s birthday is in ${days} day${days === 1 ? '' : 's'} — no gift idea saved yet.`,
+      action: { label: 'Plan a Gift', route: 'GiftPlanner' },
+      memberId: member.id,
     });
   });
 }

@@ -1,10 +1,13 @@
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import { mmkvStorage } from '../storage/mmkvStorage';
 import type { FamilyMemory, MemoryType } from '../types';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
 interface MemoryState {
   memories: FamilyMemory[];
+  hasSeeded: boolean;
   addMemory: (m: Omit<FamilyMemory, 'id' | 'createdAt' | 'lastAccessed'>) => void;
   pinMemory: (id: string) => void;
   deleteMemory: (id: string) => void;
@@ -14,8 +17,11 @@ interface MemoryState {
   seedDemoData: () => void;
 }
 
-export const useMemoryStore = create<MemoryState>((set, get) => ({
+export const useMemoryStore = create<MemoryState>()(
+  persist(
+    (set, get) => ({
   memories: [],
+  hasSeeded: false,
 
   addMemory: (m) => {
     const now = new Date().toISOString();
@@ -50,6 +56,12 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
       { id: 'mem7', familyId: 'demo-family', memberId: 'member-3', type: 'conflict', title: 'Aiden vs screen time limits', content: 'Ongoing tension about 2-hour screen time rule. Compromise reached: extra 30min for completed chores.', tags: ['conflict', 'rules', 'Aiden'], isPinned: false, sentiment: 'negative', createdAt: now, lastAccessed: now },
       { id: 'mem8', familyId: 'demo-family', type: 'milestone', title: 'Saved $1,000 toward Hawaii!', content: 'First major savings milestone for the family vacation fund. Kids celebrated with a dance party.', tags: ['savings', 'vacation', 'milestone'], isPinned: true, sentiment: 'positive', createdAt: now, lastAccessed: now },
     ];
-    set({ memories });
+    set({ memories, hasSeeded: true });
   },
-}));
+    }),
+    {
+      name: 'family-command-center-memory',
+      storage: createJSONStorage(() => mmkvStorage),
+    }
+  )
+);

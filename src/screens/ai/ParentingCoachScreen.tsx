@@ -18,103 +18,108 @@ import { chatWithParentingCoach, AIMessage } from '../../services/aiService';
 import { computeAge } from '../../utils/buildFamilyContext';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useTabBarInset } from '../../hooks/useTabBarInset';
+import { useTranslation } from 'react-i18next';
+import { SubscriptionGate } from '../../components/common/SubscriptionGate';
+
+const NS = 'ai.screens.parentingCoach';
 
 interface SessionTopic {
   id: string;
-  title: string;
+  titleKey: string;
 }
 
 const COACHING_MODULES: {
-  id: string; title: string; icon: string; color: string; bg: string; desc: string; rating: number;
+  id: string; titleKey: string; icon: string; color: string; bg: string; descKey: string; rating: number;
   sessionTopics: SessionTopic[];
 }[] = [
   {
-    id: 'm1', title: 'Positive Discipline', icon: 'heart', color: '#E74C3C', bg: '#FDEDEC',
-    desc: 'Science-backed strategies that build connection while setting boundaries', rating: 4.9,
+    id: 'm1', titleKey: 'module1Title', icon: 'heart', color: '#E74C3C', bg: '#FDEDEC',
+    descKey: 'module1Desc', rating: 4.9,
     sessionTopics: [
-      { id: 's1', title: 'Setting boundaries without conflict' },
-      { id: 's2', title: 'Natural consequences vs. punishment' },
-      { id: 's3', title: 'Staying calm during meltdowns' },
-      { id: 's4', title: 'Positive reinforcement techniques' },
-      { id: 's5', title: 'Age-appropriate discipline strategies' },
-      { id: 's6', title: 'Discipline without yelling' },
-      { id: 's7', title: 'Building trust through consistency' },
-      { id: 's8', title: 'Repairing the relationship after a discipline moment' },
+      { id: 's1', titleKey: 'module1Session1' },
+      { id: 's2', titleKey: 'module1Session2' },
+      { id: 's3', titleKey: 'module1Session3' },
+      { id: 's4', titleKey: 'module1Session4' },
+      { id: 's5', titleKey: 'module1Session5' },
+      { id: 's6', titleKey: 'module1Session6' },
+      { id: 's7', titleKey: 'module1Session7' },
+      { id: 's8', titleKey: 'module1Session8' },
     ],
   },
   {
-    id: 'm2', title: 'Emotional Intelligence', icon: 'happy', color: '#F5A623', bg: '#FEF3E2',
-    desc: 'Help your children identify and manage emotions effectively', rating: 4.8,
+    id: 'm2', titleKey: 'module2Title', icon: 'happy', color: '#F5A623', bg: '#FEF3E2',
+    descKey: 'module2Desc', rating: 4.8,
     sessionTopics: [
-      { id: 's1', title: 'Naming and validating emotions' },
-      { id: 's2', title: 'Teaching self-regulation skills' },
-      { id: 's3', title: 'Modeling emotional awareness as a parent' },
-      { id: 's4', title: 'Helping kids handle big feelings' },
-      { id: 's5', title: 'Building empathy in children' },
-      { id: 's6', title: 'Recognizing emotional triggers' },
+      { id: 's1', titleKey: 'module2Session1' },
+      { id: 's2', titleKey: 'module2Session2' },
+      { id: 's3', titleKey: 'module2Session3' },
+      { id: 's4', titleKey: 'module2Session4' },
+      { id: 's5', titleKey: 'module2Session5' },
+      { id: 's6', titleKey: 'module2Session6' },
     ],
   },
   {
-    id: 'm3', title: 'Healthy Communication', icon: 'chatbubbles', color: '#2980B9', bg: '#EBF5FB',
-    desc: 'Build open, honest family dialogue at every age', rating: 4.7,
+    id: 'm3', titleKey: 'module3Title', icon: 'chatbubbles', color: '#2980B9', bg: '#EBF5FB',
+    descKey: 'module3Desc', rating: 4.7,
     sessionTopics: [
-      { id: 's1', title: 'Active listening with kids' },
-      { id: 's2', title: 'Running family meetings that work' },
-      { id: 's3', title: 'Talking about hard topics' },
-      { id: 's4', title: 'Communicating across different ages' },
-      { id: 's5', title: 'Reading nonverbal communication cues' },
+      { id: 's1', titleKey: 'module3Session1' },
+      { id: 's2', titleKey: 'module3Session2' },
+      { id: 's3', titleKey: 'module3Session3' },
+      { id: 's4', titleKey: 'module3Session4' },
+      { id: 's5', titleKey: 'module3Session5' },
     ],
   },
   {
-    id: 'm4', title: 'Motivation & Rewards', icon: 'trophy', color: '#27AE60', bg: '#D5F5E3',
-    desc: 'Move beyond punishments to intrinsic motivation systems', rating: 4.9,
+    id: 'm4', titleKey: 'module4Title', icon: 'trophy', color: '#27AE60', bg: '#D5F5E3',
+    descKey: 'module4Desc', rating: 4.9,
     sessionTopics: [
-      { id: 's1', title: 'Intrinsic vs. extrinsic motivation' },
-      { id: 's2', title: 'Building a rewards system that actually works' },
-      { id: 's3', title: 'Avoiding the bribery trap' },
-      { id: 's4', title: 'Celebrating effort over outcome' },
+      { id: 's1', titleKey: 'module4Session1' },
+      { id: 's2', titleKey: 'module4Session2' },
+      { id: 's3', titleKey: 'module4Session3' },
+      { id: 's4', titleKey: 'module4Session4' },
     ],
   },
   {
-    id: 'm5', title: 'Screen Time Balance', icon: 'phone-portrait', color: '#8E44AD', bg: '#F5EEF8',
-    desc: 'Navigate the digital age with confidence and clear rules', rating: 4.6,
+    id: 'm5', titleKey: 'module5Title', icon: 'phone-portrait', color: '#8E44AD', bg: '#F5EEF8',
+    descKey: 'module5Desc', rating: 4.6,
     sessionTopics: [
-      { id: 's1', title: 'Setting healthy screen time limits' },
-      { id: 's2', title: 'Talking to teens about phone use' },
-      { id: 's3', title: 'Modeling balanced tech habits yourself' },
+      { id: 's1', titleKey: 'module5Session1' },
+      { id: 's2', titleKey: 'module5Session2' },
+      { id: 's3', titleKey: 'module5Session3' },
     ],
   },
   {
-    id: 'm6', title: 'Building Resilience', icon: 'shield', color: '#16A085', bg: '#D1F2EB',
-    desc: 'Raise kids who bounce back from adversity and setbacks', rating: 4.8,
+    id: 'm6', titleKey: 'module6Title', icon: 'shield', color: '#16A085', bg: '#D1F2EB',
+    descKey: 'module6Desc', rating: 4.8,
     sessionTopics: [
-      { id: 's1', title: 'Letting kids fail safely' },
-      { id: 's2', title: 'Growth mindset language' },
-      { id: 's3', title: 'Coping skills for setbacks' },
-      { id: 's4', title: 'Building confidence through challenge' },
-      { id: 's5', title: 'Supporting kids through big changes' },
-      { id: 's6', title: 'Encouraging problem-solving' },
-      { id: 's7', title: 'Modeling resilience yourself' },
+      { id: 's1', titleKey: 'module6Session1' },
+      { id: 's2', titleKey: 'module6Session2' },
+      { id: 's3', titleKey: 'module6Session3' },
+      { id: 's4', titleKey: 'module6Session4' },
+      { id: 's5', titleKey: 'module6Session5' },
+      { id: 's6', titleKey: 'module6Session6' },
+      { id: 's7', titleKey: 'module6Session7' },
     ],
   },
 ];
 
 const DAILY_TIPS = [
-  { tip: 'Instead of "Stop crying", try "I can see you\'re upset. Want to talk about it?" — validating emotions builds trust.', category: 'Emotional IQ', icon: 'heart', color: '#E74C3C' },
-  { tip: "Name tasks as choices: 'Do you want to clean your room before or after dinner?' gives autonomy within your boundary.", category: 'Positive Discipline', icon: 'options', color: '#2980B9' },
-  { tip: "Catch your child being good 3x more than you correct them. Positive reinforcement is 4x more effective than punishment.", category: 'Motivation', icon: 'star', color: '#F5A623' },
-  { tip: "Set up a family meeting once a week. Kids who have voice in family decisions show 40% better behavioral outcomes.", category: 'Communication', icon: 'people', color: '#27AE60' },
+  { textKey: 'tip1Text', categoryKey: 'tip1Category', icon: 'heart', color: '#E74C3C' },
+  { textKey: 'tip2Text', categoryKey: 'tip2Category', icon: 'options', color: '#2980B9' },
+  { textKey: 'tip3Text', categoryKey: 'tip3Category', icon: 'star', color: '#F5A623' },
+  { textKey: 'tip4Text', categoryKey: 'tip4Category', icon: 'people', color: '#27AE60' },
 ];
 
 const CHAT_INPUT_HEIGHT = 104;
 
-const AGE_ADVICE: Record<string, { range: string; tips: string[] }> = {
-  toddler: { range: '2–5 years', tips: ['Routines are gold — predictability = security', 'Simple choices build confidence', 'Natural consequences work better than time-outs'] },
-  school: { range: '6–12 years', tips: ['Let them fail sometimes — struggle builds resilience', 'Ask "What do you think?" before giving answers', 'Chores teach responsibility — start now'] },
-  teen: { range: '13–18 years', tips: ['Listen more, lecture less — they know you know', 'Negotiate rules together — buy-in beats compliance', 'Stay curious about their world without judging it'] },
+const AGE_ADVICE: Record<string, { rangeKey: string; tipKeys: string[] }> = {
+  toddler: { rangeKey: 'ageToddlerRange', tipKeys: ['ageToddlerTip1', 'ageToddlerTip2', 'ageToddlerTip3'] },
+  school: { rangeKey: 'ageSchoolRange', tipKeys: ['ageSchoolTip1', 'ageSchoolTip2', 'ageSchoolTip3'] },
+  teen: { rangeKey: 'ageTeenRange', tipKeys: ['ageTeenTip1', 'ageTeenTip2', 'ageTeenTip3'] },
 };
 
 export function ParentingCoachScreen({ navigation }: any) {
+  const { t } = useTranslation('ai');
   const insets = useSafeAreaInsets();
   const tabBarInset = useTabBarInset();
   const [activeTab, setActiveTab] = useState<'modules' | 'tips' | 'advice' | 'chat'>('modules');
@@ -150,7 +155,7 @@ export function ParentingCoachScreen({ navigation }: any) {
     COACHING_MODULES.map((m) => [
       m.id,
       activeMemberId
-        ? m.sessionTopics.filter((t) => coachingProgress[sessionKey(activeMemberId, m.id, t.id)]?.completedAt).length
+        ? m.sessionTopics.filter((st) => coachingProgress[sessionKey(activeMemberId, m.id, st.id)]?.completedAt).length
         : 0,
     ]),
   );
@@ -160,7 +165,7 @@ export function ParentingCoachScreen({ navigation }: any) {
   const overallProgress = totalSessions > 0 ? totalCompleted / totalSessions : 0;
 
   const selectedModule = COACHING_MODULES.find((m) => m.id === selectedModuleId) ?? null;
-  const selectedSessionTopic = selectedModule?.sessionTopics.find((t) => t.id === selectedSessionId) ?? null;
+  const selectedSessionTopic = selectedModule?.sessionTopics.find((st) => st.id === selectedSessionId) ?? null;
   const selectedSessionProgress =
     activeMemberId && selectedModule && selectedSessionId
       ? coachingProgress[sessionKey(activeMemberId, selectedModule.id, selectedSessionId)]
@@ -176,13 +181,17 @@ export function ParentingCoachScreen({ navigation }: any) {
     if (existing?.content) return; // already cached — nothing to generate
 
     const module = COACHING_MODULES.find((m) => m.id === moduleId);
-    const topic = module?.sessionTopics.find((t) => t.id === sessionId);
+    const topic = module?.sessionTopics.find((st) => st.id === sessionId);
     if (!module || !topic) return;
 
     setSessionGenerating(true);
     const result = await chatWithParentingCoach({
-      message: `Write a short (150-250 word) coaching lesson for the topic "${topic.title}", part of the "${module.title}" module (${module.desc}). Include one concrete, practical action step at the end. Write it directly as the lesson — no preamble.`,
-      context: 'Generating structured coaching module content, not a live chat reply.',
+      message: t(`${NS}.lessonPrompt`, {
+        topic: t(`${NS}.${topic.titleKey}`),
+        module: t(`${NS}.${module.titleKey}`),
+        desc: t(`${NS}.${module.descKey}`),
+      }),
+      context: t(`${NS}.lessonContext`),
     });
     setSessionContent(activeMemberId, moduleId, sessionId, result.reply);
     setSessionGenerating(false);
@@ -241,33 +250,33 @@ export function ParentingCoachScreen({ navigation }: any) {
           <Pressable onPress={() => navigation.goBack()} style={styles.back}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </Pressable>
-          <Text style={styles.headerTitle}>AI Parenting Coach</Text>
+          <Text style={styles.headerTitle}>{t('ai.parentingCoach')}</Text>
           <AIResetMenu actions={[
-            { label: 'Clear Chat', description: 'Delete all chat messages', icon: 'chatbubble-outline', danger: true, onPress: () => setChatHistory([]) },
+            { label: t(`${NS}.resetClearChatLabel`), description: t(`${NS}.resetClearChatDesc`), icon: 'chatbubble-outline', danger: true, onPress: () => setChatHistory([]) },
           ]} />
         </View>
 
         <View style={styles.statsRow}>
           <View style={styles.statBox}>
             <Text style={styles.statValue}>{totalCompleted}</Text>
-            <Text style={styles.statLabel}>Sessions Done</Text>
+            <Text style={styles.statLabel}>{t(`${NS}.statSessionsDone`)}</Text>
           </View>
           <View style={[styles.statBox, styles.statBoxMid]}>
             <Text style={styles.statValue}>{Math.round(overallProgress * 100)}%</Text>
-            <Text style={styles.statLabel}>Overall Progress</Text>
+            <Text style={styles.statLabel}>{t(`${NS}.statOverallProgress`)}</Text>
           </View>
           <View style={styles.statBox}>
             <Text style={styles.statValue}>{children.length}</Text>
-            <Text style={styles.statLabel}>Children</Text>
+            <Text style={styles.statLabel}>{t(`${NS}.statChildren`)}</Text>
           </View>
         </View>
         <ProgressBar progress={overallProgress} color="#fff" height={6} />
-      
+
     <View style={styles.tabs}>
             {(['modules', 'tips', 'advice', 'chat'] as const).map((tab) => (
               <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
                 <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-                  {tab === 'modules' ? 'Modules' : tab === 'tips' ? 'Tips' : tab === 'advice' ? 'Ages' : '✨ Ask AI'}
+                  {tab === 'modules' ? t(`${NS}.tabModules`) : tab === 'tips' ? t(`${NS}.tabTips`) : tab === 'advice' ? t(`${NS}.tabAges`) : t(`${NS}.tabChat`)}
                 </Text>
               </Pressable>
             ))}
@@ -284,12 +293,13 @@ export function ParentingCoachScreen({ navigation }: any) {
       <Pressable onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </Pressable>
-      <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>Parenting Coach</Text>
+      <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>{t(`${NS}.compactTitle`)}</Text>
       <View />
     </LinearGradient>
   );
 
   return (
+    <SubscriptionGate requiredTier="premium" featureName="Parenting Coach">
     <View style={styles.container}>
       <StatusBar style="light" />
 
@@ -344,8 +354,8 @@ export function ParentingCoachScreen({ navigation }: any) {
                             <Ionicons name={module.icon as any} size={22} color={module.color} />
                           </View>
                           <View style={{ flex: 1, marginLeft: 12 }}>
-                            <Text style={styles.moduleTitle}>{module.title}</Text>
-                            <Text style={styles.moduleDesc}>{module.desc}</Text>
+                            <Text style={styles.moduleTitle}>{t(`${NS}.${module.titleKey}`)}</Text>
+                            <Text style={styles.moduleDesc}>{t(`${NS}.${module.descKey}`)}</Text>
                           </View>
                         </View>
                         <View style={styles.moduleFooter}>
@@ -356,7 +366,7 @@ export function ParentingCoachScreen({ navigation }: any) {
                               height={5}
                             />
                             <Text style={styles.moduleProg}>
-                              {completed}/{total} sessions
+                              {t(`${NS}.moduleProgLabel`, { completed, total })}
                             </Text>
                           </View>
                           <View style={styles.ratingBadge}>
@@ -392,10 +402,10 @@ export function ParentingCoachScreen({ navigation }: any) {
                         { color: DAILY_TIPS[tipIndex].color },
                       ]}
                     >
-                      {DAILY_TIPS[tipIndex].category}
+                      {t(`${NS}.${DAILY_TIPS[tipIndex].categoryKey}`)}
                     </Text>
                   </View>
-                  <Text style={styles.tipText}>"{DAILY_TIPS[tipIndex].tip}"</Text>
+                  <Text style={styles.tipText}>"{t(`${NS}.${DAILY_TIPS[tipIndex].textKey}`)}"</Text>
                   <View style={styles.tipNav}>
                     <Pressable
                       onPress={() => setTipIndex(Math.max(0, tipIndex - 1))}
@@ -439,17 +449,17 @@ export function ParentingCoachScreen({ navigation }: any) {
                         </View>
                         <View>
                           <Text style={styles.childName}>{child.name}</Text>
-                          <Text style={styles.ageRange}>Age group: {advice.range}</Text>
+                          <Text style={styles.ageRange}>{t(`${NS}.ageGroupLabel`, { range: t(`${NS}.${advice.rangeKey}`) })}</Text>
                         </View>
                       </View>
-                      {advice.tips.map((tip, i) => (
+                      {advice.tipKeys.map((tipKey, i) => (
                         <View key={i} style={styles.adviceTip}>
                           <Ionicons
                             name="checkmark-circle"
                             size={16}
                             color={colors.success}
                           />
-                          <Text style={styles.adviceTipText}>{tip}</Text>
+                          <Text style={styles.adviceTipText}>{t(`${NS}.${tipKey}`)}</Text>
                         </View>
                       ))}
                     </Card>
@@ -460,14 +470,14 @@ export function ParentingCoachScreen({ navigation }: any) {
                 <View style={styles.chatPanel}>
                   {chatHistory.length === 0 && (
                     <View style={styles.chatEmpty}>
-                      <Text style={styles.chatEmptyTitle}>Ask the AI Parenting Coach</Text>
+                      <Text style={styles.chatEmptyTitle}>{t(`${NS}.chatEmptyTitle`)}</Text>
                       <Text style={styles.chatEmptyDesc}>
-                        Get personalized, evidence-based advice for your family
+                        {t(`${NS}.chatEmptyDesc`)}
                       </Text>
                       {[
-                        'How do I handle tantrums effectively?',
-                        'Tips for improving homework habits',
-                        'How to talk to my teen about phone limits',
+                        t(`${NS}.chatStarter1`),
+                        t(`${NS}.chatStarter2`),
+                        t(`${NS}.chatStarter3`),
                       ].map((q) => (
                         <Pressable
                           key={q}
@@ -541,7 +551,7 @@ export function ParentingCoachScreen({ navigation }: any) {
                   onMicCancel={voice.cancel}
                   isListening={voice.isListening}
                   partialTranscript={voice.partial}
-                  placeholder="Ask your parenting question..."
+                  placeholder={t(`${NS}.chatPlaceholder`)}
                   bottomPadding={8}
                   accentColor="#1A6B3C"
                 />
@@ -575,10 +585,10 @@ export function ParentingCoachScreen({ navigation }: any) {
               ) : null}
               <View style={{ flex: 1 }}>
                 <Text style={styles.moduleModalTitle}>
-                  {selectedSessionId ? selectedSessionTopic?.title : selectedModule.title}
+                  {selectedSessionId ? t(`${NS}.${selectedSessionTopic?.titleKey}`) : t(`${NS}.${selectedModule.titleKey}`)}
                 </Text>
                 <Text style={styles.moduleModalDesc}>
-                  {selectedSessionId ? selectedModule.title : selectedModule.desc}
+                  {selectedSessionId ? t(`${NS}.${selectedModule.titleKey}`) : t(`${NS}.${selectedModule.descKey}`)}
                 </Text>
               </View>
               <Pressable
@@ -599,11 +609,11 @@ export function ParentingCoachScreen({ navigation }: any) {
                   onPress={() => {
                     setSelectedModuleId(null);
                     setActiveTab('chat');
-                    handleChatSend(`Tell me more about "${selectedModule.title}": ${selectedModule.desc}`);
+                    handleChatSend(t(`${NS}.askCoachAboutModule`, { title: t(`${NS}.${selectedModule.titleKey}`), desc: t(`${NS}.${selectedModule.descKey}`) }));
                   }}
                 >
                   <Ionicons name="sparkles" size={16} color="#1A6B3C" />
-                  <Text style={styles.askCoachBtnText}>Ask AI Coach about this module</Text>
+                  <Text style={styles.askCoachBtnText}>{t(`${NS}.askCoachBtnText`)}</Text>
                 </Pressable>
 
                 <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 4 }}>
@@ -627,8 +637,8 @@ export function ParentingCoachScreen({ navigation }: any) {
                           {isComplete && <Ionicons name="checkmark" size={14} color="#fff" />}
                         </View>
                         <View style={{ flex: 1 }}>
-                          <Text style={styles.sessionRowTitle}>{`${i + 1}. ${topic.title}`}</Text>
-                          {isComplete && <Text style={styles.sessionRowDone}>Completed</Text>}
+                          <Text style={styles.sessionRowTitle}>{`${i + 1}. ${t(`${NS}.${topic.titleKey}`)}`}</Text>
+                          {isComplete && <Text style={styles.sessionRowDone}>{t(`${NS}.sessionCompletedLabel`)}</Text>}
                         </View>
                         <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
                       </Pressable>
@@ -641,12 +651,12 @@ export function ParentingCoachScreen({ navigation }: any) {
                 <ScrollView contentContainerStyle={{ padding: 20 }}>
                   {!activeMemberId ? (
                     <View style={styles.sessionLoading}>
-                      <Text style={styles.sessionLoadingText}>No active profile — switch profiles and try again.</Text>
+                      <Text style={styles.sessionLoadingText}>{t(`${NS}.noActiveProfile`)}</Text>
                     </View>
                   ) : sessionGenerating || !selectedSessionProgress?.content ? (
                     <View style={styles.sessionLoading}>
                       <ActivityIndicator size="small" color="#1A6B3C" />
-                      <Text style={styles.sessionLoadingText}>Generating your lesson…</Text>
+                      <Text style={styles.sessionLoadingText}>{t(`${NS}.generatingLesson`)}</Text>
                     </View>
                   ) : (
                     <Text style={styles.sessionContent}>{selectedSessionProgress.content}</Text>
@@ -672,7 +682,7 @@ export function ParentingCoachScreen({ navigation }: any) {
                         color="#fff"
                       />
                       <Text style={styles.sessionCompleteBtnText}>
-                        {selectedSessionProgress?.completedAt ? 'Completed' : 'Mark Complete'}
+                        {selectedSessionProgress?.completedAt ? t(`${NS}.sessionCompletedLabel`) : t(`${NS}.markComplete`)}
                       </Text>
                     </Pressable>
                   </View>
@@ -683,6 +693,7 @@ export function ParentingCoachScreen({ navigation }: any) {
         )}
       </Modal>
     </View>
+    </SubscriptionGate>
   );
 }
 

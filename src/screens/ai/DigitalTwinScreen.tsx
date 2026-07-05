@@ -19,6 +19,8 @@ import { useMoodStore } from '../../store/useMoodStore';
 import { chatWithDigitalTwin, AIMessage } from '../../services/aiService';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useTabBarInset } from '../../hooks/useTabBarInset';
+import { useTranslation } from 'react-i18next';
+import { SubscriptionGate } from '../../components/common/SubscriptionGate';
 
 const { width } = Dimensions.get('window');
 
@@ -282,6 +284,7 @@ function getLabelPosition(i: number, total: number, centerX: number, centerY: nu
 }
 
 export function DigitalTwinScreen({ navigation }: { navigation: { goBack: () => void; navigate: (s: string) => void } }) {
+  const { t } = useTranslation('ai');
   const insets = useSafeAreaInsets();
   const tabBarInset = useTabBarInset();
   const [tab, setTab] = useState<'twin' | 'predict' | 'whatif' | 'chat'>('twin');
@@ -335,39 +338,39 @@ export function DigitalTwinScreen({ navigation }: { navigation: { goBack: () => 
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </Pressable>
           <View style={{ flex: 1 }}>
-            <Text style={styles.headerTitle}>Family Digital Twin</Text>
-            <Text style={styles.headerSub}>AI-powered simulation of your family's patterns</Text>
+            <Text style={styles.headerTitle}>{t('ai.digitalTwin')}</Text>
+            <Text style={styles.headerSub}>{t('ai.screens.digitalTwin.headerSub')}</Text>
           </View>
           <View style={styles.scoreBadge}>
             <Text style={styles.scoreBadgeText}>{overallScore}</Text>
           </View>
           <AIResetMenu actions={[
-            { label: 'Clear Chat', description: 'Delete all chat messages', icon: 'chatbubble-outline', danger: true, onPress: () => setChatHistory([]) },
+            { label: t('ai.screens.digitalTwin.resetClearChatLabel'), description: t('ai.screens.digitalTwin.resetClearChatDesc'), icon: 'chatbubble-outline', danger: true, onPress: () => setChatHistory([]) },
           ]} />
         </View>
 
         <View style={styles.twinStats}>
           <View style={styles.twinStat}>
             <Text style={styles.twinStatValue}>{overallScore}</Text>
-            <Text style={styles.twinStatLabel}>Current</Text>
+            <Text style={styles.twinStatLabel}>{t('ai.screens.digitalTwin.statCurrent')}</Text>
           </View>
           <Ionicons name="arrow-forward" size={20} color="rgba(255,255,255,0.4)" />
           <View style={styles.twinStat}>
             <Text style={[styles.twinStatValue, { color: '#4EECD0' }]}>{predictedScore}</Text>
-            <Text style={styles.twinStatLabel}>30-day forecast</Text>
+            <Text style={styles.twinStatLabel}>{t('ai.screens.digitalTwin.statForecast')}</Text>
           </View>
           <Ionicons name="arrow-forward" size={20} color="rgba(255,255,255,0.4)" />
           <View style={styles.twinStat}>
             <Text style={[styles.twinStatValue, { color: '#FFD166' }]}>{members.length}</Text>
-            <Text style={styles.twinStatLabel}>Members modeled</Text>
+            <Text style={styles.twinStatLabel}>{t('ai.screens.digitalTwin.statMembers')}</Text>
           </View>
         </View>
-      
+
     <View style={styles.tabs}>
-            {(['twin', 'predict', 'whatif', 'chat'] as const).map((t) => (
-              <Pressable key={t} onPress={() => setTab(t)} style={[styles.tab, tab === t && styles.tabActive]}>
-                <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
-                  {t === 'twin' ? '🧬 DNA' : t === 'predict' ? '🔮 Predict' : t === 'whatif' ? '💡 What-If' : '✨ Ask AI'}
+            {(['twin', 'predict', 'whatif', 'chat'] as const).map((tabKey) => (
+              <Pressable key={tabKey} onPress={() => setTab(tabKey)} style={[styles.tab, tab === tabKey && styles.tabActive]}>
+                <Text style={[styles.tabText, tab === tabKey && styles.tabTextActive]}>
+                  {tabKey === 'twin' ? t('ai.screens.digitalTwin.tabDna') : tabKey === 'predict' ? t('ai.screens.digitalTwin.tabPredict') : tabKey === 'whatif' ? t('ai.screens.digitalTwin.tabWhatif') : t('ai.screens.digitalTwin.tabChat')}
                 </Text>
               </Pressable>
             ))}
@@ -384,12 +387,13 @@ export function DigitalTwinScreen({ navigation }: { navigation: { goBack: () => 
       <Pressable onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </Pressable>
-      <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>Digital Twin</Text>
+      <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>{t('ai.screens.digitalTwin.compactTitle')}</Text>
       <View />
     </LinearGradient>
   );
 
   return (
+    <SubscriptionGate requiredTier="family_pro" featureName="Digital Twin">
     <View style={styles.container}>
       <StatusBar style="light" />
 
@@ -418,7 +422,7 @@ export function DigitalTwinScreen({ navigation }: { navigation: { goBack: () => 
             >
         {tab === 'twin' && (
           <>
-            <Text style={styles.sectionTitle}>Family Behavioral DNA</Text>
+            <Text style={styles.sectionTitle}>{t('ai.screens.digitalTwin.sectionDna')}</Text>
             <Card variant="elevated" style={styles.radarCard}>
               <Svg width={RADAR_SIZE} height={RADAR_SIZE}>
                 {[0.25, 0.5, 0.75, 1].map((pct) => (
@@ -451,12 +455,12 @@ export function DigitalTwinScreen({ navigation }: { navigation: { goBack: () => 
                 })}
               </Svg>
               <View style={styles.radarLegend}>
-                <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: colors.primary }]} /><Text style={styles.legendText}>Current</Text></View>
-                <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: '#4EECD0' }]} /><Text style={styles.legendText}>30-Day Forecast</Text></View>
+                <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: colors.primary }]} /><Text style={styles.legendText}>{t('ai.screens.digitalTwin.legendCurrent')}</Text></View>
+                <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: '#4EECD0' }]} /><Text style={styles.legendText}>{t('ai.screens.digitalTwin.legendForecast')}</Text></View>
               </View>
             </Card>
 
-            <Text style={styles.sectionTitle}>Dimension Breakdown</Text>
+            <Text style={styles.sectionTitle}>{t('ai.screens.digitalTwin.sectionDimensionBreakdown')}</Text>
             {DIMENSIONS_CONFIG.map((d) => (
               <Card key={d.label} variant="elevated" style={styles.dimCard}>
                 <View style={styles.dimRow}>
@@ -478,10 +482,10 @@ export function DigitalTwinScreen({ navigation }: { navigation: { goBack: () => 
               </Card>
             ))}
 
-            <Text style={styles.sectionTitle}>Behavioral Patterns</Text>
+            <Text style={styles.sectionTitle}>{t('ai.screens.digitalTwin.sectionPatterns')}</Text>
             {PATTERNS.length === 0 && (
               <Text style={styles.emptyStateText}>
-                Not enough data yet — log a week or two of tasks, spending, or mood to see real patterns here.
+                {t('ai.screens.digitalTwin.patternsEmpty')}
               </Text>
             )}
             {PATTERNS.map((p, i) => (
@@ -503,24 +507,29 @@ export function DigitalTwinScreen({ navigation }: { navigation: { goBack: () => 
         {tab === 'predict' && (
           <>
             <Card variant="elevated" style={styles.predictHero}>
-              <Text style={styles.predictHeroTitle}>🔮 AI Forecast</Text>
-              <Text style={styles.predictHeroDesc}>Based on your family's real data, you're trending {predictedScore > overallScore ? 'upward' : 'downward'}. Current trajectory leads to a {predictedScore}/100 family score in 30 days.</Text>
+              <Text style={styles.predictHeroTitle}>{t('ai.screens.digitalTwin.predictHeroTitle')}</Text>
+              <Text style={styles.predictHeroDesc}>
+                {t('ai.screens.digitalTwin.predictHeroDesc', {
+                  trend: predictedScore > overallScore ? t('ai.screens.digitalTwin.trendUpward') : t('ai.screens.digitalTwin.trendDownward'),
+                  score: predictedScore,
+                })}
+              </Text>
               <View style={styles.predictScoreRow}>
                 <View style={styles.predictScore}>
-                  <Text style={styles.predictScoreLabel}>NOW</Text>
+                  <Text style={styles.predictScoreLabel}>{t('ai.screens.digitalTwin.predictNow')}</Text>
                   <Text style={styles.predictScoreValue}>{overallScore}</Text>
                 </View>
                 <View style={styles.predictArrow}>
                   <Ionicons name="trending-up" size={32} color="#4EECD0" />
                 </View>
                 <View style={styles.predictScore}>
-                  <Text style={styles.predictScoreLabel}>30 DAYS</Text>
+                  <Text style={styles.predictScoreLabel}>{t('ai.screens.digitalTwin.predict30Days')}</Text>
                   <Text style={[styles.predictScoreValue, { color: '#4EECD0' }]}>{predictedScore}</Text>
                 </View>
               </View>
             </Card>
 
-            <Text style={styles.sectionTitle}>Specific Predictions</Text>
+            <Text style={styles.sectionTitle}>{t('ai.screens.digitalTwin.sectionPredictions')}</Text>
             {PREDICTIONS.map((p, i) => (
               <Card key={i} variant="elevated" style={styles.predCard}>
                 <View style={styles.predRow}>
@@ -545,18 +554,18 @@ export function DigitalTwinScreen({ navigation }: { navigation: { goBack: () => 
 
             <Card variant="elevated" style={styles.modelCard}>
               <Ionicons name="information-circle" size={18} color={colors.primary} />
-              <Text style={styles.modelTitle}>How the AI Model Works</Text>
-              <Text style={styles.modelDesc}>The Family Digital Twin analyzes task completion rates, spending patterns, pantry data, vehicle schedules, and guardian insights to compute your family's real scores. All data comes live from your family stores.</Text>
+              <Text style={styles.modelTitle}>{t('ai.screens.digitalTwin.modelTitle')}</Text>
+              <Text style={styles.modelDesc}>{t('ai.screens.digitalTwin.modelDesc')}</Text>
             </Card>
           </>
         )}
 
         {tab === 'whatif' && (
           <>
-            <Text style={styles.whatIfIntro}>Explore how specific changes could impact your family's trajectory.</Text>
+            <Text style={styles.whatIfIntro}>{t('ai.screens.digitalTwin.whatIfIntro')}</Text>
             {WHAT_IF_SCENARIOS.length === 0 && (
               <Text style={styles.emptyStateText}>
-                Add your monthly expenses or a few bills in Finance to see real what-if scenarios here.
+                {t('ai.screens.digitalTwin.whatIfEmpty')}
               </Text>
             )}
             {WHAT_IF_SCENARIOS.map((s, i) => (
@@ -575,29 +584,29 @@ export function DigitalTwinScreen({ navigation }: { navigation: { goBack: () => 
                   <Text style={styles.whatIfEffect}>{s.effect}</Text>
                 </View>
                 <Pressable
-                  onPress={() => Alert.alert('Apply This Change', `"${s.scenario}"\n\nProjected effect: ${s.effect}\n\nWould you like to add this as a family goal?`, [
-                    { text: 'Cancel', style: 'cancel' },
-                    { text: 'Add to Goals', onPress: () => navigation.navigate('Finance') },
+                  onPress={() => Alert.alert(t('ai.screens.digitalTwin.applyChangeBtn'), t('ai.screens.digitalTwin.applyChangeAlertMsg', { scenario: s.scenario, effect: s.effect }), [
+                    { text: t('common.cancel'), style: 'cancel' },
+                    { text: t('ai.screens.digitalTwin.addToGoalsBtn'), onPress: () => navigation.navigate('Finance') },
                   ])}
                   style={[styles.whatIfBtn, { backgroundColor: s.color }]}
                 >
-                  <Text style={styles.whatIfBtnText}>Apply This Change</Text>
+                  <Text style={styles.whatIfBtnText}>{t('ai.screens.digitalTwin.applyChangeBtn')}</Text>
                 </Pressable>
               </Card>
             ))}
 
             <Card variant="elevated" style={styles.customCard}>
-              <Text style={styles.customTitle}>Create Custom Scenario</Text>
-              <Text style={styles.customDesc}>Tell the AI what you're planning and it will project the impact on your family's score, finances, and wellbeing.</Text>
+              <Text style={styles.customTitle}>{t('ai.screens.digitalTwin.customTitle')}</Text>
+              <Text style={styles.customDesc}>{t('ai.screens.digitalTwin.customDesc')}</Text>
               <Pressable
-                onPress={() => Alert.alert('Ask AI to Analyze', 'Describe a change you\'re planning — budget adjustment, routine shift, habit change — and the AI will project its impact.', [
-                  { text: 'Later', style: 'cancel' },
-                  { text: 'Open AI Assistant', onPress: () => navigation.navigate('AIAssistant') },
+                onPress={() => Alert.alert(t('ai.screens.digitalTwin.customBtnText'), t('ai.screens.digitalTwin.askAiAnalyzeMsg'), [
+                  { text: t('ai.screens.digitalTwin.laterBtn'), style: 'cancel' },
+                  { text: t('ai.screens.digitalTwin.openAiAssistantBtn'), onPress: () => navigation.navigate('AIAssistant') },
                 ])}
                 style={styles.customBtn}
               >
                 <Ionicons name="sparkles" size={18} color={colors.primary} />
-                <Text style={styles.customBtnText}>Ask AI to Analyze</Text>
+                <Text style={styles.customBtnText}>{t('ai.screens.digitalTwin.customBtnText')}</Text>
               </Pressable>
             </Card>
           </>
@@ -607,14 +616,14 @@ export function DigitalTwinScreen({ navigation }: { navigation: { goBack: () => 
           <View style={styles.chatPanel}>
             {chatHistory.length === 0 && (
               <View style={styles.chatEmpty}>
-                <Text style={styles.chatEmptyTitle}>Ask Your Digital Twin</Text>
+                <Text style={styles.chatEmptyTitle}>{t('ai.screens.digitalTwin.chatEmptyTitle')}</Text>
                 <Text style={styles.chatEmptyDesc}>
-                  AI-powered insights about your family's patterns and future
+                  {t('ai.screens.digitalTwin.chatEmptyDesc')}
                 </Text>
                 {[
-                  'What should we improve to raise our score?',
-                  'Predict our finances for the next 6 months',
-                  'What habits are hurting our family wellbeing?',
+                  t('ai.screens.digitalTwin.chatStarter1'),
+                  t('ai.screens.digitalTwin.chatStarter2'),
+                  t('ai.screens.digitalTwin.chatStarter3'),
                 ].map((q) => (
                   <Pressable key={q} style={styles.chatStarter} onPress={() => handleChatSend(q)}>
                     <Text style={styles.chatStarterText}>{q}</Text>
@@ -675,7 +684,7 @@ export function DigitalTwinScreen({ navigation }: { navigation: { goBack: () => 
               onMicCancel={voice.cancel}
               isListening={voice.isListening}
               partialTranscript={voice.partial}
-              placeholder="Ask about your family patterns..."
+              placeholder={t('ai.screens.digitalTwin.chatPlaceholder')}
               bottomPadding={8}
               accentColor="#2D2D8F"
             />
@@ -683,6 +692,7 @@ export function DigitalTwinScreen({ navigation }: { navigation: { goBack: () => 
         )}
       </KeyboardAvoidingView>
     </View>
+    </SubscriptionGate>
   );
 }
 

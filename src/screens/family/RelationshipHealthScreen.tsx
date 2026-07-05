@@ -10,6 +10,7 @@ import { ProgressBar } from '../../components/common/ProgressBar';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { useRelationshipHealth } from '../../hooks/useRelationshipHealth';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
+import { useTranslation } from 'react-i18next';
 
 // Static inspirational activity ideas — not personal data, so unlike the
 // bond scores and love languages below, these are fine to keep as generic
@@ -36,6 +37,7 @@ const TREND_ICON: Record<'up' | 'down' | 'stable', keyof typeof Ionicons.glyphMa
 };
 
 export function RelationshipHealthScreen({ navigation }: any) {
+  const { t } = useTranslation('family');
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<'bonds' | 'languages' | 'activities'>('bonds');
   const members = useFamilyStore((s) => s.members);
@@ -50,7 +52,7 @@ export function RelationshipHealthScreen({ navigation }: any) {
         <Pressable onPress={() => navigation.goBack()} style={styles.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
-        <Text style={styles.headerTitle}>Relationship Health</Text>
+        <Text style={styles.headerTitle}>{t('relationship.title')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -70,7 +72,7 @@ export function RelationshipHealthScreen({ navigation }: any) {
       <Pressable onPress={() => navigation.goBack()} style={styles.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
-      <Text style={styles.headerTitle}>Relationship Health</Text>
+      <Text style={styles.headerTitle}>{t('relationship.title')}</Text>
       <View style={{ width: 40 }} />
     </View>
   );

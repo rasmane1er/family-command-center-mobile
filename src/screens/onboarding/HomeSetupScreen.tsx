@@ -3,14 +3,24 @@ import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../../theme/colors';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { useFamilyStore } from '../../store/useFamilyStore';
 
 const homeTypes = ['Single Family', 'Apartment', 'Condo', 'Townhouse', 'Mobile Home', 'Other'];
+const homeTypeKeys: Record<string, string> = {
+  'Single Family': 'homeTypeSingleFamily',
+  'Apartment': 'homeTypeApartment',
+  'Condo': 'homeTypeCondo',
+  'Townhouse': 'homeTypeTownhouse',
+  'Mobile Home': 'homeTypeMobileHome',
+  'Other': 'homeTypeOther',
+};
 
 export function HomeSetupScreen({ navigation }: any) {
+  const { t } = useTranslation('onboarding');
   const updateFamily = useFamilyStore((s) => s.updateFamily);
   const [homeType, setHomeType] = useState('Single Family');
   const [sqft, setSqft] = useState('');
@@ -39,31 +49,31 @@ export function HomeSetupScreen({ navigation }: any) {
               <Ionicons name="arrow-back" size={24} color="#fff" />
             </Pressable>
             <Pressable onPress={() => navigation.navigate('VehicleSetup')} style={styles.skipBtn}>
-              <Text style={styles.skipBtnText}>SKIP</Text>
+              <Text style={styles.skipBtnText}>{t('onboarding.screens.homeSetup.skipBadge')}</Text>
             </Pressable>
           </View>
-          <View style={styles.stepBadge}><Text style={styles.stepText}>Step 3 of 7</Text></View>
-          <Text style={styles.headerTitle}>Home Setup</Text>
-          <Text style={styles.headerSub}>Tell us about your home</Text>
+          <View style={styles.stepBadge}><Text style={styles.stepText}>{t('onboarding.screens.homeSetup.stepBadge')}</Text></View>
+          <Text style={styles.headerTitle}>{t('onboarding.screens.homeSetup.title')}</Text>
+          <Text style={styles.headerSub}>{t('onboarding.screens.homeSetup.subtitle')}</Text>
         </LinearGradient>
         <View style={styles.progressBar}>
           <View style={[styles.progressFill, { width: '43%' }]} />
         </View>
 
-        <Text style={styles.sectionLabel}>Home Type</Text>
+        <Text style={styles.sectionLabel}>{t('onboarding.screens.homeSetup.homeTypeLabel')}</Text>
         <View style={styles.chipGrid}>
-          {homeTypes.map((t) => (
+          {homeTypes.map((ht) => (
             <Pressable
-              key={t}
-              onPress={() => setHomeType(t)}
-              style={[styles.chip, homeType === t && styles.chipActive]}
+              key={ht}
+              onPress={() => setHomeType(ht)}
+              style={[styles.chip, homeType === ht && styles.chipActive]}
             >
-              <Text style={[styles.chipText, homeType === t && styles.chipTextActive]}>{t}</Text>
+              <Text style={[styles.chipText, homeType === ht && styles.chipTextActive]}>{t(`onboarding.screens.homeSetup.${homeTypeKeys[ht]}`)}</Text>
             </Pressable>
           ))}
         </View>
 
-        <Text style={styles.sectionLabel}>Do you rent or own?</Text>
+        <Text style={styles.sectionLabel}>{t('onboarding.screens.homeSetup.rentOrOwnLabel')}</Text>
         <View style={styles.toggleRow}>
           {(['own', 'rent'] as const).map((v) => (
             <Pressable
@@ -77,22 +87,22 @@ export function HomeSetupScreen({ navigation }: any) {
                 color={rentOrOwn === v ? '#fff' : colors.textSecondary}
               />
               <Text style={[styles.toggleChipText, rentOrOwn === v && styles.toggleChipTextActive]}>
-                {v === 'own' ? 'Own' : 'Rent'}
+                {v === 'own' ? t('onboarding.screens.homeSetup.own') : t('onboarding.screens.homeSetup.rent')}
               </Text>
             </Pressable>
           ))}
         </View>
 
         <Input
-          label="Square Footage (optional)"
-          placeholder='e.g., "2,400"'
+          label={t('onboarding.screens.homeSetup.sqftLabel')}
+          placeholder={t('onboarding.screens.homeSetup.sqftPlaceholder')}
           value={sqft}
           onChangeText={setSqft}
           leftIcon="resize-outline"
           keyboardType="numeric"
         />
 
-        <Text style={styles.sectionLabel}>Bedrooms</Text>
+        <Text style={styles.sectionLabel}>{t('onboarding.screens.homeSetup.bedroomsLabel')}</Text>
         <View style={styles.countSelector}>
           {['1', '2', '3', '4', '5+'].map((n) => (
             <Pressable
@@ -108,12 +118,12 @@ export function HomeSetupScreen({ navigation }: any) {
         <View style={styles.skipCard}>
           <Ionicons name="information-circle-outline" size={20} color={colors.info} />
           <Text style={styles.skipInfo}>
-            Home details help the AI optimize your maintenance schedules and household tasks.
+            {t('onboarding.screens.homeSetup.infoText')}
           </Text>
         </View>
 
         <Button
-          title="Next: Add Vehicles"
+          title={t('onboarding.screens.homeSetup.nextButton')}
           onPress={handleContinue}
           fullWidth
           size="lg"
@@ -121,7 +131,7 @@ export function HomeSetupScreen({ navigation }: any) {
           rightIcon={<Ionicons name="arrow-forward" size={18} color="#fff" style={{ marginLeft: 8 }} />}
         />
         <Pressable onPress={() => navigation.navigate('VehicleSetup')} style={styles.skipButton}>
-          <Text style={styles.skipText}>Skip for now</Text>
+          <Text style={styles.skipText}>{t('onboarding.screens.homeSetup.skipForNow')}</Text>
         </Pressable>
       </ScrollView>
     </View>

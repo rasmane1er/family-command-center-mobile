@@ -1,11 +1,13 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { mmkvStorage } from '../storage/mmkvStorage';
+import * as allowanceService from '../services/allowanceService';
 
 export type AllowanceTransactionType = 'weekly' | 'bonus' | 'deduction' | 'manual';
 
 export interface AllowanceConfig {
   id: string;
+  familyId: string;
   memberId: string;
   weeklyAmount: number;
   bonusPerChore: number;
@@ -26,39 +28,59 @@ export interface AllowanceTransaction {
 interface AllowanceStore {
   configs: AllowanceConfig[];
   transactions: AllowanceTransaction[];
-  addConfig: (config: Omit<AllowanceConfig, 'id' | 'balance'>) => void;
+  isLoaded: boolean;
+  addConfig: (config: Omit<AllowanceConfig, 'id' | 'balance'>) => Promise<void>;
   updateConfig: (id: string, updates: Partial<AllowanceConfig>) => void;
   deleteConfig: (id: string) => void;
   addTransaction: (tx: Omit<AllowanceTransaction, 'id' | 'date'>) => void;
   payWeeklyAllowance: (memberId: string) => void;
   addBonus: (memberId: string, amount: number, reason: string) => void;
   addDeduction: (memberId: string, amount: number, reason: string) => void;
-  seedDemoData: () => void;
+  fetchFromServer: (familyId?: string) => Promise<void>;
 }
 
 const today = () => new Date().toISOString().split('T')[0];
-const daysAgo = (n: number) => new Date(Date.now() - n * 86400000).toISOString().split('T')[0];
 
 export const useAllowanceStore = create<AllowanceStore>()(
   persist(
-    (set) => ({
+    (set, get) => {
+      const createTx = (tx: AllowanceTransaction) => {
+        allowanceService.createTransaction(tx).then(({ config }) => {
+          if (config) {
+            set((s) => ({ configs: s.configs.map((c) => (c.id === config.id ? (config as any) : c)) }));
+          }
+        }).catch(() => {});
+      };
+
+      return {
       configs: [],
       transactions: [],
+      isLoaded: false,
 
-      addConfig: (config) => set((s) => ({
-        configs: [...s.configs, { ...config, id: `allow-${Date.now()}`, balance: 0 }],
-      })),
+      addConfig: async (config) => {
+        const newConfig: AllowanceConfig = { ...config, id: `allow-${Date.now()}`, balance: 0 };
+        set((s) => ({ configs: [...s.configs, newConfig] }));
+        try {
+          await allowanceService.createConfig(newConfig);
+        } catch {
+          set((s) => ({ configs: s.configs.filter((c) => c.id !== newConfig.id) }));
+        }
+      },
 
-      updateConfig: (id, updates) => set((s) => ({
-        configs: s.configs.map((c) => (c.id === id ? { ...c, ...updates } : c)),
-      })),
+      updateConfig: (id, updates) => {
+        set((s) => ({ configs: s.configs.map((c) => (c.id === id ? { ...c, ...updates } : c)) }));
+        allowanceService.updateConfigRemote(id, updates).catch(() => {});
+      },
 
-      deleteConfig: (id) => set((s) => ({
-        configs: s.configs.filter((c) => c.id !== id),
-      })),
+      deleteConfig: (id) => {
+        const prev = get().configs;
+        set((s) => ({ configs: s.configs.filter((c) => c.id !== id) }));
+        allowanceService.deleteConfigRemote(id).catch(() => { set({ configs: prev }); });
+      },
 
       addTransaction: (tx) => set((s) => {
         const newTx: AllowanceTransaction = { ...tx, id: `tx-${Date.now()}`, date: today() };
+        createTx(newTx);
         return {
           transactions: [newTx, ...s.transactions],
           configs: s.configs.map((c) =>
@@ -80,6 +102,7 @@ export const useAllowanceStore = create<AllowanceStore>()(
           description: 'Weekly allowance payment',
           date: today(),
         };
+        createTx(newTx);
         return {
           transactions: [newTx, ...s.transactions],
           configs: s.configs.map((c) =>
@@ -99,6 +122,7 @@ export const useAllowanceStore = create<AllowanceStore>()(
           description: reason,
           date: today(),
         };
+        createTx(newTx);
         return {
           transactions: [newTx, ...s.transactions],
           configs: s.configs.map((c) =>
@@ -116,6 +140,7 @@ export const useAllowanceStore = create<AllowanceStore>()(
           description: reason,
           date: today(),
         };
+        createTx(newTx);
         return {
           transactions: [newTx, ...s.transactions],
           configs: s.configs.map((c) =>
@@ -124,24 +149,20 @@ export const useAllowanceStore = create<AllowanceStore>()(
         };
       }),
 
-      seedDemoData: () => set((s) => {
-        if (s.configs.length > 0) return s;
-        const configs: AllowanceConfig[] = [
-          { id: 'allow-1', memberId: 'member-3', weeklyAmount: 15, bonusPerChore: 2, isActive: true, lastPaidDate: daysAgo(7), balance: 47 },
-          { id: 'allow-2', memberId: 'member-4', weeklyAmount: 8, bonusPerChore: 1, isActive: true, lastPaidDate: daysAgo(7), balance: 22 },
-        ];
-        const transactions: AllowanceTransaction[] = [
-          { id: 'tx-1', memberId: 'member-3', amount: 15, type: 'weekly', description: 'Weekly allowance', date: daysAgo(7) },
-          { id: 'tx-2', memberId: 'member-3', amount: 10, type: 'bonus', description: 'Helped with garage cleanup', date: daysAgo(5) },
-          { id: 'tx-3', memberId: 'member-3', amount: 5, type: 'deduction', description: 'Missed trash duty', date: daysAgo(3) },
-          { id: 'tx-4', memberId: 'member-3', amount: 15, type: 'weekly', description: 'Weekly allowance', date: daysAgo(0) },
-          { id: 'tx-5', memberId: 'member-4', amount: 8, type: 'weekly', description: 'Weekly allowance', date: daysAgo(7) },
-          { id: 'tx-6', memberId: 'member-4', amount: 6, type: 'bonus', description: 'Perfect homework week', date: daysAgo(4) },
-          { id: 'tx-7', memberId: 'member-4', amount: 8, type: 'weekly', description: 'Weekly allowance', date: daysAgo(0) },
-        ];
-        return { configs, transactions };
-      }),
-    }),
-    { name: 'allowance-store', storage: createJSONStorage(() => AsyncStorage) }
+      fetchFromServer: async () => {
+        try {
+          const { configs, transactions } = await allowanceService.fetchAllowance();
+          set({ configs, transactions, isLoaded: true });
+        } catch {
+          set({ isLoaded: true });
+        }
+      },
+      };
+    },
+    {
+      name: 'allowance-store',
+      storage: createJSONStorage(() => mmkvStorage),
+      partialize: (state) => ({ configs: state.configs, transactions: state.transactions }),
+    }
   )
 );

@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   value: string;
@@ -44,11 +45,13 @@ export function ChatInputBar({
   onMicCancel,
   isListening,
   partialTranscript = '',
-  placeholder = 'Message',
+  placeholder,
   disabled = false,
   bottomPadding = 8,
   accentColor = WA_GREEN,
 }: Props) {
+  const { t } = useTranslation();
+  const resolvedPlaceholder = placeholder ?? t('screens.shared.chatMessagePlaceholder');
   const hasText = value.trim().length > 0;
   const [cancelled, setCancelled] = useState(false);
   const startX = useRef(0);
@@ -132,7 +135,7 @@ export function ChatInputBar({
           >
             <Ionicons name="chevron-back" size={15} color={cancelled ? '#EF4444' : WA_PLACEHOLDER} />
             <Text style={[styles.cancelText, cancelled && styles.cancelActive]}>
-              {cancelled ? 'Release to cancel' : 'Slide to cancel'}
+              {cancelled ? t('screens.shared.chatReleaseToCancel') : t('screens.shared.chatSlideToCancel')}
             </Text>
           </Animated.View>
 
@@ -140,7 +143,7 @@ export function ChatInputBar({
           <View style={styles.recordCenter}>
             <Animated.View style={[styles.recDot, { transform: [{ scale: pulseAnim }] }]} />
             <Text style={styles.recLabel} numberOfLines={1}>
-              {partialTranscript || 'Listening…'}
+              {partialTranscript || t('screens.shared.chatListening')}
             </Text>
           </View>
 
@@ -163,7 +166,7 @@ export function ChatInputBar({
             style={styles.textInput}
             value={value}
             onChangeText={onChangeText}
-            placeholder={placeholder}
+            placeholder={resolvedPlaceholder}
             placeholderTextColor={WA_PLACEHOLDER}
             multiline
             maxLength={2000}

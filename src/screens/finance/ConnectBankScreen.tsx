@@ -17,6 +17,7 @@ import { getConnectedItems, disconnectItem, syncPlaid } from '../../services/pla
 import { colors } from '../../theme/colors';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 
 interface ConnectedItem {
   id: string;
@@ -26,6 +27,7 @@ interface ConnectedItem {
 }
 
 export function ConnectBankScreen({ navigation }: any) {
+  const { t } = useTranslation('finance');
   const insets = useSafeAreaInsets();
   const [items, setItems] = React.useState<ConnectedItem[]>([]);
   const [loading, setLoading] = React.useState(true);

@@ -16,6 +16,7 @@ import { useFamilyStore } from '../../../store/useFamilyStore';
 import { colors } from '../../../theme/colors';
 import { shadows } from '../../../theme/spacing';
 import { CollapsibleHeader } from '../../../components/common/CollapsibleHeader';
+import { useTranslation } from 'react-i18next';
 
 function formatTime(iso: string): string {
   const d = new Date(iso);
@@ -28,6 +29,7 @@ function formatTime(iso: string): string {
 }
 
 export function SOSAlertsScreen({ navigation }: any) {
+  const { t } = useTranslation('family');
   const insets = useSafeAreaInsets();
   const sosAlerts = useGuardianStore((s) => s.sosAlerts);
   const resolveSOSAlert = useGuardianStore((s) => s.resolveSOSAlert);

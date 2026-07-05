@@ -8,8 +8,10 @@ import { StatusBar } from 'expo-status-bar';
 
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { colors } from '../../theme/colors';
+import { useTranslation } from 'react-i18next';
 
 export function FamilyInviteQRScreen({ navigation }: any) {
+  const { t } = useTranslation('family');
   const insets = useSafeAreaInsets();
   const family = useFamilyStore((s) => s.family);
 
@@ -21,9 +23,9 @@ export function FamilyInviteQRScreen({ navigation }: any) {
           <Ionicons name="arrow-back" size={22} color={colors.text} />
         </Pressable>
         <Ionicons name="people-outline" size={48} color={colors.textMuted} />
-        <Text style={styles.emptyTitle}>No Family Found</Text>
+        <Text style={styles.emptyTitle}>{t('family.screens.familyInviteQR.noFamilyTitle')}</Text>
         <Text style={styles.emptySubtitle}>
-          Please create or load your family profile first.
+          {t('family.screens.familyInviteQR.noFamilySubtitle')}
         </Text>
       </View>
     );
@@ -47,13 +49,13 @@ export function FamilyInviteQRScreen({ navigation }: any) {
         <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </Pressable>
-        <Text style={styles.headerTitle}>Invite to Family</Text>
+        <Text style={styles.headerTitle}>{t('inviteQR.title')}</Text>
         <View style={{ width: 40 }} />
       </LinearGradient>
 
       <View style={styles.body}>
         <Text style={styles.instruction}>
-          Have family members scan this QR code to request access
+          {t('family.screens.familyInviteQR.instruction')}
         </Text>
 
         <View style={styles.qrCard}>
@@ -68,7 +70,7 @@ export function FamilyInviteQRScreen({ navigation }: any) {
         <View style={styles.infoRow}>
           <Ionicons name="shield-checkmark-outline" size={16} color={colors.primary} />
           <Text style={styles.infoText}>
-            Requests require parent/admin approval before anyone joins
+            {t('family.screens.familyInviteQR.infoText')}
           </Text>
         </View>
       </View>

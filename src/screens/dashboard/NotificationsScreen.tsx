@@ -12,6 +12,7 @@ import { Card } from '../../components/common/Card';
 import { useNotificationsStore, NotificationType } from '../../store/useNotificationsStore';
 import { getAllowedNotificationTypes } from '../../utils/roleFilters';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
+import { useTranslation } from 'react-i18next';
 
 const TYPE_CONFIG: Record<NotificationType, { icon: string; color: string; bg: string }> = {
   task: { icon: 'checkbox', color: '#2980B9', bg: '#EBF5FB' },
@@ -22,9 +23,11 @@ const TYPE_CONFIG: Record<NotificationType, { icon: string; color: string; bg: s
   ai: { icon: 'sparkles', color: '#F5A623', bg: '#FEF3E2' },
   emergency: { icon: 'warning', color: '#E74C3C', bg: '#FDEDEC' },
   achievement: { icon: 'trophy', color: '#F5A623', bg: '#FEF3E2' },
+  school: { icon: 'school', color: '#1E4A8A', bg: '#EBF5FB' },
 };
 
 export function NotificationsScreen({ navigation }: any) {
+  const { t } = useTranslation('common');
   const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
 
@@ -90,7 +93,7 @@ export function NotificationsScreen({ navigation }: any) {
         </Pressable>
 
         <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>Notifications</Text>
+          <Text style={styles.headerTitle}>{t('notifications.title')}</Text>
           {unreadCount > 0 && <Text style={styles.headerSub}>{unreadCount} unread</Text>}
         </View>
 
@@ -98,7 +101,7 @@ export function NotificationsScreen({ navigation }: any) {
           {unreadCount > 0 && (
             <Pressable onPress={markAllRead} style={styles.headerActionBtn}>
               <Ionicons name="checkmark-done" size={16} color="#fff" />
-              <Text style={styles.headerActionText}>Mark all read</Text>
+              <Text style={styles.headerActionText}>{t('notifications.markAllRead')}</Text>
             </Pressable>
           )}
           {roleNotifications.length > 0 && (
@@ -116,7 +119,7 @@ export function NotificationsScreen({ navigation }: any) {
               style={[styles.headerActionBtn, styles.clearBtn]}
             >
               <Ionicons name="trash-outline" size={16} color="#FF6B6B" />
-              <Text style={[styles.headerActionText, { color: '#FF6B6B' }]}>Clear all</Text>
+              <Text style={[styles.headerActionText, { color: '#FF6B6B' }]}>{t('notifications.clearAll')}</Text>
             </Pressable>
           )}
         </View>
@@ -155,7 +158,7 @@ export function NotificationsScreen({ navigation }: any) {
       <Pressable onPress={() => navigation.goBack()} style={{ marginRight: 12 }}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
-      <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800', flex: 1 }}>Notifications</Text>
+      <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800', flex: 1 }}>{t('notifications.title')}</Text>
       {unreadCount > 0 && (
         <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 }}>
           <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>{unreadCount}</Text>
@@ -239,7 +242,7 @@ export function NotificationsScreen({ navigation }: any) {
         )}
 
         {displayed.length > 0 && (
-          <Text style={styles.hint}>Long press a notification to delete it</Text>
+          <Text style={styles.hint}>{t('notifications.hint')}</Text>
         )}
           </ScrollView>
         )}

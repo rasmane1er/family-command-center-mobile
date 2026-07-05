@@ -17,6 +17,8 @@ import { useFamilyStore } from '../../store/useFamilyStore';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { chatWithMemoryAI, AIMessage } from '../../services/aiService';
 import type { MemoryType } from '../../types';
+import { useTranslation } from 'react-i18next';
+import { SubscriptionGate } from '../../components/common/SubscriptionGate';
 
 const TYPE_CONFIG: Record<MemoryType, { icon: string; color: string; label: string }> = {
   preference: { icon: 'heart', color: '#E74C3C', label: 'Preference' },
@@ -36,6 +38,7 @@ const FILTER_TABS: { key: 'all' | MemoryType; label: string }[] = [
 ];
 
 export function AIMemoryScreen({ navigation }: any) {
+  const { t } = useTranslation('ai');
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const [filter, setFilter] = useState<'all' | MemoryType>('all');
@@ -55,11 +58,13 @@ export function AIMemoryScreen({ navigation }: any) {
   const [aiSuggestions, setAISuggestions] = useState<string[]>([]);
   const aiScrollRef = useRef<ScrollView>(null);
 
-  const { memories, pinMemory, addMemory, seedDemoData, clearMemories, deleteMemory } = useMemoryStore();
+  const { memories, pinMemory, addMemory, seedDemoData, clearMemories, deleteMemory, hasSeeded } = useMemoryStore();
   const members = useFamilyStore((s) => s.members);
   const financialGoals = useFinanceStore((s) => s.financialGoals);
 
-  if (memories.length === 0) seedDemoData();
+  useEffect(() => {
+    if (!hasSeeded) seedDemoData();
+  }, [hasSeeded, seedDemoData]);
 
   // Auto-generate memories from milestones
   useEffect(() => {
@@ -183,7 +188,7 @@ export function AIMemoryScreen({ navigation }: any) {
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <View style={{ flex: 1 }}>
-          <Text style={dynStyles.headerTitle}>AI Memory Engine</Text>
+          <Text style={dynStyles.headerTitle}>{t('ai.memory')}</Text>
           <Text style={dynStyles.headerSub}>{memories.length} memories stored</Text>
         </View>
         <Pressable style={dynStyles.aiBtn} onPress={() => setShowAIChat(true)}>
@@ -227,7 +232,7 @@ export function AIMemoryScreen({ navigation }: any) {
       <Pressable onPress={() => navigation.goBack()} style={dynStyles.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
-      <Text style={[dynStyles.headerTitle, { flex: 1, marginLeft: 8 }]}>AI Memory Engine</Text>
+      <Text style={[dynStyles.headerTitle, { flex: 1, marginLeft: 8 }]}>{t('ai.memory')}</Text>
       <Pressable style={dynStyles.aiBtn} onPress={() => setShowAIChat(true)}>
         <Ionicons name="sparkles" size={18} color="#fff" />
       </Pressable>
@@ -238,6 +243,7 @@ export function AIMemoryScreen({ navigation }: any) {
   );
 
   return (
+    <SubscriptionGate requiredTier="premium" featureName="AI Memory">
     <View style={dynStyles.container}>
       <StatusBar style="light" />
 
@@ -269,8 +275,18 @@ export function AIMemoryScreen({ navigation }: any) {
                         <Text style={dynStyles.memoryMember}>{getMemberName(mem.memberId)}</Text>
                       )}
                     </View>
-                    <Pressable onPress={() => pinMemory(mem.id)}>
+                    <Pressable onPress={() => pinMemory(mem.id)} style={{ marginRight: 12 }}>
                       <Ionicons name="pin" size={18} color={colors.secondary} />
+                    </Pressable>
+                    <Pressable
+                      onPress={() => {
+                        Alert.alert('Delete Memory', `Remove "${mem.title}"?`, [
+                          { text: 'Cancel', style: 'cancel' },
+                          { text: 'Delete', style: 'destructive', onPress: () => deleteMemory(mem.id) },
+                        ]);
+                      }}
+                    >
+                      <Ionicons name="trash-outline" size={18} color={colors.textMuted} />
                     </Pressable>
                   </View>
                   <Text style={dynStyles.memoryContent} numberOfLines={3}>{mem.content}</Text>
@@ -312,8 +328,18 @@ export function AIMemoryScreen({ navigation }: any) {
                         <Text style={dynStyles.memoryMember}>{getMemberName(mem.memberId)}</Text>
                       )}
                     </View>
-                    <Pressable onPress={() => pinMemory(mem.id)}>
+                    <Pressable onPress={() => pinMemory(mem.id)} style={{ marginRight: 12 }}>
                       <Ionicons name="pin-outline" size={18} color={colors.textMuted} />
+                    </Pressable>
+                    <Pressable
+                      onPress={() => {
+                        Alert.alert('Delete Memory', `Remove "${mem.title}"?`, [
+                          { text: 'Cancel', style: 'cancel' },
+                          { text: 'Delete', style: 'destructive', onPress: () => deleteMemory(mem.id) },
+                        ]);
+                      }}
+                    >
+                      <Ionicons name="trash-outline" size={18} color={colors.textMuted} />
                     </Pressable>
                   </View>
                   <Text style={dynStyles.memoryContent} numberOfLines={2}>{mem.content}</Text>
@@ -441,6 +467,7 @@ export function AIMemoryScreen({ navigation }: any) {
         </KeyboardAvoidingView>
       </Modal>
     </View>
+    </SubscriptionGate>
   );
 }
 

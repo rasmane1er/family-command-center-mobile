@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput, Dimensions, KeyboardAvoidingView, Platform,
 } from 'react-native';
@@ -12,8 +12,15 @@ import { colors } from '../../theme/colors';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { Card } from '../../components/common/Card';
 import { ProgressBar } from '../../components/common/ProgressBar';
-import { useTravelStore, Trip, ItineraryItemType } from '../../store/useTravelStore';
+import { useTravelStore, Trip, ItineraryItemType, ItineraryItem, PackingItem } from '../../store/useTravelStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { useTranslation } from 'react-i18next';
+
+function isValidDateString(s: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  const d = new Date(s + 'T00:00:00');
+  return !isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
+}
 
 const { width } = Dimensions.get('window');
 
@@ -35,14 +42,33 @@ const ITIN_TYPE_ICONS: Record<ItineraryItemType, { icon: string; color: string }
 function TripDetailModal({ trip, onClose }: { trip: Trip; onClose: () => void }) {
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<'itinerary' | 'packing' | 'budget'>('itinerary');
-  const { togglePackingItem } = useTravelStore();
+  const { togglePackingItem, deleteItineraryItem, deletePackingItem } = useTravelStore();
   const members = useFamilyStore((s) => s.members);
+  const [showAddItin, setShowAddItin] = useState(false);
+  const [showAddPack, setShowAddPack] = useState(false);
 
   const getMember = (id?: string) => members.find((m) => m.id === id);
   const packedCount = trip.packingList.filter((p) => p.isPacked).length;
   const totalItems = trip.packingList.length;
-  const budgetUsed = trip.budget > 0 ? trip.spent / trip.budget : 0;
+  // "Spent" is always derived from real itinerary costs — there's no
+  // separately-stored number that could drift from what the itinerary
+  // actually adds up to.
   const itinTotal = trip.itinerary.reduce((sum, i) => sum + (i.cost ?? 0), 0);
+  const budgetUsed = trip.budget > 0 ? itinTotal / trip.budget : 0;
+
+  const handleDeleteItin = (item: ItineraryItem) => {
+    Alert.alert(`Remove "${item.title}"?`, undefined, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Remove', style: 'destructive', onPress: () => deleteItineraryItem(trip.id, item.id) },
+    ]);
+  };
+
+  const handleDeletePack = (item: PackingItem) => {
+    Alert.alert(`Remove "${item.name}"?`, undefined, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Remove', style: 'destructive', onPress: () => deletePackingItem(trip.id, item.id) },
+    ]);
+  };
 
   const sortedItinerary = [...trip.itinerary].sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
   const itinByDate = sortedItinerary.reduce<Record<string, typeof sortedItinerary>>((acc, item) => {
@@ -61,87 +87,100 @@ function TripDetailModal({ trip, onClose }: { trip: Trip; onClose: () => void })
     <View style={styles.container}>
       <StatusBar style="light" />
 
-      <View style={styles.detailTabs}>
-        {(['itinerary', 'packing', 'budget'] as const).map((t) => (
-          <Pressable key={t} onPress={() => setTab(t)} style={[styles.detailTab, tab === t && styles.detailTabActive]}>
-            <Text style={[styles.detailTabText, tab === t && { color: trip.color }]}>
-              {t.charAt(0).toUpperCase() + t.slice(1)}
-              {t === 'packing' && totalItems > 0 ? ` (${packedCount}/${totalItems})` : ''}
-            </Text>
+      <LinearGradient colors={[trip.color, trip.color + 'BB']} style={[styles.detailHeader, { paddingTop: insets.top + 6 }]}>
+        <View style={styles.detailHeaderRow}>
+          <Pressable onPress={onClose} style={styles.back}>
+            <Ionicons name="arrow-back" size={24} color="#fff" />
           </Pressable>
-        ))}
-      </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.detailTitle}>{trip.emoji} {trip.name}</Text>
+            <Text style={styles.detailSub}>
+              {trip.destination} · {format(new Date(trip.startDate), 'MMM d')} – {format(new Date(trip.endDate), 'MMM d, yyyy')}
+            </Text>
+          </View>
+        </View>
+        <View style={styles.detailStats}>
+          <View style={styles.detailStat}>
+            <Text style={styles.detailStatVal}>{differenceInDays(new Date(trip.endDate), new Date(trip.startDate)) + 1}</Text>
+            <Text style={styles.detailStatLabel}>Days</Text>
+          </View>
+          <View style={styles.detailStatDiv} />
+          <View style={styles.detailStat}>
+            <Text style={styles.detailStatVal}>{trip.attendeeIds.length}</Text>
+            <Text style={styles.detailStatLabel}>Travelers</Text>
+          </View>
+          <View style={styles.detailStatDiv} />
+          <View style={styles.detailStat}>
+            <Text style={styles.detailStatVal}>${trip.budget.toLocaleString()}</Text>
+            <Text style={styles.detailStatLabel}>Budget</Text>
+          </View>
+        </View>
+
+        <View style={styles.detailTabs}>
+          {(['itinerary', 'packing', 'budget'] as const).map((t) => (
+            <Pressable key={t} onPress={() => setTab(t)} style={[styles.detailTabChip, tab === t && styles.detailTabChipActive]}>
+              <Text style={[styles.detailTabChipText, tab === t && { color: trip.color }]}>
+                {t.charAt(0).toUpperCase() + t.slice(1)}
+                {t === 'packing' && totalItems > 0 ? ` (${packedCount}/${totalItems})` : ''}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      </LinearGradient>
 
       <ScrollView contentContainerStyle={[styles.detailContent, { paddingBottom: 100 }]}>
-        <LinearGradient colors={[trip.color, trip.color + 'BB']} style={[styles.detailHeader, { paddingTop: insets.top + 6 }]}>
-          <View style={styles.detailHeaderRow}>
-            <Pressable onPress={onClose} style={styles.back}>
-              <Ionicons name="arrow-back" size={24} color="#fff" />
-            </Pressable>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.detailTitle}>{trip.emoji} {trip.name}</Text>
-              <Text style={styles.detailSub}>
-                {trip.destination} · {format(new Date(trip.startDate), 'MMM d')} – {format(new Date(trip.endDate), 'MMM d, yyyy')}
-              </Text>
-            </View>
-          </View>
-          <View style={styles.detailStats}>
-            <View style={styles.detailStat}>
-              <Text style={styles.detailStatVal}>{differenceInDays(new Date(trip.endDate), new Date(trip.startDate)) + 1}</Text>
-              <Text style={styles.detailStatLabel}>Days</Text>
-            </View>
-            <View style={styles.detailStatDiv} />
-            <View style={styles.detailStat}>
-              <Text style={styles.detailStatVal}>{trip.attendeeIds.length}</Text>
-              <Text style={styles.detailStatLabel}>Travelers</Text>
-            </View>
-            <View style={styles.detailStatDiv} />
-            <View style={styles.detailStat}>
-              <Text style={styles.detailStatVal}>${trip.budget.toLocaleString()}</Text>
-              <Text style={styles.detailStatLabel}>Budget</Text>
-            </View>
-          </View>
-        </LinearGradient>
         {tab === 'itinerary' && (
-          Object.entries(itinByDate).length === 0 ? (
-            <View style={styles.empty}>
-              <Text style={{ fontSize: 48 }}>🗓️</Text>
-              <Text style={styles.emptyTitle}>No itinerary yet</Text>
-            </View>
-          ) : (
-            Object.entries(itinByDate).map(([date, items]) => (
-              <View key={date}>
-                <Text style={styles.itinDateHeader}>{format(new Date(date + 'T12:00:00'), 'EEEE, MMM d')}</Text>
-                {items.map((item) => {
-                  const cfg = ITIN_TYPE_ICONS[item.type];
-                  return (
-                    <Card key={item.id} style={styles.itinCard} variant="elevated">
-                      <View style={styles.itinRow}>
-                        <View style={styles.itinTimeCol}>
-                          <Text style={styles.itinTime}>{item.time}</Text>
-                        </View>
-                        <View style={[styles.itinIcon, { backgroundColor: cfg.color + '15' }]}>
-                          <Ionicons name={cfg.icon as any} size={18} color={cfg.color} />
-                        </View>
-                        <View style={{ flex: 1, marginLeft: 10 }}>
-                          <Text style={styles.itinTitle}>{item.title}</Text>
-                          <Text style={styles.itinLocation}>{item.location}</Text>
-                          {item.notes && <Text style={styles.itinNotes}>{item.notes}</Text>}
-                        </View>
-                        {item.cost != null && item.cost > 0 && (
-                          <Text style={styles.itinCost}>${item.cost}</Text>
-                        )}
-                      </View>
-                    </Card>
-                  );
-                })}
+          <>
+            <Pressable style={[styles.addItemBtn, { borderColor: trip.color }]} onPress={() => setShowAddItin(true)}>
+              <Ionicons name="add" size={16} color={trip.color} />
+              <Text style={[styles.addItemBtnText, { color: trip.color }]}>Add Itinerary Item</Text>
+            </Pressable>
+            {Object.entries(itinByDate).length === 0 ? (
+              <View style={styles.empty}>
+                <Text style={{ fontSize: 48 }}>🗓️</Text>
+                <Text style={styles.emptyTitle}>No itinerary yet</Text>
               </View>
-            ))
-          )
+            ) : (
+              Object.entries(itinByDate).map(([date, items]) => (
+                <View key={date}>
+                  <Text style={styles.itinDateHeader}>{format(new Date(date + 'T12:00:00'), 'EEEE, MMM d')}</Text>
+                  {items.map((item) => {
+                    const cfg = ITIN_TYPE_ICONS[item.type];
+                    return (
+                      <Pressable key={item.id} onLongPress={() => handleDeleteItin(item)}>
+                        <Card style={styles.itinCard} variant="elevated">
+                          <View style={styles.itinRow}>
+                            <View style={styles.itinTimeCol}>
+                              <Text style={styles.itinTime}>{item.time}</Text>
+                            </View>
+                            <View style={[styles.itinIcon, { backgroundColor: cfg.color + '15' }]}>
+                              <Ionicons name={cfg.icon as any} size={18} color={cfg.color} />
+                            </View>
+                            <View style={{ flex: 1, marginLeft: 10 }}>
+                              <Text style={styles.itinTitle}>{item.title}</Text>
+                              <Text style={styles.itinLocation}>{item.location}</Text>
+                              {item.notes && <Text style={styles.itinNotes}>{item.notes}</Text>}
+                            </View>
+                            {item.cost != null && item.cost > 0 && (
+                              <Text style={styles.itinCost}>${item.cost}</Text>
+                            )}
+                          </View>
+                        </Card>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              ))
+            )}
+          </>
         )}
 
         {tab === 'packing' && (
           <>
+            <Pressable style={[styles.addItemBtn, { borderColor: trip.color }]} onPress={() => setShowAddPack(true)}>
+              <Ionicons name="add" size={16} color={trip.color} />
+              <Text style={[styles.addItemBtnText, { color: trip.color }]}>Add Packing Item</Text>
+            </Pressable>
             {totalItems > 0 && (
               <Card style={styles.packProgressCard} variant="elevated">
                 <View style={styles.packProgressRow}>
@@ -155,10 +194,14 @@ function TripDetailModal({ trip, onClose }: { trip: Trip; onClose: () => void })
               <View key={cat}>
                 <Text style={styles.packCatHeader}>{cat}</Text>
                 {items.map((item) => (
-                  <Pressable key={item.id} onPress={() => {
-                    togglePackingItem(trip.id, item.id);
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  }}>
+                  <Pressable
+                    key={item.id}
+                    onPress={() => {
+                      togglePackingItem(trip.id, item.id);
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    }}
+                    onLongPress={() => handleDeletePack(item)}
+                  >
                     <Card style={styles.packItem} variant="elevated">
                       <View style={styles.packItemRow}>
                         <View style={[styles.packCheck, item.isPacked && { backgroundColor: trip.color, borderColor: trip.color }]}>
@@ -199,12 +242,12 @@ function TripDetailModal({ trip, onClose }: { trip: Trip; onClose: () => void })
                 </View>
                 <View style={styles.budgetItem}>
                   <Text style={[styles.budgetVal, { color: budgetUsed > 0.9 ? colors.danger : colors.success }]}>
-                    ${trip.spent.toLocaleString()}
+                    ${itinTotal.toLocaleString()}
                   </Text>
                   <Text style={styles.budgetLabel}>Spent</Text>
                 </View>
                 <View style={styles.budgetItem}>
-                  <Text style={[styles.budgetVal, { color: '#2980B9' }]}>${(trip.budget - trip.spent).toLocaleString()}</Text>
+                  <Text style={[styles.budgetVal, { color: '#2980B9' }]}>${(trip.budget - itinTotal).toLocaleString()}</Text>
                   <Text style={styles.budgetLabel}>Remaining</Text>
                 </View>
               </View>
@@ -229,25 +272,204 @@ function TripDetailModal({ trip, onClose }: { trip: Trip; onClose: () => void })
                     </Card>
                   );
                 })}
-                <Card style={styles.txCard} variant="elevated">
-                  <View style={styles.txRow}>
-                    <View style={{ flex: 1 }}><Text style={[styles.txDesc, { fontWeight: '800' }]}>Total Planned</Text></View>
-                    <Text style={[styles.txAmount, { fontWeight: '800', color: colors.primary }]}>${itinTotal.toLocaleString()}</Text>
-                  </View>
-                </Card>
               </>
             )}
           </>
         )}
       </ScrollView>
+
+      <AddItineraryItemModal
+        visible={showAddItin}
+        onClose={() => setShowAddItin(false)}
+        onAdd={(item) => {
+          useTravelStore.getState().addItineraryItem(trip.id, item);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          setShowAddItin(false);
+        }}
+      />
+      <AddPackingItemModal
+        visible={showAddPack}
+        onClose={() => setShowAddPack(false)}
+        members={members}
+        onAdd={(item) => {
+          useTravelStore.getState().addPackingItem(trip.id, item);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          setShowAddPack(false);
+        }}
+      />
     </View>
+  );
+}
+
+const ITIN_TYPES: ItineraryItemType[] = ['transport', 'accommodation', 'activity', 'dining', 'other'];
+
+function AddItineraryItemModal({ visible, onClose, onAdd }: { visible: boolean; onClose: () => void; onAdd: (i: Omit<ItineraryItem, 'id'>) => void }) {
+  const [date, setDate] = useState('');
+  const [time, setTime] = useState('');
+  const [title, setTitle] = useState('');
+  const [location, setLocation] = useState('');
+  const [type, setType] = useState<ItineraryItemType>('activity');
+  const [cost, setCost] = useState('');
+  const [notes, setNotes] = useState('');
+
+  const dateValid = isValidDateString(date.trim());
+  const timeValid = /^([01]\d|2[0-3]):([0-5]\d)$/.test(time.trim());
+  const canSubmit = title.trim() && location.trim() && dateValid && timeValid;
+
+  const reset = () => {
+    setDate(''); setTime(''); setTitle(''); setLocation(''); setType('activity'); setCost(''); setNotes('');
+  };
+
+  const handleAdd = () => {
+    if (!canSubmit) return;
+    onAdd({
+      date: date.trim(), time: time.trim(), title: title.trim(), location: location.trim(), type,
+      cost: cost.trim() ? parseFloat(cost) : undefined,
+      notes: notes.trim() || undefined,
+    });
+    reset();
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <ScrollView style={styles.addTripModal} contentContainerStyle={{ paddingBottom: 48 }}>
+          <View style={styles.addTripHandle} />
+          <Text style={styles.addTripTitle}>Add Itinerary Item</Text>
+
+          <Text style={styles.addTripLabel}>Title *</Text>
+          <TextInput style={styles.addTripInput} value={title} onChangeText={setTitle} placeholder="e.g. Flight to Maui" placeholderTextColor={colors.textSecondary} autoFocus />
+
+          <Text style={styles.addTripLabel}>Location *</Text>
+          <TextInput style={styles.addTripInput} value={location} onChangeText={setLocation} placeholder="e.g. DFW → OGG" placeholderTextColor={colors.textSecondary} />
+
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.addTripLabel}>Date (YYYY-MM-DD) *</Text>
+              <TextInput style={styles.addTripInput} value={date} onChangeText={setDate} placeholder="2026-08-10" placeholderTextColor={colors.textSecondary} />
+              {date.trim().length > 0 && !dateValid && <Text style={styles.fieldError}>Invalid date</Text>}
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.addTripLabel}>Time (24h) *</Text>
+              <TextInput style={styles.addTripInput} value={time} onChangeText={setTime} placeholder="14:00" placeholderTextColor={colors.textSecondary} />
+              {time.trim().length > 0 && !timeValid && <Text style={styles.fieldError}>Use HH:MM</Text>}
+            </View>
+          </View>
+
+          <Text style={styles.addTripLabel}>Type</Text>
+          <View style={styles.addTripEmojiRow}>
+            {ITIN_TYPES.map((t) => {
+              const cfg = ITIN_TYPE_ICONS[t];
+              return (
+                <Pressable key={t} onPress={() => setType(t)} style={[styles.typeChip, type === t && { backgroundColor: cfg.color + '20', borderColor: cfg.color }]}>
+                  <Ionicons name={cfg.icon as any} size={14} color={cfg.color} />
+                  <Text style={[styles.typeChipText, type === t && { color: cfg.color, fontWeight: '700' }]}>{t}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <Text style={styles.addTripLabel}>Cost ($, optional)</Text>
+          <TextInput style={styles.addTripInput} value={cost} onChangeText={setCost} placeholder="e.g. 320" keyboardType="numeric" placeholderTextColor={colors.textSecondary} />
+
+          <Text style={styles.addTripLabel}>Notes (optional)</Text>
+          <TextInput style={styles.addTripInput} value={notes} onChangeText={setNotes} placeholder="e.g. Ocean view rooms x2" placeholderTextColor={colors.textSecondary} />
+
+          <Pressable onPress={handleAdd} disabled={!canSubmit} style={[styles.addTripSubmit, !canSubmit && { opacity: 0.4 }]}>
+            <Ionicons name="add-circle" size={18} color="#fff" />
+            <Text style={styles.addTripSubmitText}>Add to Itinerary</Text>
+          </Pressable>
+
+          <Pressable onPress={onClose} style={{ paddingVertical: 14, alignItems: 'center' }}>
+            <Text style={{ fontSize: 14, color: colors.textSecondary }}>Cancel</Text>
+          </Pressable>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
+const PACK_CATEGORIES = ['Documents', 'Clothing', 'Health', 'Electronics', 'Activities', 'Entertainment', 'Beach', 'Other'];
+
+function AddPackingItemModal({ visible, onClose, onAdd, members }: { visible: boolean; onClose: () => void; onAdd: (i: Omit<PackingItem, 'id'>) => void; members: ReturnType<typeof useFamilyStore.getState>['members'] }) {
+  const [name, setName] = useState('');
+  const [category, setCategory] = useState(PACK_CATEGORIES[0]);
+  const [quantity, setQuantity] = useState('1');
+  const [assignedTo, setAssignedTo] = useState<string | undefined>(undefined);
+
+  const canSubmit = name.trim().length > 0;
+
+  const reset = () => {
+    setName(''); setCategory(PACK_CATEGORIES[0]); setQuantity('1'); setAssignedTo(undefined);
+  };
+
+  const handleAdd = () => {
+    if (!canSubmit) return;
+    onAdd({
+      name: name.trim(), category, isPacked: false,
+      quantity: Math.max(1, parseInt(quantity, 10) || 1),
+      assignedTo,
+    });
+    reset();
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <ScrollView style={styles.addTripModal} contentContainerStyle={{ paddingBottom: 48 }}>
+          <View style={styles.addTripHandle} />
+          <Text style={styles.addTripTitle}>Add Packing Item</Text>
+
+          <Text style={styles.addTripLabel}>Item Name *</Text>
+          <TextInput style={styles.addTripInput} value={name} onChangeText={setName} placeholder="e.g. Sunscreen" placeholderTextColor={colors.textSecondary} autoFocus />
+
+          <Text style={styles.addTripLabel}>Category</Text>
+          <View style={styles.addTripEmojiRow}>
+            {PACK_CATEGORIES.map((c) => (
+              <Pressable key={c} onPress={() => setCategory(c)} style={[styles.typeChip, category === c && { backgroundColor: colors.primary + '20', borderColor: colors.primary }]}>
+                <Text style={[styles.typeChipText, category === c && { color: colors.primary, fontWeight: '700' }]}>{c}</Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <Text style={styles.addTripLabel}>Quantity</Text>
+          <TextInput style={styles.addTripInput} value={quantity} onChangeText={setQuantity} placeholder="1" keyboardType="numeric" placeholderTextColor={colors.textSecondary} />
+
+          {members.length > 0 && (
+            <>
+              <Text style={styles.addTripLabel}>Assign To (optional)</Text>
+              <View style={styles.addTripEmojiRow}>
+                <Pressable onPress={() => setAssignedTo(undefined)} style={[styles.typeChip, !assignedTo && { backgroundColor: colors.primary + '20', borderColor: colors.primary }]}>
+                  <Text style={[styles.typeChipText, !assignedTo && { color: colors.primary, fontWeight: '700' }]}>Unassigned</Text>
+                </Pressable>
+                {members.map((m) => (
+                  <Pressable key={m.id} onPress={() => setAssignedTo(m.id)} style={[styles.typeChip, assignedTo === m.id && { backgroundColor: m.avatarColor + '20', borderColor: m.avatarColor }]}>
+                    <Text style={[styles.typeChipText, assignedTo === m.id && { color: m.avatarColor, fontWeight: '700' }]}>{m.name.split(' ')[0]}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </>
+          )}
+
+          <Pressable onPress={handleAdd} disabled={!canSubmit} style={[styles.addTripSubmit, !canSubmit && { opacity: 0.4 }]}>
+            <Ionicons name="add-circle" size={18} color="#fff" />
+            <Text style={styles.addTripSubmitText}>Add to Packing List</Text>
+          </Pressable>
+
+          <Pressable onPress={onClose} style={{ paddingVertical: 14, alignItems: 'center' }}>
+            <Text style={{ fontSize: 14, color: colors.textSecondary }}>Cancel</Text>
+          </Pressable>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </Modal>
   );
 }
 
 const TRIP_EMOJIS = ['✈️', '🏖️', '🏔️', '🏙️', '🌍'];
 const TRIP_COLORS = ['#0E6655', '#2980B9', '#8E44AD', '#E67E22', '#E74C3C'];
 
-function AddTripModal({ visible, onClose, onAdd }: { visible: boolean; onClose: () => void; onAdd: (t: Omit<Trip, 'id' | 'itinerary' | 'packingList' | 'spent'>) => void }) {
+function AddTripModal({ visible, onClose, onAdd }: { visible: boolean; onClose: () => void; onAdd: (t: Omit<Trip, 'id' | 'itinerary' | 'packingList'>) => void }) {
+  const members = useFamilyStore((s) => s.members);
   const [name, setName] = useState('');
   const [destination, setDestination] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -255,10 +477,22 @@ function AddTripModal({ visible, onClose, onAdd }: { visible: boolean; onClose: 
   const [budget, setBudget] = useState('');
   const [emoji, setEmoji] = useState('✈️');
   const [color, setColor] = useState(TRIP_COLORS[0]);
+  const [attendeeIds, setAttendeeIds] = useState<string[]>([]);
+
+  const startValid = isValidDateString(startDate.trim());
+  const endValid = isValidDateString(endDate.trim());
+  const rangeValid = startValid && endValid && endDate.trim() >= startDate.trim();
+  const canSubmit = name.trim() && destination.trim() && rangeValid;
+
+  const toggleAttendee = (id: string) => {
+    setAttendeeIds((prev) => (prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]));
+  };
 
   const handleAdd = () => {
-    if (!name.trim() || !destination.trim() || !startDate.trim() || !endDate.trim()) return;
+    if (!canSubmit) return;
+    const familyId = useFamilyStore.getState().family?.id ?? 'demo-family';
     onAdd({
+      familyId,
       name: name.trim(),
       destination: destination.trim(),
       startDate: startDate.trim(),
@@ -266,11 +500,11 @@ function AddTripModal({ visible, onClose, onAdd }: { visible: boolean; onClose: 
       budget: parseFloat(budget) || 0,
       emoji,
       color,
-      attendeeIds: [],
+      attendeeIds,
       status: 'planning',
     });
     setName(''); setDestination(''); setStartDate(''); setEndDate(''); setBudget('');
-    setEmoji('✈️'); setColor(TRIP_COLORS[0]);
+    setEmoji('✈️'); setColor(TRIP_COLORS[0]); setAttendeeIds([]);
     onClose();
   };
 
@@ -291,15 +525,35 @@ function AddTripModal({ visible, onClose, onAdd }: { visible: boolean; onClose: 
             <View style={{ flex: 1 }}>
               <Text style={styles.addTripLabel}>Start Date (YYYY-MM-DD) *</Text>
               <TextInput style={styles.addTripInput} value={startDate} onChangeText={setStartDate} placeholder="2026-07-01" placeholderTextColor={colors.textSecondary} />
+              {startDate.trim().length > 0 && !startValid && <Text style={styles.fieldError}>Invalid date</Text>}
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.addTripLabel}>End Date (YYYY-MM-DD) *</Text>
               <TextInput style={styles.addTripInput} value={endDate} onChangeText={setEndDate} placeholder="2026-07-10" placeholderTextColor={colors.textSecondary} />
+              {endDate.trim().length > 0 && !endValid && <Text style={styles.fieldError}>Invalid date</Text>}
+              {startValid && endValid && !rangeValid && <Text style={styles.fieldError}>Must be after start</Text>}
             </View>
           </View>
 
           <Text style={styles.addTripLabel}>Budget ($)</Text>
           <TextInput style={styles.addTripInput} value={budget} onChangeText={setBudget} placeholder="e.g. 3000" keyboardType="numeric" placeholderTextColor={colors.textSecondary} />
+
+          {members.length > 0 && (
+            <>
+              <Text style={styles.addTripLabel}>Travelers</Text>
+              <View style={styles.addTripEmojiRow}>
+                {members.map((m) => {
+                  const selected = attendeeIds.includes(m.id);
+                  return (
+                    <Pressable key={m.id} onPress={() => toggleAttendee(m.id)} style={[styles.typeChip, selected && { backgroundColor: m.avatarColor + '20', borderColor: m.avatarColor }]}>
+                      {selected && <Ionicons name="checkmark" size={12} color={m.avatarColor} />}
+                      <Text style={[styles.typeChipText, selected && { color: m.avatarColor, fontWeight: '700' }]}>{m.name.split(' ')[0]}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </>
+          )}
 
           <Text style={styles.addTripLabel}>Emoji</Text>
           <View style={styles.addTripEmojiRow}>
@@ -319,8 +573,8 @@ function AddTripModal({ visible, onClose, onAdd }: { visible: boolean; onClose: 
 
           <Pressable
             onPress={handleAdd}
-            disabled={!name.trim() || !destination.trim() || !startDate.trim() || !endDate.trim()}
-            style={[styles.addTripSubmit, (!name.trim() || !destination.trim() || !startDate.trim() || !endDate.trim()) && { opacity: 0.4 }]}
+            disabled={!canSubmit}
+            style={[styles.addTripSubmit, !canSubmit && { opacity: 0.4 }]}
           >
             <Ionicons name="airplane" size={18} color="#fff" />
             <Text style={styles.addTripSubmitText}>Create Trip</Text>
@@ -336,15 +590,19 @@ function AddTripModal({ visible, onClose, onAdd }: { visible: boolean; onClose: 
 }
 
 export function TravelPlanningScreen({ navigation }: any) {
+  const { t } = useTranslation('ops');
   const insets = useSafeAreaInsets();
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
   const [filter, setFilter] = useState<Trip['status'] | 'all'>('all');
   const [showAddTrip, setShowAddTrip] = useState(false);
 
-  const { trips, addTrip, deleteTrip, seedDemoData } = useTravelStore();
+  const { trips, isLoaded, addTrip, deleteTrip, fetchFromServer } = useTravelStore();
   const members = useFamilyStore((s) => s.members);
 
-  if (trips.length === 0) seedDemoData();
+  useEffect(() => {
+    if (!isLoaded) fetchFromServer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const getMember = (id: string) => members.find((m) => m.id === id);
 
@@ -363,7 +621,7 @@ export function TravelPlanningScreen({ navigation }: any) {
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>Travel Planning</Text>
+          <Text style={styles.headerTitle}>{t('travel.title')}</Text>
           <Text style={styles.headerSub}>{upcomingCount} upcoming trips</Text>
         </View>
         <Pressable style={styles.addBtn} onPress={() => setShowAddTrip(true)}>
@@ -388,7 +646,7 @@ export function TravelPlanningScreen({ navigation }: any) {
       <Pressable onPress={() => navigation.goBack()} style={styles.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
-      <Text style={styles.headerTitle}>Travel Planning</Text>
+      <Text style={styles.headerTitle}>{t('travel.title')}</Text>
       <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', fontWeight: '600' }}>{upcomingCount} trips</Text>
     </LinearGradient>
   );
@@ -419,7 +677,8 @@ export function TravelPlanningScreen({ navigation }: any) {
           const statusCfg = STATUS_CONFIG[trip.status];
           const daysUntil = trip.status !== 'completed' ? differenceInDays(new Date(trip.startDate), new Date()) : null;
           const duration = differenceInDays(new Date(trip.endDate), new Date(trip.startDate)) + 1;
-          const budgetPct = trip.budget > 0 ? trip.spent / trip.budget : 0;
+          const tripSpent = trip.itinerary.reduce((sum, i) => sum + (i.cost ?? 0), 0);
+          const budgetPct = trip.budget > 0 ? tripSpent / trip.budget : 0;
           const packedPct = trip.packingList.length > 0
             ? trip.packingList.filter((p) => p.isPacked).length / trip.packingList.length
             : 0;
@@ -456,7 +715,7 @@ export function TravelPlanningScreen({ navigation }: any) {
                   <View style={styles.tripMeta}>
                     <View style={styles.tripMetaItem}>
                       <Text style={styles.tripMetaLabel}>Budget</Text>
-                      <Text style={styles.tripMetaVal}>${trip.spent.toLocaleString()} / ${trip.budget.toLocaleString()}</Text>
+                      <Text style={styles.tripMetaVal}>${tripSpent.toLocaleString()} / ${trip.budget.toLocaleString()}</Text>
                       <ProgressBar progress={budgetPct} color={budgetPct > 0.9 ? colors.danger : trip.color} height={4} style={{ marginTop: 4, width: 90 }} />
                     </View>
                     {trip.packingList.length > 0 && (
@@ -544,10 +803,10 @@ const styles = StyleSheet.create({
   detailStatVal: { fontSize: 20, fontWeight: '800', color: '#fff' },
   detailStatLabel: { fontSize: 10, color: 'rgba(255,255,255,0.6)', fontWeight: '600' },
   detailStatDiv: { width: 1, backgroundColor: 'rgba(255,255,255,0.2)' },
-  detailTabs: { flexDirection: 'row', backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border },
-  detailTab: { flex: 1, paddingVertical: 13, alignItems: 'center' },
-  detailTabActive: { borderBottomWidth: 2.5, borderBottomColor: colors.primary },
-  detailTabText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  detailTabs: { flexDirection: 'row', gap: 8, marginTop: 12 },
+  detailTabChip: { flex: 1, paddingVertical: 8, borderRadius: 20, alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.15)' },
+  detailTabChipActive: { backgroundColor: '#fff' },
+  detailTabChipText: { fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.85)' },
   detailContent: { padding: 16 },
   itinDateHeader: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 16, marginBottom: 8 },
   itinCard: { marginBottom: 8, borderRadius: 12 },
@@ -597,4 +856,9 @@ const styles = StyleSheet.create({
   addTripColorSwatchSelected: { borderWidth: 3, borderColor: colors.text },
   addTripSubmit: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#0E6655', borderRadius: 14, paddingVertical: 16, marginTop: 8 },
   addTripSubmitText: { fontSize: 16, fontWeight: '700', color: '#fff' },
+  fieldError: { fontSize: 11, color: colors.danger, marginTop: 4, marginBottom: 4 },
+  addItemBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1.5, borderStyle: 'dashed', borderRadius: 12, paddingVertical: 12, marginBottom: 16 },
+  addItemBtnText: { fontSize: 13, fontWeight: '700' },
+  typeChip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 20, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.card },
+  typeChipText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary, textTransform: 'capitalize' },
 });

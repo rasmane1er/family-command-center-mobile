@@ -19,6 +19,7 @@ import { useTheme } from '../../theme/ThemeContext';
 import { shadows } from '../../theme/spacing';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import type { Transaction } from '../../types';
+import { useTranslation } from 'react-i18next';
 
 // Categories that are commonly tax-deductible
 const DEDUCTIBLE_CATEGORIES: Record<string, { label: string; icon: string; color: string; note: string }> = {
@@ -135,6 +136,7 @@ ${checklistItems.map(i => `<div class="checklist-item">${i.done ? '✅' : '⬜'}
 }
 
 export function TaxCenterScreen({ navigation }: any) {
+  const { t } = useTranslation('finance');
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const { transactions, bills } = useFinanceStore();
@@ -256,7 +258,7 @@ export function TaxCenterScreen({ navigation }: any) {
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>Tax Center</Text>
+          <Text style={styles.headerTitle}>{t('tax.title')}</Text>
           <Text style={styles.headerSub}>Summary & deduction tracker</Text>
         </View>
         <Pressable
@@ -291,7 +293,7 @@ export function TaxCenterScreen({ navigation }: any) {
       <Pressable onPress={() => navigation.goBack()} style={styles.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
-      <Text style={styles.headerTitle}>Tax Center</Text>
+      <Text style={styles.headerTitle}>{t('tax.title')}</Text>
       <Pressable
         onPress={handleExport}
         disabled={exporting}

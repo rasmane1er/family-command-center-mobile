@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, TextInput, Modal, ActivityIndicator,
 } from 'react-native';
@@ -12,6 +12,7 @@ import { useOperationsStore } from '../../store/useOperationsStore';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 const DIFF_CONFIG = {
   easy:   { label: 'Easy',   color: '#27AE60', bg: '#D5F5E3' },
@@ -136,9 +137,10 @@ function RecipeDetailModal({ recipe, isSuggestion, onClose, onFavorite, onSave, 
 }
 
 export function RecipesScreen({ navigation }: any) {
+  const { t } = useTranslation('ops');
   const insets = useSafeAreaInsets();
   const {
-    recipes, toggleFavorite, seedDemoData,
+    recipes, toggleFavorite, syncCatalogRecipes,
     suggestedRecipes, isSuggesting, suggestionError,
     generateSuggestions, saveSuggestion, dismissSuggestion,
   } = useRecipesStore();
@@ -147,7 +149,10 @@ export function RecipesScreen({ navigation }: any) {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<{ recipe: Recipe; isSuggestion: boolean } | null>(null);
 
-  if (recipes.length === 0) seedDemoData();
+  useEffect(() => {
+    syncCatalogRecipes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleGenerateSuggestions = () => {
     const pantryNames = pantryItems.map((p) => p.name);

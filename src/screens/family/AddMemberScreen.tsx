@@ -19,6 +19,7 @@ import { UpgradePrompt } from '../../components/common/UpgradePrompt';
 import { useSubscription } from '../../hooks/useSubscription';
 import { defaultPermissionsForRole } from '../../types';
 import type { FamilyMember, MemberRole } from '../../types';
+import { useTranslation } from 'react-i18next';
 
 type MemberType = 'local' | 'linked';
 type Step = 1 | 2;
@@ -36,6 +37,7 @@ const generateId = () => Math.random().toString(36).substring(2, 11);
 export function AddMemberScreen({ navigation }: any) {
   const { colors } = useTheme();
   const dynStyles = makeStyles(colors);
+  const { t } = useTranslation('family');
   const insets = useSafeAreaInsets();
   const family = useFamilyStore((s) => s.family);
   const addMember = useFamilyStore((s) => s.addMember);
@@ -134,7 +136,7 @@ export function AddMemberScreen({ navigation }: any) {
             <Pressable onPress={() => navigation.goBack()} style={dynStyles.backBtn}>
               <Ionicons name="arrow-back" size={22} color="#fff" />
             </Pressable>
-            <Text style={dynStyles.headerTitle}>Add Member</Text>
+            <Text style={dynStyles.headerTitle}>{t('addMember.title')}</Text>
             <View style={{ width: 40 }} />
           </LinearGradient>
         );
@@ -143,7 +145,7 @@ export function AddMemberScreen({ navigation }: any) {
             <Pressable onPress={() => navigation.goBack()} style={dynStyles.backBtn}>
               <Ionicons name="arrow-back" size={22} color="#fff" />
             </Pressable>
-            <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>Add Member</Text>
+            <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>{t('addMember.title')}</Text>
             <View style={{ width: 40 }} />
           </LinearGradient>
         );

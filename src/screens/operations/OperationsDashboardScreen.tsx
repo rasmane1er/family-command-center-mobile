@@ -13,6 +13,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOperationsStore } from '../../store/useOperationsStore';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 
@@ -41,6 +42,7 @@ const OPS_MODULES = [
 const FILTERS = ['All', 'Home', 'Family', 'Mobility', 'Admin', 'Safety'];
 
 export function OperationsDashboardScreen({ navigation }: any) {
+  const { t } = useTranslation('ops');
   const insets = useSafeAreaInsets();
   const { pantryItems, vehicles, documents } = useOperationsStore();
   const [activeFilter, setActiveFilter] = useState('All');
@@ -99,14 +101,19 @@ export function OperationsDashboardScreen({ navigation }: any) {
       screen: 'Pantry',
     },
     {
-      label: 'Vehicles',
+      label: 'Service Due',
       count: vehicleAlerts.length,
       icon: 'car-outline',
       color: '#65E4E8',
       screen: 'Vehicles',
     },
     {
-      label: 'Docs',
+      // "Docs" further down (Household Snapshot) already means total
+      // document count — reusing that label here for a different number
+      // (expiring-soon count) made the two contradict each other on the
+      // same screen. This card is an alert like its siblings, so it gets
+      // its own honest name instead.
+      label: 'Renewals',
       count: expiringDocs.length,
       icon: 'document-outline',
       color: '#8BC5FF',

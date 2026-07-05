@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../../theme/colors';
 
 interface Props {
@@ -37,6 +38,7 @@ export function Avatar({
   onImagePicked,
   editable = false,
 }: Props) {
+  const { t } = useTranslation();
   const initials = name
     .split(' ')
     .map((n) => n[0])
@@ -52,7 +54,10 @@ export function Avatar({
 
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Allow photo access to set a profile picture.');
+      Alert.alert(
+        t('screens.shared.permissionNeededTitle'),
+        t('screens.shared.permissionNeededPhotoMsg')
+      );
       return;
     }
 

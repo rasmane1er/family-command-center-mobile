@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import { mmkvStorage } from '../storage/mmkvStorage';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -21,6 +23,7 @@ export interface WorkoutLog {
 
 interface WorkoutState {
   workouts: WorkoutLog[];
+  hasSeeded: boolean;
   addWorkout: (w: Omit<WorkoutLog, 'id' | 'createdAt'>) => void;
   deleteWorkout: (id: string) => void;
   getWeeklyCount: (memberId: string) => number;
@@ -28,8 +31,11 @@ interface WorkoutState {
   seedDemoData: () => void;
 }
 
-export const useWorkoutStore = create<WorkoutState>((set, get) => ({
+export const useWorkoutStore = create<WorkoutState>()(
+  persist(
+    (set, get) => ({
   workouts: [],
+  hasSeeded: false,
   addWorkout: (w) => set((s) => ({ workouts: [{ ...w, id: generateId(), createdAt: new Date().toISOString() }, ...s.workouts] })),
   deleteWorkout: (id) => set((s) => ({ workouts: s.workouts.filter((w) => w.id !== id) })),
   getWeeklyCount: (memberId) => {
@@ -50,6 +56,12 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       { id: 'w7', familyId: 'demo-family', memberId: 'member-1', date: day(4), type: 'strength', title: 'Leg Day', durationMinutes: 50, caloriesBurned: 400, createdAt: now },
       { id: 'w8', familyId: 'demo-family', memberId: 'member-2', date: day(4), type: 'yoga', title: 'Yin Yoga', durationMinutes: 60, caloriesBurned: 200, createdAt: now },
     ];
-    set({ workouts });
+    set({ workouts, hasSeeded: true });
   },
-}));
+    }),
+    {
+      name: 'family-command-center-workout',
+      storage: createJSONStorage(() => mmkvStorage),
+    }
+  )
+);

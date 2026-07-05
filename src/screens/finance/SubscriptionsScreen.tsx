@@ -18,6 +18,7 @@ import { useFamilyStore } from '../../store/useFamilyStore';
 import { getDetectedSubscriptions, confirmSubscription } from '../../services/subscriptionDetectionService';
 import type { DetectedSubscription } from '../../services/subscriptionDetectionService';
 import type { Subscription } from '../../types';
+import { useTranslation } from 'react-i18next';
 
 const SUB_CATEGORIES = ['Entertainment', 'Music', 'Software', 'News', 'Fitness', 'Education', 'Gaming', 'Other'];
 const SUB_ICONS: Record<string, string> = {
@@ -44,6 +45,7 @@ const BILLING_CYCLES = ['monthly', 'quarterly', 'annual'] as const;
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
 export function SubscriptionsScreen({ navigation }: any) {
+  const { t } = useTranslation('finance');
   const insets = useSafeAreaInsets();
   const { subscriptions, addSubscription, deleteSubscription, updateSubscription } = useFinanceStore();
   const members = useFamilyStore((s) => s.members);
@@ -130,7 +132,7 @@ export function SubscriptionsScreen({ navigation }: any) {
         <Pressable onPress={() => navigation.goBack()} style={styles.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
-        <Text style={styles.headerTitle}>Subscriptions</Text>
+        <Text style={styles.headerTitle}>{t('subscriptions.title')}</Text>
         <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
           <Ionicons name="add" size={26} color="#fff" />
         </Pressable>
@@ -160,7 +162,7 @@ export function SubscriptionsScreen({ navigation }: any) {
       <Pressable onPress={() => navigation.goBack()} style={styles.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
-      <Text style={styles.headerTitle}>Subscriptions</Text>
+      <Text style={styles.headerTitle}>{t('subscriptions.title')}</Text>
       <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
         <Ionicons name="add" size={26} color="#fff" />
       </Pressable>
