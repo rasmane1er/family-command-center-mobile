@@ -16,6 +16,7 @@ import { useFinanceStore } from '../../store/useFinanceStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import type { Transaction, Bill, Subscription } from '../../types';
 import { API_BASE_URL } from '../../config/api';
+import { uploadImageToR2 } from '../../services/uploadService';
 
 const CATEGORIES = ['Food & Drink', 'Shopping', 'Transportation', 'Bills & Utilities', 'Entertainment', 'Health', 'Education', 'Other'];
 
@@ -62,6 +63,7 @@ export function ReceiptScannerScreen({ navigation }: { navigation: { goBack: () 
   const [scanError, setScanError] = useState<string | null>(null);
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
   const [success, setSuccess] = useState(false);
+  const [receiptImageKey, setReceiptImageKey] = useState<string | null>(null);
 
   const [editMerchant, setEditMerchant] = useState('');
   const [editAmount, setEditAmount] = useState('');
@@ -137,8 +139,15 @@ export function ReceiptScannerScreen({ navigation }: { navigation: { goBack: () 
     setScanning(true);
     setScanError(null);
     try {
-      const data = await scanReceipt(imageBase64);
+      // Runs alongside the OCR call rather than blocking on it — the photo
+      // itself was previously discarded right after extraction; this is
+      // what actually keeps it around afterward, addressable by key.
+      const uploadPromise = imageUri
+        ? uploadImageToR2(imageUri, 'receipt').catch(() => null)
+        : Promise.resolve(null);
+      const [data, imageKey] = await Promise.all([scanReceipt(imageBase64), uploadPromise]);
       setReceipt(data);
+      setReceiptImageKey(imageKey);
       setEditMerchant(data.merchant);
       setEditAmount(String(data.amount));
       setEditDate(data.date);
@@ -163,6 +172,7 @@ export function ReceiptScannerScreen({ navigation }: { navigation: { goBack: () 
         category: editCategory, description: editMerchant,
         date: editDate ? new Date(editDate).toISOString() : now,
         isRecurring: receipt?.isRecurring ?? false, createdAt: now,
+        receipt: receiptImageKey ?? undefined,
       };
       addTransaction(tx);
     } else if (destination === 'bill') {

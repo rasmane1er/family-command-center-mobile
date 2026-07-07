@@ -16,6 +16,7 @@ import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { pickTaskCompletionPhoto } from '../../utils/pickTaskPhoto';
+import { SignedImage } from '../../components/common/SignedImage';
 import { useTranslation } from 'react-i18next';
 
 const FILTERS = ['All', 'Pending', 'Needs Review', 'Completed', 'Overdue'];
@@ -240,7 +241,7 @@ const filteredTasks = visibleTasks
                           <Text style={styles.reviewText}>Waiting for approval</Text>
                           {task.completionPhotoUrl && (
                             <Pressable onPress={() => setPreviewPhotoUrl(task.completionPhotoUrl ?? null)}>
-                              <Image source={{ uri: task.completionPhotoUrl }} style={styles.reviewThumb} />
+                              <SignedImage uri={task.completionPhotoUrl} style={styles.reviewThumb} />
                             </Pressable>
                           )}
                         </View>
@@ -328,7 +329,7 @@ const filteredTasks = visibleTasks
 
       <Modal visible={!!previewPhotoUrl} transparent animationType="fade" onRequestClose={() => setPreviewPhotoUrl(null)}>
         <Pressable style={styles.photoPreviewBackdrop} onPress={() => setPreviewPhotoUrl(null)}>
-          {previewPhotoUrl && <Image source={{ uri: previewPhotoUrl }} style={styles.photoPreviewImage} resizeMode="contain" />}
+          {previewPhotoUrl && <SignedImage uri={previewPhotoUrl} style={styles.photoPreviewImage} resizeMode="contain" />}
           <Pressable onPress={() => setPreviewPhotoUrl(null)} style={styles.photoPreviewClose}>
             <Ionicons name="close" size={24} color="#fff" />
           </Pressable>

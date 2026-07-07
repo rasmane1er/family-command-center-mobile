@@ -26,6 +26,7 @@ import { useAuthStore, SignUpData } from '../../store/useAuthStore';
 import { useTheme } from '../../theme/ThemeContext';
 import { populateFromSignUp } from '../../utils/populateFromSignUp';
 import { resetAllStores } from '../../storage/resetAllStores';
+import { uploadImageToR2 } from '../../services/uploadService';
 import { useTranslation } from 'react-i18next';
 
 // ─── constants ───────────────────────────────────────────────────────────────
@@ -478,7 +479,25 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
       // wipe all previous data before populating fresh family data
       resetAllStores();
       const { user } = useAuthStore.getState();
-      if (user) await populateFromSignUp(user);
+      if (user) {
+        let finalUser = user;
+        // The avatar was picked (and held as a local file:// URI) before the
+        // account existed, so there was nowhere authenticated to upload it
+        // to yet — signUp() has since linked a real backend session, so
+        // upload it now and use the resulting R2 key instead of the local
+        // URI, which would only ever resolve on this one device.
+        if (user.avatarUri?.startsWith('file://')) {
+          try {
+            const key = await uploadImageToR2(user.avatarUri, 'avatar');
+            finalUser = { ...user, avatarUri: key };
+            useAuthStore.getState().updateProfile({ avatarUri: key });
+          } catch {
+            finalUser = { ...user, avatarUri: undefined };
+            useAuthStore.getState().updateProfile({ avatarUri: undefined });
+          }
+        }
+        await populateFromSignUp(finalUser);
+      }
     }
   };
 

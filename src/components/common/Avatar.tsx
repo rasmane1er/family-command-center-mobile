@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useTranslation } from 'react-i18next';
 import { colors } from '../../theme/colors';
+import { useSignedImageUri } from '../../hooks/useSignedImageUri';
 
 interface Props {
   name: string;
@@ -39,6 +40,7 @@ export function Avatar({
   editable = false,
 }: Props) {
   const { t } = useTranslation();
+  const resolvedImageUri = useSignedImageUri(imageUri);
   const initials = name
     .split(' ')
     .map((n) => n[0])
@@ -87,9 +89,9 @@ export function Avatar({
         },
       ]}
     >
-      {imageUri ? (
+      {resolvedImageUri ? (
         <Image
-          source={{ uri: imageUri }}
+          source={{ uri: resolvedImageUri }}
           style={{ width: size, height: size, borderRadius: size / 2 }}
         />
       ) : (
