@@ -20,10 +20,12 @@ import { colors } from '../../theme/colors';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { useUtilityStore } from '../../store/useUtilityStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { getDetectedUtilities } from '../../services/autoFillService';
 import type { DetectedUtility } from '../../services/autoFillService';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useTranslation } from 'react-i18next';
+import { usePlaidAutoData } from '../../hooks/usePlaidAutoData';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -74,7 +76,7 @@ function inferUtilityType(type: string): UtilityType {
 export function UtilityTrackerScreen({ navigation }: any) {
   const { t } = useTranslation('finance');
   const insets = useSafeAreaInsets();
-  const { bills, addBill, markPaid, deleteBill, getMonthlyTotal, getAverageForType, getCurrentMonthTotal, isLoaded, fetchFromServer } = useUtilityStore();
+  const { bills, addBill, updateBill, markPaid, deleteBill, getMonthlyTotal, getAverageForType, getCurrentMonthTotal, isLoaded, fetchFromServer } = useUtilityStore();
 
   useEffect(() => {
     if (!isLoaded) fetchFromServer();
@@ -84,6 +86,7 @@ export function UtilityTrackerScreen({ navigation }: any) {
   const [activeTab, setActiveTab] = useState<'This Month' | 'Trends' | 'By Type'>('This Month');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [editingBill, setEditingBill] = useState<typeof bills[number] | null>(null);
 
   const [newType, setNewType] = useState<UtilityType>('electric');
   const [newProvider, setNewProvider] = useState('');
@@ -139,6 +142,12 @@ export function UtilityTrackerScreen({ navigation }: any) {
       .finally(() => setDetectedLoading(false));
   };
 
+  // Pre-fetch detected utilities in the background whenever a bank
+  // connects or finishes syncing, so the Import modal opens with fresh
+  // data already loaded instead of a spinner — the modal itself still
+  // opens manually via the header button.
+  usePlaidAutoData(loadDetectedUtilities);
+
   const handleImportAll = () => {
     let imported = 0;
     for (const du of detectedUtilities) {
@@ -148,7 +157,7 @@ export function UtilityTrackerScreen({ navigation }: any) {
       );
       if (!alreadyExists) {
         addBill({
-          familyId: 'demo-family',
+          familyId: useAuthStore.getState().familyId ?? '',
           type: inferUtilityType(du.type),
           provider: du.merchantName,
           month,
@@ -173,7 +182,7 @@ export function UtilityTrackerScreen({ navigation }: any) {
       return;
     }
     addBill({
-      familyId: 'demo-family',
+      familyId: useAuthStore.getState().familyId ?? '',
       type: inferUtilityType(du.type),
       provider: du.merchantName,
       month,
@@ -212,6 +221,18 @@ export function UtilityTrackerScreen({ navigation }: any) {
     ]);
   };
 
+  const handleEditBill = (bill: typeof bills[number]) => {
+    setEditingBill(bill);
+    setNewType(bill.type);
+    setNewProvider(bill.provider);
+    setNewMonth(bill.month);
+    setNewAmount(String(bill.amount));
+    setNewUsage(bill.usage !== undefined ? String(bill.usage) : '');
+    setNewUsageUnit(bill.usageUnit ?? '');
+    setNewIsPaid(bill.isPaid);
+    setShowAddModal(true);
+  };
+
   const handleAddBill = () => {
     const amount = parseFloat(newAmount);
     if (!newProvider.trim() || isNaN(amount) || amount <= 0) {
@@ -219,16 +240,29 @@ export function UtilityTrackerScreen({ navigation }: any) {
       return;
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    addBill({
-      familyId: 'demo-family',
-      type: newType,
-      provider: newProvider.trim(),
-      month: newMonth,
-      amount,
-      usage: newUsage ? parseFloat(newUsage) : undefined,
-      usageUnit: newUsageUnit.trim() || undefined,
-      isPaid: newIsPaid,
-    });
+    if (editingBill) {
+      updateBill(editingBill.id, {
+        type: newType,
+        provider: newProvider.trim(),
+        month: newMonth,
+        amount,
+        usage: newUsage ? parseFloat(newUsage) : undefined,
+        usageUnit: newUsageUnit.trim() || undefined,
+        isPaid: newIsPaid,
+      });
+      setEditingBill(null);
+    } else {
+      addBill({
+        familyId: useAuthStore.getState().familyId ?? '',
+        type: newType,
+        provider: newProvider.trim(),
+        month: newMonth,
+        amount,
+        usage: newUsage ? parseFloat(newUsage) : undefined,
+        usageUnit: newUsageUnit.trim() || undefined,
+        isPaid: newIsPaid,
+      });
+    }
     setNewProvider('');
     setNewAmount('');
     setNewUsage('');
@@ -305,6 +339,14 @@ export function UtilityTrackerScreen({ navigation }: any) {
                     <Text style={styles.markPaidText}>Mark Paid</Text>
                   </Pressable>
                 )}
+                <View style={styles.billActions}>
+                  <Pressable style={styles.billEditBtn} onPress={() => handleEditBill(bill)}>
+                    <Ionicons name="create-outline" size={15} color={colors.primary} />
+                  </Pressable>
+                  <Pressable style={styles.billDeleteBtn} onPress={() => handleDelete(bill.id, bill.provider)}>
+                    <Ionicons name="trash-outline" size={15} color={colors.danger} />
+                  </Pressable>
+                </View>
               </View>
             </View>
           </Card>
@@ -537,8 +579,8 @@ export function UtilityTrackerScreen({ navigation }: any) {
         <View style={styles.modalOverlay}>
           <ScrollView style={styles.modalSheet} contentContainerStyle={{ paddingBottom: 40 }}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Add Utility Bill</Text>
-              <Pressable onPress={() => setShowAddModal(false)}>
+              <Text style={styles.modalTitle}>{editingBill ? 'Edit Utility Bill' : 'Add Utility Bill'}</Text>
+              <Pressable onPress={() => { setEditingBill(null); setShowAddModal(false); }}>
                 <Ionicons name="close" size={24} color={colors.text} />
               </Pressable>
             </View>
@@ -642,7 +684,7 @@ export function UtilityTrackerScreen({ navigation }: any) {
               style={[styles.submitBtn, (!newProvider.trim() || !newAmount) && styles.submitBtnDisabled]}
             >
               <Ionicons name="add-circle" size={18} color="#fff" />
-              <Text style={styles.submitBtnText}>Add Bill</Text>
+              <Text style={styles.submitBtnText}>{editingBill ? 'Save Changes' : 'Add Bill'}</Text>
             </Pressable>
           </ScrollView>
         </View>
@@ -691,6 +733,9 @@ const styles = StyleSheet.create({
   billAmount: { fontSize: 18, fontWeight: '800', color: colors.text },
   markPaidBtn: { paddingVertical: 4, paddingHorizontal: 10, backgroundColor: colors.success, borderRadius: 8 },
   markPaidText: { color: '#fff', fontSize: 11, fontWeight: '700' },
+  billActions: { flexDirection: 'row', gap: 6, marginTop: 4 },
+  billEditBtn: { width: 28, height: 28, borderRadius: 7, backgroundColor: colors.primaryLight + '30', alignItems: 'center', justifyContent: 'center' },
+  billDeleteBtn: { width: 28, height: 28, borderRadius: 7, backgroundColor: colors.dangerLight, alignItems: 'center', justifyContent: 'center' },
   emptyState: { alignItems: 'center', paddingVertical: 60 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginTop: 14 },
   emptyDesc: { fontSize: 13, color: colors.textSecondary, marginTop: 6 },

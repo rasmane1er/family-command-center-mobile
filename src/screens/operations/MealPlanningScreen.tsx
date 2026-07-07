@@ -13,6 +13,7 @@ import { Button } from '../../components/common/Button';
 import { useOperationsStore } from '../../store/useOperationsStore';
 import { useShoppingStore } from '../../store/useShoppingStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import type { MealPlan } from '../../types';
 import type { ShopCategory } from '../../store/useShoppingStore';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
@@ -52,7 +53,7 @@ export function MealPlanningScreen({ navigation }: any) {
 
   const { mealPlans, setMealPlan } = useOperationsStore();
   const { addItem } = useShoppingStore();
-  const familyId = useFamilyStore((s) => s.family?.id) ?? 'demo-family';
+  const familyId = useFamilyStore((s) => s.family?.id) ?? useAuthStore.getState().familyId ?? '';
 
   // Guards the persist effect below from firing with stale initial state
   // before this load effect's setWeekMeals has taken effect — without it,

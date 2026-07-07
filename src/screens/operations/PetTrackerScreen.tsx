@@ -21,6 +21,7 @@ import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
 import { usePetStore, PetSpecies, PetEventType, Pet } from '../../store/usePetStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { getPetCharges, type PetCharge } from '../../services/autoFillService';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
@@ -177,7 +178,7 @@ export function PetTrackerScreen({ navigation }: any) {
     if (!petName.trim()) return;
     const speciesInfo = SPECIES_OPTIONS.find((s) => s.value === petSpecies)!;
     addPet({
-      familyId: family?.id ?? 'demo-family',
+      familyId: useAuthStore.getState().familyId ?? family?.id ?? '',
       name: petName.trim(),
       species: petSpecies,
       breed: petBreed.trim() || undefined,

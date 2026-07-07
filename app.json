@@ -82,6 +82,7 @@
       ],
       "expo-secure-store",
       "expo-web-browser",
+      "expo-apple-authentication",
       [
         "expo-local-authentication",
         {
@@ -108,7 +109,8 @@
       ],
       "expo-localization",
       "@react-native-firebase/app",
-      "@react-native-firebase/messaging"
+      "@react-native-firebase/messaging",
+      "@sentry/react-native"
     ],
     "extra": {
       "eas": {

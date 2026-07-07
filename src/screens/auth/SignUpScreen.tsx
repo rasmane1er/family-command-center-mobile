@@ -478,7 +478,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
       // wipe all previous data before populating fresh family data
       resetAllStores();
       const { user } = useAuthStore.getState();
-      if (user) populateFromSignUp(user);
+      if (user) await populateFromSignUp(user);
     }
   };
 

@@ -12,11 +12,13 @@ import { ProgressBar } from '../../components/common/ProgressBar';
 import { Button } from '../../components/common/Button';
 import { useWealthStore } from '../../store/useWealthStore';
 import { useFinanceStore } from '../../store/useFinanceStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { getAccounts } from '../../services/plaidService';
 import type { PlaidAccount } from '../../types';
 import type { WealthCategory } from '../../types';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useTranslation } from 'react-i18next';
+import { usePlaidAutoData } from '../../hooks/usePlaidAutoData';
 
 const WEALTH_CATEGORIES: WealthCategory[] = ['stocks', 'bonds', 'real_estate', 'crypto', 'savings', 'retirement', 'business', 'other'];
 
@@ -68,7 +70,8 @@ export function WealthBuilderScreen({ navigation }: any) {
   const [newInstitution, setNewInstitution] = useState('');
   const [plaidAccounts, setPlaidAccounts] = useState<PlaidAccount[]>([]);
   const [plaidLoading, setPlaidLoading] = useState(false);
-  const { entries, projections, getTotalNetWorth, addEntry, isLoaded, fetchFromServer } = useWealthStore();
+  const { entries, projections, getTotalNetWorth, addEntry, updateEntry, deleteEntry, isLoaded, fetchFromServer } = useWealthStore();
+  const [editingEntry, setEditingEntry] = useState<typeof entries[0] | null>(null);
   const monthlyExpenses = useFinanceStore((s) => s.monthlyExpenses);
 
   useEffect(() => {
@@ -81,16 +84,21 @@ export function WealthBuilderScreen({ navigation }: any) {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const cv = parseFloat(newCurrentValue) || 0;
     const cb = parseFloat(newCostBasis) || cv;
-    addEntry({
-      familyId: 'demo-family',
-      name: newName.trim(),
-      category: newCategory,
-      currentValue: cv,
-      costBasis: cb,
-      percentAllocation: 0,
-      institution: newInstitution.trim() || undefined,
-    });
+    if (editingEntry) {
+      updateEntry(editingEntry.id, { name: newName.trim(), category: newCategory, currentValue: cv, costBasis: cb, institution: newInstitution.trim() || undefined });
+    } else {
+      addEntry({
+        familyId: useAuthStore.getState().familyId ?? '',
+        name: newName.trim(),
+        category: newCategory,
+        currentValue: cv,
+        costBasis: cb,
+        percentAllocation: 0,
+        institution: newInstitution.trim() || undefined,
+      });
+    }
     setShowModal(false);
+    setEditingEntry(null);
     setNewName(''); setNewCategory('savings'); setNewCurrentValue(''); setNewCostBasis(''); setNewInstitution('');
   };
 
@@ -102,6 +110,15 @@ export function WealthBuilderScreen({ navigation }: any) {
       .finally(() => setPlaidLoading(false));
     setShowPlaidSubSheet(true);
   };
+
+  // Silently keeps plaidAccounts warm in the background whenever a bank
+  // connects or finishes syncing, so opening the import sub-sheet shows
+  // accounts instantly instead of a spinner on the first tap.
+  usePlaidAutoData(() => {
+    getAccounts()
+      .then((res) => setPlaidAccounts(res.accounts))
+      .catch(() => {/* silent — openPlaidSubSheet surfaces errors on manual open */});
+  });
 
   const prefillFromPlaid = (acct: PlaidAccount) => {
     setNewName(acct.name);
@@ -272,11 +289,19 @@ export function WealthBuilderScreen({ navigation }: any) {
                       <Text style={styles.holdingName}>{e.name}</Text>
                       <Text style={styles.holdingInst}>{e.institution} · {CATEGORY_LABELS[e.category]}</Text>
                     </View>
-                    <View style={{ alignItems: 'flex-end' }}>
+                    <View style={{ alignItems: 'flex-end', gap: 4 }}>
                       <Text style={styles.holdingValue}>${e.currentValue.toLocaleString()}</Text>
                       <Text style={[styles.holdingGain, { color: gain >= 0 ? colors.success : colors.danger }]}>
                         {gain >= 0 ? '+' : ''}{gainPctEntry.toFixed(1)}%
                       </Text>
+                      <View style={{ flexDirection: 'row', gap: 6, marginTop: 2 }}>
+                        <Pressable onPress={() => { setEditingEntry(e); setNewName(e.name); setNewCategory(e.category); setNewCurrentValue(String(e.currentValue)); setNewCostBasis(String(e.costBasis)); setNewInstitution(e.institution ?? ''); setShowModal(true); }} style={styles.holdingActionBtn}>
+                          <Ionicons name="create-outline" size={13} color={colors.textMuted} />
+                        </Pressable>
+                        <Pressable onPress={() => { Alert.alert('Delete Holding', `Remove "${e.name}"?`, [{ text: 'Cancel', style: 'cancel' }, { text: 'Delete', style: 'destructive', onPress: () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); deleteEntry(e.id); } }]); }} style={styles.holdingActionBtn}>
+                          <Ionicons name="trash-outline" size={13} color={colors.textMuted} />
+                        </Pressable>
+                      </View>
                     </View>
                   </View>
                   {e.annualReturn && (
@@ -355,18 +380,18 @@ export function WealthBuilderScreen({ navigation }: any) {
         )}
       </CollapsibleHeader>
 
-      {/* Add Holding Modal */}
-      <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet">
+      {/* Add/Edit Holding Modal */}
+      <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet" onDismiss={() => { setEditingEntry(null); }}>
         <ScrollView style={styles.modal} contentContainerStyle={{ paddingBottom: 40 }}>
           <View style={styles.modalHandle} />
-          <Text style={styles.modalTitle}>Add Holding</Text>
+          <Text style={styles.modalTitle}>{editingEntry ? 'Edit Holding' : 'Add Holding'}</Text>
 
           {/* Import from Plaid button */}
-          <Pressable style={styles.plaidImportBtn} onPress={openPlaidSubSheet}>
+          {!editingEntry && <Pressable style={styles.plaidImportBtn} onPress={openPlaidSubSheet}>
             <Ionicons name="link" size={18} color="#2E7D32" />
             <Text style={styles.plaidImportBtnText}>Import from Plaid Accounts</Text>
             <Ionicons name="chevron-forward" size={16} color="#2E7D32" />
-          </Pressable>
+          </Pressable>}
 
           <Text style={styles.modalLabel}>Category</Text>
           <View style={styles.catGrid}>
@@ -389,8 +414,8 @@ export function WealthBuilderScreen({ navigation }: any) {
           <Text style={styles.modalLabel}>Institution (Optional)</Text>
           <TextInput style={styles.modalInput} value={newInstitution} onChangeText={setNewInstitution} placeholder="Fidelity, Chase, Coinbase..." placeholderTextColor={colors.textMuted} />
 
-          <Button title="Add Holding" onPress={handleAddEntry} />
-          <Button title="Cancel" onPress={() => setShowModal(false)} variant="ghost" style={{ marginTop: 8 }} />
+          <Button title={editingEntry ? 'Save Changes' : 'Add Holding'} onPress={handleAddEntry} />
+          <Button title="Cancel" onPress={() => { setShowModal(false); setEditingEntry(null); setNewName(''); setNewCategory('savings'); setNewCurrentValue(''); setNewCostBasis(''); setNewInstitution(''); }} variant="ghost" style={{ marginTop: 8 }} />
         </ScrollView>
       </Modal>
 
@@ -471,6 +496,7 @@ const styles = StyleSheet.create({
   holdingInst: { fontSize: 11, color: colors.textSecondary, marginTop: 2 },
   holdingValue: { fontSize: 15, fontWeight: '800', color: colors.text },
   holdingGain: { fontSize: 12, fontWeight: '700', textAlign: 'right', marginTop: 2 },
+  holdingActionBtn: { width: 26, height: 26, borderRadius: 7, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
   returnRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8 },
   returnText: { fontSize: 11, color: colors.success },
   forecastCard: { borderRadius: 14, marginBottom: 16 },

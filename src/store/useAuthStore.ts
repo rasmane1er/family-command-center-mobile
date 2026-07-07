@@ -4,6 +4,7 @@ import { mmkvStorage } from '../storage/mmkvStorage';
 import * as SecureStore from 'expo-secure-store';
 import { secureStorage } from '../storage/secureStorage';
 import { awsConfig } from '../config/aws';
+import { apiRequest } from '../api/client';
 
 export interface AuthUser {
   id: string;
@@ -43,8 +44,14 @@ interface AuthState {
 
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signUp: (data: SignUpData) => Promise<{ success: boolean; error?: string }>;
-  signInWithSocial: (user: Omit<AuthUser, 'createdAt'>) => void;
+  signInWithSocial: (user: Omit<AuthUser, 'createdAt'>) => Promise<void>;
   signOut: () => void;
+  // Permanently deletes the backend account (and the whole family, if this
+  // was its last remaining login) via DELETE /auth/account, then clears
+  // local auth state. Does NOT clear other stores/tokens itself — callers
+  // (SettingsScreen) are responsible for resetAllStores()+signOut() after
+  // this resolves, same as any other full-wipe flow in this app.
+  deleteAccount: () => Promise<{ success: boolean; error?: string }>;
   resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
   updateProfile: (updates: Partial<AuthUser>) => void;
   // Verifies a password against the currently signed-in account without
@@ -175,6 +182,33 @@ async function syncWithBackend(params: {
   }
 }
 
+// Find-or-create backend link for Google/Apple sign-in — there's no
+// password to check, so this can't reuse syncWithBackend's login-then-
+// register flow. Same never-throws contract: an unreachable/failing backend
+// must not block the local social sign-in from working.
+async function syncSocialWithBackend(params: {
+  email: string;
+  displayName: string;
+  provider: 'google' | 'apple';
+  familyName?: string;
+}): Promise<{ familyId: string; backendUserId: string } | null> {
+  try {
+    const res = await fetch(`${awsConfig.apiBaseUrl}/auth/social`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    if (!res.ok) {
+      console.warn('[auth] syncSocialWithBackend: failed', res.status, await res.text().catch(() => ''));
+      return null;
+    }
+    return persistBackendSession(await res.json());
+  } catch (err) {
+    console.warn('[auth] syncSocialWithBackend: network error, could not reach backend at', awsConfig.apiBaseUrl, err);
+    return null;
+  }
+}
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
@@ -281,18 +315,38 @@ export const useAuthStore = create<AuthState>()(
         return { success: true };
       },
 
-      signInWithSocial: (userData) => {
+      signInWithSocial: async (userData) => {
         const user: AuthUser = {
           ...userData,
           createdAt: new Date().toISOString(),
         };
         set({ isAuthenticated: true, user });
+
+        const backend = await syncSocialWithBackend({
+          email: user.email,
+          displayName: user.displayName,
+          provider: user.provider as 'google' | 'apple',
+          familyName: user.familyName,
+        });
+        if (backend) set({ familyId: backend.familyId, backendUserId: backend.backendUserId });
       },
 
       signOut: () => {
         set({ isAuthenticated: false, user: null, familyId: null, backendUserId: null });
         secureStorage.removeToken('access_token').catch(() => {});
         secureStorage.removeToken('refresh_token').catch(() => {});
+      },
+
+      deleteAccount: async () => {
+        if (!get().familyId) {
+          return { success: false, error: 'This account is not backend-linked yet — nothing to delete server-side.' };
+        }
+        try {
+          await apiRequest('/auth/account', { method: 'DELETE' });
+          return { success: true };
+        } catch {
+          return { success: false, error: 'Could not delete your account. Check your connection and try again.' };
+        }
       },
 
       resetPassword: async (email) => {

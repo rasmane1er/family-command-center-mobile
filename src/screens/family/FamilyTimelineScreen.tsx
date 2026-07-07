@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput, Switch,
 } from 'react-native';
@@ -64,12 +64,8 @@ export function FamilyTimelineScreen({ navigation }: any) {
   const [newMemberId, setNewMemberId] = useState<string | null>(null);
   const [newHighlight, setNewHighlight] = useState(false);
 
-  const { entries, deleteEntry, addEntry, seedDemoData, hasSeeded } = useTimelineStore();
+  const { entries, deleteEntry, addEntry } = useTimelineStore();
   const members = useFamilyStore((s) => s.members);
-
-  useEffect(() => {
-    if (!hasSeeded) seedDemoData();
-  }, [hasSeeded, seedDemoData]);
 
   const handleAdd = () => {
     if (!newTitle.trim()) return;

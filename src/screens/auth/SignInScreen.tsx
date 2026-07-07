@@ -56,12 +56,19 @@ export default function SignInScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const { signIn, signInWithSocial } = useAuthStore();
 
-  // Google auth — only active when native modules are linked
-  const googleHook = Google?.useAuthRequest
+  // Google auth — only active when native modules are linked AND real client
+  // IDs are supplied via env (see eas.json / .env). Without real IDs the
+  // native SDK would attempt OAuth with garbage and fail cryptically, so the
+  // request is only constructed once all three are actually present.
+  const googleAndroidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
+  const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+  const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+  const googleConfigured = Boolean(googleAndroidClientId && googleIosClientId && googleWebClientId);
+  const googleHook = Google?.useAuthRequest && googleConfigured
     ? Google.useAuthRequest({
-        androidClientId: 'YOUR_ANDROID_CLIENT_ID',
-        iosClientId: 'YOUR_IOS_CLIENT_ID',
-        webClientId: 'YOUR_WEB_CLIENT_ID',
+        androidClientId: googleAndroidClientId,
+        iosClientId: googleIosClientId,
+        webClientId: googleWebClientId,
       })
     : [null, null, null] as const;
   const [googleRequest, googleResponse, promptGoogleAsync] = googleHook;
@@ -73,8 +80,8 @@ export default function SignInScreen({ navigation }: Props) {
       headers: { Authorization: `Bearer ${auth?.accessToken}` },
     })
       .then((r) => r.json())
-      .then((info) => {
-        signInWithSocial({
+      .then(async (info) => {
+        await signInWithSocial({
           id: info.id ?? Math.random().toString(36),
           email: info.email ?? '',
           displayName: info.name ?? 'Google User',
@@ -86,7 +93,7 @@ export default function SignInScreen({ navigation }: Props) {
           const { useFamilyStore } = require('../../store/useFamilyStore');
           if (!useFamilyStore.getState().family) {
             const { populateFromSignUp } = require('../../utils/populateFromSignUp');
-            populateFromSignUp(user);
+            await populateFromSignUp(user);
           }
         }
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -126,7 +133,7 @@ export default function SignInScreen({ navigation }: Props) {
         ? `${credential.fullName.givenName ?? ''} ${credential.fullName.familyName ?? ''}`.trim()
         : 'Apple User';
       const emailAddr = credential.email ?? `${credential.user}@privaterelay.appleid.com`;
-      signInWithSocial({
+      await signInWithSocial({
         id: credential.user,
         email: emailAddr,
         displayName: name || 'Apple User',
@@ -138,7 +145,7 @@ export default function SignInScreen({ navigation }: Props) {
         const { useFamilyStore } = require('../../store/useFamilyStore');
         if (!useFamilyStore.getState().family) {
           const { populateFromSignUp } = require('../../utils/populateFromSignUp');
-          populateFromSignUp(user);
+          await populateFromSignUp(user);
         }
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

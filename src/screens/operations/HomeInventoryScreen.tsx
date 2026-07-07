@@ -21,6 +21,7 @@ import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { useHomeInventoryStore } from '../../store/useHomeInventoryStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { getRetailPurchases, type RetailPurchase } from '../../services/autoFillService';
 import { useTranslation } from 'react-i18next';
 
@@ -130,8 +131,8 @@ const ALL_CONDITIONS: ItemCondition[] = ['excellent', 'good', 'fair', 'poor'];
 export function HomeInventoryScreen({ navigation }: any) {
   const { t } = useTranslation('ops');
   const insets = useSafeAreaInsets();
-  const { items, addItem, updateItem, deleteItem, getTotalValue, getItemsByRoom, seedDemoData } = useHomeInventoryStore();
-  const familyId = useFamilyStore((s) => s.family?.id) ?? 'demo-family';
+  const { items, addItem, updateItem, deleteItem, getTotalValue, getItemsByRoom } = useHomeInventoryStore();
+  const familyId = useFamilyStore((s) => s.family?.id) ?? useAuthStore.getState().familyId ?? '';
 
   const [activeTab, setActiveTab] = useState<'By Room' | 'All Items' | 'Value Report'>('By Room');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -304,9 +305,6 @@ export function HomeInventoryScreen({ navigation }: any) {
           <Ionicons name="home-outline" size={56} color={colors.textMuted} />
           <Text style={styles.emptyTitle}>No items tracked</Text>
           <Text style={styles.emptyDesc}>Tap + to add your first item.</Text>
-          <Pressable onPress={seedDemoData} style={styles.demoBtn}>
-            <Text style={styles.demoBtnText}>Load Demo Data</Text>
-          </Pressable>
         </View>
       ) : (
         roomsWithItems.map((room) => {

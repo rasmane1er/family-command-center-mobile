@@ -66,7 +66,7 @@ export function KidsModeScreen({ navigation }: any) {
   // decides what a completed task is worth.
   const completeTask = useFamilyStore((s) => s.completeTask);
   const submitTaskForApproval = useFamilyStore((s) => s.submitTaskForApproval);
-  const { getTodayMood, addMoodEntry, seedDemoData: seedMood } = useMoodStore();
+  const { getTodayMood, addMoodEntry } = useMoodStore();
   const { habits, isCompletedToday, completeHabit, uncompleteHabit } = useHabitsStore();
   const [selectedKid, setSelectedKid] = useState<string | null>(null);
   const [showBurst, setShowBurst] = useState(false);
@@ -76,7 +76,7 @@ export function KidsModeScreen({ navigation }: any) {
   const kids = members.filter((m) => m.role === 'child');
   const activeKid = selectedKid ? members.find((m) => m.id === selectedKid) : (kids[0] || members[0]);
 
-  if (!getTodayMood(activeKid?.id || '')) seedMood();
+
   const myTasks = tasks.filter(
     (t) => activeKid && t.assignedTo?.includes(activeKid.id) && t.status !== 'completed'
   ).slice(0, 6);

@@ -9,6 +9,7 @@ import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { getSpendingByCategory, getMonthlySpending, getTransactions } from '../../services/plaidService';
 import type { PlaidTransaction } from '../../types';
 import { useTranslation } from 'react-i18next';
+import { usePlaidAutoData } from '../../hooks/usePlaidAutoData';
 
 const CATEGORY_COLORS: Record<string, string> = {
   FOOD_AND_DRINK: '#FF6B6B',
@@ -63,6 +64,7 @@ export function SpendingInsightsScreen({ navigation }: { navigation: any }) {
   }, [month]);
 
   useEffect(() => { load(); }, [load]);
+  usePlaidAutoData(load);
 
   const onRefresh = useCallback(() => { setRefreshing(true); load(); }, [load]);
 

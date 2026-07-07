@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -43,11 +43,7 @@ export function MoodTrackerScreen({ navigation }: any) {
   const [selectedMember, setSelectedMember] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const members = useFamilyStore((s) => s.members);
-  const { entries, addMoodEntry, deleteMoodEntry, getTodayMood, getMemberHistory, seedDemoData, hasSeeded } = useMoodStore();
-
-  useEffect(() => {
-    if (!hasSeeded) seedDemoData();
-  }, [hasSeeded, seedDemoData]);
+  const { entries, addMoodEntry, deleteMoodEntry, getTodayMood, getMemberHistory } = useMoodStore();
 
   const weekDates = getWeekDates();
   const today = new Date().toISOString().split('T')[0];

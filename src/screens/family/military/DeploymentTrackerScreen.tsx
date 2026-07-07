@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useAuthStore } from '../../../store/useAuthStore';
 import { View, Text, StyleSheet, ScrollView, Pressable, Modal, TextInput, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { differenceInCalendarDays, format } from 'date-fns';
@@ -175,7 +176,7 @@ export function DeploymentTrackerScreen({ navigation }: any) {
     } else {
       const deployment: Deployment = {
         id: generateId(),
-        familyId: family?.id ?? 'demo-family',
+        familyId: useAuthStore.getState().familyId ?? family?.id ?? '',
         memberId,
         type,
         location: location.trim(),

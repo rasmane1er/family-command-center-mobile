@@ -1,6 +1,8 @@
 if (__DEV__) {
   require("./ReactotronConfig");
 }
+import { initSentry } from './src/config/sentry';
+initSentry();
 import './src/i18n';
 import React, { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -18,6 +20,7 @@ import { useNotificationTriggers } from './src/hooks/useNotificationTriggers';
 import { usePushRegistration } from './src/hooks/usePushRegistration';
 import { useAutomationEngine } from './src/hooks/useAutomationEngine';
 import { useBiometricLock } from './src/hooks/useBiometricLock';
+import { usePlaidStore } from './src/store/usePlaidStore';
 import { BiometricLockScreen } from './src/components/common/BiometricLockScreen';
 import { ErrorBoundary } from './src/components/common/ErrorBoundary';
 import { i18n } from './src/i18n';
@@ -48,6 +51,23 @@ function AppInner() {
   useNotificationTriggers();
   useAutomationEngine();
   usePushRegistration(!!familyId);
+
+  // On launch, verify the shared Plaid connection state and — if it's been
+  // more than 6 hours since the last sync — run one in the background so
+  // finance screens open with fresh data instead of waiting for the user to
+  // pull-to-refresh or connect a bank all over again.
+  useEffect(() => {
+    if (!familyId) return;
+    (async () => {
+      await usePlaidStore.getState().checkConnection();
+      const { isConnected, lastSyncedAt } = usePlaidStore.getState();
+      const STALE_MS = 6 * 60 * 60 * 1000;
+      const isStale = !lastSyncedAt || Date.now() - new Date(lastSyncedAt).getTime() > STALE_MS;
+      if (isConnected && isStale) {
+        void usePlaidStore.getState().triggerSync();
+      }
+    })();
+  }, [familyId]);
   const { isLocked, authenticate } = useBiometricLock();
 
   // Configure RevenueCat as soon as (and whenever) the account becomes

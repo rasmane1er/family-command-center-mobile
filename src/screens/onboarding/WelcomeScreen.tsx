@@ -7,7 +7,6 @@ import { useTranslation } from 'react-i18next';
 import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
 import { Button } from '../../components/common/Button';
-import { useFamilyStore } from '../../store/useFamilyStore';
 import { useAIStore } from '../../store/useAIStore';
 import { useAppStore } from '../../store/useAppStore';
 
@@ -26,7 +25,6 @@ export function WelcomeScreen({ navigation }: any) {
   const { t } = useTranslation('onboarding');
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(40)).current;
-  const seedDemoFamily = useFamilyStore((s) => s.seedDemoData);
   const seedDemoAI = useAIStore((s) => s.seedDemoInsights);
   const setOnboarded = useAppStore((s) => s.setOnboarded);
 
@@ -48,7 +46,6 @@ export function WelcomeScreen({ navigation }: any) {
         {
           text: t('onboarding.screens.welcome.demoAlertContinue'),
           onPress: () => {
-            seedDemoFamily();
             seedDemoAI();
             setOnboarded(true);
           },

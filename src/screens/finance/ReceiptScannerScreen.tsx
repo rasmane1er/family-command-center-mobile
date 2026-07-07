@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
 import { useFinanceStore } from '../../store/useFinanceStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import type { Transaction, Bill, Subscription } from '../../types';
 import { API_BASE_URL } from '../../config/api';
 
@@ -153,7 +154,7 @@ export function ReceiptScannerScreen({ navigation }: { navigation: { goBack: () 
 
   const handleDispatch = () => {
     const amount = parseFloat(editAmount) || 0;
-    const familyId = 'demo-family';
+    const familyId = useAuthStore.getState().familyId ?? '';
     const now = new Date().toISOString();
 
     if (destination === 'transaction') {

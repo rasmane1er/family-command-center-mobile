@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Modal,
   TextInput, Alert,
@@ -20,6 +20,7 @@ import {
   useSchoolStore, computeGPA, computeAverage, scoreToLetter,
   type SchoolAssignment, type AssignmentStatus, type SchoolSubject, type GradeType,
 } from '../../store/useSchoolStore';
+import { useAuthStore } from '../../store/useAuthStore';
 
 const SUBJECT_ICONS = ['calculator', 'flask', 'book', 'time', 'laptop', 'fitness', 'book-outline', 'color-palette', 'leaf', 'globe', 'language', 'musical-notes'];
 const SUBJECT_COLORS = ['#2980B9', '#27AE60', '#8E44AD', '#E67E22', '#16A085', '#E74C3C', '#E91E63', '#F5A623', '#7F8C8D', '#1E4A8A'];
@@ -53,8 +54,8 @@ export function SchoolCenterScreen({ navigation }: any) {
   const family = useFamilyStore((s) => s.family);
   const children = members.filter((m) => m.role === 'child');
   const {
-    subjects, assignments, hasSeeded, toggleAssignmentComplete, addAssignment, deleteAssignment,
-    addSubject, deleteSubject, addGradeEntry, seedDemoData,
+    subjects, assignments, toggleAssignmentComplete, addAssignment, deleteAssignment,
+    addSubject, deleteSubject, addGradeEntry,
   } = useSchoolStore();
 
   const [selectedChild, setSelectedChild] = useState(children[0]?.id ?? null);
@@ -75,10 +76,6 @@ export function SchoolCenterScreen({ navigation }: any) {
   const [newGradeMax, setNewGradeMax] = useState('100');
   const [newGradeNotes, setNewGradeNotes] = useState('');
 
-  useEffect(() => {
-    if (!hasSeeded) seedDemoData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const memberSubjects = useMemo(
     () => subjects.filter((s) => s.memberId === selectedChild),
@@ -118,7 +115,7 @@ export function SchoolCenterScreen({ navigation }: any) {
     const dueDate = new Date(Date.now() + parseInt(newDays || '7') * 86400000).toISOString();
     addAssignment({
       id: Math.random().toString(36).substring(2),
-      familyId: family?.id ?? 'demo-family',
+      familyId: useAuthStore.getState().familyId ?? family?.id ?? '',
       memberId: selectedChild,
       title: newTitle.trim(),
       subject: newSubject.trim(),
@@ -137,7 +134,7 @@ export function SchoolCenterScreen({ navigation }: any) {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     addSubject({
       id: Math.random().toString(36).substring(2),
-      familyId: family?.id ?? 'demo-family',
+      familyId: useAuthStore.getState().familyId ?? family?.id ?? '',
       memberId: selectedChild,
       name: newSubjectName.trim(),
       teacherName: newTeacherName.trim(),

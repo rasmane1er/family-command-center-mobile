@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useAuthStore } from '../../../store/useAuthStore';
 import { View, Text, StyleSheet, ScrollView, Pressable, Modal, TextInput, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { format, isPast } from 'date-fns';
@@ -89,7 +90,7 @@ export function PCSMoveScreen({ navigation }: any) {
     }
     const move: PCSMove = {
       id: generateId(),
-      familyId: family?.id ?? 'demo-family',
+      familyId: useAuthStore.getState().familyId ?? family?.id ?? '',
       fromLocation: fromLocation.trim(),
       toLocation: toLocation.trim(),
       moveDate: new Date(moveDate).toISOString(),

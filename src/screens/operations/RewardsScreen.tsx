@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useAuthStore } from '../../store/useAuthStore';
 import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -118,7 +119,7 @@ const activeChild =
             // ever recorded that the redemption actually happened.
             addReward({
               id: generateId(),
-              familyId: family?.id ?? 'demo-family',
+              familyId: useAuthStore.getState().familyId ?? family?.id ?? '',
               memberId: activeChild.id,
               title: reward.name,
               description: reward.description,

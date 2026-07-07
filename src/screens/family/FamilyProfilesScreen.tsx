@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useAuthStore } from '../../store/useAuthStore';
 import * as Sharing from 'expo-sharing';
 import * as Clipboard from 'expo-clipboard';
 import * as Contacts from 'expo-contacts';
@@ -207,7 +208,7 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
     if (!newName.trim()) return;
     const member: FamilyMember = {
       id: generateId(),
-      familyId: family?.id ?? 'demo-family',
+      familyId: useAuthStore.getState().familyId ?? family?.id ?? '',
       name: newName.trim(),
       role: newRole,
       avatarColor: newColor,
@@ -238,7 +239,7 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
 
   const handleShareInvite = async () => {
     try {
-      const inviteLink = `https://familycommandcenter.app/join/${family?.id ?? 'demo-family'}`;
+      const inviteLink = `https://familycommandcenter.app/join/${useAuthStore.getState().familyId ?? family?.id ?? ''}`;
       await Clipboard.setStringAsync(inviteLink);
       Alert.alert(
         t('family.screens.familyProfiles.inviteLinkReadyTitle'),

@@ -15,13 +15,13 @@ export interface MoodEntry {
 
 interface MoodState {
   entries: MoodEntry[];
-  hasSeeded: boolean;
+  isLoaded: boolean;
   addMoodEntry: (entry: Omit<MoodEntry, 'id' | 'createdAt'>) => void;
   deleteMoodEntry: (id: string) => void;
   getTodayMood: (memberId: string) => MoodEntry | undefined;
   getMemberHistory: (memberId: string, days: number) => MoodEntry[];
   getFamilyAvgToday: () => number;
-  seedDemoData: () => void;
+  fetchFromServer: () => Promise<void>;
 }
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
@@ -31,7 +31,7 @@ export const useMoodStore = create<MoodState>()(
   persist(
     (set, get) => ({
   entries: [],
-  hasSeeded: false,
+  isLoaded: false,
 
   addMoodEntry: (entry) => {
     const { entries } = get();
@@ -61,25 +61,7 @@ export const useMoodStore = create<MoodState>()(
     return dayEntries.reduce((s, e) => s + e.level, 0) / dayEntries.length;
   },
 
-  seedDemoData: () => {
-    const now = new Date();
-    const memberIds = ['member-1', 'member-2', 'member-3', 'member-4'];
-    const baseMoods: Record<string, number> = { 'member-1': 4, 'member-2': 5, 'member-3': 3, 'member-4': 4 };
-    const entries: MoodEntry[] = [];
-
-    for (let d = 13; d >= 0; d--) {
-      const date = new Date(now);
-      date.setDate(date.getDate() - d);
-      const dateStr = toDateStr(date);
-      memberIds.forEach((memberId) => {
-        const base = baseMoods[memberId];
-        const variance = Math.round((Math.random() - 0.5) * 2);
-        const level = Math.max(1, Math.min(5, base + variance)) as MoodLevel;
-        entries.push({ id: generateId(), memberId, level, date: dateStr, createdAt: date.toISOString() });
-      });
-    }
-    set({ entries, hasSeeded: true });
-  },
+  fetchFromServer: async () => { set({ isLoaded: true }); },
     }),
     {
       name: 'family-command-center-mood',

@@ -10,6 +10,7 @@ import { Card } from '../../components/common/Card';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { Badge } from '../../components/common/Badge';
 import { useFamilyMeetingsStore, type FamilyMeeting } from '../../store/useFamilyMeetingsStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { useTranslation } from 'react-i18next';
 
@@ -55,7 +56,7 @@ export function FamilyMeetingScreen({ navigation }: any) {
           text: t('family.screens.familyMeeting.create'),
           onPress: () => {
             const id = addMeeting({
-              familyId: family?.id ?? 'demo-family',
+              familyId: useAuthStore.getState().familyId ?? family?.id ?? '',
               date: new Date().toISOString(),
               title: t('family.screens.familyMeeting.defaultMeetingTitle', { n: totalMeetings + 1 }),
               attendeeIds: members.map((m) => m.id),

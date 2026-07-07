@@ -8,6 +8,7 @@ import {
   type LinkExit,
 } from 'react-native-plaid-link-sdk';
 import { createLinkToken, exchangeToken } from '../../services/plaidService';
+import { usePlaidStore } from '../../store/usePlaidStore';
 import { colors } from '../../theme/colors';
 import * as Haptics from 'expo-haptics';
 import { useTranslation } from 'react-i18next';
@@ -40,6 +41,11 @@ export function PlaidLinkButton({ onSuccess, onExit, style }: Props) {
           t('screens.shared.plaidConnectedTitle'),
           t('screens.shared.plaidConnectedMsg', { institutionName: exchanged.institutionName })
         );
+        // Start importing real transactions/balances right away instead of
+        // leaving the item at "never synced" until the user manually taps
+        // the sync button — every screen watching usePlaidStore picks this
+        // up automatically once it completes.
+        void usePlaidStore.getState().triggerSync();
         onSuccess?.(exchanged.institutionName);
       } catch (err: any) {
         Alert.alert(t('screens.shared.plaidErrorTitle'), err.message || t('screens.shared.plaidFinalizeErrorMsg'));

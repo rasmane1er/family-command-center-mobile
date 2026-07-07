@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useAuthStore } from '../../store/useAuthStore';
 import { View, Text, StyleSheet, ScrollView, Pressable, Modal, TextInput, Image, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
@@ -73,7 +74,7 @@ const filteredTasks = visibleTasks
     if (!newTaskTitle.trim()) return;
     const task: Task = {
       id: `task-${Date.now()}`,
-      familyId: family?.id ?? 'demo-family',
+      familyId: useAuthStore.getState().familyId ?? family?.id ?? '',
       title: newTaskTitle.trim(),
       assignedTo: selectedMember ? [selectedMember] : [],
       priority: newTaskPriority,

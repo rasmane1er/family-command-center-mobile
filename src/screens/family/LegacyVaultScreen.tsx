@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,6 +16,7 @@ import { useLegacyStore } from '../../store/useLegacyStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import type { LegacyItemType } from '../../types';
 import { useTranslation } from 'react-i18next';
+import { useAuthStore } from '../../store/useAuthStore';
 
 const ADD_TYPES: LegacyItemType[] = ['story', 'milestone', 'tradition', 'letter', 'recipe'];
 
@@ -49,17 +50,13 @@ export function LegacyVaultScreen({ navigation }: any) {
   const [newType, setNewType] = useState<LegacyItemType>('story');
   const [newMemberId, setNewMemberId] = useState<string | null>(null);
 
-  const { items, toggleFeatured, addReaction, addItem, deleteItem, seedDemoData, hasSeeded } = useLegacyStore();
+  const { items, toggleFeatured, addReaction, addItem, deleteItem } = useLegacyStore();
   const members = useFamilyStore((s) => s.members);
-
-  useEffect(() => {
-    if (!hasSeeded) seedDemoData();
-  }, [hasSeeded, seedDemoData]);
 
   const handleAddItem = () => {
     if (!newTitle.trim()) return;
     addItem({
-      familyId: 'demo-family',
+      familyId: useAuthStore.getState().familyId ?? '',
       memberId: newMemberId || undefined,
       type: newType,
       title: newTitle.trim(),

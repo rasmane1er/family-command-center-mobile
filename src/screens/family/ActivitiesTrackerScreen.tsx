@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -29,6 +29,7 @@ import {
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useTranslation } from 'react-i18next';
+import { useAuthStore } from '../../store/useAuthStore';
 
 const ALL_DAYS: DayOfWeek[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -73,8 +74,6 @@ export function ActivitiesTrackerScreen({ navigation }: any) {
     toggleActive,
     deleteActivity,
     getTotalMonthlyCost,
-    seedDemoData,
-    hasSeeded,
   } = useActivitiesStore();
 
   const [selectedMemberId, setSelectedMemberId] = useState<string | 'all'>('all');
@@ -95,10 +94,6 @@ export function ActivitiesTrackerScreen({ navigation }: any) {
   const [modalCoach, setModalCoach] = useState('');
   const [modalEquipment, setModalEquipment] = useState('');
   const [modalNotes, setModalNotes] = useState('');
-
-  useEffect(() => {
-    if (!hasSeeded) seedDemoData();
-  }, [hasSeeded, seedDemoData]);
 
   const filteredActivities = useMemo(() => {
     if (selectedMemberId === 'all') return activities;
@@ -135,7 +130,7 @@ export function ActivitiesTrackerScreen({ navigation }: any) {
   const handleAddActivity = () => {
     if (!modalName.trim()) return;
     addActivity({
-      familyId: 'demo-family',
+      familyId: useAuthStore.getState().familyId ?? '',
       memberId: modalMemberId,
       name: modalName.trim(),
       type: modalType,
@@ -372,13 +367,7 @@ export function ActivitiesTrackerScreen({ navigation }: any) {
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyEmoji}>🎯</Text>
             <Text style={styles.emptyTitle}>{t('activities.noActivities')}</Text>
-            <Text style={styles.emptyDesc}>Tap + to add activities or load sample data.</Text>
-            <Button
-              title="Load Demo Data"
-              onPress={() => { seedDemoData(); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); }}
-              variant="primary"
-              style={{ marginTop: 16, alignSelf: 'center' }}
-            />
+            <Text style={styles.emptyDesc}>Tap + to add activities.</Text>
           </View>
         )}
 

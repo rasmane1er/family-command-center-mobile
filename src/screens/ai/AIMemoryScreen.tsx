@@ -14,6 +14,7 @@ import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
 import { useMemoryStore } from '../../store/useMemoryStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { chatWithMemoryAI, AIMessage } from '../../services/aiService';
 import type { MemoryType } from '../../types';
@@ -58,13 +59,9 @@ export function AIMemoryScreen({ navigation }: any) {
   const [aiSuggestions, setAISuggestions] = useState<string[]>([]);
   const aiScrollRef = useRef<ScrollView>(null);
 
-  const { memories, pinMemory, addMemory, seedDemoData, clearMemories, deleteMemory, hasSeeded } = useMemoryStore();
+  const { memories, pinMemory, addMemory, clearMemories, deleteMemory } = useMemoryStore();
   const members = useFamilyStore((s) => s.members);
   const financialGoals = useFinanceStore((s) => s.financialGoals);
-
-  useEffect(() => {
-    if (!hasSeeded) seedDemoData();
-  }, [hasSeeded, seedDemoData]);
 
   // Auto-generate memories from milestones
   useEffect(() => {
@@ -79,7 +76,7 @@ export function AIMemoryScreen({ navigation }: any) {
       const alreadyExists = memories.some((m) => m.title.startsWith(prefix));
       if (!alreadyExists) {
         addMemory({
-          familyId: 'demo-family',
+          familyId: useAuthStore.getState().familyId ?? '',
           type: 'milestone',
           title: prefix,
           content: `Family reached financial goal: ${goal.name} of $${goal.targetAmount}`,
@@ -102,7 +99,7 @@ export function AIMemoryScreen({ navigation }: any) {
         );
         if (!alreadyExists) {
           addMemory({
-            familyId: 'demo-family',
+            familyId: useAuthStore.getState().familyId ?? '',
             memberId: m.id,
             type: 'milestone',
             title: prefix,
@@ -148,7 +145,7 @@ export function AIMemoryScreen({ navigation }: any) {
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     addMemory({
-      familyId: 'demo-family',
+      familyId: useAuthStore.getState().familyId ?? '',
       memberId: newMemberId || undefined,
       type: newType,
       title: newTitle.trim(),
@@ -198,7 +195,6 @@ export function AIMemoryScreen({ navigation }: any) {
           <Ionicons name="add" size={24} color="#fff" />
         </Pressable>
         <AIResetMenu actions={[
-          { label: 'Load Demo Data', description: 'Populate with sample memories', icon: 'sparkles-outline', onPress: () => seedDemoData() },
           { label: 'Delete Pinned', description: 'Remove all pinned memories', icon: 'bookmark-outline', danger: true, onPress: () => memories.filter((m) => m.isPinned).forEach((m) => deleteMemory(m.id)) },
           { label: 'Clear All Memories', description: 'Permanently delete every memory', icon: 'trash-outline', danger: true, onPress: () => clearMemories() },
         ]} />

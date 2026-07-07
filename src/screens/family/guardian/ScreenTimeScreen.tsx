@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GuardianNative } from '../../../native/GuardianNative';
 import { useGuardianStore } from '../../../store/useGuardianStore';
+import { useAuthStore } from '../../../store/useAuthStore';
 import { useFamilyStore } from '../../../store/useFamilyStore';
 import { colors } from '../../../theme/colors';
 import { shadows } from '../../../theme/spacing';
@@ -90,7 +91,7 @@ export function ScreenTimeScreen({ navigation }: any) {
 
     const newRule: ScreenTimeRule = {
       id,
-      familyId: family?.id ?? 'demo-family',
+      familyId: useAuthStore.getState().familyId ?? family?.id ?? '',
       memberId: activeMemberId!,
       label: `${members.find((m) => m.id === activeMemberId)?.name ?? 'Child'}'s Screen Time`,
       dailyLimitMinutes: 0,

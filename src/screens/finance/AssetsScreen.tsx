@@ -9,12 +9,14 @@ import { useTheme } from '../../theme/ThemeContext';
 import { Card } from '../../components/common/Card';
 import { PremiumHeader } from '../../components/common/PremiumHeader';
 import { useOperationsStore } from '../../store/useOperationsStore';
-import { getInvestmentAccounts } from '../../services/autoFillService';
-import type { PlaidInvestmentAccount } from '../../services/autoFillService';
+import { getInvestmentAccounts, getRetailPurchases } from '../../services/autoFillService';
+import type { PlaidInvestmentAccount, RetailPurchase } from '../../services/autoFillService';
 import type { Asset } from '../../types';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { usePlaidAutoData } from '../../hooks/usePlaidAutoData';
+import { format } from 'date-fns';
 
 const CATEGORIES = ['Real Estate', 'Vehicle', 'Electronics', 'Furniture', 'Jewelry', 'Investments', 'Collectibles', 'Other'];
 
@@ -46,7 +48,17 @@ export function AssetsScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const { t } = useTranslation('finance');
-  const { assets, addAsset, deleteAsset } = useOperationsStore();
+  const { assets, addAsset, updateAsset, deleteAsset, fetchFromServer } = useOperationsStore();
+  const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
+
+  // Always re-fetch on mount (not gated on isLoaded, which is stale/true
+  // from before assets were backend-synced on existing installs) so this
+  // screen shows the real, server-authoritative list rather than whatever
+  // old local-only entries happen to be cached on the device.
+  useEffect(() => {
+    fetchFromServer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const CATEGORY_LABELS: Record<string, string> = {
     'Real Estate': t('finance.screens.assets.categoryRealEstate'),
@@ -69,14 +81,25 @@ export function AssetsScreen({ navigation }: any) {
   const [investmentAccounts, setInvestmentAccounts] = useState<PlaidInvestmentAccount[]>([]);
   const [showPlaidCard, setShowPlaidCard] = useState(false);
 
-  useEffect(() => {
+  // Plaid-detected big-ticket retail purchases, offered as one-tap assets
+  const [retailPurchases, setRetailPurchases] = useState<RetailPurchase[]>([]);
+  const [dismissedPurchases, setDismissedPurchases] = useState<Set<string>>(new Set());
+
+  // Re-fetches on mount AND whenever a bank gets connected or synced
+  // elsewhere in the app — not just once at mount — so a fresh Plaid
+  // connection shows up here without the user having to leave and
+  // re-enter this screen.
+  usePlaidAutoData(() => {
     getInvestmentAccounts()
       .then((res) => {
         setInvestmentAccounts(res.accounts);
         if (res.accounts.length > 0) setShowPlaidCard(true);
       })
       .catch(() => {/* silent */ });
-  }, []);
+    getRetailPurchases(200, 60)
+      .then((res) => setRetailPurchases(res.purchases))
+      .catch(() => {/* silent */ });
+  });
 
   // Vehicles aren't auto-merged in with a guessed value — there's no real
   // valuation data source (Vehicle has no value field, VIN lookup isn't
@@ -96,11 +119,25 @@ export function AssetsScreen({ navigation }: any) {
     (acct) => !allAssets.some((a) => a.name === acct.name),
   );
 
+  const purchaseKey = (p: RetailPurchase) => `${p.merchantName}-${p.date}-${p.amount}`;
+  const availablePurchases = retailPurchases.filter(
+    (p) => !dismissedPurchases.has(purchaseKey(p)) && !allAssets.some((a) => a.name === p.merchantName),
+  );
+
   const prefillFromPlaid = (acct: PlaidInvestmentAccount) => {
     setNewName(acct.name);
     setNewCategory('Investments');
     setNewValue(String(acct.balance));
     setNewPurchasePrice('');
+    setShowAddModal(true);
+  };
+
+  const importPurchaseAsAsset = (purchase: RetailPurchase) => {
+    setDismissedPurchases((prev) => new Set(prev).add(purchaseKey(purchase)));
+    setNewName(purchase.merchantName);
+    setNewCategory(CATEGORIES.includes(purchase.suggestedCategory) ? purchase.suggestedCategory : 'Other');
+    setNewValue(String(purchase.amount));
+    setNewPurchasePrice(String(purchase.amount));
     setShowAddModal(true);
   };
 
@@ -112,20 +149,25 @@ export function AssetsScreen({ navigation }: any) {
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const purchasePrice = parseFloat(newPurchasePrice);
-    const newAsset: Asset = {
-      id: generateId(),
-      familyId: 'family-1',
-      name: newName.trim(),
-      category: newCategory,
-      value,
-      purchasePrice: isNaN(purchasePrice) ? undefined : purchasePrice,
-      createdAt: new Date().toISOString(),
-    };
-    addAsset(newAsset);
+    if (editingAsset) {
+      updateAsset(editingAsset.id, { name: newName.trim(), category: newCategory, value, purchasePrice: isNaN(purchasePrice) ? undefined : purchasePrice });
+    } else {
+      const newAsset: Asset = {
+        id: generateId(),
+        familyId: 'family-1',
+        name: newName.trim(),
+        category: newCategory,
+        value,
+        purchasePrice: isNaN(purchasePrice) ? undefined : purchasePrice,
+        createdAt: new Date().toISOString(),
+      };
+      addAsset(newAsset);
+    }
     setNewName('');
     setNewValue('');
     setNewPurchasePrice('');
     setNewCategory('Electronics');
+    setEditingAsset(null);
     setShowAddModal(false);
   };
 
@@ -217,6 +259,41 @@ export function AssetsScreen({ navigation }: any) {
           </View>
         )}
 
+        {/* Detected big-ticket purchases (Plaid, last 60 days, $200+) */}
+        {availablePurchases.length > 0 && (
+          <View style={s.plaidCard}>
+            <View style={s.plaidCardHeader}>
+              <Ionicons name="receipt-outline" size={16} color="#8E44AD" />
+              <Text style={s.plaidCardTitle}>Detected Purchases</Text>
+            </View>
+            <Text style={s.plaidCardSub}>
+              {availablePurchases.length} big purchase{availablePurchases.length > 1 ? 's' : ''} in the last 60 days — worth tracking as assets?
+            </Text>
+            {availablePurchases.map((p) => (
+              <View key={purchaseKey(p)} style={s.plaidAccountRow}>
+                <View style={s.plaidAccountIcon}>
+                  <Ionicons name="bag-handle" size={18} color="#8E44AD" />
+                </View>
+                <View style={{ flex: 1, marginLeft: 10 }}>
+                  <Text style={s.plaidAccountName}>{p.merchantName}</Text>
+                  <Text style={s.plaidAccountMask}>{format(new Date(p.date), 'MMM d')} · {p.suggestedCategory}</Text>
+                </View>
+                <Text style={s.plaidAccountBalance}>${p.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</Text>
+                <Pressable style={s.importBtn} onPress={() => importPurchaseAsAsset(p)}>
+                  <Text style={s.importBtnText}>Import</Text>
+                </Pressable>
+                <Pressable
+                  hitSlop={8}
+                  style={{ marginLeft: 8 }}
+                  onPress={() => setDismissedPurchases((prev) => new Set(prev).add(purchaseKey(p)))}
+                >
+                  <Ionicons name="close" size={16} color={colors.textMuted} />
+                </Pressable>
+              </View>
+            ))}
+          </View>
+        )}
+
         {/* Allocation bar */}
         {totalAssets > 0 && (
           <Card style={s.allocationCard} variant="elevated">
@@ -285,9 +362,14 @@ export function AssetsScreen({ navigation }: any) {
                     <View style={{ alignItems: 'flex-end' }}>
                       <Text style={s.assetValue}>${asset.value.toLocaleString()}</Text>
                       {!isVehicleCat && (
-                        <Pressable onPress={() => handleDelete(asset.id, asset.name, isVehicleCat)} style={s.deleteBtn}>
-                          <Ionicons name="trash-outline" size={14} color={colors.textMuted} />
-                        </Pressable>
+                        <View style={{ flexDirection: 'row', gap: 6, marginTop: 6 }}>
+                          <Pressable onPress={() => { setEditingAsset(asset); setNewName(asset.name); setNewCategory(asset.category); setNewValue(String(asset.value)); setNewPurchasePrice(asset.purchasePrice != null ? String(asset.purchasePrice) : ''); setShowAddModal(true); }} style={s.deleteBtn}>
+                            <Ionicons name="create-outline" size={14} color={colors.textMuted} />
+                          </Pressable>
+                          <Pressable onPress={() => handleDelete(asset.id, asset.name, isVehicleCat)} style={s.deleteBtn}>
+                            <Ionicons name="trash-outline" size={14} color={colors.textMuted} />
+                          </Pressable>
+                        </View>
                       )}
                     </View>
                   </View>
@@ -308,13 +390,13 @@ export function AssetsScreen({ navigation }: any) {
         )}
       </CollapsibleHeader>
 
-      {/* Add Asset Modal */}
-      <Modal visible={showAddModal} transparent animationType="slide">
+      {/* Add/Edit Asset Modal */}
+      <Modal visible={showAddModal} transparent animationType="slide" onDismiss={() => setEditingAsset(null)}>
         <View style={s.modalOverlay}>
           <View style={s.modalSheet}>
             <View style={s.modalHeader}>
-              <Text style={s.modalTitle}>Add Asset</Text>
-              <Pressable onPress={() => setShowAddModal(false)}>
+              <Text style={s.modalTitle}>{editingAsset ? 'Edit Asset' : 'Add Asset'}</Text>
+              <Pressable onPress={() => { setShowAddModal(false); setEditingAsset(null); setNewName(''); setNewValue(''); setNewPurchasePrice(''); setNewCategory('Electronics'); }}>
                 <Ionicons name="close" size={24} color={colors.text} />
               </Pressable>
             </View>
@@ -366,8 +448,8 @@ export function AssetsScreen({ navigation }: any) {
               onPress={handleAddAsset}
               style={[s.modalSubmit, (!newName.trim() || !newValue) && s.modalSubmitDisabled]}
             >
-              <Ionicons name="add-circle" size={18} color="#fff" />
-              <Text style={s.modalSubmitText}>Add Asset</Text>
+              <Ionicons name={editingAsset ? 'checkmark-circle' : 'add-circle'} size={18} color="#fff" />
+              <Text style={s.modalSubmitText}>{editingAsset ? 'Save Changes' : 'Add Asset'}</Text>
             </Pressable>
           </View>
         </View>

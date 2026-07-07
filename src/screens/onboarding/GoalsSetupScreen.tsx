@@ -8,9 +8,8 @@ import { colors } from '../../theme/colors';
 import { Button } from '../../components/common/Button';
 import { Card } from '../../components/common/Card';
 import { useAppStore } from '../../store/useAppStore';
-import { useFamilyStore } from '../../store/useFamilyStore';
-import { useAIStore } from '../../store/useAIStore';
 import { useFamilyGoalsStore, type GoalCategory } from '../../store/useFamilyGoalsStore';
+import { useAuthStore } from '../../store/useAuthStore';
 
 const suggestedGoals: { icon: string; color: string; bg: string; title: string; titleKey: string; desc: string; descKey: string; category: GoalCategory }[] = [
   { icon: 'shield', color: '#27AE60', bg: '#D5F5E3', title: 'Build Emergency Fund', titleKey: 'goalEmergencyFundTitle', desc: '3-6 months of expenses', descKey: 'goalEmergencyFundDesc', category: 'finance' },
@@ -25,9 +24,6 @@ export function GoalsSetupScreen({ navigation }: any) {
   const { t } = useTranslation('onboarding');
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
   const setOnboarded = useAppStore((s) => s.setOnboarded);
-  const seedDemoFamily = useFamilyStore((s) => s.seedDemoData);
-  const seedDemoAI = useAIStore((s) => s.seedDemoInsights);
-  const family = useFamilyStore((s) => s.family);
   const addGoal = useFamilyGoalsStore((s) => s.addGoal);
 
   const toggleGoal = (title: string) => {
@@ -37,11 +33,6 @@ export function GoalsSetupScreen({ navigation }: any) {
   };
 
   const handleFinish = () => {
-    if (!family) {
-      seedDemoFamily();
-      seedDemoAI();
-    }
-
     // Previously discarded — selecting a goal card did nothing beyond
     // toggling its own checkmark. Now actually creates a real FamilyGoal
     // for each one picked.
@@ -49,7 +40,7 @@ export function GoalsSetupScreen({ navigation }: any) {
       const goal = suggestedGoals.find((g) => g.title === title);
       if (!goal) return;
       addGoal({
-        familyId: family?.id ?? 'demo-family',
+        familyId: useAuthStore.getState().familyId ?? '',
         title: t(`onboarding.screens.goalsSetup.${goal.titleKey}`),
         description: t(`onboarding.screens.goalsSetup.${goal.descKey}`),
         category: goal.category,

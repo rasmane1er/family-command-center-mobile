@@ -14,6 +14,7 @@ import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
 import { useBirthdayStore, Birthday, Relationship } from '../../store/useBirthdayStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useTranslation } from 'react-i18next';
 
@@ -307,7 +308,7 @@ function AddBirthdayModal({
       return;
     }
     onAdd({
-      familyId: 'demo-family',
+      familyId: useAuthStore.getState().familyId ?? '',
       name: name.trim(),
       relationship,
       date: `${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`,
@@ -450,7 +451,7 @@ export function BirthdayTrackerScreen({ navigation }: any) {
   const { t } = useTranslation('family');
   const monthNames = MONTH_NAME_KEYS.map((k) => t(k));
   const insets = useSafeAreaInsets();
-  const { birthdays, addBirthday, deleteBirthday, getDaysUntil, getUpcoming, seedDemoData } = useBirthdayStore();
+  const { birthdays, addBirthday, deleteBirthday, getDaysUntil, getUpcoming } = useBirthdayStore();
   const [activeTab, setActiveTab] = useState<Tab>('upcoming');
   const [showAdd, setShowAdd] = useState(false);
 
@@ -587,12 +588,6 @@ export function BirthdayTrackerScreen({ navigation }: any) {
               <Text style={{ fontSize: 60 }}>🎂</Text>
               <Text style={styles.emptyTitle}>{t('family.screens.birthdayTracker.emptyTitleNoBirthdays')}</Text>
               <Text style={styles.emptyDesc}>{t('family.screens.birthdayTracker.emptyDescNoBirthdays')}</Text>
-              <Pressable
-                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); seedDemoData(); }}
-                style={styles.demoBtn}
-              >
-                <Text style={styles.demoBtnText}>{t('family.screens.birthdayTracker.loadDemoData')}</Text>
-              </Pressable>
             </View>
           )}
 
@@ -637,12 +632,6 @@ export function BirthdayTrackerScreen({ navigation }: any) {
             <View style={styles.emptyState}>
               <Text style={{ fontSize: 60 }}>🎂</Text>
               <Text style={styles.emptyTitle}>{t('family.screens.birthdayTracker.emptyTitleNoBirthdays')}</Text>
-              <Pressable
-                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); seedDemoData(); }}
-                style={styles.demoBtn}
-              >
-                <Text style={styles.demoBtnText}>{t('family.screens.birthdayTracker.loadDemoData')}</Text>
-              </Pressable>
             </View>
           ) : (
             <CalendarTab birthdays={birthdays} getDaysUntil={getDaysUntil} />

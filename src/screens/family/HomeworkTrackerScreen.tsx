@@ -28,6 +28,7 @@ import {
   type AssignmentPriority,
 } from '../../store/useHomeworkStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { useTranslation } from 'react-i18next';
 
 const SUBJECT_COLORS: SubjectColor[] = [
@@ -205,7 +206,7 @@ const visibleChildren =
   const handleAddAssignment = () => {
     if (!modalTitle.trim() || !modalSubject.trim() || !modalDueDate.trim()) return;
     addAssignment({
-      familyId: 'demo-family',
+      familyId: useAuthStore.getState().familyId ?? '',
       memberId: modalMemberId,
       subject: modalSubject.trim(),
       subjectColor: modalSubjectColor,

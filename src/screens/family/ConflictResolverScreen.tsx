@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,6 +13,7 @@ import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
 import { useAutomationStore } from '../../store/useAutomationStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 
 export function ConflictResolverScreen({ navigation }: any) {
@@ -39,17 +40,13 @@ export function ConflictResolverScreen({ navigation }: any) {
   const [newDesc, setNewDesc] = useState('');
   const [newSeverity, setNewSeverity] = useState<'low' | 'medium' | 'high'>('medium');
   const [newParties, setNewParties] = useState<string[]>([]);
-  const { conflicts, resolveConflict, updateConflictStatus, addConflict, seedDemoData, hasSeeded } = useAutomationStore();
+  const { conflicts, resolveConflict, updateConflictStatus, addConflict } = useAutomationStore();
   const members = useFamilyStore((s) => s.members);
-
-  useEffect(() => {
-    if (!hasSeeded) seedDemoData();
-  }, [hasSeeded, seedDemoData]);
 
   const handleAddConflict = () => {
     if (!newTitle.trim()) return;
     addConflict({
-      familyId: 'demo-family',
+      familyId: useAuthStore.getState().familyId ?? '',
       title: newTitle.trim(),
       description: newDesc.trim(),
       partiesInvolved: newParties,

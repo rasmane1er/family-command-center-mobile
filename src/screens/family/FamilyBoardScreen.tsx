@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { useAuthStore } from '../../store/useAuthStore';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, TextInput, Modal,
   KeyboardAvoidingView, Platform, Alert, Switch, RefreshControl,
@@ -250,7 +251,7 @@ function AddPostModal({
       expiresAt = d.toISOString();
     }
     onAdd({
-      familyId: family?.id ?? 'demo-family',
+      familyId: useAuthStore.getState().familyId ?? family?.id ?? '',
       authorId: effectiveAuthorId,
       category,
       priority,

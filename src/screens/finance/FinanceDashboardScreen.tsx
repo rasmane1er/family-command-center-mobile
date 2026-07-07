@@ -15,14 +15,16 @@ import { Button } from '../../components/common/Button';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { useOperationsStore } from '../../store/useOperationsStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { useFinancialHealth } from '../../hooks/useFinancialHealth';
 import { useTotalNetWorth } from '../../hooks/useTotalNetWorth';
+import { usePlaidAutoData } from '../../hooks/usePlaidAutoData';
 import { getAccounts, getSpendingByCategory } from '../../services/plaidService';
 import { getDetectedBills, getInvestmentAccounts } from '../../services/autoFillService';
 import type { DetectedBill, PlaidInvestmentAccount } from '../../services/autoFillService';
 import { getDetectedSubscriptions, confirmSubscription } from '../../services/subscriptionDetectionService';
 import type { DetectedSubscription } from '../../services/subscriptionDetectionService';
-import type { AccountType, PlaidAccount, Bill, Subscription, FinancialAccount } from '../../types';
+import type { AccountType, PlaidAccount, Bill, Subscription, FinancialAccount, Asset } from '../../types';
 import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
@@ -163,6 +165,7 @@ export function FinanceDashboardScreen({ navigation }: any) {
   const [newSubCycle, setNewSubCycle] = useState<typeof BILLING_CYCLES[number]>('monthly');
 
   const [showAssetModal, setShowAssetModal] = useState(false);
+  const [editingAssetId, setEditingAssetId] = useState<string | null>(null);
   const [newAssetName, setNewAssetName] = useState('');
   const [newAssetValue, setNewAssetValue] = useState('');
   const [newAssetCategory, setNewAssetCategory] = useState(ASSET_CATEGORIES[0]);
@@ -189,12 +192,17 @@ export function FinanceDashboardScreen({ navigation }: any) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const {
-    assets, addAsset, deleteAsset,
-    isLoaded: isOpsLoaded, fetchFromServer: fetchOps,
+    assets, addAsset, updateAsset, deleteAsset,
+    fetchFromServer: fetchOps,
   } = useOperationsStore();
 
+  // Always re-fetch on mount rather than gating on isLoaded — that flag is
+  // persisted from before assets were backend-synced, so on an existing
+  // install it would stay stuck "true" forever and this screen would never
+  // pick up the real (server-authoritative) list, leaving old local-only
+  // entries displayed indefinitely.
   useEffect(() => {
-    if (!isOpsLoaded) fetchOps();
+    fetchOps();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   // The real single-source-of-truth total (accounts + wealth entries +
@@ -279,6 +287,11 @@ export function FinanceDashboardScreen({ navigation }: any) {
       refreshAllPlaidData();
     }, [refreshAllPlaidData])
   );
+
+  // Also refetch reactively whenever a bank connects or finishes syncing —
+  // covers connecting a bank from within this same screen session, where
+  // the focus effect above wouldn't otherwise re-fire.
+  usePlaidAutoData(refreshAllPlaidData);
 
   const handlePullRefresh = async () => {
     setIsRefreshing(true);
@@ -434,7 +447,7 @@ export function FinanceDashboardScreen({ navigation }: any) {
       });
     } else {
       addAccount({
-        id: generateId(), familyId: 'demo-family', name: newAccName.trim(),
+        id: generateId(), familyId: useAuthStore.getState().familyId ?? '', name: newAccName.trim(),
         type: newAccType, balance: parseFloat(newAccBalance) || 0,
         institution: newAccInstitution.trim() || undefined,
         lastUpdated: new Date().toISOString(), isShared: true,
@@ -464,7 +477,7 @@ export function FinanceDashboardScreen({ navigation }: any) {
   const handleAddGoal = () => {
     if (!newGoalName.trim() || !newGoalTarget.trim()) return;
     addFinancialGoal({
-      id: generateId(), familyId: 'demo-family', name: newGoalName.trim(),
+      id: generateId(), familyId: useAuthStore.getState().familyId ?? '', name: newGoalName.trim(),
       targetAmount: parseFloat(newGoalTarget) || 0, savedAmount: 0,
       category: 'Savings', color: newGoalColor, icon: newGoalIcon,
       isCompleted: false, createdAt: new Date().toISOString(),
@@ -480,7 +493,7 @@ export function FinanceDashboardScreen({ navigation }: any) {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const today = new Date();
     addBudget({
-      id: generateId(), familyId: 'demo-family', category: newBudgetCategory.trim(),
+      id: generateId(), familyId: useAuthStore.getState().familyId ?? '', category: newBudgetCategory.trim(),
       monthlyLimit: limit, spent: 0,
       month: `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`,
       color: newBudgetColor, icon: newBudgetIcon,
@@ -497,7 +510,7 @@ export function FinanceDashboardScreen({ navigation }: any) {
     const dueDate = new Date(Date.now() + daysUntil * 86400000).toISOString();
     const status: Bill['status'] = daysUntil < 0 ? 'overdue' : daysUntil <= 5 ? 'due_soon' : 'upcoming';
     addBill({
-      id: generateId(), familyId: 'demo-family', name: newBillName.trim(), amount, dueDate,
+      id: generateId(), familyId: useAuthStore.getState().familyId ?? '', name: newBillName.trim(), amount, dueDate,
       category: newBillCategory, status, isAutoPay: newBillAutoPay, isRecurring: true, recurrence: 'monthly',
       icon: BILL_CATEGORY_ICONS[newBillCategory] ?? 'receipt',
     });
@@ -516,7 +529,7 @@ export function FinanceDashboardScreen({ navigation }: any) {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const nextBillingDate = addMonths(new Date(), newSubCycle === 'monthly' ? 1 : newSubCycle === 'quarterly' ? 3 : 12);
     const sub: Subscription = {
-      id: generateId(), familyId: 'demo-family', name: newSubName.trim(), amount,
+      id: generateId(), familyId: useAuthStore.getState().familyId ?? '', name: newSubName.trim(), amount,
       billingCycle: newSubCycle, nextBillingDate: nextBillingDate.toISOString(), category: newSubCategory,
       isActive: true, sharedMembers: [], icon: SUB_ICONS[newSubCategory] ?? 'apps-outline', color: SUB_COLORS[newSubCategory] ?? colors.primary,
     };
@@ -530,16 +543,33 @@ export function FinanceDashboardScreen({ navigation }: any) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
 
-  const handleAddAsset = () => {
+  const closeAssetModal = () => {
+    setShowAssetModal(false);
+    setEditingAssetId(null);
+    setNewAssetName(''); setNewAssetValue(''); setNewAssetCategory(ASSET_CATEGORIES[0]);
+  };
+
+  const openEditAsset = (asset: Asset) => {
+    setEditingAssetId(asset.id);
+    setNewAssetName(asset.name);
+    setNewAssetValue(String(asset.value));
+    setNewAssetCategory(asset.category);
+    setShowAssetModal(true);
+  };
+
+  const handleSaveAsset = () => {
     const value = parseFloat(newAssetValue);
     if (!newAssetName.trim() || isNaN(value) || value <= 0) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    addAsset({
-      id: generateId(), familyId: 'demo-family', name: newAssetName.trim(),
-      category: newAssetCategory, value, createdAt: new Date().toISOString(),
-    });
-    setNewAssetName(''); setNewAssetValue(''); setNewAssetCategory(ASSET_CATEGORIES[0]);
-    setShowAssetModal(false);
+    if (editingAssetId) {
+      updateAsset(editingAssetId, { name: newAssetName.trim(), category: newAssetCategory, value });
+    } else {
+      addAsset({
+        id: generateId(), familyId: useAuthStore.getState().familyId ?? '', name: newAssetName.trim(),
+        category: newAssetCategory, value, createdAt: new Date().toISOString(),
+      });
+    }
+    closeAssetModal();
   };
 
   const handleAddDetectedBill = (detected: DetectedBill) => {
@@ -548,7 +578,7 @@ export function FinanceDashboardScreen({ navigation }: any) {
     const daysUntil = differenceInDays(new Date(detected.nextDueDate), new Date());
     const status: Bill['status'] = daysUntil < 0 ? 'overdue' : daysUntil <= 5 ? 'due_soon' : 'upcoming';
     addBill({
-      id: generateId(), familyId: 'demo-family', name: detected.merchantName, amount: detected.amount,
+      id: generateId(), familyId: useAuthStore.getState().familyId ?? '', name: detected.merchantName, amount: detected.amount,
       dueDate, category: detected.category, status, isAutoPay: false, isRecurring: true, recurrence: 'monthly',
       icon: BILL_CATEGORY_ICONS[detected.category] ?? 'receipt',
     });
@@ -1273,6 +1303,9 @@ export function FinanceDashboardScreen({ navigation }: any) {
                   <Text style={s.finMeta}>{asset.category}</Text>
                 </View>
                 <Text style={s.finValueText}>${asset.value.toLocaleString()}</Text>
+                <Pressable hitSlop={8} style={{ marginLeft: 10 }} onPress={() => openEditAsset(asset)}>
+                  <Ionicons name="pencil-outline" size={18} color={colors.textMuted} />
+                </Pressable>
                 <Pressable
                   hitSlop={8}
                   style={{ marginLeft: 10 }}
@@ -1492,11 +1525,11 @@ export function FinanceDashboardScreen({ navigation }: any) {
         </ScrollView>
       </Modal>
 
-      {/* ── ADD ASSET MODAL ── */}
-      <Modal visible={showAssetModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowAssetModal(false)}>
+      {/* ── ADD/EDIT ASSET MODAL ── */}
+      <Modal visible={showAssetModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={closeAssetModal}>
         <ScrollView style={s.modal} contentContainerStyle={{ paddingBottom: 40 }}>
           <View style={s.modalHandle} />
-          <Text style={s.modalTitle}>Add Asset</Text>
+          <Text style={s.modalTitle}>{editingAssetId ? 'Edit Asset' : 'Add Asset'}</Text>
           <Text style={s.modalLabel}>Asset Name *</Text>
           <TextInput style={s.modalInput} placeholder="e.g. 2019 Honda Accord" value={newAssetName} onChangeText={setNewAssetName} placeholderTextColor={colors.textMuted} autoFocus />
           <Text style={s.modalLabel}>Value ($) *</Text>
@@ -1509,8 +1542,8 @@ export function FinanceDashboardScreen({ navigation }: any) {
               </Pressable>
             ))}
           </View>
-          <Button title="Add Asset" onPress={handleAddAsset} fullWidth size="lg" disabled={!newAssetName.trim() || !newAssetValue.trim()} />
-          <Button title="Cancel" onPress={() => setShowAssetModal(false)} variant="ghost" fullWidth style={{ marginTop: 8 }} />
+          <Button title={editingAssetId ? 'Save Changes' : 'Add Asset'} onPress={handleSaveAsset} fullWidth size="lg" disabled={!newAssetName.trim() || !newAssetValue.trim()} />
+          <Button title="Cancel" onPress={closeAssetModal} variant="ghost" fullWidth style={{ marginTop: 8 }} />
         </ScrollView>
       </Modal>
     </View>

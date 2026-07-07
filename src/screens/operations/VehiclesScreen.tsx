@@ -17,6 +17,7 @@ import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
 import { Avatar } from '../../components/common/Avatar';
 import { useOperationsStore } from '../../store/useOperationsStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { useHomeMaintenanceStore } from '../../store/useHomeMaintenanceStore';
 import type { Vehicle } from '../../types';
@@ -183,7 +184,7 @@ export function VehiclesScreen({ navigation }: any) {
             onPress: () => {
               const vehicleName = `${serviceVehicle.year} ${serviceVehicle.make} ${serviceVehicle.model}`;
               addMaintenanceTask({
-                familyId: family?.id ?? 'demo-family',
+                familyId: useAuthStore.getState().familyId ?? family?.id ?? '',
                 title: `Oil Change — ${vehicleName}`,
                 category: 'other',
                 priority: 'high',

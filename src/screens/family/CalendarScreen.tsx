@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useAuthStore } from '../../store/useAuthStore';
 import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions, Modal, TextInput, Switch, Alert, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, isToday } from 'date-fns';
@@ -40,6 +41,7 @@ export function CalendarScreen({ navigation, route }: any) {
 
   const events = useFamilyStore((s) => s.events);
   const members = useFamilyStore((s) => s.members);
+  const activeMemberId = useFamilyStore((s) => s.activeMemberId);
   const family = useFamilyStore((s) => s.family);
   const tasks = useFamilyStore((s) => s.tasks);
   const addEvent = useFamilyStore((s) => s.addEvent);
@@ -59,7 +61,7 @@ export function CalendarScreen({ navigation, route }: any) {
       .filter((b) => b.status !== 'paid')
       .map((b) => ({
         id: `virtual-bill-${b.id}`,
-        familyId: family?.id ?? 'demo-family',
+        familyId: useAuthStore.getState().familyId ?? family?.id ?? '',
         title: `💳 ${b.name} due`,
         description: `$${b.amount.toLocaleString()}`,
         startDate: b.dueDate,
@@ -79,7 +81,7 @@ export function CalendarScreen({ navigation, route }: any) {
       .filter((t) => t.status !== 'completed' && t.dueDate)
       .map((t) => ({
         id: `virtual-task-${t.id}`,
-        familyId: family?.id ?? 'demo-family',
+        familyId: useAuthStore.getState().familyId ?? family?.id ?? '',
         title: `✅ ${t.title}`,
         startDate: t.dueDate!,
         endDate: t.dueDate!,
@@ -98,7 +100,7 @@ export function CalendarScreen({ navigation, route }: any) {
       .filter((a) => a.status !== 'completed')
       .map((a) => ({
         id: `virtual-school-${a.id}`,
-        familyId: family?.id ?? 'demo-family',
+        familyId: useAuthStore.getState().familyId ?? family?.id ?? '',
         title: `📚 ${a.title}`,
         description: a.subject,
         startDate: a.dueDate,
@@ -142,7 +144,7 @@ export function CalendarScreen({ navigation, route }: any) {
     end.setHours(10, 0, 0, 0);
     const event: CalendarEvent = {
       id: generateId(),
-      familyId: family?.id ?? 'demo-family',
+      familyId: useAuthStore.getState().familyId ?? family?.id ?? '',
       title: newTitle.trim(),
       location: newLocation.trim() || undefined,
       startDate: start.toISOString(),
@@ -153,7 +155,7 @@ export function CalendarScreen({ navigation, route }: any) {
       category: newCategory,
       recurrence: 'none',
       createdAt: new Date().toISOString(),
-      createdBy: members[0]?.id || 'user',
+      createdBy: activeMemberId ?? members[0]?.id ?? 'user',
     };
     addEvent(event);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

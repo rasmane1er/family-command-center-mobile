@@ -4,6 +4,7 @@ import { mmkvStorage } from '../storage/mmkvStorage';
 import type { AutomationRule, MarketplaceListing, ConflictRecord, TimeBlock, SmartDevice, Task } from '../types';
 import { secureStorage } from '../storage/secureStorage';
 import * as hueService from '../services/hueService';
+import * as smartDeviceService from '../services/smartDeviceService';
 import { useFamilyStore } from './useFamilyStore';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
@@ -75,7 +76,13 @@ interface AutomationState {
   addTimeBlock: (b: Omit<TimeBlock, 'id'>) => void;
   deleteTimeBlock: (id: string) => void;
 
-  // Smart Home (generic, local-only)
+  // Smart Home — generic (non-Hue) devices, family-shared and backend-synced.
+  // Hue-branded entries in `devices` are a separate live feed refreshed from
+  // the bridge (see refreshHueDevices) and are not affected by these actions.
+  devicesLoaded: boolean;
+  fetchDevices: () => Promise<void>;
+  addDevice: (device: SmartDevice) => void;
+  deleteDevice: (id: string) => void;
   toggleDevice: (id: string) => void;
   updateDeviceValue: (id: string, value: number) => void;
 
@@ -92,8 +99,8 @@ interface AutomationState {
   fetchHueScenes: () => Promise<void>;
   recallHueScene: (sceneId: string) => Promise<void>;
 
-  hasSeeded: boolean;
-  seedDemoData: () => void;
+  isLoaded: boolean;
+  fetchFromServer: () => Promise<void>;
 }
 
 export const useAutomationStore = create<AutomationState>()(
@@ -104,7 +111,8 @@ export const useAutomationStore = create<AutomationState>()(
   conflicts: [],
   timeBlocks: [],
   devices: [],
-  hasSeeded: false,
+  devicesLoaded: false,
+  isLoaded: false,
   hueBridgeIp: null,
   hueConnected: false,
   hueScenes: [],
@@ -201,6 +209,31 @@ export const useAutomationStore = create<AutomationState>()(
   deleteTimeBlock: (id) =>
     set((s) => ({ timeBlocks: s.timeBlocks.filter((b) => b.id !== id) })),
 
+  fetchDevices: async () => {
+    try {
+      const { devices } = await smartDeviceService.fetchDevices();
+      set((s) => ({
+        devices: [...devices, ...s.devices.filter((d) => d.brand === 'Philips Hue')],
+        devicesLoaded: true,
+      }));
+    } catch {
+      set({ devicesLoaded: true });
+    }
+  },
+
+  addDevice: (device) => {
+    set((s) => ({ devices: [...s.devices, device] }));
+    smartDeviceService.createDevice(device).catch(() => {
+      set((s) => ({ devices: s.devices.filter((d) => d.id !== device.id) }));
+    });
+  },
+
+  deleteDevice: (id) => {
+    const prev = get().devices;
+    set((s) => ({ devices: s.devices.filter((d) => d.id !== id) }));
+    smartDeviceService.deleteDeviceRemote(id).catch(() => { set({ devices: prev }); });
+  },
+
   toggleDevice: (id) => {
     const device = get().devices.find((d) => d.id === id);
     if (device?.brand === 'Philips Hue') {
@@ -208,6 +241,7 @@ export const useAutomationStore = create<AutomationState>()(
       return;
     }
     set((s) => ({ devices: s.devices.map((d) => (d.id === id ? { ...d, isOn: !d.isOn } : d)) }));
+    if (device) smartDeviceService.updateDeviceRemote(id, { isOn: !device.isOn }).catch(() => {});
   },
   updateDeviceValue: (id, value) => {
     const device = get().devices.find((d) => d.id === id);
@@ -216,6 +250,7 @@ export const useAutomationStore = create<AutomationState>()(
       return;
     }
     set((s) => ({ devices: s.devices.map((d) => (d.id === id ? { ...d, value } : d)) }));
+    smartDeviceService.updateDeviceRemote(id, { value }).catch(() => {});
   },
 
   hydrateHueConnection: async () => {
@@ -346,81 +381,7 @@ export const useAutomationStore = create<AutomationState>()(
     await get().refreshHueDevices();
   },
 
-  seedDemoData: () => {
-    const now = new Date().toISOString();
-
-    const rules: AutomationRule[] = [
-      { id: 'aut1', familyId: 'demo-family', name: 'School Morning Alert', description: 'Remind kids to pack bags at 7:30am on school days', isActive: true, trigger: { type: 'time', value: '07:30', condition: 'weekdays' }, action: { type: 'notify', value: 'Pack your backpack! School bus in 30 minutes 🎒', target: 'children' }, runCount: 47, lastRun: now, icon: 'alarm', color: '#2980B9' },
-      { id: 'aut2', familyId: 'demo-family', name: 'Bill Due Reminder', description: 'Alert 3 days before any bill is due', isActive: true, trigger: { type: 'condition', value: 'bill_due_in_3_days' }, action: { type: 'notify', value: 'Bill payment reminder sent to parents', target: 'parents' }, runCount: 12, lastRun: now, icon: 'receipt', color: '#E74C3C' },
-      { id: 'aut3', familyId: 'demo-family', name: 'Weekend Chore Assignment', description: 'Auto-assign weekend chores every Friday at 6pm', isActive: true, trigger: { type: 'time', value: '18:00', condition: 'friday' }, action: { type: 'task', value: 'Assign weekend chores', target: 'all' }, runCount: 23, lastRun: now, icon: 'checkbox', color: '#27AE60' },
-      { id: 'aut4', familyId: 'demo-family', name: 'Low Pantry Alert', description: 'Notify when pantry item drops below minimum', isActive: false, trigger: { type: 'condition', value: 'pantry_low' }, action: { type: 'notify', value: 'Add to shopping list', target: 'parents' }, runCount: 8, icon: 'nutrition', color: '#F5A623' },
-      { id: 'aut5', familyId: 'demo-family', name: 'Bedtime Wind-Down', description: 'Turn off screens and dim lights at 8:30pm for kids', isActive: true, trigger: { type: 'time', value: '20:30', condition: 'daily' }, action: { type: 'device', value: 'dim_lights_kids_rooms', target: 'smart_home' }, runCount: 89, lastRun: now, icon: 'moon', color: '#8E44AD' },
-      { id: 'aut6', familyId: 'demo-family', name: 'Weekly Family Report', description: 'Generate AI family health report every Sunday', isActive: true, trigger: { type: 'time', value: '09:00', condition: 'sunday' }, action: { type: 'message', value: 'Generate weekly family health summary', target: 'ai' }, runCount: 18, lastRun: now, icon: 'bar-chart', color: '#16A085' },
-    ];
-
-    // mkt3 is seeded pre-claimed, so it needs a real linked Task too —
-    // otherwise it'd be the one demo listing whose "Open in Tasks" button
-    // leads nowhere, since every other claimed listing gets its task via
-    // the real claimListing() flow.
-    const mkt3TaskId = 'demo-mkt3-task';
-    const listings: MarketplaceListing[] = [
-      { id: 'mkt1', familyId: 'demo-family', createdBy: 'member-1', title: 'Mow the Lawn', description: 'Front and back yard, edge the walkways too', category: 'chores', pointsValue: 150, isAvailable: true, icon: 'leaf', tags: ['outdoor', 'weekend'], createdAt: now },
-      { id: 'mkt2', familyId: 'demo-family', createdBy: 'member-2', title: 'Math Tutoring Session', description: '1 hour of algebra help for Aiden', category: 'lessons', pointsValue: 200, isAvailable: true, icon: 'school', tags: ['education', 'Aiden'], createdAt: now },
-      { id: 'mkt3', familyId: 'demo-family', createdBy: 'member-3', title: 'Clean Garage', description: 'Sweep and organize the garage shelves', category: 'chores', pointsValue: 250, isAvailable: false, claimedBy: 'member-3', taskId: mkt3TaskId, icon: 'home', tags: ['indoor', 'big-job'], createdAt: now },
-      { id: 'mkt4', familyId: 'demo-family', createdBy: 'member-2', title: 'Teach Me to Bake', description: 'Lily wants to learn to bake cookies', category: 'skills', pointsValue: 100, isAvailable: true, icon: 'restaurant', tags: ['cooking', 'Lily', 'fun'], createdAt: now },
-      { id: 'mkt5', familyId: 'demo-family', createdBy: 'member-1', title: 'Car Wash & Detail', description: 'Wash both cars inside and out', category: 'chores', pointsValue: 300, isAvailable: true, icon: 'car', tags: ['outdoor', 'vehicles'], createdAt: now },
-      { id: 'mkt6', familyId: 'demo-family', createdBy: 'member-3', title: 'Tech Support', description: 'Set up Dad\'s new tablet and apps', category: 'skills', pointsValue: 175, isAvailable: true, icon: 'phone-portrait', tags: ['tech', 'Aiden'], createdAt: now },
-    ];
-
-    const existingTask = useFamilyStore.getState().tasks.find((t) => t.id === mkt3TaskId);
-    if (!existingTask) {
-      useFamilyStore.getState().addTask({
-        id: mkt3TaskId,
-        familyId: 'demo-family',
-        title: 'Clean Garage',
-        description: 'Sweep and organize the garage shelves',
-        assignedTo: ['member-3'],
-        priority: 'medium',
-        status: 'pending',
-        category: 'Marketplace',
-        recurrence: 'none',
-        points: 250,
-        createdAt: now,
-        createdBy: 'member-3',
-        requiresApproval: true,
-        marketplaceListingId: 'mkt3',
-      });
-    }
-
-    const conflicts: ConflictRecord[] = [
-      { id: 'cf1', familyId: 'demo-family', title: 'Screen Time Dispute', description: 'Aiden wants more gaming time, parents say 2 hours is enough on school nights', partiesInvolved: ['member-1', 'member-3'], status: 'resolved', severity: 'low', aiSuggestion: 'Consider a points-based system where Aiden earns extra screen time through completed homework and chores.', resolution: 'Agreed on extra 30min for each completed chore set. Trial period 2 weeks.', resolvedAt: now, createdAt: now },
-      { id: 'cf2', familyId: 'demo-family', title: 'Chore Distribution Fairness', description: "Lily feels she's assigned harder chores than Aiden for the same number of points", partiesInvolved: ['member-3', 'member-4'], status: 'in_mediation', severity: 'medium', aiSuggestion: 'Review and re-categorize chores by time required and difficulty. Ensure equitable point values relative to effort.', createdAt: now },
-      { id: 'cf3', familyId: 'demo-family', title: 'Vacation Budget Disagreement', description: 'Marcus wants to stay within $5k for Hawaii trip, Sarah wants to splurge on a nicer resort', partiesInvolved: ['member-1', 'member-2'], status: 'in_mediation', severity: 'medium', aiSuggestion: "Consider splitting the difference: book a 4-star vs 5-star resort and use savings from meal planning to offset the cost. The family's current savings rate suggests $6k is achievable by summer.", createdAt: now },
-    ];
-
-    const devices: SmartDevice[] = [
-      { id: 'dev1', familyId: 'demo-family', name: 'Living Room Lights', type: 'light', room: 'Living Room', isOnline: true, isOn: true, value: 80, unit: '%', brand: 'Philips Hue', lastSeen: now },
-      { id: 'dev2', familyId: 'demo-family', name: 'Main Thermostat', type: 'thermostat', room: 'Hallway', isOnline: true, isOn: true, value: 72, unit: '°F', brand: 'Nest', lastSeen: now },
-      { id: 'dev3', familyId: 'demo-family', name: 'Front Door Lock', type: 'lock', room: 'Entry', isOnline: true, isOn: false, brand: 'August', lastSeen: now },
-      { id: 'dev4', familyId: 'demo-family', name: 'Driveway Camera', type: 'camera', room: 'Exterior', isOnline: true, isOn: true, brand: 'Ring', lastSeen: now },
-      { id: 'dev5', familyId: 'demo-family', name: "Aiden's Room Light", type: 'light', room: "Aiden's Room", isOnline: true, isOn: false, value: 0, unit: '%', brand: 'Philips Hue', lastSeen: now },
-      { id: 'dev6', familyId: 'demo-family', name: 'Kitchen Speaker', type: 'speaker', room: 'Kitchen', isOnline: true, isOn: true, brand: 'Sonos', lastSeen: now },
-      { id: 'dev7', familyId: 'demo-family', name: 'Garage Sensor', type: 'sensor', room: 'Garage', isOnline: true, isOn: false, battery: 85, brand: 'SmartThings', lastSeen: now },
-      { id: 'dev8', familyId: 'demo-family', name: "Lily's Room Light", type: 'light', room: "Lily's Room", isOnline: false, isOn: false, value: 0, unit: '%', battery: 12, brand: 'Philips Hue', lastSeen: now },
-    ];
-
-    const today = new Date();
-    const timeBlocks: TimeBlock[] = [
-      { id: 'tb1', familyId: 'demo-family', memberId: 'member-1', category: 'work', title: 'Work', startTime: '08:00', endTime: '17:00', date: today.toISOString().split('T')[0], isRecurring: true, color: '#2980B9' },
-      { id: 'tb2', familyId: 'demo-family', memberId: 'member-2', category: 'work', title: 'Office Hours', startTime: '09:00', endTime: '15:00', date: today.toISOString().split('T')[0], isRecurring: true, color: '#2980B9' },
-      { id: 'tb3', familyId: 'demo-family', memberId: 'member-2', category: 'fitness', title: 'Morning Yoga', startTime: '06:00', endTime: '07:00', date: today.toISOString().split('T')[0], isRecurring: true, color: '#27AE60' },
-      { id: 'tb4', familyId: 'demo-family', memberId: 'member-3', category: 'school', title: 'School', startTime: '08:00', endTime: '15:30', date: today.toISOString().split('T')[0], isRecurring: true, color: '#F5A623' },
-      { id: 'tb5', familyId: 'demo-family', memberId: 'member-4', category: 'school', title: 'Kindergarten', startTime: '08:30', endTime: '13:00', date: today.toISOString().split('T')[0], isRecurring: true, color: '#F5A623' },
-      { id: 'tb6', familyId: 'demo-family', memberId: 'member-1', category: 'family', title: 'Family Dinner', startTime: '18:00', endTime: '19:30', date: today.toISOString().split('T')[0], isRecurring: true, color: '#E74C3C' },
-    ];
-
-    set({ rules, listings, conflicts, devices, timeBlocks, hasSeeded: true });
-  },
+  fetchFromServer: async () => { set({ isLoaded: true }); },
     }),
     {
       name: 'family-command-center-automation',
@@ -439,7 +400,7 @@ export const useAutomationStore = create<AutomationState>()(
         conflicts: state.conflicts,
         timeBlocks: state.timeBlocks,
         devices: state.devices,
-        hasSeeded: state.hasSeeded,
+        isLoaded: state.isLoaded,
       }),
     }
   )

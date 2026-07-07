@@ -29,6 +29,7 @@ import {
   MaintenanceStatus,
   MaintenanceTask,
 } from '../../store/useHomeMaintenanceStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { useTranslation } from 'react-i18next';
 
@@ -168,7 +169,7 @@ export function HomeMaintenanceScreen({ navigation }: any) {
   const handleAdd = () => {
     if (!formTitle.trim()) return;
     addTask({
-      familyId: family?.id ?? 'demo-family',
+      familyId: useAuthStore.getState().familyId ?? family?.id ?? '',
       title: formTitle.trim(),
       category: formCategory,
       priority: formPriority,

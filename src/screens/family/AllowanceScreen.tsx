@@ -12,6 +12,7 @@ import { colors } from '../../theme/colors';
 import { Card } from '../../components/common/Card';
 import { ProgressBar } from '../../components/common/ProgressBar';
 import { useAllowanceStore, AllowanceTransactionType } from '../../store/useAllowanceStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useTranslation } from 'react-i18next';
@@ -68,7 +69,7 @@ export function AllowanceScreen({ navigation }: any) {
     const amount = parseFloat(newWeeklyAmount);
     if (!newMemberId || isNaN(amount) || amount <= 0) return;
     addConfig({
-      familyId: family?.id ?? 'demo-family',
+      familyId: useAuthStore.getState().familyId ?? family?.id ?? '',
       memberId: newMemberId,
       weeklyAmount: amount,
       bonusPerChore: 0,

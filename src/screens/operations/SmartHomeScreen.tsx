@@ -55,7 +55,6 @@ export function SmartHomeScreen({ navigation }: any) {
     hydrateHueConnection,
     refreshHueDevices,
     recallHueScene,
-    seedDemoData,
   } = useAutomationStore();
 
   useEffect(() => {
@@ -161,12 +160,6 @@ export function SmartHomeScreen({ navigation }: any) {
                   title="Connect Hue Bridge"
                   onPress={() => navigation.navigate('ConnectHueBridge')}
                   style={{ marginTop: 18, alignSelf: 'stretch' }}
-                />
-                <Button
-                  title="Load Demo Data"
-                  variant="ghost"
-                  onPress={seedDemoData}
-                  style={{ marginTop: 10, alignSelf: 'stretch' }}
                 />
               </View>
             )}

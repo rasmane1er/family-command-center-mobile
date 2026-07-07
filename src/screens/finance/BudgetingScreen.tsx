@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Modal, TextInput, Alert, RefreshControl,
 } from 'react-native';
@@ -13,6 +13,8 @@ import { useAIStore } from '../../store/useAIStore';
 import { getSpendingByCategory } from '../../services/plaidService';
 import { getBudgetSuggestions } from '../../services/autoFillService';
 import type { BudgetSuggestion } from '../../services/autoFillService';
+import type { Budget } from '../../types';
+import { usePlaidAutoData } from '../../hooks/usePlaidAutoData';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -62,12 +64,13 @@ export function BudgetingScreen({ navigation, route }: any) {
   const { t } = useTranslation('finance');
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
-  const { budgets, monthlyIncome, monthlyExpenses, addBudget, deleteBudget } = useFinanceStore();
+  const { budgets, monthlyIncome, monthlyExpenses, addBudget, deleteBudget, updateBudget } = useFinanceStore();
   const { insights } = useAIStore();
 
   const [plaidActuals, setPlaidActuals] = useState<Record<string, number>>({});
   const [refreshing, setRefreshing] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingBudget, setEditingBudget] = useState<Budget | null>(null);
   const [newCategory, setNewCategory] = useState('');
   const [newLimit, setNewLimit] = useState('');
   const [newColor, setNewColor] = useState(PRESET_COLORS[0]);
@@ -102,10 +105,10 @@ export function BudgetingScreen({ navigation, route }: any) {
     }
   };
 
-  useEffect(() => {
+  usePlaidAutoData(() => {
     loadActuals();
     loadSuggestions();
-  }, []);
+  });
 
   const totalBudgeted = budgets.reduce((sum, b) => sum + b.monthlyLimit, 0);
   const totalSpent = budgets.reduce((sum, b) => sum + b.spent, 0);
@@ -141,6 +144,16 @@ export function BudgetingScreen({ navigation, route }: any) {
       return;
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    if (editingBudget) {
+      updateBudget(editingBudget.id, { category: newCategory.trim(), monthlyLimit: limit });
+      setEditingBudget(null);
+      setNewCategory('');
+      setNewLimit('');
+      setNewColor(PRESET_COLORS[0]);
+      setNewIcon('wallet');
+      setShowAddModal(false);
+      return;
+    }
     const today = new Date();
     addBudget({
       id: generateId(),
@@ -169,6 +182,15 @@ export function BudgetingScreen({ navigation, route }: any) {
         },
       },
     ]);
+  };
+
+  const handleEditBudget = (budget: Budget) => {
+    setEditingBudget(budget);
+    setNewCategory(budget.category);
+    setNewLimit(String(budget.monthlyLimit));
+    setNewColor(budget.color ?? PRESET_COLORS[0]);
+    setNewIcon(budget.icon ?? 'wallet');
+    setShowAddModal(true);
   };
 
   const applySuggestion = (s: BudgetSuggestion) => {
@@ -276,6 +298,9 @@ export function BudgetingScreen({ navigation, route }: any) {
                     <Text style={[s.actualLabel, { color: barColor }]}>Actual: ${actual.toFixed(2)}</Text>
                   )}
                 </View>
+                <Pressable onPress={() => handleEditBudget(budget)} style={s.editBtn}>
+                  <Ionicons name="create-outline" size={16} color={colors.primary} />
+                </Pressable>
                 <Pressable onPress={() => handleDelete(budget.id, budget.category)} style={s.deleteBtn}>
                   <Ionicons name="trash-outline" size={16} color={colors.textMuted} />
                 </Pressable>
@@ -328,14 +353,14 @@ export function BudgetingScreen({ navigation, route }: any) {
         <View style={s.modalOverlay}>
           <ScrollView style={s.modalSheet} contentContainerStyle={{ paddingBottom: 40 }}>
             <View style={s.modalHeader}>
-              <Text style={s.modalTitle}>Add Budget Category</Text>
-              <Pressable onPress={() => setShowAddModal(false)}>
+              <Text style={s.modalTitle}>{editingBudget ? 'Edit Budget' : 'Add Budget Category'}</Text>
+              <Pressable onPress={() => { setEditingBudget(null); setShowAddModal(false); }}>
                 <Ionicons name="close" size={24} color={colors.text} />
               </Pressable>
             </View>
 
             {/* Suggested Budgets */}
-            {suggestions.length > 0 && (
+            {suggestions.length > 0 && !editingBudget && (
               <View style={s.suggestionsContainer}>
                 <Text style={s.suggestionsLabel}>
                   <Ionicons name="analytics" size={13} color="#27AE60" /> Suggested Budgets
@@ -418,8 +443,8 @@ export function BudgetingScreen({ navigation, route }: any) {
               onPress={handleAddBudget}
               style={[s.modalSubmit, { backgroundColor: newColor }, (!newCategory.trim() || !newLimit) && s.modalSubmitDisabled]}
             >
-              <Ionicons name="add-circle" size={18} color="#fff" />
-              <Text style={s.modalSubmitText}>Add Budget</Text>
+              <Ionicons name={editingBudget ? 'checkmark-circle' : 'add-circle'} size={18} color="#fff" />
+              <Text style={s.modalSubmitText}>{editingBudget ? 'Save Changes' : 'Add Budget'}</Text>
             </Pressable>
           </ScrollView>
         </View>
@@ -451,6 +476,7 @@ function makeStyles(colors: any) {
     budgetAmounts: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 },
     budgetSpent: { fontSize: 13, fontWeight: '600' },
     budgetLimit: { fontSize: 13, color: colors.textSecondary },
+    editBtn: { width: 32, height: 32, borderRadius: 10, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
     deleteBtn: { width: 32, height: 32, borderRadius: 10, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
     budgetStats: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12, gap: 8 },
     budgetStat: { flex: 1, alignItems: 'center' },

@@ -12,6 +12,7 @@ import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
 import { useAutomationStore } from '../../store/useAutomationStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import type { ListingCategory } from '../../types';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useTranslation } from 'react-i18next';
@@ -44,7 +45,7 @@ export function MarketplaceScreen({ navigation }: any) {
   const [newDesc, setNewDesc] = useState('');
   const [newCategory, setNewCategory] = useState<ListingCategory>('chores');
   const [newPoints, setNewPoints] = useState('50');
-  const { listings, hasSeeded, claimListing, deleteListing, addListing, seedDemoData, repairOrphanedClaims } = useAutomationStore();
+  const { listings, claimListing, deleteListing, addListing, repairOrphanedClaims } = useAutomationStore();
   const members = useFamilyStore((s) => s.members);
   const activeMemberId = useFamilyStore((s) => s.activeMemberId);
   const family = useFamilyStore((s) => s.family);
@@ -52,7 +53,6 @@ export function MarketplaceScreen({ navigation }: any) {
   const currentMemberId = activeMemberId ?? members[0]?.id ?? 'member-1';
 
   useEffect(() => {
-    if (!hasSeeded) seedDemoData();
     // Backfills a real linked Task for any listing claimed before
     // claimListing() started creating one — otherwise those are stuck
     // showing "Claimed" with an "Open in Tasks" button that has nothing to
@@ -138,7 +138,7 @@ export function MarketplaceScreen({ navigation }: any) {
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     addListing({
-      familyId: family?.id ?? 'demo-family',
+      familyId: useAuthStore.getState().familyId ?? '',
       createdBy: currentMemberId,
       title: newTitle.trim(),
       description: newDesc.trim() || 'Help needed with this task',

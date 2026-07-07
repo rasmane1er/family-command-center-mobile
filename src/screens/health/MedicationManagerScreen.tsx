@@ -21,6 +21,7 @@ import { ProgressBar } from '../../components/common/ProgressBar';
 import { PremiumHeader } from '../../components/common/PremiumHeader';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useMedicationStore, MedFrequency, Medication } from '../../store/useMedicationStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -74,7 +75,7 @@ export function MedicationManagerScreen({ navigation: navProp }: any) {
   const navigation = navProp ?? navHook;
   const { t } = useTranslation('health');
   const insets = useSafeAreaInsets();
-  const { medications, logs, addMedication, deleteMedication, logDose, seedDemoData } = useMedicationStore();
+  const { medications, logs, addMedication, deleteMedication, logDose } = useMedicationStore();
   const members = useFamilyStore((s) => s.members);
   const family = useFamilyStore((s) => s.family);
 
@@ -108,7 +109,7 @@ export function MedicationManagerScreen({ navigation: navProp }: any) {
   const handleAdd = () => {
     if (!formName.trim() || !formDosage.trim() || !formMemberId) return;
     addMedication({
-      familyId: family?.id ?? 'demo-family',
+      familyId: useAuthStore.getState().familyId ?? family?.id ?? '',
       memberId: formMemberId,
       name: formName.trim(),
       dosage: formDosage.trim(),
@@ -209,7 +210,6 @@ export function MedicationManagerScreen({ navigation: navProp }: any) {
           <Ionicons name="medkit-outline" size={64} color={colors.textMuted} />
           <Text style={s.emptyTitle}>{t('health.screens.medicationManager.emptyMedsTitle')}</Text>
           <Text style={s.emptyDesc}>{t('health.screens.medicationManager.emptyMedsDesc')}</Text>
-          <Button title={t('health.screens.medicationManager.addDemoData')} onPress={() => { seedDemoData(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} variant="ghost" style={{ marginTop: 12 }} />
         </View>
       )}
 

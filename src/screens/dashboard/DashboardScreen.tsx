@@ -64,6 +64,18 @@ export function DashboardScreen({ navigation }: any) {
   const events = useFamilyStore((s) => s.events);
   const activeMemberId = useFamilyStore((s) => s.activeMemberId);
   const activeMember = members.find((member) => member.id === activeMemberId);
+  const fetchFamilyFromServer = useFamilyStore((s) => s.fetchFromServer);
+  const hydrateEvents = useFamilyStore((s) => s.hydrateEvents);
+
+  // Home is often the very first screen opened after launch — nothing else
+  // may have hydrated family/members/tasks/events yet, so this dashboard
+  // would otherwise show whatever was last cached locally (or nothing) until
+  // the user happened to visit another tab that hydrates them.
+  useEffect(() => {
+    fetchFamilyFromServer();
+    hydrateEvents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const isParent =
     activeMember?.role === 'parent' ||

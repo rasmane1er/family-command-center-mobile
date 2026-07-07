@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions, Modal, TextInput, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,6 +13,7 @@ import { ProgressBar } from '../../components/common/ProgressBar';
 import { Button } from '../../components/common/Button';
 import { useAutomationStore } from '../../store/useAutomationStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import type { TimeBlockCategory } from '../../types';
 import { useTranslation } from 'react-i18next';
 
@@ -55,14 +56,9 @@ export function TimeEconomyScreen({ navigation }: any) {
   const [newStart, setNewStart] = useState('09:00');
   const [newEnd, setNewEnd] = useState('10:00');
   const [newMemberIdModal, setNewMemberIdModal] = useState('');
-  const { timeBlocks, hasSeeded, addTimeBlock, seedDemoData } = useAutomationStore();
+  const { timeBlocks, addTimeBlock } = useAutomationStore();
   const members = useFamilyStore((s) => s.members);
-  const familyId = useFamilyStore((s) => s.family?.id) ?? 'demo-family';
-
-  useEffect(() => {
-    if (!hasSeeded) seedDemoData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const familyId = useFamilyStore((s) => s.family?.id) ?? useAuthStore.getState().familyId ?? '';
 
   const activeMemberId = selectedMember ?? members[0]?.id ?? '';
 

@@ -14,6 +14,18 @@ export const revenueCatConfig = {
   androidApiKey: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY ?? TEST_API_KEY,
 };
 
+// __DEV__ is false in every EAS build profile (development/preview/production
+// all bundle in release mode), so this only fires for a real shipped build —
+// loud and impossible to miss in device logs, unlike the 401 this previously
+// surfaced as only if you happened to check RevenueCat's own SDK logs.
+if (!__DEV__ && (revenueCatConfig.iosApiKey === TEST_API_KEY || revenueCatConfig.androidApiKey === TEST_API_KEY)) {
+  console.error(
+    '[revenuecat] This build is using the TEST/SANDBOX API key in a non-dev build — ' +
+      'real purchases will fail. Set EXPO_PUBLIC_REVENUECAT_IOS_KEY / EXPO_PUBLIC_REVENUECAT_ANDROID_KEY ' +
+      'as EAS environment variables for this build profile.'
+  );
+}
+
 // Must match exactly what's configured in the RevenueCat dashboard (Entitlements)
 // and resolveTier() in family-command-center-api/src/routes/subscriptions.ts.
 // Two paid entitlements, mapped 1:1 onto the app's internal SubscriptionTier

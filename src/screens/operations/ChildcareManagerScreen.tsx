@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -98,7 +98,6 @@ export function ChildcareManagerScreen({ navigation }: any) {
   const {
     caregivers,
     bookings,
-    hasSeeded,
     addCaregiver,
     deleteCaregiver,
     togglePreferred,
@@ -106,7 +105,6 @@ export function ChildcareManagerScreen({ navigation }: any) {
     addBooking,
     completeBooking,
     cancelBooking,
-    seedDemoData,
   } = useChildcareStore();
 
   const { members, updateMember } = useFamilyStore();
@@ -118,12 +116,6 @@ export function ChildcareManagerScreen({ navigation }: any) {
   const [showEnrollmentModal, setShowEnrollmentModal] = useState<string | null>(null); // caregiverId
   const [showCareInfoModal, setShowCareInfoModal] = useState<string | null>(null); // memberId
 
-  // Seed exactly once, ever — not "whenever the list happens to be empty,"
-  // which used to make deliberately-deleted demo caregivers reappear.
-  useEffect(() => {
-    if (!hasSeeded) seedDemoData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // Caregiver modal state
   const [cgName, setCgName] = useState('');
@@ -481,13 +473,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyEmoji}>👶</Text>
             <Text style={styles.emptyTitle}>No caregivers yet</Text>
-            <Text style={styles.emptyDesc}>Add caregivers or load sample data to get started.</Text>
-            <Button
-              title="Load Demo Data"
-              onPress={() => { seedDemoData(); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); }}
-              variant="primary"
-              style={{ marginTop: 16, alignSelf: 'center' }}
-            />
+            <Text style={styles.emptyDesc}>Add caregivers to get started.</Text>
           </View>
         )}
 

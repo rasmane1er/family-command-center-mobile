@@ -15,6 +15,7 @@ import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { getDetectedSubscriptions, confirmSubscription } from '../../services/subscriptionDetectionService';
 import type { DetectedSubscription } from '../../services/subscriptionDetectionService';
 import type { Subscription } from '../../types';
@@ -102,7 +103,7 @@ export function SubscriptionsScreen({ navigation }: any) {
     const nextBillingDate = addMonths(new Date(), newCycle === 'monthly' ? 1 : newCycle === 'quarterly' ? 3 : 12);
     const sub: Subscription = {
       id: generateId(),
-      familyId: 'demo-family',
+      familyId: useAuthStore.getState().familyId ?? '',
       name: newName.trim(),
       amount,
       billingCycle: newCycle,

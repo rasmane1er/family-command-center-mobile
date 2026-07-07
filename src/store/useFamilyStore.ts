@@ -4,8 +4,10 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import type { Family, FamilyMember, Task, CalendarEvent, Goal, Reward, Achievement } from '../types';
 import { defaultPermissionsForRole } from '../types';
-import { colors } from '../theme/colors';
 import * as calendarService from '../services/calendarService';
+import * as taskService from '../services/taskService';
+import { apiRequest } from '../api/client';
+import { useAuthStore } from './useAuthStore';
 
 interface FamilyState {
   family: Family | null;
@@ -19,7 +21,11 @@ interface FamilyState {
 
   setFamily: (f: Family) => void;
   updateFamily: (updates: Partial<Family>) => void;
-  addMember: (m: FamilyMember) => void;
+  // Resolves with the member as it ends up in state — with its id reconciled
+  // to the real backend-assigned one once the write-through completes, so
+  // callers that need the final id (e.g. fetchFromServer's self-heal) don't
+  // have to guess at timing.
+  addMember: (m: FamilyMember) => Promise<FamilyMember>;
   addLocalProfile: (m: FamilyMember) => void;
   updateMember: (id: string, updates: Partial<FamilyMember>) => void;
   removeMember: (id: string) => void;
@@ -29,6 +35,11 @@ interface FamilyState {
   updateTask: (id: string, updates: Partial<Task>) => void;
   completeTask: (id: string, memberId: string) => void;
   deleteTask: (id: string) => void;
+  // Pulls tasks from the backend, same reasoning as hydrateEvents below —
+  // this is the read side of a real bidirectional sync, not just a queued
+  // write nobody ever reads back.
+  hydrateTasks: () => Promise<void>;
+  isHydratingTasks: boolean;
 
   // Approval workflow for requiresApproval tasks — submitTaskForApproval
   // never awards points itself; approveTask is the only path that does,
@@ -61,7 +72,8 @@ interface FamilyState {
   clearRewardHistory: (memberId: string) => void;
   awardPoints: (memberId: string, points: number) => void;
 
-  seedDemoData: () => void;
+  isLoaded: boolean;
+  fetchFromServer: () => Promise<void>;
 }
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
@@ -72,22 +84,38 @@ export const useFamilyStore = create<FamilyState>()(
   family: null,
   members: [],
   tasks: [],
+  isHydratingTasks: false,
   events: [],
   isHydratingEvents: false,
   goals: [],
   rewards: [],
   achievements: [],
   activeMemberId: null,
+  isLoaded: false,
 
   setFamily: (f) => set({ family: f }),
   updateFamily: (updates) => set((s) => (s.family ? { family: { ...s.family, ...updates } } : s)),
   addMember: (m) => {
     set((s) => ({ members: [...s.members, m] }));
-    enqueueSync({
-      entity: 'family',
-      action: 'create',
-      payload: { type: 'member', data: m },
-    });
+    const familyId = get().family?.id ?? m.familyId;
+    // Previously this only went through enqueueSync's write-only audit log
+    // (never actually read back by anything), so a new member never really
+    // existed server-side and would vanish from every other family
+    // member's device on next real sync. The backend assigns its own id
+    // (it doesn't accept a client-supplied one here), so the optimistic
+    // local id gets reconciled to the real one once the response comes back.
+    return apiRequest(`/family/${familyId}/members`, { method: 'POST', body: JSON.stringify(m) })
+      .then((res: any) => {
+        const finalId = res?.member?.id && res.member.id !== m.id ? res.member.id : m.id;
+        if (finalId !== m.id) {
+          set((s) => ({ members: s.members.map((x) => (x.id === m.id ? { ...x, id: finalId } : x)) }));
+        }
+        return { ...m, id: finalId };
+      })
+      .catch(() => {
+        set((s) => ({ members: s.members.filter((x) => x.id !== m.id) }));
+        return m;
+      });
   },
   addLocalProfile: (m) => {
     set((s) => ({ members: [...s.members, m] }));
@@ -97,98 +125,130 @@ export const useFamilyStore = create<FamilyState>()(
       payload: { type: 'member', data: m },
     });
   },
-  updateMember: (id, updates) =>
-    set((s) => ({ members: s.members.map((m) => (m.id === id ? { ...m, ...updates } : m)) })),
-  removeMember: (id) => set((s) => ({ members: s.members.filter((m) => m.id !== id) })),
+  updateMember: (id, updates) => {
+    const prev = get().members;
+    set((s) => ({ members: s.members.map((m) => (m.id === id ? { ...m, ...updates } : m)) }));
+    const familyId = get().family?.id;
+    if (!familyId) return;
+    apiRequest(`/family/${familyId}/members/${id}`, { method: 'PATCH', body: JSON.stringify(updates) }).catch(() => {
+      set({ members: prev });
+    });
+  },
+  removeMember: (id) => {
+    const prev = get().members;
+    set((s) => ({ members: s.members.filter((m) => m.id !== id) }));
+    const familyId = get().family?.id;
+    if (!familyId) return;
+    apiRequest(`/family/${familyId}/members/${id}`, { method: 'DELETE' }).catch(() => {
+      set({ members: prev });
+    });
+  },
   setActiveMember: (id) => set({ activeMemberId: id }),
 
   addTask: (t) => {
-  set((s) => ({ tasks: [...s.tasks, t] }));
-
-  enqueueSync({
-    entity: 'family',
-    action: 'create',
-    payload: { type: 'task', data: t },
-  });
-},
-  updateTask: (id, updates) =>
-    set((s) => ({ tasks: s.tasks.map((t) => (t.id === id ? { ...t, ...updates } : t)) })),
+    set((s) => ({ tasks: [...s.tasks, t] }));
+    taskService.createTask(t).catch(() => {
+      set((s) => ({ tasks: s.tasks.filter((x) => x.id !== t.id) }));
+    });
+  },
+  updateTask: (id, updates) => {
+    const prev = get().tasks;
+    set((s) => ({ tasks: s.tasks.map((t) => (t.id === id ? { ...t, ...updates } : t)) }));
+    taskService.updateTaskRemote(id, updates).catch(() => { set({ tasks: prev }); });
+  },
   completeTask: (id, memberId) => {
     const task = get().tasks.find((t) => t.id === id);
-    if (task) {
-      set((s) => ({
-        tasks: s.tasks.map((t) =>
-          t.id === id ? { ...t, status: 'completed', completedAt: new Date().toISOString(), completedBy: memberId } : t
-        ),
-        members: s.members.map((m) =>
-          m.id === memberId ? { ...m, points: m.points + task.points } : m
-        ),
-      }));
-    }
-  },
-  submitTaskForApproval: (id, memberId, photoUrl) =>
+    if (!task) return;
+    const prevTasks = get().tasks;
+    const prevMembers = get().members;
     set((s) => ({
       tasks: s.tasks.map((t) =>
-        t.id === id
-          ? {
-              ...t,
-              status: 'pending_approval',
-              submittedBy: memberId,
-              submittedAt: new Date().toISOString(),
-              ...(photoUrl ? { completionPhotoUrl: photoUrl } : {}),
-              rejectionNote: undefined,
-            }
-          : t
+        t.id === id ? { ...t, status: 'completed', completedAt: new Date().toISOString(), completedBy: memberId } : t
       ),
-    })),
+      members: s.members.map((m) =>
+        m.id === memberId ? { ...m, points: m.points + task.points } : m
+      ),
+    }));
+    // Atomic on the backend (task status + member points in one
+    // transaction) — rolled back locally together if it fails, so the UI
+    // never shows a task as completed without the points actually landing,
+    // or vice versa.
+    taskService.completeTaskRemote(id, memberId).catch(() => {
+      set({ tasks: prevTasks, members: prevMembers });
+    });
+  },
+  submitTaskForApproval: (id, memberId, photoUrl) => {
+    const prev = get().tasks;
+    const updates = {
+      status: 'pending_approval' as const,
+      submittedBy: memberId,
+      submittedAt: new Date().toISOString(),
+      ...(photoUrl ? { completionPhotoUrl: photoUrl } : {}),
+      rejectionNote: undefined,
+    };
+    set((s) => ({
+      tasks: s.tasks.map((t) => (t.id === id ? { ...t, ...updates } : t)),
+    }));
+    taskService.updateTaskRemote(id, updates).catch(() => { set({ tasks: prev }); });
+  },
   approveTask: (id) => {
     const task = get().tasks.find((t) => t.id === id);
     // Delegates to completeTask so point-awarding only ever happens in one
     // place, regardless of whether a task skipped approval or went through it.
     if (task?.submittedBy) get().completeTask(id, task.submittedBy);
   },
-  rejectTask: (id, note) =>
+  rejectTask: (id, note) => {
+    const prev = get().tasks;
+    const updates = {
+      status: 'pending' as const,
+      submittedBy: undefined,
+      submittedAt: undefined,
+      completionPhotoUrl: undefined,
+      rejectionNote: note,
+    };
     set((s) => ({
-      tasks: s.tasks.map((t) =>
-        t.id === id
-          ? {
-              ...t,
-              status: 'pending',
-              submittedBy: undefined,
-              submittedAt: undefined,
-              completionPhotoUrl: undefined,
-              rejectionNote: note,
-            }
-          : t
-      ),
-    })),
+      tasks: s.tasks.map((t) => (t.id === id ? { ...t, ...updates } : t)),
+    }));
+    taskService.updateTaskRemote(id, updates).catch(() => { set({ tasks: prev }); });
+  },
   deleteTask: (id) => {
-  set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) }));
-
-  enqueueSync({
-    entity: 'family',
-    action: 'delete',
-    payload: { type: 'task', id },
-  });
-},
+    const prev = get().tasks;
+    set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) }));
+    taskService.deleteTaskRemote(id).catch(() => { set({ tasks: prev }); });
+  },
+  hydrateTasks: async () => {
+    set({ isHydratingTasks: true });
+    try {
+      const { tasks } = await taskService.fetchTasks();
+      set({ tasks });
+    } catch {
+      // offline or backend unreachable — keep whatever is already local.
+    } finally {
+      set({ isHydratingTasks: false });
+    }
+  },
 
   addEvent: (e) => {
   set((s) => ({ events: [...s.events, e] }));
   // e.id is client-generated and sent through unchanged as the row's real
   // primary key (the backend accepts a caller-supplied id) — no separate
   // local-id-to-server-id reconciliation needed, unlike Guardian devices.
+  // Rolled back on failure — otherwise the next hydrateEvents() (a full
+  // replace from the server) would silently discard an event that never
+  // actually made it to the backend, with no error shown to the user.
   calendarService.createEvent(e).catch(() => {
-    // best-effort — event still lives locally; hydrateEvents() will pick up
-    // the authoritative copy next time this device is online.
+    set((s) => ({ events: s.events.filter((ev) => ev.id !== e.id) }));
   });
 },
   updateEvent: (id, updates) => {
+    const prev = get().events;
     set((s) => ({ events: s.events.map((e) => (e.id === id ? { ...e, ...updates } : e)) }));
-    calendarService.updateEventRemote(id, updates).catch(() => {});
+    calendarService.updateEventRemote(id, updates).catch(() => { set({ events: prev }); });
   },
   deleteEvent: (id) => {
+    const prev = get().events;
     set((s) => ({ events: s.events.filter((e) => e.id !== id) }));
-    calendarService.deleteEventRemote(id).catch(() => {});
+    calendarService.deleteEventRemote(id).catch(() => { set({ events: prev }); });
   },
   hydrateEvents: async () => {
     set({ isHydratingEvents: true });
@@ -229,315 +289,64 @@ export const useFamilyStore = create<FamilyState>()(
       members: s.members.map((m) => (m.id === memberId ? { ...m, points: m.points + points } : m)),
     })),
 
-  seedDemoData: () => {
-    const familyId = 'demo-family';
-    const now = new Date().toISOString();
-    const today = new Date();
+  // Real hydration for the core family/members/tasks data — previously a
+  // no-op stub that nothing else even called, meaning family/member/task
+  // changes made on another family member's device never showed up here.
+  // GET /sync/family already existed and worked (it's what onboarding's
+  // family-creation flow POSTs to); this just wires up the read side too.
+  fetchFromServer: async () => {
+    try {
+      const data = await apiRequest('/sync/family') as {
+        family: Family; members: FamilyMember[];
+      };
+      set({ family: data.family, members: data.members });
 
-    const family: Family = {
-      id: familyId,
-      name: 'The Johnson Family',
-      motto: 'Stronger Together',
-      homeAddress: '123 Maple Street, Springfield, IL 62701',
-      timezone: 'America/Chicago',
-      currency: 'USD',
-      militaryMode: false,
-      premiumTier: 'pro',
-      createdAt: now,
-    };
+      // Self-heal: a real backend family can exist with no member matching
+      // the signed-in user (e.g. populateFromSignUp previously fabricated a
+      // local-only member that never reached the server, or the account was
+      // bootstrapped some other way). Without this, isParent/activeMemberId
+      // lookups silently fail and parent-only tabs disappear even though the
+      // user genuinely owns this family.
+      const authUser = useAuthStore.getState().user;
+      if (authUser?.email) {
+        const email = authUser.email.toLowerCase();
+        const findSelf = (members: FamilyMember[]) =>
+          members.find((m) => m.email?.toLowerCase() === email || m.linkedUserId === authUser.id);
 
-    const members: FamilyMember[] = [
-      {
-        id: 'member-1',
-        familyId,
-        name: 'Marcus',
-        role: 'parent',
-        avatarColor: colors.avatars[0],
-        dateOfBirth: '1985-03-15',
-        email: 'marcus@family.com',
-        phone: '+1 (555) 123-4567',
-        status: 'active',
-        points: 2450,
-        level: 12,
-        isAdmin: true,
-        createdAt: now,
-        isLocalProfile: false,
-        linkedUserId: 'demo-user-1',
-        isPinProtected: false,
-        permissions: defaultPermissionsForRole('parent'),
-        inviteStatus: 'accepted',
-      },
-      {
-        id: 'member-2',
-        familyId,
-        name: 'Sarah',
-        role: 'parent',
-        avatarColor: colors.avatars[1],
-        dateOfBirth: '1987-07-22',
-        email: 'sarah@family.com',
-        phone: '+1 (555) 234-5678',
-        status: 'work',
-        points: 3100,
-        level: 14,
-        isAdmin: true,
-        createdAt: now,
-        isLocalProfile: false,
-        linkedUserId: 'demo-user-2',
-        isPinProtected: false,
-        permissions: defaultPermissionsForRole('parent'),
-        inviteStatus: 'accepted',
-      },
-      {
-        id: 'member-3',
-        familyId,
-        name: 'Aiden',
-        role: 'child',
-        avatarColor: colors.avatars[2],
-        dateOfBirth: '2012-11-08',
-        status: 'school',
-        points: 1850,
-        level: 8,
-        isAdmin: false,
-        createdAt: now,
-        isLocalProfile: true,
-        linkedUserId: null,
-        isPinProtected: false,
-        permissions: defaultPermissionsForRole('child'),
-        inviteStatus: 'accepted',
-      },
-      {
-        id: 'member-4',
-        familyId,
-        name: 'Lily',
-        role: 'child',
-        avatarColor: colors.avatars[3],
-        dateOfBirth: '2016-04-30',
-        status: 'school',
-        points: 920,
-        level: 4,
-        isAdmin: false,
-        createdAt: now,
-        isLocalProfile: true,
-        linkedUserId: null,
-        isPinProtected: false,
-        permissions: defaultPermissionsForRole('child'),
-        inviteStatus: 'accepted',
-      },
-    ];
+        let self = findSelf(data.members);
+        if (!self) {
+          const now = new Date().toISOString();
+          self = await get().addMember({
+            id: generateId(),
+            familyId: data.family.id,
+            name: authUser.displayName,
+            role: authUser.familyRole === 'guardian' ? 'guardian' : 'parent',
+            avatar: authUser.avatarUri,
+            avatarColor: authUser.avatarColor ?? '#4A8FD9',
+            dateOfBirth: authUser.dateOfBirth,
+            email: authUser.email,
+            phone: authUser.phone,
+            status: 'active',
+            points: 0,
+            level: 1,
+            isAdmin: true,
+            createdAt: now,
+            isLocalProfile: false,
+            linkedUserId: authUser.id,
+            isPinProtected: false,
+            permissions: defaultPermissionsForRole('parent'),
+            inviteStatus: 'accepted',
+          });
+        }
 
-    const tasks: Task[] = [
-      {
-        id: generateId(),
-        familyId,
-        title: 'Pay electricity bill',
-        description: 'Monthly electricity bill due',
-        assignedTo: ['member-1'],
-        dueDate: new Date(today.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-        priority: 'high',
-        status: 'pending',
-        category: 'Finance',
-        recurrence: 'monthly',
-        points: 50,
-        createdAt: now,
-        createdBy: 'member-1',
-      },
-      {
-        id: generateId(),
-        familyId,
-        title: 'Grocery shopping',
-        assignedTo: ['member-2'],
-        dueDate: new Date(today.getTime() + 1 * 24 * 60 * 60 * 1000).toISOString(),
-        priority: 'medium',
-        status: 'pending',
-        category: 'Home',
-        recurrence: 'weekly',
-        points: 30,
-        createdAt: now,
-        createdBy: 'member-2',
-      },
-      {
-        id: generateId(),
-        familyId,
-        title: 'Clean bedroom',
-        assignedTo: ['member-3'],
-        dueDate: new Date().toISOString(),
-        priority: 'low',
-        status: 'pending',
-        category: 'Chores',
-        recurrence: 'weekly',
-        points: 25,
-        createdAt: now,
-        createdBy: 'member-1',
-      },
-      {
-        id: generateId(),
-        familyId,
-        title: 'Car oil change',
-        assignedTo: ['member-1'],
-        dueDate: new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-        priority: 'medium',
-        status: 'pending',
-        category: 'Vehicle',
-        recurrence: 'none',
-        points: 40,
-        createdAt: now,
-        createdBy: 'member-1',
-      },
-      {
-        id: generateId(),
-        familyId,
-        title: 'Help with math homework',
-        assignedTo: ['member-2'],
-        dueDate: new Date().toISOString(),
-        priority: 'high',
-        status: 'completed',
-        category: 'Education',
-        recurrence: 'none',
-        points: 20,
-        completedAt: now,
-        completedBy: 'member-2',
-        createdAt: now,
-        createdBy: 'member-1',
-      },
-    ];
-
-    const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
-    const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-
-    const events: CalendarEvent[] = [
-      {
-        id: generateId(),
-        familyId,
-        title: "Aiden's Soccer Practice",
-        startDate: new Date(tomorrow.setHours(15, 30)).toISOString(),
-        endDate: new Date(tomorrow.setHours(17, 0)).toISOString(),
-        allDay: false,
-        location: 'Riverside Park',
-        attendees: ['member-3'],
-        color: '#4ECDC4',
-        category: 'Sports',
-        recurrence: 'weekly',
-        createdAt: now,
-        createdBy: 'member-1',
-      },
-      {
-        id: generateId(),
-        familyId,
-        title: 'Family Dinner Night',
-        startDate: new Date(today.setHours(18, 0)).toISOString(),
-        endDate: new Date(today.setHours(20, 0)).toISOString(),
-        allDay: false,
-        attendees: ['member-1', 'member-2', 'member-3', 'member-4'],
-        color: '#F5A623',
-        category: 'Family',
-        recurrence: 'weekly',
-        createdAt: now,
-        createdBy: 'member-2',
-      },
-      {
-        id: generateId(),
-        familyId,
-        title: "Lily's Dance Recital",
-        startDate: new Date(nextWeek.setHours(14, 0)).toISOString(),
-        endDate: new Date(nextWeek.setHours(16, 0)).toISOString(),
-        allDay: false,
-        location: 'City Arts Center',
-        attendees: ['member-1', 'member-2', 'member-4'],
-        color: '#DDA0DD',
-        category: 'Activity',
-        recurrence: 'none',
-        createdAt: now,
-        createdBy: 'member-2',
-      },
-      {
-        id: generateId(),
-        familyId,
-        title: 'Mortgage Payment Due',
-        startDate: new Date(today.getFullYear(), today.getMonth() + 1, 1).toISOString(),
-        endDate: new Date(today.getFullYear(), today.getMonth() + 1, 1).toISOString(),
-        allDay: true,
-        attendees: ['member-1', 'member-2'],
-        color: '#E74C3C',
-        category: 'Finance',
-        recurrence: 'monthly',
-        createdAt: now,
-        createdBy: 'member-1',
-      },
-    ];
-
-    const goals: Goal[] = [
-      {
-        id: generateId(),
-        familyId,
-        title: 'Family Vacation to Hawaii',
-        description: 'Summer vacation fund for 5 days in Maui',
-        category: 'travel',
-        targetDate: '2026-07-15',
-        milestones: [
-          { id: generateId(), title: 'Save $1,000', isCompleted: true, completedAt: now, points: 100 },
-          { id: generateId(), title: 'Save $3,000', isCompleted: true, completedAt: now, points: 150 },
-          { id: generateId(), title: 'Save $5,000', isCompleted: false, points: 200 },
-          { id: generateId(), title: 'Book flights', isCompleted: false, points: 100 },
-          { id: generateId(), title: 'Book hotel', isCompleted: false, points: 100 },
-        ],
-        isCompleted: false,
-        color: '#45B7D1',
-        icon: 'airplane',
-        createdAt: now,
-      },
-      {
-        id: generateId(),
-        familyId,
-        memberId: 'member-3',
-        title: "Aiden's College Fund",
-        description: '529 savings plan for college',
-        category: 'education',
-        targetDate: '2030-09-01',
-        milestones: [
-          { id: generateId(), title: 'Open 529 account', isCompleted: true, completedAt: now, points: 50 },
-          { id: generateId(), title: 'Reach $5,000', isCompleted: false, points: 100 },
-          { id: generateId(), title: 'Reach $10,000', isCompleted: false, points: 200 },
-        ],
-        isCompleted: false,
-        color: '#27AE60',
-        icon: 'school',
-        createdAt: now,
-      },
-      {
-        id: generateId(),
-        familyId,
-        title: 'Home Renovation',
-        description: 'Kitchen and bathroom remodel',
-        category: 'home',
-        targetDate: '2026-12-01',
-        milestones: [
-          { id: generateId(), title: 'Get 3 contractor quotes', isCompleted: false, points: 50 },
-          { id: generateId(), title: 'Save $10,000', isCompleted: false, points: 200 },
-          { id: generateId(), title: 'Start kitchen remodel', isCompleted: false, points: 100 },
-        ],
-        isCompleted: false,
-        color: '#F5A623',
-        icon: 'home',
-        createdAt: now,
-      },
-    ];
-
-    const rewards: Reward[] = [
-      { id: generateId(), familyId, memberId: 'member-3', title: 'Movie Night Pick', description: 'Pick any movie for family movie night', pointsCost: 200, category: 'Entertainment', isRedeemed: false, icon: 'film-outline', color: '#DDA0DD', },
-      { id: generateId(), familyId, memberId: 'member-4', title: 'Ice Cream Trip', description: 'Go to your favorite ice cream shop', pointsCost: 150, category: 'Food', isRedeemed: false, icon: 'ice-cream-outline', color: '#FF6B6B', },
-      { id: generateId(), familyId, memberId: 'member-3', title: 'Stay Up Late Pass', description: 'Stay up 1 hour past bedtime', pointsCost: 100, category: 'Privilege', isRedeemed: true, redeemedAt: now, icon: 'moon-outline', color: '#45B7D1', },
-      { id: generateId(), familyId, memberId: 'member-4', title: 'Screen Time Bonus', description: '30 extra minutes of screen time', pointsCost: 75, category: 'Privilege', isRedeemed: false, icon: 'tablet-portrait-outline', color: '#4ECDC4', },
-    ];
-
-    set({
-  family,
-  members,
-  tasks,
-  events,
-  goals,
-  rewards,
-  activeMemberId: 'member-1',
-});
+        const activeStillValid = get().members.some((m) => m.id === get().activeMemberId);
+        if (!activeStillValid) set({ activeMemberId: self.id });
+      }
+    } catch {
+      // offline or backend unreachable — keep whatever is already local.
+    }
+    await get().hydrateTasks();
+    set({ isLoaded: true });
   },
     }),
     {

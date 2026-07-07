@@ -46,6 +46,7 @@ export default {
     resetDone: 'Done', resetDoneMsg: 'Reopen the app to start fresh.',
     resetOnboardingConfirm: 'Reset App', resetOnboardingConfirmMsg: 'This will restart the onboarding flow. Are you sure?',
     signOutTitle: 'Sign Out', signOutMsg: 'Are you sure you want to sign out?', signOutConfirm: 'Sign Out',
+    deleteAccountLabel: 'Delete Account', deleteAccountConfirm: 'Delete Account Permanently?', deleteAccountConfirmMsg: 'This will permanently delete your account and cannot be undone. If you are the only member of your family, all family data will be deleted too.', deleteAccountAction: 'Delete Permanently', deleteAccountFailedMsg: 'Could not delete your account. Check your connection and try again.',
     currentPlanTitle: 'Current Plan', currentPlanMsg: 'You are already on the {{plan}} plan.',
     upgradeSuccessTitle: 'Success', upgradeSuccessMsg: 'You are now on the {{plan}} plan!',
     purchaseFailedTitle: 'Purchase Failed', purchaseFailedMsg: 'Something went wrong loading the paywall. Please try again.',

@@ -16,6 +16,7 @@ import { Badge } from '../../components/common/Badge';
 import { useCarpoolStore, CarpoolRoute, CarpoolParticipant } from '../../store/useCarpoolStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { useTranslation } from 'react-i18next';
+import { useAuthStore } from '../../store/useAuthStore';
 
 type Tab = 'routes' | 'schedule' | 'history';
 
@@ -315,7 +316,7 @@ function AddRouteModal({
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
   const [selectedColor, setSelectedColor] = useState(ROUTE_COLORS[0]);
   const [notes, setNotes] = useState('');
-  const familyId = useFamilyStore((s) => s.family?.id) ?? 'demo-family';
+  const familyId = useFamilyStore((s) => s.family?.id) ?? useAuthStore.getState().familyId ?? '';
 
   const toggleDay = (day: string) => {
     setSelectedDays((prev) =>
@@ -460,7 +461,7 @@ function AddRouteModal({
 export function CarpoolManagerScreen({ navigation }: any) {
   const { t } = useTranslation('ops');
   const insets = useSafeAreaInsets();
-  const { routes, addRoute, advanceDriver, addParticipant, deleteRoute, seedDemoData } = useCarpoolStore();
+  const { routes, addRoute, advanceDriver, addParticipant, deleteRoute } = useCarpoolStore();
   const [activeTab, setActiveTab] = useState<Tab>('routes');
   const [showAddRoute, setShowAddRoute] = useState(false);
 
@@ -589,12 +590,6 @@ export function CarpoolManagerScreen({ navigation }: any) {
             <Text style={{ fontSize: 60 }}>🚗</Text>
             <Text style={styles.emptyTitle}>No Routes Yet</Text>
             <Text style={styles.emptyDesc}>Set up carpool routes to coordinate school and activity pickups</Text>
-            <Pressable
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); seedDemoData(); }}
-              style={styles.demoBtn}
-            >
-              <Text style={styles.demoBtnText}>Load Demo Data</Text>
-            </Pressable>
           </View>
         )}
 

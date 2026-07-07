@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -21,6 +21,7 @@ import { PremiumHeader } from '../../components/common/PremiumHeader';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useWorkoutStore, WorkoutType } from '../../store/useWorkoutStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 
@@ -51,12 +52,8 @@ export function WorkoutTrackerScreen({ navigation: navProp }: any) {
   const navigation = navProp ?? navHook;
   const { t } = useTranslation('health');
   const insets = useSafeAreaInsets();
-  const { workouts, addWorkout, deleteWorkout, getWeeklyCount, getTotalMinutes, seedDemoData, hasSeeded } = useWorkoutStore();
+  const { workouts, addWorkout, deleteWorkout, getWeeklyCount, getTotalMinutes } = useWorkoutStore();
   const members = useFamilyStore((s) => s.members);
-
-  useEffect(() => {
-    if (!hasSeeded) seedDemoData();
-  }, [hasSeeded, seedDemoData]);
 
   const [selectedMemberId, setSelectedMemberId] = useState<string>(members[0]?.id ?? 'member-1');
   const [showModal, setShowModal] = useState(false);
@@ -110,7 +107,7 @@ export function WorkoutTrackerScreen({ navigation: navProp }: any) {
       return;
     }
     addWorkout({
-      familyId: 'demo-family',
+      familyId: useAuthStore.getState().familyId ?? '',
       memberId: modalMemberId,
       date: modalDate,
       type: modalType,

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuthStore } from '../../store/useAuthStore';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Modal,
   TextInput, Alert, Switch, RefreshControl,
@@ -132,7 +133,7 @@ export function GiftPlannerScreen({ navigation }: any) {
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     addGift({
-      familyId: family?.id ?? 'demo-family',
+      familyId: useAuthStore.getState().familyId ?? family?.id ?? '',
       forMemberId: newForMemberId,
       occasion: newOccasion,
       title: newTitle.trim(),

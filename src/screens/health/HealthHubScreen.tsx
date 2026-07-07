@@ -36,12 +36,12 @@ export function HealthHubScreen({ navigation: navProp }: any) {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<'overview' | 'metrics' | 'appointments'>('overview');
   const [selectedMember, setSelectedMember] = useState<string | null>(null);
-  const { records, goals, appointments, addAppointment, seedDemoData, hasSeeded } = useHealthStore();
+  const { records, goals, appointments, addAppointment, fetchFromServer, isLoaded } = useHealthStore();
   const members = useFamilyStore((s) => s.members);
 
   useEffect(() => {
-    if (!hasSeeded) seedDemoData();
-  }, [hasSeeded, seedDemoData]);
+    if (!isLoaded) fetchFromServer();
+  }, [isLoaded, fetchFromServer]);
 
   const activeMemberId = selectedMember ?? members[0]?.id ?? '';
   const activeMember = members.find((m) => m.id === activeMemberId);

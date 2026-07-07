@@ -19,6 +19,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { useFinanceStore } from '../../store/useFinanceStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { ProgressBar } from '../../components/common/ProgressBar';
 import {
   getDetectedDebtsFromPlaid,
@@ -307,7 +308,7 @@ export function DebtPayoffScreen({ navigation }: { navigation: { goBack: () => v
   const insets = useSafeAreaInsets();
   const { debts, addDebt, updateDebt, removeDebt, recordPayment } = useFinanceStore();
 
-  const familyId = 'demo-family';
+  const familyId = useAuthStore.getState().familyId ?? '';
   const [activeTab, setActiveTab] = useState<Tab>('debts');
   const [strategy, setStrategy] = useState<PayoffStrategy>('avalanche');
   const [extraBudget, setExtraBudget] = useState(0);

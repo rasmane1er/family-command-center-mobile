@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Modal,
   TextInput, Switch, Alert, ActivityIndicator,
@@ -19,6 +19,7 @@ import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+import { usePlaidAutoData } from '../../hooks/usePlaidAutoData';
 
 const statusBadge = { upcoming: 'neutral', due_soon: 'warning', overdue: 'danger', paid: 'success' } as const;
 const statusLabels = { upcoming: 'Upcoming', due_soon: 'Due Soon', overdue: 'OVERDUE', paid: 'Paid' };
@@ -37,12 +38,14 @@ export function BillsScreen({ navigation, route }: any) {
   const { colors } = useTheme();
   const [filter, setFilter] = useState('All');
   const [showAddModal, setShowAddModal] = useState(false);
-  const { bills, markBillPaid, deleteBill, addBill } = useFinanceStore();
+  const { bills, markBillPaid, deleteBill, addBill, updateBill } = useFinanceStore();
 
   // Detected bills state
   const [detectedBills, setDetectedBills] = useState<DetectedBill[]>([]);
   const [detectedLoading, setDetectedLoading] = useState(false);
   const [detectedExpanded, setDetectedExpanded] = useState(true);
+
+  const [editingBill, setEditingBill] = useState<Bill | null>(null);
 
   // Modal form state
   const [newName, setNewName] = useState('');
@@ -55,13 +58,13 @@ export function BillsScreen({ navigation, route }: any) {
   const overdueBills = bills.filter((b) => b.status === 'overdue');
   const filtered = filter === 'All' ? bills : bills.filter((b) => b.status === filter.toLowerCase().replace(' ', '_'));
 
-  useEffect(() => {
+  usePlaidAutoData(() => {
     setDetectedLoading(true);
     getDetectedBills()
       .then((res) => setDetectedBills(res.bills))
       .catch(() => {/* silent */ })
       .finally(() => setDetectedLoading(false));
-  }, []);
+  });
 
   const handleAddBill = () => {
     const amount = parseFloat(newAmount);
@@ -70,6 +73,14 @@ export function BillsScreen({ navigation, route }: any) {
       return;
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    if (editingBill) {
+      const dueDate = new Date(Date.now() + parseInt(newDueDays || '14') * 86400000).toISOString();
+      updateBill(editingBill.id, { name: newName.trim(), amount, dueDate, category: newCategory, isAutoPay: newIsAutoPay, isRecurring: editingBill.isRecurring });
+      setEditingBill(null);
+      resetModal();
+      setShowAddModal(false);
+      return;
+    }
     const dueDate = new Date(Date.now() + parseInt(newDueDays || '14') * 86400000).toISOString();
     const daysUntil = parseInt(newDueDays || '14');
     const status: Bill['status'] = daysUntil < 0 ? 'overdue' : daysUntil <= 5 ? 'due_soon' : 'upcoming';
@@ -128,6 +139,17 @@ export function BillsScreen({ navigation, route }: any) {
     setNewCategory(detected.category);
     const daysUntil = differenceInDays(new Date(detected.nextDueDate), new Date());
     setNewDueDays(String(Math.max(0, daysUntil)));
+  };
+
+  const handleEditBill = (bill: Bill) => {
+    const daysUntil = differenceInDays(new Date(bill.dueDate), new Date());
+    setEditingBill(bill);
+    setNewName(bill.name);
+    setNewAmount(String(bill.amount));
+    setNewDueDays(String(Math.max(0, daysUntil)));
+    setNewCategory(bill.category);
+    setNewIsAutoPay(bill.isAutoPay);
+    setShowAddModal(true);
   };
 
   const handleDelete = (id: string, name: string) => {
@@ -278,6 +300,9 @@ export function BillsScreen({ navigation, route }: any) {
               {bill.status !== 'paid' && (
                 <View style={s.billActions}>
                   <Button title="Mark Paid" onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); markBillPaid(bill.id); }} variant="success" size="sm" />
+                  <Pressable onPress={() => handleEditBill(bill)} style={s.editBtn}>
+                    <Ionicons name="create-outline" size={18} color={colors.primary} />
+                  </Pressable>
                   <Pressable onPress={() => handleDelete(bill.id, bill.name)} style={s.deleteBtn}>
                     <Ionicons name="trash-outline" size={18} color={colors.danger} />
                   </Pressable>
@@ -303,8 +328,8 @@ export function BillsScreen({ navigation, route }: any) {
         <View style={s.modalOverlay}>
           <ScrollView style={s.modalSheet} contentContainerStyle={{ paddingBottom: 40 }}>
             <View style={s.modalHeader}>
-              <Text style={s.modalTitle}>Add Bill</Text>
-              <Pressable onPress={() => { resetModal(); setShowAddModal(false); }}>
+              <Text style={s.modalTitle}>{editingBill ? 'Edit Bill' : 'Add Bill'}</Text>
+              <Pressable onPress={() => { resetModal(); setEditingBill(null); setShowAddModal(false); }}>
                 <Ionicons name="close" size={24} color={colors.text} />
               </Pressable>
             </View>
@@ -386,8 +411,8 @@ export function BillsScreen({ navigation, route }: any) {
               onPress={handleAddBill}
               style={[s.modalSubmit, (!newName.trim() || !newAmount) && s.modalSubmitDisabled]}
             >
-              <Ionicons name="add-circle" size={18} color="#fff" />
-              <Text style={s.modalSubmitText}>Add Bill</Text>
+              <Ionicons name={editingBill ? 'checkmark-circle' : 'add-circle'} size={18} color="#fff" />
+              <Text style={s.modalSubmitText}>{editingBill ? 'Save Changes' : 'Add Bill'}</Text>
             </Pressable>
           </ScrollView>
         </View>
@@ -436,6 +461,7 @@ function makeStyles(colors: any) {
     billMeta: { flexDirection: 'row', gap: 6, marginBottom: 5 },
     billDue: { fontSize: 12, color: colors.textSecondary, fontWeight: '600' },
     billActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.border },
+    editBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: colors.primaryLight ?? '#E8EEF9', alignItems: 'center', justifyContent: 'center' },
     deleteBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: colors.dangerLight, alignItems: 'center', justifyContent: 'center' },
     emptyState: { alignItems: 'center', paddingVertical: 60 },
     emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginTop: 14 },

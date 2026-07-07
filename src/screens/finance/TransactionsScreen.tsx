@@ -8,6 +8,7 @@ import { format, isToday, isYesterday, parseISO } from 'date-fns';
 import { getTransactions } from '../../services/plaidService';
 import type { PlaidTransaction } from '../../types';
 import { useTranslation } from 'react-i18next';
+import { usePlaidAutoData } from '../../hooks/usePlaidAutoData';
 
 const CATEGORIES = ['All', 'FOOD_AND_DRINK', 'SHOPPING', 'TRANSPORTATION', 'BILLS', 'INCOME', 'OTHER'];
 const CATEGORY_LABELS: Record<string, string> = {
@@ -117,6 +118,11 @@ export function TransactionsScreen({ navigation }: { navigation: any }) {
     fetchTransactions(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category, debouncedSearch, month]);
+
+  // Also refetch whenever a bank connects or a sync completes elsewhere in
+  // the app, so a freshly-linked account's transactions show up here
+  // without the user having to change a filter first.
+  usePlaidAutoData(() => fetchTransactions(true));
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);

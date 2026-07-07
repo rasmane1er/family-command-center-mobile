@@ -16,9 +16,11 @@ import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
 import { useInsuranceStore, InsuranceType, PremiumFrequency } from '../../store/useInsuranceStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { getDetectedInsurance } from '../../services/autoFillService';
 import type { DetectedInsurance } from '../../services/autoFillService';
 import { useTranslation } from 'react-i18next';
+import { usePlaidAutoData } from '../../hooks/usePlaidAutoData';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -78,11 +80,12 @@ function normalizeInsuranceType(raw: string): InsuranceType {
 export function InsuranceManagerScreen({ navigation }: any) {
   const { t } = useTranslation('finance');
   const insets = useSafeAreaInsets();
-  const { policies, addPolicy, deletePolicy, getTotalMonthlyPremium, isLoaded, fetchFromServer } = useInsuranceStore();
+  const { policies, addPolicy, updatePolicy, deletePolicy, getTotalMonthlyPremium, isLoaded, fetchFromServer } = useInsuranceStore();
   const members = useFamilyStore((s) => s.members);
 
   const [activeTab, setActiveTab] = useState<'Policies' | 'Coverage' | 'Calendar'>('Policies');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingPolicy, setEditingPolicy] = useState<typeof policies[number] | null>(null);
 
   // Detected insurance
   const [detectedInsurance, setDetectedInsurance] = useState<DetectedInsurance[]>([]);
@@ -111,10 +114,13 @@ export function InsuranceManagerScreen({ navigation }: any) {
 
   useEffect(() => {
     if (!isLoaded) fetchFromServer();
+  }, []);
+
+  usePlaidAutoData(() => {
     getDetectedInsurance()
       .then((res) => setDetectedInsurance(res.insurance))
       .catch(() => {/* silent */ });
-  }, []);
+  });
 
   const resetModal = () => {
     setNewType('health');
@@ -129,6 +135,24 @@ export function InsuranceManagerScreen({ navigation }: any) {
     setNewAgentPhone('');
     setNewMembersInsured([]);
     setNewColor(TYPE_COLORS['health']);
+    setEditingPolicy(null);
+  };
+
+  const handleEdit = (policy: typeof policies[number]) => {
+    setEditingPolicy(policy);
+    setNewType(policy.type);
+    setNewProvider(policy.provider);
+    setNewPolicyNumber(policy.policyNumber);
+    setNewPremium(String(policy.premium));
+    setNewFrequency(policy.premiumFrequency);
+    setNewDeductible(policy.deductible !== undefined ? String(policy.deductible) : '');
+    setNewCoverageAmount(policy.coverageAmount !== undefined ? String(policy.coverageAmount) : '');
+    setNewRenewalDate(policy.renewalDate ?? '');
+    setNewAgentName(policy.agentName ?? '');
+    setNewAgentPhone(policy.agentPhone ?? '');
+    setNewMembersInsured(policy.membersInsured);
+    setNewColor(policy.color);
+    setShowAddModal(true);
   };
 
   const prefillFromDetected = (d: DetectedInsurance) => {
@@ -147,24 +171,40 @@ export function InsuranceManagerScreen({ navigation }: any) {
       return;
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    addPolicy({
-      familyId: 'demo-family',
-      type: newType,
-      provider: newProvider.trim(),
-      policyNumber: newPolicyNumber.trim(),
-      premium,
-      premiumFrequency: newFrequency,
-      deductible: newDeductible ? parseFloat(newDeductible) : undefined,
-      coverageAmount: newCoverageAmount ? parseFloat(newCoverageAmount) : undefined,
-      renewalDate: newRenewalDate || undefined,
-      membersInsured: newMembersInsured,
-      agentName: newAgentName || undefined,
-      agentPhone: newAgentPhone || undefined,
-      color: newColor,
-      isActive: true,
-    });
-    // Remove from detected list
-    setDetectedInsurance((prev) => prev.filter((d) => d.merchantName !== newProvider));
+    if (editingPolicy) {
+      updatePolicy(editingPolicy.id, {
+        type: newType,
+        provider: newProvider.trim(),
+        policyNumber: newPolicyNumber.trim(),
+        premium,
+        premiumFrequency: newFrequency,
+        deductible: newDeductible ? parseFloat(newDeductible) : undefined,
+        coverageAmount: newCoverageAmount ? parseFloat(newCoverageAmount) : undefined,
+        renewalDate: newRenewalDate || undefined,
+        membersInsured: newMembersInsured,
+        agentName: newAgentName || undefined,
+        agentPhone: newAgentPhone || undefined,
+        color: newColor,
+      });
+    } else {
+      addPolicy({
+        familyId: useAuthStore.getState().familyId ?? '',
+        type: newType,
+        provider: newProvider.trim(),
+        policyNumber: newPolicyNumber.trim(),
+        premium,
+        premiumFrequency: newFrequency,
+        deductible: newDeductible ? parseFloat(newDeductible) : undefined,
+        coverageAmount: newCoverageAmount ? parseFloat(newCoverageAmount) : undefined,
+        renewalDate: newRenewalDate || undefined,
+        membersInsured: newMembersInsured,
+        agentName: newAgentName || undefined,
+        agentPhone: newAgentPhone || undefined,
+        color: newColor,
+        isActive: true,
+      });
+      setDetectedInsurance((prev) => prev.filter((d) => d.merchantName !== newProvider));
+    }
     resetModal();
     setShowAddModal(false);
   };
@@ -318,6 +358,9 @@ export function InsuranceManagerScreen({ navigation }: any) {
                       </View>
                       <Text style={styles.policyNumber}>{maskPolicyNumber(policy.policyNumber)}</Text>
                     </View>
+                    <Pressable onPress={() => handleEdit(policy)} style={styles.editBtn}>
+                      <Ionicons name="create-outline" size={17} color={colors.primary} />
+                    </Pressable>
                     <Pressable onPress={() => handleDelete(policy.id, policy.provider)} style={styles.deleteBtn}>
                       <Ionicons name="trash-outline" size={17} color={colors.danger} />
                     </Pressable>
@@ -504,7 +547,7 @@ export function InsuranceManagerScreen({ navigation }: any) {
       <Modal visible={showAddModal} animationType="slide" presentationStyle="pageSheet">
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Add Insurance Policy</Text>
+            <Text style={styles.modalTitle}>{editingPolicy ? 'Edit Policy' : 'Add Insurance Policy'}</Text>
             <Pressable onPress={() => { resetModal(); setShowAddModal(false); }}>
               <Ionicons name="close" size={24} color={colors.text} />
             </Pressable>
@@ -637,7 +680,7 @@ export function InsuranceManagerScreen({ navigation }: any) {
               style={[styles.submitBtn, (!newProvider.trim() || !newPolicyNumber.trim() || !newPremium) && styles.submitBtnDisabled]}
             >
               <Ionicons name="shield-checkmark" size={18} color="#fff" />
-              <Text style={styles.submitBtnText}>Add Policy</Text>
+              <Text style={styles.submitBtnText}>{editingPolicy ? 'Save Changes' : 'Add Policy'}</Text>
             </Pressable>
 
             <View style={{ height: 40 }} />
@@ -689,6 +732,7 @@ const styles = StyleSheet.create({
   policyTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 },
   policyProvider: { flex: 1, fontSize: 16, fontWeight: '700', color: colors.text },
   policyNumber: { fontSize: 12, color: colors.textMuted, fontFamily: 'monospace' },
+  editBtn: { width: 32, height: 32, borderRadius: 8, backgroundColor: colors.primaryLight + '30', alignItems: 'center', justifyContent: 'center', marginRight: 6 },
   deleteBtn: { width: 32, height: 32, borderRadius: 8, backgroundColor: colors.dangerLight, alignItems: 'center', justifyContent: 'center' },
   policyMetaRow: { flexDirection: 'row', gap: 16, marginBottom: 10, flexWrap: 'wrap' },
   policyMetaItem: {},

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -22,6 +22,7 @@ import { PremiumHeader } from '../../components/common/PremiumHeader';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useSleepStore, SleepQuality } from '../../store/useSleepStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 
@@ -77,12 +78,8 @@ export function SleepTrackerScreen({ navigation: navProp }: any) {
   const navigation = navProp ?? navHook;
   const { t } = useTranslation('health');
   const insets = useSafeAreaInsets();
-  const { logs, addLog, deleteLog, getAverageSleep, seedDemoData, hasSeeded } = useSleepStore();
+  const { logs, addLog, deleteLog, getAverageSleep } = useSleepStore();
   const members = useFamilyStore((s) => s.members);
-
-  useEffect(() => {
-    if (!hasSeeded) seedDemoData();
-  }, [hasSeeded, seedDemoData]);
 
   const [selectedMemberId, setSelectedMemberId] = useState<string>(
     members[0]?.id ?? 'member-1'
@@ -139,7 +136,7 @@ export function SleepTrackerScreen({ navigation: navProp }: any) {
       return;
     }
     addLog({
-      familyId: 'demo-family',
+      familyId: useAuthStore.getState().familyId ?? '',
       memberId: modalMemberId,
       date: modalDate,
       bedtime: modalBedtime,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,6 +11,7 @@ import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { useAutomationStore } from '../../store/useAutomationStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { useTranslation } from 'react-i18next';
 
 const TRIGGER_LABELS: Record<string, string> = {
@@ -74,13 +75,8 @@ export function AutomationScreen({ navigation }: any) {
   const { t } = useTranslation('ops');
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<'rules' | 'templates'>('rules');
-  const { rules, hasSeeded, toggleRule, deleteRule, addRule, seedDemoData } = useAutomationStore();
-  const familyId = useFamilyStore((s) => s.family?.id) ?? 'demo-family';
-
-  useEffect(() => {
-    if (!hasSeeded) seedDemoData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const { rules, toggleRule, deleteRule, addRule } = useAutomationStore();
+  const familyId = useFamilyStore((s) => s.family?.id) ?? useAuthStore.getState().familyId ?? '';
 
   const activeRules = rules.filter((r) => r.isActive);
   const totalRuns = rules.reduce((s, r) => s + r.runCount, 0);

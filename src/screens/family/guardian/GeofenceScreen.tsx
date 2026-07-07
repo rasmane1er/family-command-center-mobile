@@ -1,4 +1,5 @@
 import React, { useMemo, useRef, useState } from "react";
+import { useAuthStore } from '../../../store/useAuthStore';
 import {
   Alert,
   Pressable,
@@ -188,7 +189,7 @@ export function GeofenceScreen({ navigation }: any) {
     } else {
       const zone: GeofenceZone = {
         id: `geo-${Date.now()}`,
-        familyId: family?.id ?? "demo-family",
+        familyId: useAuthStore.getState().familyId ?? family?.id ?? "",
         name: draftZone.name.trim(),
         lat: draftZone.lat,
         lng: draftZone.lng,

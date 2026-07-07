@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { mmkvStorage } from '../storage/mmkvStorage';
 import { useFamilyStore } from './useFamilyStore';
+import { useAuthStore } from './useAuthStore';
 import type {
   Deployment,
   PCSMove,
@@ -39,6 +40,8 @@ interface MilitaryState {
   pcsMoves: PCSMove[];
   readiness: FamilyReadiness | null;
 
+  isLoaded: boolean;
+  fetchFromServer: () => Promise<void>;
   addDeployment: (d: Deployment) => void;
   updateDeployment: (id: string, updates: Partial<Deployment>) => void;
   deleteDeployment: (id: string) => void;
@@ -58,6 +61,9 @@ export const useMilitaryStore = create<MilitaryState>()(
       deployments: [],
       pcsMoves: [],
       readiness: null,
+      isLoaded: false,
+
+      fetchFromServer: async () => { set({ isLoaded: true }); },
 
       addDeployment: (d) => {
         set((s) => ({ deployments: [...s.deployments, d] }));
@@ -154,7 +160,7 @@ export const useMilitaryStore = create<MilitaryState>()(
         const family = useFamilyStore.getState().family;
         set((s) => {
           const base: FamilyReadiness = s.readiness ?? {
-            familyId: family?.id ?? 'demo-family',
+            familyId: family?.id ?? useAuthStore.getState().familyId ?? '',
             contacts: [],
             updatedAt: new Date().toISOString(),
           };
@@ -165,7 +171,7 @@ export const useMilitaryStore = create<MilitaryState>()(
         const family = useFamilyStore.getState().family;
         set((s) => {
           const base: FamilyReadiness = s.readiness ?? {
-            familyId: family?.id ?? 'demo-family',
+            familyId: family?.id ?? useAuthStore.getState().familyId ?? '',
             contacts: [],
             updatedAt: new Date().toISOString(),
           };

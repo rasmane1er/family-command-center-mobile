@@ -13,6 +13,7 @@ import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { Card } from '../../components/common/Card';
 import { ProgressBar } from '../../components/common/ProgressBar';
 import { useTravelStore, Trip, ItineraryItemType, ItineraryItem, PackingItem } from '../../store/useTravelStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { useTranslation } from 'react-i18next';
 
@@ -490,7 +491,7 @@ function AddTripModal({ visible, onClose, onAdd }: { visible: boolean; onClose: 
 
   const handleAdd = () => {
     if (!canSubmit) return;
-    const familyId = useFamilyStore.getState().family?.id ?? 'demo-family';
+    const familyId = useAuthStore.getState().familyId ?? '';
     onAdd({
       familyId,
       name: name.trim(),

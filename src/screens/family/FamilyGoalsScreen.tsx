@@ -103,7 +103,7 @@ export function FamilyGoalsScreen({ navigation }: any) {
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     addGoal({
-      familyId: family?.id ?? 'demo-family',
+      familyId: useAuthStore.getState().familyId ?? family?.id ?? '',
       title: newTitle.trim(),
       description: newDescription || undefined,
       category: newCategory,

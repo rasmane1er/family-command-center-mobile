@@ -13,7 +13,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
 import * as Haptics from 'expo-haptics';
 import { PlaidLinkButton } from '../../components/finance/PlaidLinkButton';
-import { getConnectedItems, disconnectItem, syncPlaid } from '../../services/plaidService';
+import { getConnectedItems, disconnectItem } from '../../services/plaidService';
+import { usePlaidStore } from '../../store/usePlaidStore';
 import { colors } from '../../theme/colors';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -31,7 +32,9 @@ export function ConnectBankScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const [items, setItems] = React.useState<ConnectedItem[]>([]);
   const [loading, setLoading] = React.useState(true);
-  const [syncing, setSyncing] = React.useState(false);
+  const isSyncing = usePlaidStore((s) => s.isSyncing);
+  const triggerSync = usePlaidStore((s) => s.triggerSync);
+  const checkConnection = usePlaidStore((s) => s.checkConnection);
 
   const loadItems = React.useCallback(async () => {
     try {
@@ -44,7 +47,11 @@ export function ConnectBankScreen({ navigation }: any) {
     }
   }, []);
 
-  React.useEffect(() => { loadItems(); }, [loadItems]);
+  React.useEffect(() => {
+    loadItems();
+    checkConnection();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadItems]);
 
   const handleDisconnect = (id: string, name: string | null) => {
     Alert.alert(
@@ -70,17 +77,14 @@ export function ConnectBankScreen({ navigation }: any) {
   };
 
   const handleSync = async () => {
-    setSyncing(true);
-    try {
-      const result = await syncPlaid();
+    const result = await triggerSync();
+    if (result) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert('Synced', `${result.synced} new transactions imported.`);
-      loadItems();
-    } catch (err: any) {
-      Alert.alert('Sync Error', err.message);
-    } finally {
-      setSyncing(false);
+    } else {
+      Alert.alert('Sync Error', 'Could not sync your accounts. Please try again.');
     }
+    loadItems();
   };
 
   const screenHeader = (
@@ -90,8 +94,8 @@ export function ConnectBankScreen({ navigation }: any) {
         </Pressable>
         <Text style={styles.headerTitle}>Connected Banks</Text>
         {items.length > 0 && (
-          <Pressable onPress={handleSync} disabled={syncing} style={styles.syncBtn}>
-            {syncing
+          <Pressable onPress={handleSync} disabled={isSyncing} style={styles.syncBtn}>
+            {isSyncing
               ? <ActivityIndicator size="small" color={colors.primary} />
               : <Ionicons name="refresh-outline" size={20} color={colors.primary} />
             }

@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 import { Card } from '../../components/common/Card';
 import { useAIStore } from '../../store/useAIStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { useOperationsStore } from '../../store/useOperationsStore';
 import { useGuardianStore } from '../../store/useGuardianStore';
@@ -155,7 +156,7 @@ export function AIAssistantScreen({ navigation }: any) {
         const p = action.payload;
         addTask({
           id: Math.random().toString(36).substring(2),
-          familyId: 'demo-family',
+          familyId: useAuthStore.getState().familyId ?? '',
           title: typeof p.title === 'string' ? p.title : 'New Task',
           dueDate: typeof p.dueDate === 'string' ? p.dueDate : new Date().toISOString(),
           priority: (p.priority as 'high' | 'medium' | 'low') ?? 'medium',
@@ -171,7 +172,7 @@ export function AIAssistantScreen({ navigation }: any) {
         const p = action.payload;
         addBill({
           id: Math.random().toString(36).substring(2),
-          familyId: 'demo-family',
+          familyId: useAuthStore.getState().familyId ?? '',
           name: typeof p.name === 'string' ? p.name : 'New Bill',
           amount: typeof p.amount === 'number' ? p.amount : 0,
           dueDate: typeof p.dueDate === 'string' ? p.dueDate : new Date().toISOString(),
@@ -186,7 +187,7 @@ export function AIAssistantScreen({ navigation }: any) {
         const p = action.payload;
         addTransaction({
           id: Math.random().toString(36).substring(2),
-          familyId: 'demo-family',
+          familyId: useAuthStore.getState().familyId ?? '',
           amount: typeof p.amount === 'number' ? p.amount : 0,
           type: 'expense',
           category: typeof p.category === 'string' ? p.category : 'Other',
@@ -198,7 +199,7 @@ export function AIAssistantScreen({ navigation }: any) {
       } else if (action.type === 'add_memory') {
         const p = action.payload;
         addMemory({
-          familyId: 'demo-family',
+          familyId: useAuthStore.getState().familyId ?? '',
           type: (p.type as 'milestone' | 'preference' | 'habit' | 'insight' | 'conflict' | 'health') ?? 'milestone',
           title: typeof p.title === 'string' ? p.title : 'Memory',
           content: typeof p.content === 'string' ? p.content : '',

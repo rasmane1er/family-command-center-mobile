@@ -24,6 +24,7 @@ interface UtilityState {
   bills: UtilityBill[];
   isLoaded: boolean;
   addBill: (b: Omit<UtilityBill, 'id'>) => Promise<void>;
+  updateBill: (id: string, updates: Partial<UtilityBill>) => void;
   markPaid: (id: string) => void;
   deleteBill: (id: string) => void;
   getMonthlyTotal: (month: string) => number;
@@ -46,6 +47,13 @@ export const useUtilityStore = create<UtilityState>()(
     } catch {
       set((s) => ({ bills: s.bills.filter((x) => x.id !== bill.id) }));
     }
+  },
+
+  updateBill: (id, updates) => {
+    set((s) => ({
+      bills: s.bills.map((b) => (b.id === id ? { ...b, ...updates } : b)),
+    }));
+    utilityService.updateBillRemote(id, updates).catch(() => {});
   },
 
   markPaid: (id) => {

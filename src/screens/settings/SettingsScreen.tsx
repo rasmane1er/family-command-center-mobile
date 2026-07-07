@@ -18,16 +18,7 @@ import { clearLocalAppData } from '../../storage/resetLocalData';
 import { resetAllStores } from '../../storage/resetAllStores';
 import { useAIStore } from '../../store/useAIStore';
 import { useAppStore } from '../../store/useAppStore';
-import { useAutomationStore } from '../../store/useAutomationStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
-import { useHealthStore } from '../../store/useHealthStore';
-import { useLegacyStore } from '../../store/useLegacyStore';
-import { useMemoryStore } from '../../store/useMemoryStore';
-import { useMoodStore } from '../../store/useMoodStore';
-import { useNotificationsStore } from '../../store/useNotificationsStore';
-import { useRecipesStore } from '../../store/useRecipesStore';
-import { useSchoolStore } from '../../store/useSchoolStore';
-import { useTimelineStore } from '../../store/useTimelineStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useTheme } from '../../theme/ThemeContext';
 import { useSubscription, SubscriptionTier, TIER_LABELS, TIER_PRICES, TIER_FEATURES } from '../../hooks/useSubscription';
@@ -79,7 +70,8 @@ export function SettingsScreen({ navigation }: any) {
 
   const { settings, updateSettings, setOnboarded, toggleMilitaryMode } = useAppStore();
   const { tier: currentTier, canAccess } = useSubscription();
-  const { user, signOut } = useAuthStore();
+  const { user, signOut, deleteAccount } = useAuthStore();
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const militaryMode = settings?.militaryMode || false;
 
   const { restore, showPaywall, showCustomerCenter, error: purchasesError } = usePurchases();
@@ -111,17 +103,6 @@ export function SettingsScreen({ navigation }: any) {
   });
 
   const setAIKey = useAIStore((s) => s.setApiKey);
-  const { seedDemoData: seedFamily }        = useFamilyStore();
-  const { seedDemoInsights }                = useAIStore();
-  const { seedDemoData: seedMemory }        = useMemoryStore();
-  const { seedDemoData: seedLegacy }        = useLegacyStore();
-  const { seedDemoData: seedHealth }        = useHealthStore();
-  const { seedDemoData: seedAutomation }    = useAutomationStore();
-  const { seedDemoData: seedNotifications, clearAll: clearNotifications } = useNotificationsStore();
-  const { seedDemoData: seedMood }          = useMoodStore();
-  const { seedDemoData: seedRecipes }       = useRecipesStore();
-  const { seedDemoData: seedTimeline }      = useTimelineStore();
-  const { seedDemoData: seedSchool }        = useSchoolStore();
 
   const currentLanguage = LANGUAGES.find((l) => l.code === (settings.language || 'en')) || LANGUAGES[0];
 
@@ -180,12 +161,25 @@ export function SettingsScreen({ navigation }: any) {
     ]);
   };
 
-  const handleLoadDemo = () => {
-    seedFamily(); seedDemoInsights();
-    seedMemory(); seedLegacy(); seedHealth(); seedAutomation();
-    seedNotifications(); seedMood();
-    seedRecipes(); seedTimeline(); seedSchool();
-    Alert.alert(t('settings.demoLoaded'), t('settings.demoLoadedMsg'));
+  const handleDeleteAccount = () => {
+    Alert.alert(t('settings.deleteAccountConfirm'), t('settings.deleteAccountConfirmMsg'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('settings.deleteAccountAction'),
+        style: 'destructive',
+        onPress: async () => {
+          setIsDeletingAccount(true);
+          const result = await deleteAccount();
+          setIsDeletingAccount(false);
+          if (result.success) {
+            resetAllStores();
+            signOut();
+          } else {
+            Alert.alert(t('common.error'), result.error ?? t('settings.deleteAccountFailedMsg'));
+          }
+        },
+      },
+    ]);
   };
 
   // Manage/cancel/change-plan and restore all live in RevenueCat's Customer
@@ -699,14 +693,6 @@ export function SettingsScreen({ navigation }: any) {
           <>
             <Text style={s.sectionTitle}>{t('settings.developer')}</Text>
             <Card style={s.settingCard} variant="elevated">
-              <Pressable onPress={handleLoadDemo} style={[s.toggleRow, s.toggleRowBorder]}>
-                <Ionicons name="flask-outline" size={20} color={colors.primary} />
-                <View style={{ flex: 1, marginLeft: 12 }}>
-                  <Text style={s.toggleLabel}>{t('settings.loadDemo')}</Text>
-                  <Text style={s.toggleDesc}>{t('settings.loadDemoDesc')}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-              </Pressable>
               <Pressable onPress={handleResetLocalData} style={[s.toggleRow, s.toggleRowBorder]}>
                 <Ionicons name="trash-outline" size={20} color={colors.danger} />
                 <View style={{ flex: 1, marginLeft: 12 }}>
@@ -727,12 +713,25 @@ export function SettingsScreen({ navigation }: any) {
           </>
         )}
 
-        {/* ── SIGN OUT ── */}
+        {/* ── SIGN OUT / DELETE ACCOUNT ── */}
         <Text style={s.sectionTitle}>Account</Text>
         <Card style={s.settingCard} variant="elevated">
           <Pressable onPress={handleSignOut} style={s.toggleRow}>
             <Ionicons name="log-out-outline" size={20} color={colors.danger} />
             <Text style={[s.toggleLabel, { marginLeft: 12, flex: 1, color: colors.danger }]}>Sign Out</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+          </Pressable>
+        </Card>
+        <Card style={s.settingCard} variant="elevated">
+          <Pressable onPress={handleDeleteAccount} style={s.toggleRow} disabled={isDeletingAccount}>
+            {isDeletingAccount ? (
+              <ActivityIndicator size="small" color={colors.danger} />
+            ) : (
+              <Ionicons name="trash-outline" size={20} color={colors.danger} />
+            )}
+            <Text style={[s.toggleLabel, { marginLeft: 12, flex: 1, color: colors.danger }]}>
+              {t('settings.deleteAccountLabel')}
+            </Text>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </Pressable>
         </Card>

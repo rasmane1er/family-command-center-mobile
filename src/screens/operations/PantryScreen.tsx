@@ -12,6 +12,7 @@ import { Button } from '../../components/common/Button';
 import { useOperationsStore } from '../../store/useOperationsStore';
 import { useShoppingStore } from '../../store/useShoppingStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import type { PantryItem } from '../../types';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -50,7 +51,7 @@ export function PantryScreen({ navigation }: any) {
 
   const { pantryItems, updatePantryItem, addPantryItem, deletePantryItem } = useOperationsStore();
   const { addItem: addShoppingItem } = useShoppingStore();
-  const familyId = useFamilyStore((s) => s.family?.id) ?? 'demo-family';
+  const familyId = useAuthStore.getState().familyId ?? '';
 
   const handleAdd = () => {
     if (!newName.trim()) return;
