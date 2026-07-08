@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { format } from 'date-fns';
 import { useAuthStore } from '../../store/useAuthStore';
 import * as Sharing from 'expo-sharing';
 import * as Clipboard from 'expo-clipboard';
@@ -287,66 +288,99 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
 
   const dynStyles = makeStyles(colors);
 
+  const familyToday = format(new Date(), 'EEEE, MMM d');
+  const familyHour = new Date().getHours();
+  const familyGreeting = familyHour < 12 ? 'Good morning' : familyHour < 17 ? 'Good afternoon' : 'Good evening';
+
+  const statCards = [
+    { icon: 'checkmark-done-circle', value: pendingTasks, label: t('family.screens.familyProfiles.statTasks'), color: '#34D399' },
+    { icon: 'calendar', value: todayEvents, label: t('family.screens.familyProfiles.statEventsToday'), color: '#60A5FA' },
+    { icon: 'trophy', value: healthScore, label: t('family.screens.familyProfiles.statFamilyScore'), color: '#FBBF24' },
+  ];
+
   const screenHeader = (
     <LinearGradient
-      colors={['#0F2952', '#1E4A8A']}
-      style={[dynStyles.header, { paddingTop: insets.top + 6 }]}
+      colors={['#0A1628', '#0D2D52', '#0E3D6E', '#0B4F82']}
+      start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+      style={[dynStyles.header, { paddingTop: insets.top + 10 }]}
     >
+      {/* Decorative orbs */}
+      <View style={dynStyles.orbTopRight} pointerEvents="none" />
+      <View style={dynStyles.orbBottomLeft} pointerEvents="none" />
+
       {/* Top row */}
       <View style={dynStyles.headerTop}>
-            {route?.params?.source === 'dashboard' && (
-              <Pressable onPress={() => navigation.getParent()?.navigate('Home')} style={dynStyles.backBtn}>
-                <Ionicons name="arrow-back" size={22} color="#fff" />
-              </Pressable>
-            )}
-            <View style={dynStyles.headerLeft}>
-              <Text style={dynStyles.headerTitle}>{t('family.title')}</Text>
-              <Text style={dynStyles.headerSubtitle}>
-                {t('family.screens.familyProfiles.memberCount', { count: members.length })}
-                {family?.name ? ` · ${family.name}` : ''}
-              </Text>
-            </View>
-            <View style={dynStyles.headerActions}>
-              {activeMember && (
-                <Pressable
-                  style={dynStyles.activeProfilePill}
-                  onPress={() => navigation.navigate('ProfileSwitcher')}
-                >
-                  <Avatar name={activeMember.name} color={activeMember.avatarColor} size={26} />
-                  <Ionicons name="chevron-down" size={13} color="rgba(255,255,255,0.8)" style={{ marginLeft: 6 }} />
-                </Pressable>
-              )}
-              <Pressable onPress={openAddMemberModal} style={dynStyles.addBtn}>
-                <Ionicons name="person-add-outline" size={20} color="#fff" />
-              </Pressable>
-            </View>
+        {route?.params?.source === 'dashboard' && (
+          <Pressable onPress={() => navigation.getParent()?.navigate('Home')} style={dynStyles.backBtn}>
+            <Ionicons name="arrow-back" size={22} color="#fff" />
+          </Pressable>
+        )}
+        <View style={dynStyles.headerLeft}>
+          <Text style={dynStyles.headerGreeting}>{familyGreeting}</Text>
+          <Text style={dynStyles.headerTitle}>{t('family.title')}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 }}>
+            <Text style={dynStyles.headerSubtitle}>
+              {t('family.screens.familyProfiles.memberCount', { count: members.length })}
+              {family?.name ? ` · ${family.name}` : ''}
+            </Text>
           </View>
+          <View style={dynStyles.datePill}>
+            <Ionicons name="calendar-outline" size={10} color="rgba(255,255,255,0.6)" />
+            <Text style={dynStyles.datePillText}>{familyToday}</Text>
+          </View>
+        </View>
+        <View style={dynStyles.headerActions}>
+          {activeMember && (
+            <Pressable style={dynStyles.activeProfilePill} onPress={() => navigation.navigate('ProfileSwitcher')}>
+              <Avatar name={activeMember.name} color={activeMember.avatarColor} size={26} />
+              <Ionicons name="chevron-down" size={13} color="rgba(255,255,255,0.8)" style={{ marginLeft: 6 }} />
+            </Pressable>
+          )}
+          <Pressable onPress={openAddMemberModal} style={dynStyles.addBtn}>
+            <Ionicons name="person-add-outline" size={20} color="#fff" />
+          </Pressable>
+        </View>
+      </View>
 
-          {/* Stats row */}
-          <View style={dynStyles.statsRow}>
-            {[
-              { icon: 'checkmark-done-circle', value: pendingTasks, label: t('family.screens.familyProfiles.statTasks') },
-              { icon: 'calendar', value: todayEvents, label: t('family.screens.familyProfiles.statEventsToday') },
-              { icon: 'trophy', value: `${healthScore}`, label: t('family.screens.familyProfiles.statFamilyScore') },
-            ].map((stat) => (
-              <View key={stat.label} style={dynStyles.statPill}>
-                <Ionicons name={stat.icon as any} size={14} color="rgba(255,255,255,0.75)" />
-                <Text style={dynStyles.statValue}>{stat.value}</Text>
-                <Text style={dynStyles.statLabel}>{stat.label}</Text>
-              </View>
-            ))}
-          </View>
+      {/* Divider */}
+      <View style={dynStyles.headerDivider} />
+
+      {/* Stat cards */}
+      <View style={dynStyles.statsRow}>
+        {statCards.map((stat) => (
+          <LinearGradient
+            key={stat.label}
+            colors={['rgba(255,255,255,0.15)', 'rgba(255,255,255,0.06)']}
+            style={dynStyles.statCard}
+          >
+            <View style={[dynStyles.statIconWrap, { backgroundColor: stat.color + '28' }]}>
+              <Ionicons name={stat.icon as any} size={15} color={stat.color} />
+            </View>
+            <Text style={[dynStyles.statValue, { color: stat.color }]}>{stat.value}</Text>
+            <Text style={dynStyles.statLabel}>{stat.label}</Text>
+          </LinearGradient>
+        ))}
+      </View>
     </LinearGradient>
   );
 
   const screenCompact = (
-    <LinearGradient colors={['#0F2952', '#1E4A8A']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      {route?.params?.source === 'dashboard' && (
-        <Pressable onPress={() => navigation.getParent()?.navigate('Home')} style={dynStyles.backBtn}>
-          <Ionicons name="arrow-back" size={22} color="#fff" />
-        </Pressable>
-      )}
-      <Text style={[dynStyles.headerTitle, { flex: 1 }]}>{t('family.title')}</Text>
+    <LinearGradient
+      colors={['#0A1628', '#0E3D6E']}
+      start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+      style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        {route?.params?.source === 'dashboard' && (
+          <Pressable onPress={() => navigation.getParent()?.navigate('Home')} style={dynStyles.backBtn}>
+            <Ionicons name="arrow-back" size={22} color="#fff" />
+          </Pressable>
+        )}
+        <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name="people" size={14} color="#fff" />
+        </View>
+        <Text style={[dynStyles.headerTitle, { fontSize: 17 }]}>{t('family.title')}</Text>
+      </View>
       <Pressable onPress={openAddMemberModal} style={dynStyles.addBtn}>
         <Ionicons name="person-add-outline" size={20} color="#fff" />
       </Pressable>
@@ -734,43 +768,78 @@ function makeStyles(colors: import('../../theme/ThemeContext').ThemeColors) {
 
   // ── HEADER ──
   header: {
-    paddingHorizontal: 20,
-    paddingBottom: 8,
+    paddingHorizontal: 18,
+    paddingBottom: 18,
+    overflow: 'hidden',
+  },
+
+  orbTopRight: {
+    position: 'absolute', top: -60, right: -50,
+    width: 180, height: 180, borderRadius: 90,
+    backgroundColor: 'rgba(56,130,255,0.18)',
+  },
+
+  orbBottomLeft: {
+    position: 'absolute', bottom: -30, left: -20,
+    width: 120, height: 120, borderRadius: 60,
+    backgroundColor: 'rgba(99,179,255,0.10)',
   },
 
   headerTop: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 8,
+    gap: 8,
+    marginBottom: 14,
   },
 
   backBtn: {
     width: 36, height: 36, borderRadius: 18,
     backgroundColor: 'rgba(255,255,255,0.15)',
     alignItems: 'center', justifyContent: 'center',
-    marginRight: 10,
+    marginRight: 4,
   },
 
   headerLeft: { flex: 1, minWidth: 0 },
 
+  headerGreeting: {
+    fontSize: 12, fontWeight: '600',
+    color: 'rgba(255,255,255,0.55)', letterSpacing: 0.2, marginBottom: 2,
+  },
+
   headerTitle: {
-    fontSize: 17,
-    fontWeight: '800',
+    fontSize: 24,
+    fontWeight: '900',
     color: '#fff',
-    letterSpacing: -0.5,
+    letterSpacing: -1,
+    lineHeight: 28,
   },
 
   headerSubtitle: {
     fontSize: 13,
-    color: 'rgba(255,255,255,0.65)',
-    marginTop: 3,
+    color: 'rgba(255,255,255,0.6)',
+    fontWeight: '500',
+  },
+
+  datePill: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: 'rgba(255,255,255,0.12)', alignSelf: 'flex-start',
+    borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+    paddingHorizontal: 9, paddingVertical: 4, marginTop: 7,
+  },
+
+  datePillText: {
+    fontSize: 10, fontWeight: '700',
+    color: 'rgba(255,255,255,0.7)', letterSpacing: 0.2,
+  },
+
+  headerDivider: {
+    height: 1, backgroundColor: 'rgba(255,255,255,0.1)', marginBottom: 12,
   },
 
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
   },
 
   activeProfilePill: {
@@ -780,31 +849,37 @@ function makeStyles(colors: import('../../theme/ThemeContext').ThemeColors) {
     borderRadius: 20,
     paddingHorizontal: 10,
     paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
 
   addBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 11,
+    width: 38, height: 38, borderRadius: 12,
     backgroundColor: 'rgba(255,255,255,0.14)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
   },
 
   // Stats row inside header
   statsRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
   },
 
-  statPill: {
+  statCard: {
     flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.10)',
-    borderRadius: 12,
+    borderRadius: 14,
     paddingVertical: 10,
-    paddingHorizontal: 8,
     alignItems: 'center',
     gap: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    overflow: 'hidden',
+  },
+
+  statIconWrap: {
+    width: 28, height: 28, borderRadius: 9,
+    alignItems: 'center', justifyContent: 'center',
   },
 
   statValue: {

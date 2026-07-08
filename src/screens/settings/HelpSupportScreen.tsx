@@ -11,7 +11,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  UIManager,
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,11 +24,6 @@ import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useChatStore } from '../../store/useChatStore';
 
 const SUPPORT_EMAIL = 'support@familycommandcenter.app';
-
-// Enable LayoutAnimation on Android
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 // ─── Data ────────────────────────────────────────────────────────────────────
 

@@ -91,7 +91,7 @@ function TabItem({
   );
 }
 
-const HIDDEN_SCREENS = new Set(['ReceiptScanner', 'EnterPairingCode']);
+const HIDDEN_SCREENS = new Set(['ReceiptScanner', 'EnterPairingCode', 'ScanItem']);
 
 function getActiveNestedRoute(tabRoute: BottomTabBarProps['state']['routes'][number]): string | undefined {
   const nested = tabRoute.state;

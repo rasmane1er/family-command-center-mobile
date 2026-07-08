@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuthStore } from '../../store/useAuthStore';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, TextInput, Modal } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -10,24 +10,17 @@ import { format } from 'date-fns';
 import { colors } from '../../theme/colors';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
+import { Button } from '../../components/common/Button';
 import { ProgressBar } from '../../components/common/ProgressBar';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { useNotificationsStore } from '../../store/useNotificationsStore';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useTranslation } from 'react-i18next';
+import type { RewardCatalogItem } from '../../types';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
-const REWARD_STORE = [
-  { id: 'r1', name: 'Extra Screen Time', description: '30 min of extra screen time', cost: 100, icon: 'phone-portrait', color: '#8E44AD', bg: '#F5EEF8' },
-  { id: 'r2', name: 'Choose Dinner', description: 'Pick the family dinner tonight', cost: 150, icon: 'restaurant', color: '#F5A623', bg: '#FEF3E2' },
-  { id: 'r3', name: 'Stay Up Late', description: '1 hour past bedtime', cost: 200, icon: 'moon', color: '#2C3E50', bg: '#EAECEE' },
-  { id: 'r4', name: 'Movie Night Pick', description: 'You choose the movie', cost: 250, icon: 'film', color: '#E74C3C', bg: '#FDEDEC' },
-  { id: 'r5', name: 'Ice Cream Trip', description: 'Family ice cream outing', cost: 300, icon: 'ice-cream', color: '#E91E63', bg: '#FCE4EC' },
-  { id: 'r6', name: 'No Chores Day', description: 'Skip all chores for one day', cost: 400, icon: 'happy', color: '#27AE60', bg: '#D5F5E3' },
-  { id: 'r7', name: 'Sleepover', description: 'Have a friend sleep over', cost: 500, icon: 'people', color: '#2980B9', bg: '#D6EAF8' },
-  { id: 'r8', name: 'Game Purchase', description: '$10 game or app', cost: 750, icon: 'game-controller', color: '#9B59B6', bg: '#EBF5FB' },
-];
+const REWARD_COLORS = ['#8E44AD', '#F5A623', '#2C3E50', '#E74C3C', '#E91E63', '#27AE60', '#2980B9', '#9B59B6'];
 
 // Only 'tasks' and 'points' have a real, per-child data source anywhere in
 // this app (completed task count, current point balance). The other three
@@ -55,14 +48,21 @@ export function RewardsScreen({ navigation, route }: any) {
   const insets = useSafeAreaInsets();
   const [selectedChild, setSelectedChild] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'store' | 'achievements' | 'history'>('store');
+  const [showAddReward, setShowAddReward] = useState(false);
+  const [newRewardName, setNewRewardName] = useState('');
+  const [newRewardDesc, setNewRewardDesc] = useState('');
+  const [newRewardCost, setNewRewardCost] = useState('');
   const members = useFamilyStore((s) => s.members);
   const memberId = route?.params?.memberId;
   const role = route?.params?.role;
   const rewards = useFamilyStore((s) => s.rewards);
+  const rewardCatalog = useFamilyStore((s) => s.rewardCatalog);
   const tasks = useFamilyStore((s) => s.tasks);
   const updateMember = useFamilyStore((s) => s.updateMember);
   const addReward = useFamilyStore((s) => s.addReward);
   const clearRewardHistory = useFamilyStore((s) => s.clearRewardHistory);
+  const addRewardCatalogItem = useFamilyStore((s) => s.addRewardCatalogItem);
+  const deleteRewardCatalogItem = useFamilyStore((s) => s.deleteRewardCatalogItem);
   const family = useFamilyStore((s) => s.family);
   const addNotification = useNotificationsStore((s) => s.addNotification);
 
@@ -99,7 +99,7 @@ const activeChild =
         .sort((a, b) => (b.redeemedAt ?? '').localeCompare(a.redeemedAt ?? ''))
     : [];
 
-  const handleRedeem = (reward: typeof REWARD_STORE[0]) => {
+  const handleRedeem = (reward: RewardCatalogItem) => {
     if (!activeChild) return;
     if ((activeChild.points || 0) < reward.cost) {
       Alert.alert('Not enough points!', `You need ${reward.cost - (activeChild.points || 0)} more points to redeem this reward.`);
@@ -151,6 +151,37 @@ const activeChild =
     );
   };
 
+  // Parent-only — lets a family customize the Store catalog instead of being
+  // stuck with a fixed starter list forever.
+  const handleAddCustomReward = () => {
+    const cost = parseInt(newRewardCost, 10);
+    if (!newRewardName.trim() || !Number.isFinite(cost) || cost <= 0) {
+      Alert.alert('Missing info', 'Enter a name and a positive point cost.');
+      return;
+    }
+    addRewardCatalogItem({
+      id: generateId(),
+      familyId: useAuthStore.getState().familyId ?? family?.id ?? '',
+      name: newRewardName.trim(),
+      description: newRewardDesc.trim() || undefined,
+      cost,
+      icon: 'gift',
+      color: REWARD_COLORS[rewardCatalog.length % REWARD_COLORS.length],
+    });
+    setNewRewardName('');
+    setNewRewardDesc('');
+    setNewRewardCost('');
+    setShowAddReward(false);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  };
+
+  const handleDeleteCustomReward = (item: RewardCatalogItem) => {
+    Alert.alert('Remove Reward?', `Remove "${item.name}" from the store?`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Remove', style: 'destructive', onPress: () => deleteRewardCatalogItem(item.id) },
+    ]);
+  };
+
   // Parent-only — a kid clearing their own reward history would defeat the
   // point of tracking it. Only deletes the reward records themselves; the
   // points already deducted for past redemptions are not refunded, since
@@ -181,9 +212,13 @@ const activeChild =
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <Text style={styles.headerTitle}>Rewards Center</Text>
-        <Pressable style={styles.settingsBtn}>
-          <Ionicons name="settings-outline" size={20} color="#fff" />
-        </Pressable>
+        {role !== 'child' ? (
+          <Pressable style={styles.settingsBtn} onPress={() => setShowAddReward(true)}>
+            <Ionicons name="add" size={22} color="#fff" />
+          </Pressable>
+        ) : (
+          <View style={styles.settingsBtn} />
+        )}
       </View>
 
       {/* Child selector */}
@@ -282,23 +317,34 @@ const activeChild =
           >
         {activeTab === 'store' && (
           <>
+            {rewardCatalog.length === 0 && (
+              <View style={styles.emptyState}>
+                <Ionicons name="gift-outline" size={56} color={colors.textMuted} />
+                <Text style={styles.emptyTitle}>No rewards yet</Text>
+                <Text style={styles.emptyDesc}>
+                  {role !== 'child' ? 'Tap + to add a reward kids can redeem with points.' : 'Ask a parent to add rewards to the store.'}
+                </Text>
+              </View>
+            )}
             <View style={styles.storeGrid}>
-              {REWARD_STORE.map((reward) => {
+              {rewardCatalog.map((reward) => {
                 const points = activeChild?.points || 0;
                 const canAfford = points >= reward.cost;
                 const progress = reward.cost > 0 ? points / reward.cost : 1;
+                const color = reward.color ?? colors.secondary;
                 return (
                   <Pressable
                     key={reward.id}
                     onPress={() => handleRedeem(reward)}
+                    onLongPress={() => role !== 'child' && handleDeleteCustomReward(reward)}
                     style={[
                       styles.rewardCard,
-                      { backgroundColor: reward.bg },
-                      canAfford && { borderColor: reward.color },
+                      { backgroundColor: color + '15' },
+                      canAfford && { borderColor: color },
                     ]}
                   >
                     {canAfford ? (
-                      <View style={[styles.readyBadge, { backgroundColor: reward.color }]}>
+                      <View style={[styles.readyBadge, { backgroundColor: color }]}>
                         <Ionicons name="checkmark" size={12} color="#fff" />
                       </View>
                     ) : (
@@ -306,19 +352,19 @@ const activeChild =
                         <Ionicons name="lock-closed" size={12} color={colors.textMuted} />
                       </View>
                     )}
-                    <View style={[styles.rewardIcon, { backgroundColor: reward.color + '20' }]}>
-                      <Ionicons name={reward.icon as any} size={28} color={reward.color} />
+                    <View style={[styles.rewardIcon, { backgroundColor: color + '20' }]}>
+                      <Ionicons name={(reward.icon as any) ?? 'gift'} size={28} color={color} />
                     </View>
                     <Text style={styles.rewardName}>{reward.name}</Text>
                     <Text style={styles.rewardDesc} numberOfLines={2}>{reward.description}</Text>
                     <View style={styles.rewardCost}>
-                      <Ionicons name="star" size={12} color={reward.color} />
-                      <Text style={[styles.rewardCostText, { color: reward.color }]}>{reward.cost} pts</Text>
+                      <Ionicons name="star" size={12} color={color} />
+                      <Text style={[styles.rewardCostText, { color }]}>{reward.cost} pts</Text>
                     </View>
                     <ProgressBar
                       progress={progress}
-                      color={reward.color}
-                      backgroundColor={reward.color + '25'}
+                      color={color}
+                      backgroundColor={color + '25'}
                       height={5}
                       style={styles.rewardProgress}
                     />
@@ -396,6 +442,45 @@ const activeChild =
       </ScrollView>
         )}
       </CollapsibleHeader>
+
+      <Modal visible={showAddReward} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowAddReward(false)}>
+        <ScrollView style={styles.modal} contentContainerStyle={{ paddingBottom: 40 }}>
+          <View style={styles.modalHandle} />
+          <Text style={styles.modalTitle}>Add Reward</Text>
+
+          <Text style={styles.modalLabel}>Reward Name *</Text>
+          <TextInput
+            style={styles.modalInput}
+            placeholder="e.g. Pizza Night"
+            value={newRewardName}
+            onChangeText={setNewRewardName}
+            placeholderTextColor={colors.textMuted}
+            autoFocus
+          />
+
+          <Text style={styles.modalLabel}>Description</Text>
+          <TextInput
+            style={styles.modalInput}
+            placeholder="e.g. Pick the pizza toppings"
+            value={newRewardDesc}
+            onChangeText={setNewRewardDesc}
+            placeholderTextColor={colors.textMuted}
+          />
+
+          <Text style={styles.modalLabel}>Point Cost *</Text>
+          <TextInput
+            style={[styles.modalInput, { marginBottom: 24 }]}
+            placeholder="e.g. 200"
+            value={newRewardCost}
+            onChangeText={setNewRewardCost}
+            keyboardType="numeric"
+            placeholderTextColor={colors.textMuted}
+          />
+
+          <Button title="Add Reward" onPress={handleAddCustomReward} fullWidth size="lg" disabled={!newRewardName.trim() || !newRewardCost.trim()} />
+          <Button title="Cancel" onPress={() => setShowAddReward(false)} variant="ghost" fullWidth style={{ marginTop: 8 }} />
+        </ScrollView>
+      </Modal>
     </View>
   );
 }
@@ -458,4 +543,12 @@ const styles = StyleSheet.create({
   emptyState: { alignItems: 'center', paddingVertical: 60 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginTop: 16 },
   emptyDesc: { fontSize: 13, color: colors.textSecondary, marginTop: 8, textAlign: 'center', paddingHorizontal: 32 },
+  modal: { flex: 1, backgroundColor: colors.background, padding: 20 },
+  modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: colors.border, alignSelf: 'center', marginBottom: 16 },
+  modalTitle: { fontSize: 20, fontWeight: '800', color: colors.text, marginBottom: 20 },
+  modalLabel: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, marginBottom: 6, textTransform: 'uppercase' },
+  modalInput: {
+    backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 15, color: colors.text,
+    borderWidth: 1, borderColor: colors.border, marginBottom: 16,
+  },
 });

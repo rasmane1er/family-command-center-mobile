@@ -609,104 +609,113 @@ export function FinanceDashboardScreen({ navigation }: any) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
+  const financeToday = format(new Date(), 'EEEE, MMM d');
+  const financeHour = new Date().getHours();
+  const financeGreeting = financeHour < 12 ? 'Good morning' : financeHour < 17 ? 'Good afternoon' : 'Good evening';
+
   const financeHeader = (
     <LinearGradient
-      colors={['#040D1A', '#0A1E3D', '#0F2952']}
-      start={{ x: 0, y: 0 }} end={{ x: 0.6, y: 1 }}
-      style={[s.header, { paddingTop: insets.top + 6 }]}
+      colors={['#020810', '#071628', '#0A1E3D', '#0F2D56']}
+      start={{ x: 0, y: 0 }} end={{ x: 0.8, y: 1 }}
+      style={[s.header, { paddingTop: insets.top + 10 }]}
     >
-          {/* Decorative glows */}
-          <View style={s.glow1} />
-          <View style={s.glow2} />
+      {/* Decorative orbs */}
+      <View style={s.glow1} />
+      <View style={s.glow2} />
 
-          {/* Top row */}
-          <View style={s.headerTopRow}>
-            <View>
-              {activeTab === 'overview' ? (
-                <>
-                  <Text style={s.netWorthLabel}>TOTAL NET WORTH</Text>
-                  <Text style={s.netWorthValue}>
-                    ${totalNetWorth.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </Text>
-                  <View style={s.trendRow}>
-                    <View style={s.trendPill}>
-                      <Ionicons name={netWorthTrend.amount >= 0 ? 'arrow-up' : 'arrow-down'} size={11} color={netWorthTrend.amount >= 0 ? '#34D399' : '#F87171'} />
-                      <Text style={s.trendPillText}>{netWorthTrend.pct >= 0 ? '+' : ''}{netWorthTrend.pct.toFixed(1)}% this month</Text>
-                    </View>
-                    <Text style={s.trendAmount}>{netWorthTrend.amount >= 0 ? '+' : '-'}${Math.abs(netWorthTrend.amount).toLocaleString('en-US', { maximumFractionDigits: 0 })}</Text>
-                  </View>
-                </>
-              ) : heroContent && (
-                <>
-                  <Text style={s.netWorthLabel}>{heroContent.label}</Text>
-                  <Text style={s.netWorthValue}>
-                    ${heroContent.value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </Text>
-                  <View style={s.trendRow}>
-                    <Text style={s.heroTrendText}>{heroContent.trendText}</Text>
-                  </View>
-                </>
-              )}
+      {/* Greeting + actions */}
+      <View style={s.headerTopRow}>
+        <View style={{ flex: 1 }}>
+          <Text style={s.headerGreeting}>{financeGreeting}</Text>
+          <Text style={s.netWorthLabel}>TOTAL NET WORTH</Text>
+          <Text style={s.netWorthValue}>
+            ${totalNetWorth.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </Text>
+          <View style={s.trendRow}>
+            <View style={s.trendPill}>
+              <Ionicons name={netWorthTrend.amount >= 0 ? 'trending-up' : 'trending-down'} size={12} color={netWorthTrend.amount >= 0 ? '#34D399' : '#F87171'} />
+              <Text style={[s.trendPillText, { color: netWorthTrend.amount >= 0 ? '#34D399' : '#F87171' }]}>
+                {netWorthTrend.pct >= 0 ? '+' : ''}{netWorthTrend.pct.toFixed(1)}% this month
+              </Text>
             </View>
-            {overdueBills.length > 0 && (
-              <Pressable onPress={() => handleTabPress('bills')} style={s.urgentPill}>
-                <Ionicons name="warning" size={12} color="#fff" />
-                <Text style={s.urgentPillText}>{overdueBills.length} overdue</Text>
-              </Pressable>
-            )}
+            <View style={s.datePill}>
+              <Ionicons name="calendar-outline" size={10} color="rgba(255,255,255,0.6)" />
+              <Text style={s.datePillText}>{financeToday}</Text>
+            </View>
           </View>
+        </View>
+        {overdueBills.length > 0 && (
+          <Pressable onPress={() => handleTabPress('bills')} style={s.urgentPill}>
+            <Ionicons name="warning" size={12} color="#fff" />
+            <Text style={s.urgentPillText}>{overdueBills.length} overdue</Text>
+          </Pressable>
+        )}
+      </View>
 
-          {/* Stats strip */}
-          <View style={s.statsStrip}>
-            {(activeTab === 'overview'
-              ? [
-                  { label: 'Income',   value: `$${monthlyIncome.toLocaleString()}`,   color: '#34D399', icon: 'arrow-down-circle' },
-                  { label: 'Expenses', value: `$${monthlyExpenses.toLocaleString()}`,  color: '#F87171', icon: 'arrow-up-circle' },
-                  { label: 'Saved',    value: `${savingsRate}%`,                       color: '#A78BFA', icon: 'shield-checkmark' },
-                ]
-              : heroContent?.stats ?? []
-            ).map((item, i) => (
-              <View key={i} style={[s.statItem, i < 2 && s.statBorder]}>
-                <View style={[s.statIconBg, { backgroundColor: item.color + '20' }]}>
-                  <Ionicons name={item.icon as any} size={14} color={item.color} />
-                </View>
-                <Text style={[s.statValue, { color: item.color }]}>{item.value}</Text>
-                <Text style={s.statLabel}>{item.label}</Text>
-              </View>
-            ))}
-          </View>
+      {/* Divider */}
+      <View style={s.headerDivider} />
 
-          {/* Tab pill row */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.tabPills}
-            contentContainerStyle={{ gap: 6, paddingRight: 16 }}>
-            {NAV_TABS.map((tab) => {
-              const active = activeTab === tab.key;
-              return (
-                <Pressable key={tab.key} onPress={() => handleTabPress(tab.key)}
-                  style={[s.tabPill, active && s.tabPillActive]}>
-                  <Ionicons name={tab.icon as any} size={13}
-                    color={active ? colors.primary : 'rgba(255,255,255,0.5)'} />
-                  <Text style={[s.tabPillText, active && s.tabPillTextActive]}>{tab.label}</Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
+      {/* Stats cards */}
+      <View style={s.statsStrip}>
+        {(activeTab === 'overview'
+          ? [
+              { label: 'Income',   value: `$${monthlyIncome.toLocaleString()}`,  color: '#34D399', icon: 'arrow-down-circle' },
+              { label: 'Expenses', value: `$${monthlyExpenses.toLocaleString()}`, color: '#F87171', icon: 'arrow-up-circle' },
+              { label: 'Saved',    value: `${savingsRate}%`,                      color: '#A78BFA', icon: 'shield-checkmark' },
+            ]
+          : heroContent?.stats ?? []
+        ).map((item, i) => (
+          <LinearGradient
+            key={i}
+            colors={['rgba(255,255,255,0.12)', 'rgba(255,255,255,0.05)']}
+            style={s.statCard}
+          >
+            <View style={[s.statIconBg, { backgroundColor: item.color + '25' }]}>
+              <Ionicons name={item.icon as any} size={15} color={item.color} />
+            </View>
+            <Text style={[s.statValue, { color: item.color }]}>{item.value}</Text>
+            <Text style={s.statLabel}>{item.label}</Text>
+          </LinearGradient>
+        ))}
+      </View>
+
+      {/* Tab pill row */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.tabPills}
+        contentContainerStyle={{ gap: 6, paddingRight: 16 }}>
+        {NAV_TABS.map((tab) => {
+          const active = activeTab === tab.key;
+          return (
+            <Pressable key={tab.key} onPress={() => handleTabPress(tab.key)}
+              style={[s.tabPill, active && s.tabPillActive]}>
+              <Ionicons name={tab.icon as any} size={13}
+                color={active ? colors.primary : 'rgba(255,255,255,0.5)'} />
+              <Text style={[s.tabPillText, active && s.tabPillTextActive]}>{tab.label}</Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
     </LinearGradient>
   );
 
-
   const financeCompact = (
     <LinearGradient
-      colors={['#040D1A', '#0A1E3D']}
-      start={{ x: 0, y: 0 }} end={{ x: 0.6, y: 1 }}
+      colors={['#020810', '#0A1E3D']}
+      start={{ x: 0, y: 0 }} end={{ x: 0.8, y: 1 }}
       style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
     >
-      <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>Finance</Text>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-        <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontWeight: '600' }}>NET WORTH</Text>
-        <Text style={{ color: '#fff', fontSize: 15, fontWeight: '900', letterSpacing: -0.5 }}>
-          ${totalNetWorth.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-        </Text>
+        <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name="wallet" size={14} color="#fff" />
+        </View>
+        <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>Finance</Text>
+      </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '700', letterSpacing: 0.5 }}>NET WORTH</Text>
+        <View style={{ backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 }}>
+          <Text style={{ color: '#fff', fontSize: 13, fontWeight: '900', letterSpacing: -0.5 }}>
+            ${totalNetWorth.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+          </Text>
+        </View>
       </View>
     </LinearGradient>
   );
@@ -1562,50 +1571,55 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#F0F3F9' },
 
   /* ── Header ── */
-  header: { paddingHorizontal: 10, paddingBottom: 0, overflow: 'hidden' },
+  header: { paddingHorizontal: 16, paddingBottom: 0, overflow: 'hidden' },
   glow1: {
-    position: 'absolute', top: -60, right: -60,
-    width: 100, height: 200, borderRadius: 100,
-    backgroundColor: '#1E4A8A', opacity: 0.35,
+    position: 'absolute', top: -80, right: -60,
+    width: 200, height: 200, borderRadius: 100,
+    backgroundColor: 'rgba(56,130,255,0.18)',
   },
   glow2: {
-    position: 'absolute', bottom: 40, left: -40,
+    position: 'absolute', bottom: 20, left: -40,
     width: 140, height: 140, borderRadius: 70,
-    backgroundColor: '#00D4AA', opacity: 0.08,
+    backgroundColor: 'rgba(0,212,170,0.10)',
   },
-  headerTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 },
-  netWorthLabel: { fontSize: 10, color: 'rgba(255,255,255,0.45)', fontWeight: '700', letterSpacing: 1.5, marginBottom: 6 },
-  netWorthValue: { fontSize: 20, fontWeight: '900', color: '#fff', letterSpacing: -1.5 },
-  trendRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
+  headerGreeting: { fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: '600', letterSpacing: 0.2, marginBottom: 4 },
+  headerTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 },
+  netWorthLabel: { fontSize: 10, color: 'rgba(255,255,255,0.45)', fontWeight: '700', letterSpacing: 1.5, marginBottom: 4 },
+  netWorthValue: { fontSize: 28, fontWeight: '900', color: '#fff', letterSpacing: -1.5 },
+  trendRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8, flexWrap: 'wrap' },
   trendPill: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: '#34D39920', borderRadius: 20,
-    paddingVertical: 1, paddingHorizontal: 2,
+    backgroundColor: 'rgba(52,211,153,0.15)', borderRadius: 20,
+    borderWidth: 1, borderColor: 'rgba(52,211,153,0.25)',
+    paddingVertical: 3, paddingHorizontal: 8,
   },
-  trendPillText: { fontSize: 12, color: '#34D399', fontWeight: '700' },
-  trendAmount: { fontSize: 13, color: 'rgba(255,255,255,0.5)', fontWeight: '500' },
+  trendPillText: { fontSize: 11, fontWeight: '700' },
+  datePill: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: 'rgba(255,255,255,0.10)', borderRadius: 20,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+    paddingVertical: 3, paddingHorizontal: 8,
+  },
+  datePillText: { fontSize: 10, color: 'rgba(255,255,255,0.65)', fontWeight: '600', letterSpacing: 0.2 },
+  headerDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.10)', marginBottom: 12 },
   urgentPill: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
     backgroundColor: '#EF4444', borderRadius: 20,
-    paddingVertical: 5, paddingHorizontal: 10,
+    paddingVertical: 6, paddingHorizontal: 12,
+    alignSelf: 'flex-start',
   },
   urgentPillText: { fontSize: 11, color: '#fff', fontWeight: '800' },
 
-  /* Stats strip */
-  statsStrip: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.07)',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    paddingVertical: 10,
-    marginBottom: 10,
+  /* Stats cards */
+  statsStrip: { flexDirection: 'row', gap: 8, marginBottom: 12 },
+  statCard: {
+    flex: 1, alignItems: 'center', gap: 4,
+    borderRadius: 14, paddingVertical: 10,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
   },
-  statItem: { flex: 1, alignItems: 'center', gap: 4 },
-  statBorder: { borderRightWidth: 1, borderRightColor: 'rgba(255,255,255,0.1)' },
-  statIconBg: { width: 15, height: 15, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  statValue: { fontSize: 10, fontWeight: '800' },
-  statLabel: { fontSize: 10, color: 'rgba(255,255,255,0.45)', fontWeight: '600', letterSpacing: 0.3 },
+  statIconBg: { width: 28, height: 28, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
+  statValue: { fontSize: 12, fontWeight: '900' },
+  statLabel: { fontSize: 9, color: 'rgba(255,255,255,0.5)', fontWeight: '700', letterSpacing: 0.3 },
 
   /* Tab pills */
   tabPills: { flexGrow: 0 },

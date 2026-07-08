@@ -5,6 +5,8 @@ import type { AutomationRule, MarketplaceListing, ConflictRecord, TimeBlock, Sma
 import { secureStorage } from '../storage/secureStorage';
 import * as hueService from '../services/hueService';
 import * as smartDeviceService from '../services/smartDeviceService';
+import * as automationRuleService from '../services/automationRuleService';
+import * as marketplaceListingService from '../services/marketplaceListingService';
 import { useFamilyStore } from './useFamilyStore';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
@@ -118,19 +120,43 @@ export const useAutomationStore = create<AutomationState>()(
   hueScenes: [],
   isRefreshingHue: false,
 
-  addRule: (r) =>
-    set((s) => ({ rules: [{ ...r, id: generateId(), runCount: 0 }, ...s.rules] })),
-  toggleRule: (id) =>
-    set((s) => ({ rules: s.rules.map((r) => (r.id === id ? { ...r, isActive: !r.isActive } : r)) })),
-  deleteRule: (id) =>
-    set((s) => ({ rules: s.rules.filter((r) => r.id !== id) })),
-  recordRuleRun: (id) =>
+  addRule: (r) => {
+    const rule: AutomationRule = { ...r, id: generateId(), runCount: 0 };
+    set((s) => ({ rules: [rule, ...s.rules] }));
+    automationRuleService.createAutomationRule(rule).catch(() => {
+      set((s) => ({ rules: s.rules.filter((x) => x.id !== rule.id) }));
+    });
+  },
+  toggleRule: (id) => {
+    const rule = get().rules.find((r) => r.id === id);
+    if (!rule) return;
+    const isActive = !rule.isActive;
+    set((s) => ({ rules: s.rules.map((r) => (r.id === id ? { ...r, isActive } : r)) }));
+    automationRuleService.updateAutomationRuleRemote(id, { isActive }).catch(() => {});
+  },
+  deleteRule: (id) => {
+    const prev = get().rules;
+    set((s) => ({ rules: s.rules.filter((r) => r.id !== id) }));
+    automationRuleService.deleteAutomationRuleRemote(id).catch(() => { set({ rules: prev }); });
+  },
+  recordRuleRun: (id) => {
+    const lastRun = new Date().toISOString();
+    const rule = get().rules.find((r) => r.id === id);
+    if (!rule) return;
+    const runCount = rule.runCount + 1;
     set((s) => ({
-      rules: s.rules.map((r) => (r.id === id ? { ...r, runCount: r.runCount + 1, lastRun: new Date().toISOString() } : r)),
-    })),
+      rules: s.rules.map((r) => (r.id === id ? { ...r, runCount, lastRun } : r)),
+    }));
+    automationRuleService.updateAutomationRuleRemote(id, { runCount, lastRun }).catch(() => {});
+  },
 
-  addListing: (l) =>
-    set((s) => ({ listings: [{ ...l, id: generateId(), createdAt: new Date().toISOString() }, ...s.listings] })),
+  addListing: (l) => {
+    const listing: MarketplaceListing = { ...l, id: generateId(), createdAt: new Date().toISOString() };
+    set((s) => ({ listings: [listing, ...s.listings] }));
+    marketplaceListingService.createMarketplaceListing(listing).catch(() => {
+      set((s) => ({ listings: s.listings.filter((x) => x.id !== listing.id) }));
+    });
+  },
   claimListing: (id, memberId) => {
     const listing = get().listings.find((l) => l.id === id);
     if (!listing) return;
@@ -158,9 +184,15 @@ export const useAutomationStore = create<AutomationState>()(
     set((s) => ({
       listings: s.listings.map((l) => (l.id === id ? { ...l, claimedBy: memberId, isAvailable: false, taskId } : l)),
     }));
+    marketplaceListingService
+      .updateMarketplaceListingRemote(id, { claimedBy: memberId, isAvailable: false, taskId })
+      .catch(() => {});
   },
-  deleteListing: (id) =>
-    set((s) => ({ listings: s.listings.filter((l) => l.id !== id) })),
+  deleteListing: (id) => {
+    const prev = get().listings;
+    set((s) => ({ listings: s.listings.filter((l) => l.id !== id) }));
+    marketplaceListingService.deleteMarketplaceListingRemote(id).catch(() => { set({ listings: prev }); });
+  },
   repairOrphanedClaims: () => {
     const orphaned = get().listings.filter((l) => l.claimedBy && !l.isAvailable && !l.taskId);
     if (orphaned.length === 0) return;
@@ -191,6 +223,9 @@ export const useAutomationStore = create<AutomationState>()(
     set((s) => ({
       listings: s.listings.map((l) => (taskIds.has(l.id) ? { ...l, taskId: taskIds.get(l.id) } : l)),
     }));
+    taskIds.forEach((taskId, listingId) => {
+      marketplaceListingService.updateMarketplaceListingRemote(listingId, { taskId }).catch(() => {});
+    });
   },
 
   addConflict: (c) =>
@@ -213,7 +248,11 @@ export const useAutomationStore = create<AutomationState>()(
     try {
       const { devices } = await smartDeviceService.fetchDevices();
       set((s) => ({
-        devices: [...devices, ...s.devices.filter((d) => d.brand === 'Philips Hue')],
+        // Hue devices are synthesized locally from a live bridge session,
+        // never backend-persisted — but only keep them here if that bridge
+        // is actually connected right now, so a stale cached Hue device from
+        // a bridge we're no longer paired with doesn't linger forever.
+        devices: [...devices, ...(s.hueConnected ? s.devices.filter((d) => d.brand === 'Philips Hue') : [])],
         devicesLoaded: true,
       }));
     } catch {
@@ -381,7 +420,22 @@ export const useAutomationStore = create<AutomationState>()(
     await get().refreshHueDevices();
   },
 
-  fetchFromServer: async () => { set({ isLoaded: true }); },
+  // Real hydration for rules/listings — previously a no-op stub, meaning
+  // rules created or listings posted/claimed on another family member's
+  // device (or before a reinstall) never showed up here even though
+  // addRule/addListing etc. above already write through to the backend.
+  fetchFromServer: async () => {
+    try {
+      const [{ rules }, { listings }] = await Promise.all([
+        automationRuleService.fetchAutomationRules(),
+        marketplaceListingService.fetchMarketplaceListings(),
+      ]);
+      set({ rules, listings });
+    } catch {
+      // offline or backend unreachable — keep whatever is already local.
+    }
+    set({ isLoaded: true });
+  },
     }),
     {
       name: 'family-command-center-automation',

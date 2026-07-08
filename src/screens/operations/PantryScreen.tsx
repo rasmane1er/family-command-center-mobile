@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Modal, Alert, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { differenceInDays } from 'date-fns';
@@ -49,9 +49,14 @@ export function PantryScreen({ navigation }: any) {
   const [newExpiryDate, setNewExpiryDate] = useState('');
   const [newMinQuantity, setNewMinQuantity] = useState('');
 
-  const { pantryItems, updatePantryItem, addPantryItem, deletePantryItem } = useOperationsStore();
+  const { pantryItems, updatePantryItem, addPantryItem, addPantryItemsBulk, deletePantryItem, fetchFromServer } = useOperationsStore();
   const { addItem: addShoppingItem } = useShoppingStore();
   const familyId = useAuthStore.getState().familyId ?? '';
+
+  useEffect(() => {
+    fetchFromServer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleAdd = () => {
     if (!newName.trim()) return;
@@ -153,6 +158,7 @@ export function PantryScreen({ navigation }: any) {
           rightAction={
             <View style={s.headerActions}>
               <Pressable onPress={handleAutoRestock} style={s.actionBtn}><Ionicons name="cart-outline" size={22} color="#fff" /></Pressable>
+              <Pressable onPress={() => navigation.navigate('ScanItem')} style={s.actionBtn}><Ionicons name="barcode-outline" size={22} color="#fff" /></Pressable>
               <Pressable onPress={() => setShowModal(true)} style={s.actionBtn}><Ionicons name="add" size={24} color="#fff" /></Pressable>
             </View>
           }

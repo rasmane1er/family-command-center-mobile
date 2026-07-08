@@ -13,23 +13,37 @@ import { useTranslation } from 'react-i18next';
 import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
 import { useFinanceStore } from '../../store/useFinanceStore';
+import { useOperationsStore } from '../../store/useOperationsStore';
 import { useAuthStore } from '../../store/useAuthStore';
-import type { Transaction, Bill, Subscription } from '../../types';
+import type { Transaction, Bill, Subscription, PantryItem } from '../../types';
 import { API_BASE_URL } from '../../config/api';
 import { uploadImageToR2 } from '../../services/uploadService';
 
 const CATEGORIES = ['Food & Drink', 'Shopping', 'Transportation', 'Bills & Utilities', 'Entertainment', 'Health', 'Education', 'Other'];
+
+interface ReceiptLineItem {
+  name: string;
+  price: number;
+  quantity: number;
+}
 
 interface ReceiptData {
   merchant: string;
   amount: number;
   date: string;
   category: string;
+  items: ReceiptLineItem[];
   isRecurring: boolean;
   suggestedDestination: 'transaction' | 'bill' | 'subscription';
   confidence: number;
   tax: number;
   tip: number;
+}
+
+interface PantryDraftItem {
+  name: string;
+  quantity: number;
+  selected: boolean;
 }
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
@@ -55,6 +69,7 @@ export function ReceiptScannerScreen({ navigation }: { navigation: { goBack: () 
   const { t } = useTranslation('finance');
   const insets = useSafeAreaInsets();
   const { addTransaction, addBill, addSubscription } = useFinanceStore();
+  const addPantryItemsBulk = useOperationsStore((s) => s.addPantryItemsBulk);
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [imageUri, setImageUri] = useState<string | null>(null);
@@ -63,6 +78,8 @@ export function ReceiptScannerScreen({ navigation }: { navigation: { goBack: () 
   const [scanError, setScanError] = useState<string | null>(null);
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
   const [success, setSuccess] = useState(false);
+  const [pantryDraft, setPantryDraft] = useState<PantryDraftItem[]>([]);
+  const [pantryAdded, setPantryAdded] = useState(false);
   const [receiptImageKey, setReceiptImageKey] = useState<string | null>(null);
 
   const [editMerchant, setEditMerchant] = useState('');
@@ -153,6 +170,12 @@ export function ReceiptScannerScreen({ navigation }: { navigation: { goBack: () 
       setEditDate(data.date);
       setEditCategory(data.category);
       setDestination(data.suggestedDestination);
+      // Grocery receipts already come back itemized (see receipts.ts) — this
+      // is what actually surfaces those line items instead of discarding
+      // everything except the total, letting a grocery run also stock the
+      // pantry in the same flow.
+      setPantryDraft((data.items ?? []).map((i) => ({ name: i.name, quantity: Math.max(1, Math.round(i.quantity || 1)), selected: true })));
+      setPantryAdded(false);
       setStep(3);
     } catch (err) {
       setScanError(err instanceof Error ? err.message : t('finance.screens.receiptScanner.scanFailed'));
@@ -199,6 +222,33 @@ export function ReceiptScannerScreen({ navigation }: { navigation: { goBack: () 
     Animated.spring(successAnim, { toValue: 1, useNativeDriver: true, tension: 60, friction: 8 }).start(() => {
       setTimeout(() => navigation.goBack(), 900);
     });
+  };
+
+  const togglePantryDraftItem = (index: number) => {
+    setPantryDraft((prev) => prev.map((item, i) => (i === index ? { ...item, selected: !item.selected } : item)));
+  };
+
+  // Independent of handleDispatch above — a grocery receipt maps to one
+  // financial record (the total) but potentially many pantry items, so this
+  // doesn't require picking "transaction" as the destination first.
+  const handleAddToPantry = () => {
+    const selected = pantryDraft.filter((i) => i.selected);
+    if (selected.length === 0) return;
+    const familyId = useAuthStore.getState().familyId ?? '';
+    const now = new Date().toISOString();
+    const items: PantryItem[] = selected.map((i) => ({
+      id: generateId(),
+      familyId,
+      name: i.name,
+      category: 'Produce',
+      quantity: i.quantity,
+      unit: 'pcs',
+      location: 'Pantry',
+      updatedAt: now,
+    }));
+    addPantryItemsBulk(items);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setPantryAdded(true);
   };
 
   if (success) {
@@ -366,6 +416,32 @@ export function ReceiptScannerScreen({ navigation }: { navigation: { goBack: () 
               );
             })}
           </View>
+
+          {pantryDraft.length > 0 && (
+            <>
+              <Text style={styles.fieldLabel}>Add to Pantry ({pantryDraft.filter((i) => i.selected).length})</Text>
+              {pantryDraft.map((item, index) => (
+                <Pressable key={`${item.name}-${index}`} onPress={() => togglePantryDraftItem(index)} style={styles.pantryDraftRow}>
+                  <Ionicons
+                    name={item.selected ? 'checkbox' : 'square-outline'}
+                    size={20}
+                    color={item.selected ? colors.success : colors.textMuted}
+                  />
+                  <Text style={styles.pantryDraftText}>{item.name}{item.quantity > 1 ? ` ×${item.quantity}` : ''}</Text>
+                </Pressable>
+              ))}
+              <Pressable
+                onPress={handleAddToPantry}
+                disabled={pantryAdded || pantryDraft.filter((i) => i.selected).length === 0}
+                style={[styles.pantryAddBtn, pantryAdded && styles.pantryAddBtnDone]}
+              >
+                <Ionicons name={pantryAdded ? 'checkmark-circle' : 'nutrition-outline'} size={18} color={pantryAdded ? colors.success : '#fff'} />
+                <Text style={[styles.pantryAddBtnText, pantryAdded && styles.pantryAddBtnTextDone]}>
+                  {pantryAdded ? 'Added to Pantry' : `Add ${pantryDraft.filter((i) => i.selected).length} Items to Pantry`}
+                </Text>
+              </Pressable>
+            </>
+          )}
         </ScrollView>
       )}
 
@@ -509,6 +585,20 @@ const styles = StyleSheet.create({
   destLabel: { fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.5)', textAlign: 'center' },
   destLabelActive: { color: '#fff' },
   destDesc: { fontSize: 10, color: 'rgba(255,255,255,0.35)', textAlign: 'center', lineHeight: 14 },
+
+  pantryDraftRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 10,
+    paddingVertical: 10, paddingHorizontal: 12, marginBottom: 8,
+  },
+  pantryDraftText: { fontSize: 14, fontWeight: '600', color: '#fff' },
+  pantryAddBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    backgroundColor: '#27AE60', borderRadius: 14, paddingVertical: 14, marginTop: 4, marginBottom: 24,
+  },
+  pantryAddBtnDone: { backgroundColor: 'rgba(39,174,96,0.15)' },
+  pantryAddBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
+  pantryAddBtnTextDone: { color: colors.success },
 
   footer: { paddingHorizontal: 20, paddingTop: 12, backgroundColor: '#0A1628', borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.08)' },
   dispatchBtn: {

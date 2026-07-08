@@ -55,11 +55,13 @@ export function SmartHomeScreen({ navigation }: any) {
     hydrateHueConnection,
     refreshHueDevices,
     recallHueScene,
+    fetchDevices,
   } = useAutomationStore();
 
   useEffect(() => {
     hydrateHueConnection();
-  }, [hydrateHueConnection]);
+    fetchDevices();
+  }, [hydrateHueConnection, fetchDevices]);
 
   useFocusEffect(
     React.useCallback(() => {

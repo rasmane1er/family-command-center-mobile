@@ -2,10 +2,11 @@ import { enqueueSync } from '../sync/enqueueSync';
 import { mmkvStorage } from '../storage/mmkvStorage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import type { Family, FamilyMember, Task, CalendarEvent, Goal, Reward, Achievement } from '../types';
+import type { Family, FamilyMember, Task, CalendarEvent, Goal, Reward, RewardCatalogItem, Achievement } from '../types';
 import { defaultPermissionsForRole } from '../types';
 import * as calendarService from '../services/calendarService';
 import * as taskService from '../services/taskService';
+import * as rewardService from '../services/rewardService';
 import { apiRequest } from '../api/client';
 import { useAuthStore } from './useAuthStore';
 
@@ -16,6 +17,8 @@ interface FamilyState {
   events: CalendarEvent[];
   goals: Goal[];
   rewards: Reward[];
+  rewardCatalog: RewardCatalogItem[];
+  hasSeededRewardCatalog: boolean;
   achievements: Achievement[];
   activeMemberId: string | null;
 
@@ -70,7 +73,20 @@ interface FamilyState {
   // History" action in Rewards Center, scoped per-child to match how the
   // rest of that screen is already scoped.
   clearRewardHistory: (memberId: string) => void;
+  // Pulls redemption history from the backend, same reasoning as
+  // hydrateTasks/hydrateEvents above — addReward/clearRewardHistory below
+  // already write through to the same backend, this is the read side.
+  hydrateRewards: () => Promise<void>;
   awardPoints: (memberId: string, points: number) => void;
+
+  addRewardCatalogItem: (item: RewardCatalogItem) => void;
+  deleteRewardCatalogItem: (id: string) => void;
+  // One-time starter catalog so the Store tab isn't empty on a brand-new
+  // family — real, persisted, family-editable items from the start, not a
+  // hardcoded array rendered outside the store. Safe to call on every
+  // fetchFromServer(); the hasSeededRewardCatalog guard makes it a no-op
+  // after the first run.
+  seedRewardCatalogDefaults: () => void;
 
   isLoaded: boolean;
   fetchFromServer: () => Promise<void>;
@@ -89,6 +105,8 @@ export const useFamilyStore = create<FamilyState>()(
   isHydratingEvents: false,
   goals: [],
   rewards: [],
+  rewardCatalog: [],
+  hasSeededRewardCatalog: false,
   achievements: [],
   activeMemberId: null,
   isLoaded: false,
@@ -275,19 +293,63 @@ export const useFamilyStore = create<FamilyState>()(
     set((s) => ({ goals: s.goals.map((g) => (g.id === id ? { ...g, ...updates } : g)) })),
   deleteGoal: (id) => set((s) => ({ goals: s.goals.filter((g) => g.id !== id) })),
 
-  addReward: (r) => set((s) => ({ rewards: [...s.rewards, r] })),
-  redeemReward: (id) =>
+  addReward: (r) => {
+    set((s) => ({ rewards: [...s.rewards, r] }));
+    rewardService.createReward(r).catch(() => {
+      set((s) => ({ rewards: s.rewards.filter((x) => x.id !== r.id) }));
+    });
+  },
+  redeemReward: (id) => {
+    const prev = get().rewards;
+    const redeemedAt = new Date().toISOString();
     set((s) => ({
-      rewards: s.rewards.map((r) =>
-        r.id === id ? { ...r, isRedeemed: true, redeemedAt: new Date().toISOString() } : r
-      ),
-    })),
-  clearRewardHistory: (memberId) =>
-    set((s) => ({ rewards: s.rewards.filter((r) => r.memberId !== memberId) })),
+      rewards: s.rewards.map((r) => (r.id === id ? { ...r, isRedeemed: true, redeemedAt } : r)),
+    }));
+    rewardService.updateRewardRemote(id, { isRedeemed: true, redeemedAt }).catch(() => {
+      set({ rewards: prev });
+    });
+  },
+  clearRewardHistory: (memberId) => {
+    const prev = get().rewards;
+    set((s) => ({ rewards: s.rewards.filter((r) => r.memberId !== memberId) }));
+    rewardService.deleteRewardsByMember(memberId).catch(() => {
+      set({ rewards: prev });
+    });
+  },
+  hydrateRewards: async () => {
+    try {
+      const { rewards } = await rewardService.fetchRewards();
+      set({ rewards });
+    } catch {
+      // offline or backend unreachable — keep whatever is already local.
+    }
+  },
   awardPoints: (memberId, points) =>
     set((s) => ({
       members: s.members.map((m) => (m.id === memberId ? { ...m, points: m.points + points } : m)),
     })),
+
+  addRewardCatalogItem: (item) => set((s) => ({ rewardCatalog: [...s.rewardCatalog, item] })),
+  deleteRewardCatalogItem: (id) =>
+    set((s) => ({ rewardCatalog: s.rewardCatalog.filter((r) => r.id !== id) })),
+  seedRewardCatalogDefaults: () => {
+    if (get().hasSeededRewardCatalog) return;
+    const familyId = get().family?.id ?? '';
+    const defaults: Omit<RewardCatalogItem, 'id' | 'familyId'>[] = [
+      { name: 'Extra Screen Time', description: '30 min of extra screen time', cost: 100, icon: 'phone-portrait', color: '#8E44AD' },
+      { name: 'Choose Dinner', description: 'Pick the family dinner tonight', cost: 150, icon: 'restaurant', color: '#F5A623' },
+      { name: 'Stay Up Late', description: '1 hour past bedtime', cost: 200, icon: 'moon', color: '#2C3E50' },
+      { name: 'Movie Night Pick', description: 'You choose the movie', cost: 250, icon: 'film', color: '#E74C3C' },
+      { name: 'Ice Cream Trip', description: 'Family ice cream outing', cost: 300, icon: 'ice-cream', color: '#E91E63' },
+      { name: 'No Chores Day', description: 'Skip all chores for one day', cost: 400, icon: 'happy', color: '#27AE60' },
+      { name: 'Sleepover', description: 'Have a friend sleep over', cost: 500, icon: 'people', color: '#2980B9' },
+      { name: 'Game Purchase', description: '$10 game or app', cost: 750, icon: 'game-controller', color: '#9B59B6' },
+    ];
+    set({
+      rewardCatalog: defaults.map((d) => ({ ...d, id: generateId(), familyId })),
+      hasSeededRewardCatalog: true,
+    });
+  },
 
   // Real hydration for the core family/members/tasks data — previously a
   // no-op stub that nothing else even called, meaning family/member/task
@@ -346,6 +408,8 @@ export const useFamilyStore = create<FamilyState>()(
       // offline or backend unreachable — keep whatever is already local.
     }
     await get().hydrateTasks();
+    await get().hydrateRewards();
+    get().seedRewardCatalogDefaults();
     set({ isLoaded: true });
   },
     }),
@@ -357,6 +421,8 @@ export const useFamilyStore = create<FamilyState>()(
     members: state.members,
     tasks: state.tasks,
     events: state.events,
+    rewardCatalog: state.rewardCatalog,
+    hasSeededRewardCatalog: state.hasSeededRewardCatalog,
     goals: state.goals,
     rewards: state.rewards,
     achievements: state.achievements,

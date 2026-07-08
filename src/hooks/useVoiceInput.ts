@@ -87,6 +87,11 @@ export function useVoiceInput({ onResult }: UseVoiceInputOptions = {}) {
         // Still holding the button — keep listening across the pause.
         setPartial(accumulatedRef.current);
         try {
+          // Android requires destroying the finished recognizer before starting
+          // a new one; skipping this causes a silent "recognizer already started"
+          // error that leaves the mic dead for the rest of the hold.
+          try { await Voice.destroy(); } catch {}
+          if (Platform.OS === 'android') await new Promise<void>((r) => setTimeout(r, 30));
           await Voice.start('en-US');
         } catch {
           // If restart fails, fall through and finalize what we have.
@@ -103,6 +108,8 @@ export function useVoiceInput({ onResult }: UseVoiceInputOptions = {}) {
       if (heldRef.current) {
         // Likely a "no speech detected" timeout mid-hold — restart and keep waiting.
         try {
+          try { await Voice.destroy(); } catch {}
+          if (Platform.OS === 'android') await new Promise<void>((r) => setTimeout(r, 30));
           await Voice.start('en-US');
           return;
         } catch {
@@ -134,17 +141,29 @@ export function useVoiceInput({ onResult }: UseVoiceInputOptions = {}) {
 
   async function start() {
     try {
-      const hasPermission = await ensureMicPermission();
-      if (!hasPermission) {
-        Alert.alert('Microphone access denied', 'Enable microphone access in Settings to use voice input.');
+      // The native module is absent when running in Expo Go or before the first
+      // `expo run:android` / `expo run:ios` build that links native dependencies.
+      // Calling any Voice method in that state throws "Cannot read property ... of null".
+      let available: boolean | number = false;
+      try {
+        const hasPermission = await ensureMicPermission();
+        if (!hasPermission) {
+          Alert.alert('Microphone access denied', 'Enable microphone access in Settings to use voice input.');
+          return;
+        }
+        available = await Voice.isAvailable();
+      } catch {
+        Alert.alert(
+          'Voice not available',
+          'Voice input requires a development build. Run `npx expo run:android` and relaunch the app.',
+        );
         return;
       }
-      const available = await Voice.isAvailable();
       if (!available) {
         Alert.alert(
           'Voice not available',
           Platform.OS === 'android'
-            ? 'Speech recognition requires Google Speech Services. Try on a real device.'
+            ? 'Speech recognition isn\'t available on this device. Make sure Google app / Google Speech Services is installed and up to date.'
             : 'Speech recognition is not available on this device.',
         );
         return;
@@ -154,7 +173,17 @@ export function useVoiceInput({ onResult }: UseVoiceInputOptions = {}) {
       activeRef.current = true;
       heldRef.current = true;
       setPartial('');
-      await Voice.start('en-US');
+      try {
+        await Voice.start('en-US');
+      } catch {
+        // Some Android builds reject 'en-US' (dash) and need 'en_US' (underscore)
+        // or an empty string to use the device locale. Try the fallback before giving up.
+        if (Platform.OS === 'android') {
+          await Voice.start('');
+        } else {
+          throw new Error('start failed');
+        }
+      }
     } catch (e: any) {
       activeRef.current = false;
       heldRef.current = false;
@@ -163,9 +192,14 @@ export function useVoiceInput({ onResult }: UseVoiceInputOptions = {}) {
         msg.includes('recognizer') ||
         msg.includes('not available') ||
         msg.includes('not supported') ||
-        msg.includes('Cannot find')
+        msg.includes('Cannot find') ||
+        msg.includes('already') ||
+        msg.includes('busy')
       ) {
-        Alert.alert('Voice not supported', 'Try on a real device — emulators lack speech recognition.');
+        Alert.alert('Voice not supported', 'Speech recognition is not available on this device. Try installing or updating Google app.');
+      } else {
+        // Show the raw error so it can be reported — a blank alert is worse than a technical one.
+        Alert.alert('Voice error', msg || 'Could not start voice recognition.');
       }
       setIsListening(false);
     }

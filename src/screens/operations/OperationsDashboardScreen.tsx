@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOperationsStore } from '../../store/useOperationsStore';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useTranslation } from 'react-i18next';
+import { format } from 'date-fns';
 
 const { width } = Dimensions.get('window');
 
@@ -170,73 +171,94 @@ export function OperationsDashboardScreen({ navigation }: any) {
     };
   }, [vehicleAlerts.length, lowStockItems.length, expiringDocs.length]);
 
+  const today = format(new Date(), 'EEEE, MMM d');
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+
   const screenHeader = (
     <LinearGradient
-      colors={['#102F59', '#0D4268', '#0A4A72']}
+      colors={['#0A1628', '#0D2D52', '#0E3D6E', '#0B4F82']}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
-      style={[styles.header, { paddingTop: insets.top + 6 }]}
+      style={[styles.header, { paddingTop: insets.top + 10 }]}
     >
+      {/* Decorative orb */}
+      <View style={styles.orbTopRight} pointerEvents="none" />
+      <View style={styles.orbBottomLeft} pointerEvents="none" />
+
+      {/* Top row: greeting + actions */}
       <View style={styles.headerTop}>
         <View style={{ flex: 1 }}>
+          <Text style={styles.headerGreeting}>{greeting}</Text>
           <Text style={styles.headerTitle}>Operations Center</Text>
-          <Text style={styles.headerSubtitle}>
-            Home, Vehicles, Documents & More
-          </Text>
+          <View style={styles.datePill}>
+            <Ionicons name="calendar-outline" size={11} color="rgba(255,255,255,0.7)" />
+            <Text style={styles.dateText}>{today}</Text>
+          </View>
         </View>
+        <Pressable style={styles.headerIconBtn} onPress={() => {}}>
+          <Ionicons name="notifications-outline" size={20} color="#fff" />
+          {totalAlerts > 0 && <View style={styles.notifDot} />}
+        </Pressable>
+        <Pressable style={[styles.headerIconBtn, { marginLeft: 8 }]} onPress={() => {}}>
+          <Ionicons name="settings-outline" size={20} color="#fff" />
+        </Pressable>
       </View>
 
+      {/* Divider */}
+      <View style={styles.headerDivider} />
+
+      {/* Alert stat cards */}
       <View style={styles.alertRow}>
-        {alertCards.map((item) => (
-          <Pressable
-            key={item.label}
-            onPress={() => navigation.navigate(item.screen)}
-            style={({ pressed }) => [
-              styles.alertCard,
-              pressed && styles.pressed,
-            ]}
-          >
-            <Ionicons
-              name={item.icon as any}
-              size={15}
-              color={item.count > 0 ? item.color : 'rgba(255,255,255,0.42)'}
-            />
-
-            <Text
-              style={[
-                styles.alertNumber,
-                {
-                  color:
-                    item.count > 0
-                      ? item.color
-                      : 'rgba(255,255,255,0.42)',
-                },
-              ]}
+        {alertCards.map((item) => {
+          const hasAlert = item.count > 0;
+          return (
+            <Pressable
+              key={item.label}
+              onPress={() => navigation.navigate(item.screen)}
+              style={({ pressed }) => [styles.alertCard, pressed && styles.pressed]}
             >
-              {item.count}
-            </Text>
-
-            <Text style={styles.alertLabel}>{item.label}</Text>
-          </Pressable>
-        ))}
+              <LinearGradient
+                colors={hasAlert
+                  ? ['rgba(255,255,255,0.18)', 'rgba(255,255,255,0.08)']
+                  : ['rgba(255,255,255,0.07)', 'rgba(255,255,255,0.03)']}
+                style={styles.alertCardInner}
+              >
+                <View style={[styles.alertIconWrap, { backgroundColor: hasAlert ? item.color + '30' : 'rgba(255,255,255,0.08)' }]}>
+                  <Ionicons
+                    name={item.icon as any}
+                    size={14}
+                    color={hasAlert ? item.color : 'rgba(255,255,255,0.38)'}
+                  />
+                </View>
+                <Text style={[styles.alertNumber, { color: hasAlert ? item.color : 'rgba(255,255,255,0.35)' }]}>
+                  {item.count}
+                </Text>
+                <Text style={styles.alertLabel}>{item.label}</Text>
+              </LinearGradient>
+            </Pressable>
+          );
+        })}
       </View>
     </LinearGradient>
   );
 
   const screenCompact = (
     <LinearGradient
-      colors={['#102F59', '#0A4A72']}
+      colors={['#0A1628', '#0E3D6E']}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
-      style={[
-        styles.compactHeader,
-        {
-          paddingTop: insets.top,
-        },
-      ]}
+      style={[styles.compactHeader, { paddingTop: insets.top }]}
     >
-      <Text style={styles.compactTitle}>Operations</Text>
-      <Text style={styles.compactMeta}>{totalAlerts} alerts</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <View style={styles.compactIconWrap}>
+          <Ionicons name="grid" size={14} color="#fff" />
+        </View>
+        <Text style={styles.compactTitle}>Operations</Text>
+      </View>
+      <View style={styles.compactBadge}>
+        <Text style={styles.compactMeta}>{totalAlerts} alerts</Text>
+      </View>
     </LinearGradient>
   );
 
@@ -461,7 +483,28 @@ const styles = StyleSheet.create({
 
   header: {
     paddingHorizontal: 18,
-    paddingBottom: 24,
+    paddingBottom: 20,
+    overflow: 'hidden',
+  },
+
+  orbTopRight: {
+    position: 'absolute',
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: 'rgba(56, 130, 255, 0.18)',
+    top: -60,
+    right: -50,
+  },
+
+  orbBottomLeft: {
+    position: 'absolute',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(99, 179, 255, 0.10)',
+    bottom: -30,
+    left: -20,
   },
 
   compactHeader: {
@@ -472,6 +515,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
 
+  compactIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
   compactTitle: {
     color: '#FFFFFF',
     fontSize: 17,
@@ -479,61 +531,134 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
   },
 
+  compactBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+  },
+
   compactMeta: {
-    color: 'rgba(255,255,255,0.82)',
+    color: 'rgba(255,255,255,0.9)',
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '700',
   },
 
   headerTop: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'flex-start',
+    gap: 8,
+    marginBottom: 14,
+  },
+
+  headerGreeting: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.6)',
+    letterSpacing: 0.2,
+    marginBottom: 2,
   },
 
   headerTitle: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: '900',
     color: '#FFFFFF',
-    letterSpacing: -0.9,
+    letterSpacing: -1,
+    lineHeight: 28,
   },
 
-  headerSubtitle: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: 'rgba(255,255,255,0.7)',
-    marginTop: 4,
+  datePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 6,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+
+  dateText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.75)',
+    letterSpacing: 0.2,
+  },
+
+  headerIconBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    position: 'relative',
+  },
+
+  notifDot: {
+    position: 'absolute',
+    top: 7,
+    right: 7,
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: '#FF5A4F',
+    borderWidth: 1.5,
+    borderColor: '#0E3D6E',
+  },
+
+  headerDivider: {
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    marginBottom: 14,
   },
 
   alertRow: {
     flexDirection: 'row',
-    gap: 10,
-    marginTop: 20,
+    gap: 8,
   },
 
   alertCard: {
     flex: 1,
-    height: 60,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.14)',
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+  },
+
+  alertCardInner: {
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    paddingVertical: 10,
+    gap: 3,
+  },
+
+  alertIconWrap: {
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 2,
   },
 
   alertNumber: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '900',
-    marginTop: 1,
+    lineHeight: 22,
   },
 
   alertLabel: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '800',
-    color: 'rgba(255,255,255,0.76)',
-    marginTop: 4,
+    color: 'rgba(255,255,255,0.65)',
     textAlign: 'center',
+    letterSpacing: 0.3,
   },
 
   content: {

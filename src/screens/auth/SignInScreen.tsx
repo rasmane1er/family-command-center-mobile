@@ -11,6 +11,7 @@ import {
   Alert,
   ActivityIndicator,
   Animated,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -269,8 +270,28 @@ export default function SignInScreen({ navigation }: Props) {
         >
           {/* Logo section */}
           <View style={styles.logoSection}>
-            <View style={styles.logoCircle}>
-              <Ionicons name="shield-checkmark" size={48} color="#FFFFFF" />
+            <View style={styles.logoShadowWrap}>
+              <View style={styles.logoRim}>
+                <LinearGradient
+                  colors={['#FFFFFF', '#F1F4FA', '#DDE4EF']}
+                  start={{ x: 0.15, y: 0 }}
+                  end={{ x: 0.9, y: 1 }}
+                  style={StyleSheet.absoluteFillObject}
+                />
+                <LinearGradient
+                  colors={['rgba(255,255,255,0.9)', 'rgba(255,255,255,0)']}
+                  start={{ x: 0.1, y: 0.1 }}
+                  end={{ x: 0.6, y: 0.6 }}
+                  style={styles.logoHighlight}
+                />
+                {/* Solid white disc behind the logo — the PNG has its own
+                    opaque white background, so it has to sit on plain white
+                    (matching precedent) rather than the gradient bezel above,
+                    or its rectangular edges show through as a visible square. */}
+                <View style={styles.logoCircle}>
+                  <Image source={require('../../assets/icon.png')} style={styles.logoImage} resizeMode="contain" />
+                </View>
+              </View>
             </View>
             <Text style={styles.logoTitle}>{t('auth.screens.signIn.logoTitle')}</Text>
             <Text style={styles.logoSubtitle}>{t('auth.screens.signIn.logoSubtitle')}</Text>
@@ -497,16 +518,51 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 28,
   },
-  logoCircle: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+  logoShadowWrap: {
+    marginBottom: 16,
+    borderRadius: 47,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 20,
+  },
+  // A visible bezel ring is what actually reads as "glass/metal disc" on
+  // Android, since Android elevation renders as a flat grey blur (no soft
+  // directional shadow like iOS shadow* props) — the gradient ring here
+  // carries the glossy effect, leaving the inner white disc (below) plain
+  // so the logo's own opaque white background blends in seamlessly.
+  logoRim: {
+    width: 94,
+    height: 94,
+    borderRadius: 47,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    overflow: 'hidden',
+  },
+  logoCircle: {
+    width: 78,
+    height: 78,
+    borderRadius: 39,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    overflow: 'hidden',
+  },
+  logoHighlight: {
+    position: 'absolute',
+    top: -20,
+    left: -20,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    transform: [{ rotate: '-30deg' }],
+  },
+  logoImage: {
+    width: '100%',
+    height: '100%',
+    zIndex: 2,
   },
   logoTitle: {
     fontSize: 18,

@@ -279,7 +279,49 @@ export const useAuthStore = create<AuthState>()(
         const credentials = (await getStoredCredentials()) ?? {};
         const stored = credentials[normalizedEmail];
 
-        if (!stored) return { success: false, error: 'No account found with this email.' };
+        // No local record on this device — could be a fresh install, or an
+        // account created on a different device entirely (e.g. this exact
+        // account was signed up on an iOS simulator, then sign-in was tried
+        // from a separate Android emulator install, which has its own empty
+        // local credential cache). The backend is the real source of truth
+        // for whether this email/password pair is valid, not just this
+        // device's local cache — previously this returned "No account
+        // found" purely because the cache was empty, even when the backend
+        // had a perfectly valid account for it.
+        if (!stored) {
+          try {
+            const res = await fetch(`${awsConfig.apiBaseUrl}/auth/login`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: normalizedEmail, password }),
+            });
+            if (!res.ok) {
+              const body = await res.json().catch(() => ({}));
+              return { success: false, error: typeof body.error === 'string' ? body.error : 'No account found with this email.' };
+            }
+
+            const authResult: BackendAuthResult = await res.json();
+            const { familyId, backendUserId } = await persistBackendSession(authResult);
+
+            const displayName = normalizedEmail.split('@')[0];
+            const hash = await hashPassword(password);
+            await saveCredentials({ ...credentials, [normalizedEmail]: { displayName, hash } });
+
+            const user: AuthUser = {
+              id: backendUserId,
+              email: normalizedEmail,
+              displayName,
+              avatarColor: '#4A8FD9',
+              familyRole: 'parent',
+              provider: 'email',
+              createdAt: new Date().toISOString(),
+            };
+            set({ isAuthenticated: true, user, familyId, backendUserId });
+            return { success: true };
+          } catch {
+            return { success: false, error: 'Could not reach the server. Check your connection and try again.' };
+          }
+        }
 
         const hash = await hashPassword(password);
         if (hash !== stored.hash) return { success: false, error: 'Incorrect password.' };

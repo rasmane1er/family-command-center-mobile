@@ -45,7 +45,7 @@ export function MarketplaceScreen({ navigation }: any) {
   const [newDesc, setNewDesc] = useState('');
   const [newCategory, setNewCategory] = useState<ListingCategory>('chores');
   const [newPoints, setNewPoints] = useState('50');
-  const { listings, claimListing, deleteListing, addListing, repairOrphanedClaims } = useAutomationStore();
+  const { listings, claimListing, deleteListing, addListing, repairOrphanedClaims, fetchFromServer } = useAutomationStore();
   const members = useFamilyStore((s) => s.members);
   const activeMemberId = useFamilyStore((s) => s.activeMemberId);
   const family = useFamilyStore((s) => s.family);
@@ -56,8 +56,10 @@ export function MarketplaceScreen({ navigation }: any) {
     // Backfills a real linked Task for any listing claimed before
     // claimListing() started creating one — otherwise those are stuck
     // showing "Claimed" with an "Open in Tasks" button that has nothing to
-    // open. Cheap no-op once there's nothing left to repair.
-    repairOrphanedClaims();
+    // open. Cheap no-op once there's nothing left to repair. Runs after
+    // fetchFromServer so it operates on real listings pulled from the
+    // backend, not just whatever was cached locally.
+    fetchFromServer().then(() => repairOrphanedClaims());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

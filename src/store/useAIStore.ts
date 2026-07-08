@@ -75,7 +75,16 @@ export const useAIStore = create<AIState>()(
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ message: content, context: familyContext, history }),
+        body: JSON.stringify({
+          message: content,
+          // On the first message history is empty and some backends choose a
+          // shorter "intro" response. Embedding the completion directive in
+          // context is the safest mobile-side nudge without touching the API.
+          context: history.length === 0
+            ? `${familyContext}\n\n[Assistant instruction: This is the start of the conversation. Always respond completely and thoroughly — never cut off mid-sentence or mid-thought. Include all relevant advice, steps, or details in a single response.]`
+            : familyContext,
+          history,
+        }),
       });
 
       let assistantContent = '';

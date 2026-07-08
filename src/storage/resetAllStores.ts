@@ -67,7 +67,8 @@ export function resetAllStores() {
   // 2. Reset in-memory Zustand state for every store
   useFamilyStore.setState({
     family: null, members: [], tasks: [], events: [],
-    achievements: [], vehicles: [], activeMemberId: null,
+    goals: [], rewards: [], rewardCatalog: [], hasSeededRewardCatalog: false,
+    achievements: [], activeMemberId: null,
   } as any);
 
   useFinanceStore.setState({

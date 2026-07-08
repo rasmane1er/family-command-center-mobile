@@ -366,6 +366,7 @@ export interface PantryItem {
   id: string;
   familyId: string;
   name: string;
+  brand?: string;
   category: string;
   quantity: number;
   unit: string;
@@ -375,6 +376,9 @@ export interface PantryItem {
   minQuantity?: number;
   notes?: string;
   icon?: string;
+  // R2 key or external product-image URL — see useSignedImageUri for how
+  // this gets resolved to something actually displayable.
+  imageUrl?: string;
   updatedAt: string;
 }
 
@@ -598,6 +602,18 @@ export interface Reward {
   isRedeemed: boolean;
   redeemedAt?: string;
   expiryDate?: string;
+  icon?: string;
+  color?: string;
+}
+
+// A family's editable catalog of redeemable rewards (the Rewards Center
+// "Store" tab) — distinct from Reward above, which is a redemption record.
+export interface RewardCatalogItem {
+  id: string;
+  familyId: string;
+  name: string;
+  description?: string;
+  cost: number;
   icon?: string;
   color?: string;
 }

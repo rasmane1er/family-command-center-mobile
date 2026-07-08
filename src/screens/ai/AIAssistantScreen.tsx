@@ -218,17 +218,38 @@ export function AIAssistantScreen({ navigation }: any) {
   const unreadInsights = insights.filter((i) => !i.isRead);
   const dynStyles = makeStyles(colors);
 
+  const aiToday = format(new Date(), 'EEEE, MMM d');
+  const aiHour = new Date().getHours();
+  const aiGreeting = aiHour < 12 ? 'Good morning' : aiHour < 17 ? 'Good afternoon' : 'Good evening';
+
   const screenHeader = (
-    <LinearGradient colors={['#0F2952', '#1a3a70']} style={[dynStyles.header, { paddingTop: insets.top + 6 }]}>
+    <LinearGradient
+      colors={['#06091A', '#0C1333', '#101A44', '#0F2952']}
+      start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+      style={[dynStyles.header, { paddingTop: insets.top + 10 }]}
+    >
+      {/* Decorative orbs */}
+      <View style={dynStyles.orbPurple} pointerEvents="none" />
+      <View style={dynStyles.orbBlue} pointerEvents="none" />
+
+      {/* Top row: avatar + title + actions */}
       <View style={dynStyles.headerRow}>
-        <View style={dynStyles.aiAvatar}>
-          <Ionicons name="sparkles" size={22} color={colors.secondary} />
+        <View style={dynStyles.aiAvatarWrap}>
+          <View style={dynStyles.aiAvatarRing} />
+          <View style={dynStyles.aiAvatar}>
+            <Ionicons name="sparkles" size={22} color={colors.secondary} />
+          </View>
         </View>
         <View style={{ flex: 1 }}>
+          <Text style={dynStyles.headerGreeting}>{aiGreeting}</Text>
           <Text style={dynStyles.headerTitle}>{t('ai.title')}</Text>
           <View style={dynStyles.statusRow}>
             <View style={dynStyles.statusDot} />
-            <Text style={dynStyles.statusText}>Online • Powered by Gemini</Text>
+            <Text style={dynStyles.statusText}>Online · Powered by Gemini</Text>
+            <View style={dynStyles.datePill}>
+              <Ionicons name="calendar-outline" size={9} color="rgba(255,255,255,0.55)" />
+              <Text style={dynStyles.datePillText}>{aiToday}</Text>
+            </View>
           </View>
         </View>
         <Pressable onPress={clearMessages} style={({ pressed }) => [dynStyles.clearBtn, pressed && dynStyles.clearBtnPressed]}>
@@ -236,24 +257,28 @@ export function AIAssistantScreen({ navigation }: any) {
         </Pressable>
       </View>
 
+      {/* Divider */}
+      <View style={dynStyles.headerDivider} />
+
+      {/* Context chips */}
       <View style={dynStyles.contextRow}>
         <Pressable onPress={goToMembers} style={({ pressed }) => [dynStyles.contextChip, pressed && dynStyles.contextChipPressed]}>
-          <Ionicons name="people-outline" size={12} color="rgba(255,255,255,0.7)" />
+          <Ionicons name="people-outline" size={11} color="rgba(255,255,255,0.7)" />
           <Text style={dynStyles.contextChipText}>{members.length} members</Text>
         </Pressable>
         <Pressable onPress={goToNetWorth} style={({ pressed }) => [dynStyles.contextChip, pressed && dynStyles.contextChipPressed]}>
-          <Ionicons name="wallet-outline" size={12} color="rgba(255,255,255,0.7)" />
+          <Ionicons name="wallet-outline" size={11} color="rgba(255,255,255,0.7)" />
           <Text style={dynStyles.contextChipText}>${(netWorth / 1000).toFixed(0)}k net worth</Text>
         </Pressable>
         <Pressable onPress={goToPantry} style={({ pressed }) => [dynStyles.contextChip, pressed && dynStyles.contextChipPressed]}>
-          <Ionicons name="nutrition-outline" size={12} color="rgba(255,255,255,0.7)" />
-          <Text style={dynStyles.contextChipText}>{pantryItems.length} pantry items</Text>
+          <Ionicons name="nutrition-outline" size={11} color="rgba(255,255,255,0.7)" />
+          <Text style={dynStyles.contextChipText}>{pantryItems.length} pantry</Text>
         </Pressable>
       </View>
 
+      {/* Feature shortcuts */}
       <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
+        horizontal showsHorizontalScrollIndicator={false}
         style={dynStyles.featuresRow}
         contentContainerStyle={dynStyles.featuresRowContent}
       >
@@ -263,16 +288,20 @@ export function AIAssistantScreen({ navigation }: any) {
             onPress={() => navigation.navigate(f.screen)}
             style={({ pressed }) => [dynStyles.featureBtn, pressed && dynStyles.featureBtnPressed]}
           >
-            <View style={[dynStyles.featureBtnIconWrap, { backgroundColor: f.color + '40' }]}>
-              <Ionicons name={f.icon as keyof typeof Ionicons.glyphMap} size={12} color="#fff" />
-            </View>
-            <Text style={dynStyles.featureBtnText} numberOfLines={1}>{f.label}</Text>
+            <LinearGradient
+              colors={[f.color + 'CC', f.color + '88']}
+              style={dynStyles.featureBtnGrad}
+            >
+              <Ionicons name={f.icon as keyof typeof Ionicons.glyphMap} size={14} color="#fff" />
+              <Text style={dynStyles.featureBtnText} numberOfLines={1}>{f.label}</Text>
+            </LinearGradient>
           </Pressable>
         ))}
       </ScrollView>
+
       {unreadInsights.length > 0 && (
         <View style={dynStyles.insightsBar}>
-          <Ionicons name="bulb-outline" size={16} color={colors.secondary} />
+          <Ionicons name="bulb-outline" size={15} color={colors.secondary} />
           <Text style={dynStyles.insightsText} numberOfLines={1}>
             {unreadInsights[0].title}: {unreadInsights[0].summary}
           </Text>
@@ -283,15 +312,25 @@ export function AIAssistantScreen({ navigation }: any) {
   );
 
   const screenCompact = (
-    <View style={{ backgroundColor: '#0F2952', paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <View style={dynStyles.aiAvatar}>
-        <Ionicons name="sparkles" size={18} color={colors.secondary} />
+    <LinearGradient
+      colors={['#06091A', '#0F2952']}
+      start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+      style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <View style={dynStyles.aiAvatar}>
+          <Ionicons name="sparkles" size={16} color={colors.secondary} />
+        </View>
+        <Text style={[dynStyles.headerTitle, { fontSize: 17 }]}>{t('ai.title')}</Text>
       </View>
-      <Text style={[dynStyles.headerTitle, { flex: 1, marginLeft: 10 }]}>{t('ai.title')}</Text>
-      <Pressable onPress={clearMessages} style={dynStyles.clearBtn}>
-        <Ionicons name="refresh-outline" size={20} color="rgba(255,255,255,0.6)" />
-      </Pressable>
-    </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <View style={dynStyles.statusDot} />
+        <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, fontWeight: '600' }}>Online</Text>
+        <Pressable onPress={clearMessages} style={dynStyles.clearBtn}>
+          <Ionicons name="refresh-outline" size={16} color="rgba(255,255,255,0.7)" />
+        </Pressable>
+      </View>
+    </LinearGradient>
   );
 
   return (
@@ -447,32 +486,36 @@ export function AIAssistantScreen({ navigation }: any) {
 function makeStyles(colors: import('../../theme/ThemeContext').ThemeColors) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
-    header: { paddingHorizontal: 20, paddingBottom: 8 },
-    headerRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 6 },
-    aiAvatar: { width: 46, height: 46, borderRadius: 23, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: colors.secondary },
-    headerTitle: { fontSize: 18, fontWeight: '800', color: '#fff' },
-    statusRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
-    statusDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#2ECC71' },
-    statusText: { fontSize: 12, color: 'rgba(255,255,255,0.6)' },
+    header: { paddingHorizontal: 18, paddingBottom: 12, overflow: 'hidden' },
+    orbPurple: { position: 'absolute', top: -70, right: -50, width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(139,92,246,0.22)' },
+    orbBlue: { position: 'absolute', bottom: 0, left: -50, width: 160, height: 160, borderRadius: 80, backgroundColor: 'rgba(56,130,255,0.14)' },
+    headerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 14 },
+    aiAvatarWrap: { position: 'relative', width: 52, height: 52 },
+    aiAvatarRing: { position: 'absolute', inset: -3, borderRadius: 29, borderWidth: 1.5, borderColor: colors.secondary + '60', borderStyle: 'dashed' },
+    aiAvatar: { width: 46, height: 46, borderRadius: 23, backgroundColor: 'rgba(255,255,255,0.10)', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: colors.secondary, margin: 3 },
+    headerGreeting: { fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.5)', letterSpacing: 0.3, marginBottom: 2 },
+    headerTitle: { fontSize: 22, fontWeight: '900', color: '#fff', letterSpacing: -0.8, lineHeight: 26 },
+    statusRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 5, flexWrap: 'wrap' },
+    statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#2ECC71' },
+    statusText: { fontSize: 11, color: 'rgba(255,255,255,0.55)', fontWeight: '500' },
+    datePill: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: 'rgba(255,255,255,0.10)', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', paddingHorizontal: 7, paddingVertical: 2 },
+    datePillText: { fontSize: 9, color: 'rgba(255,255,255,0.6)', fontWeight: '600', letterSpacing: 0.2 },
+    headerDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.08)', marginBottom: 12 },
     clearBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' },
-    clearBtnPressed: { backgroundColor: 'rgba(255,255,255,0.16)' },
-    contextRow: { flexDirection: 'row', gap: 8 },
-    contextChip: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.09)', borderRadius: 20, paddingVertical: 3, paddingHorizontal: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+    clearBtnPressed: { backgroundColor: 'rgba(255,255,255,0.18)' },
+    contextRow: { flexDirection: 'row', gap: 6, marginBottom: 12 },
+    contextChip: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 20, paddingVertical: 4, paddingHorizontal: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' },
     contextChipPressed: { backgroundColor: 'rgba(255,255,255,0.18)' },
-    contextChipText: { fontSize: 11, color: 'rgba(255,255,255,0.75)', fontWeight: '600' },
-    featuresRow: { flexGrow: 0, marginTop: 10 },
-    featuresRowContent: { flexDirection: 'row', gap: 6, paddingRight: 4 },
-    featureBtn: {
-      flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5,
-      borderRadius: 10, paddingVertical: 7, paddingHorizontal: 10,
-      backgroundColor: 'rgba(255,255,255,0.07)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
-    },
-    featureBtnPressed: { backgroundColor: 'rgba(255,255,255,0.15)' },
-    featureBtnIconWrap: { width: 18, height: 18, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
-    featureBtnText: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.92)', letterSpacing: 0.1 },
-    insightsBar: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FEF3E2', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
-    insightsText: { flex: 1, fontSize: 12, color: colors.text, fontWeight: '500' },
-    insightsCount: { fontSize: 11, color: '#fff', backgroundColor: colors.secondary, borderRadius: 10, paddingHorizontal: 7, paddingVertical: 2, fontWeight: '700' },
+    contextChipText: { fontSize: 10, color: 'rgba(255,255,255,0.75)', fontWeight: '700' },
+    featuresRow: { flexGrow: 0 },
+    featuresRowContent: { flexDirection: 'row', gap: 7, paddingRight: 4 },
+    featureBtn: { borderRadius: 12, overflow: 'hidden' },
+    featureBtnPressed: { opacity: 0.75 },
+    featureBtnGrad: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 12 },
+    featureBtnText: { fontSize: 11, fontWeight: '800', color: '#fff', letterSpacing: 0.1 },
+    insightsBar: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(255,193,7,0.12)', marginHorizontal: -18, marginTop: 12, paddingHorizontal: 16, paddingVertical: 9, borderTopWidth: 1, borderTopColor: 'rgba(255,193,7,0.2)' },
+    insightsText: { flex: 1, fontSize: 11, color: 'rgba(255,255,255,0.85)', fontWeight: '500' },
+    insightsCount: { fontSize: 10, color: '#fff', backgroundColor: colors.secondary, borderRadius: 10, paddingHorizontal: 7, paddingVertical: 2, fontWeight: '800' },
     messages: { padding: 16 },
     emptyChat: { alignItems: 'center', paddingVertical: 32 },
     emptyChatIcon: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#E8EEF9', alignItems: 'center', justifyContent: 'center', marginBottom: 16 },

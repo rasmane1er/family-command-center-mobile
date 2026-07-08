@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -75,8 +75,13 @@ export function AutomationScreen({ navigation }: any) {
   const { t } = useTranslation('ops');
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<'rules' | 'templates'>('rules');
-  const { rules, toggleRule, deleteRule, addRule } = useAutomationStore();
+  const { rules, toggleRule, deleteRule, addRule, fetchFromServer } = useAutomationStore();
   const familyId = useFamilyStore((s) => s.family?.id) ?? useAuthStore.getState().familyId ?? '';
+
+  useEffect(() => {
+    fetchFromServer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const activeRules = rules.filter((r) => r.isActive);
   const totalRuns = rules.reduce((s, r) => s + r.runCount, 0);

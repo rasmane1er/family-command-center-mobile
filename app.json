@@ -96,6 +96,7 @@
           "speechRecognitionPermission": "Allow Family Command Center to recognize your speech for voice input to the AI Assistant."
         }
       ],
+      "./plugins/withAndroidSpeechQueries.js",
       [
         "expo-build-properties",
         {

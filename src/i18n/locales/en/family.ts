@@ -1,3 +1,5 @@
+import geofence from './family/geofence';
+
 export default {
   family: {
     title: 'Family Hub', members: 'Members', tasks: 'Tasks', calendar: 'Calendar',
@@ -226,7 +228,7 @@ export default {
         deleteEntryTitle: 'Delete Entry', deleteEntryMsg: 'Remove this memory?',
         cancel: 'Cancel', delete: 'Delete',
       },
-      geofence: { alertTriggerLabel: 'Alert when' },
+      geofence,
       guardianDashboard: {
         lastSeenJustNow: 'Just now', lastSeenMinutesAgo: '{{min}}m ago',
         lastSeenHoursAgo: '{{hrs}}h ago', lastSeenDaysAgo: '{{days}}d ago',

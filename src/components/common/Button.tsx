@@ -48,6 +48,12 @@ export function Button({
   const textSize = textSizes[size];
 
   if (variant === 'primary') {
+    // Disabled (not loading) swaps to a flat muted color instead of dimming
+    // the gradient with opacity — opacity over a LinearGradient composites
+    // inconsistently on Android (renders duller/greyer than the same
+    // opacity does on iOS), so this keeps the look identical cross-platform.
+    // Loading keeps the normal gradient + spinner, same as before.
+    const showDisabledBg = disabled && !loading;
     return (
       <Pressable
         onPress={onPress}
@@ -55,29 +61,40 @@ export function Button({
         style={({ pressed }) => [
           styles.pressable,
           fullWidth && styles.fullWidth,
-          (disabled || loading) && styles.disabled,
-          pressed && styles.pressed,
+          pressed && !(disabled || loading) && styles.pressed,
           style,
         ]}
       >
-        <LinearGradient
-          colors={[colors.primaryLight, colors.primary]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[styles.gradient, sizeStyle]}
-        >
-          {loading ? (
-            <ActivityIndicator color={colors.textInverse} size="small" />
-          ) : (
+        {showDisabledBg ? (
+          <View style={[styles.gradient, styles.disabledBg, sizeStyle]}>
             <View style={styles.content}>
               {leftIcon}
-              <Text style={[styles.textPrimary, textSize, textStyle, leftIcon ? { marginLeft: 8 } : null, rightIcon ? { marginRight: 8 } : null]}>
+              <Text style={[styles.textDisabled, textSize, textStyle, leftIcon ? { marginLeft: 8 } : null, rightIcon ? { marginRight: 8 } : null]}>
                 {title}
               </Text>
               {rightIcon}
             </View>
-          )}
-        </LinearGradient>
+          </View>
+        ) : (
+          <LinearGradient
+            colors={[colors.primaryLight, colors.primary]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[styles.gradient, sizeStyle]}
+          >
+            {loading ? (
+              <ActivityIndicator color={colors.textInverse} size="small" />
+            ) : (
+              <View style={styles.content}>
+                {leftIcon}
+                <Text style={[styles.textPrimary, textSize, textStyle, leftIcon ? { marginLeft: 8 } : null, rightIcon ? { marginRight: 8 } : null]}>
+                  {title}
+                </Text>
+                {rightIcon}
+              </View>
+            )}
+          </LinearGradient>
+        )}
       </Pressable>
     );
   }
@@ -168,6 +185,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.secondaryLight,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  disabledBg: {
+    backgroundColor: colors.border,
+  },
+  textDisabled: {
+    color: colors.textMuted,
+    letterSpacing: 0.3,
   },
   content: {
     flexDirection: 'row',

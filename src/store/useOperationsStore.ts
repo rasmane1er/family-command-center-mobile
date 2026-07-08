@@ -4,6 +4,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { mmkvStorage } from '../storage/mmkvStorage';
 import type { PantryItem, ShoppingList, MealPlan, Asset, Vehicle, Document } from '../types';
 import * as assetService from '../services/assetService';
+import * as pantryService from '../services/pantryService';
 
 interface OperationsState {
   pantryItems: PantryItem[];
@@ -15,6 +16,7 @@ interface OperationsState {
   isLoaded: boolean;
 
   addPantryItem: (item: PantryItem) => void;
+  addPantryItemsBulk: (items: PantryItem[]) => void;
   updatePantryItem: (id: string, updates: Partial<PantryItem>) => void;
   deletePantryItem: (id: string) => void;
   addShoppingList: (list: ShoppingList) => void;
@@ -46,25 +48,28 @@ export const useOperationsStore = create<OperationsState>()(
   isLoaded: false,
 
   addPantryItem: (item) => {
-  set((s) => ({ pantryItems: [...s.pantryItems, item] }));
-
-  enqueueSync({
-    entity: 'operations',
-    action: 'create',
-    payload: { type: 'pantryItem', data: item },
-  });
-},
-  updatePantryItem: (id, updates) =>
-    set((s) => ({ pantryItems: s.pantryItems.map((i) => (i.id === id ? { ...i, ...updates } : i)) })),
+    set((s) => ({ pantryItems: [...s.pantryItems, item] }));
+    pantryService.createPantryItem(item).catch(() => {
+      set((s) => ({ pantryItems: s.pantryItems.filter((i) => i.id !== item.id) }));
+    });
+  },
+  addPantryItemsBulk: (items) => {
+    set((s) => ({ pantryItems: [...s.pantryItems, ...items] }));
+    pantryService.createPantryItemsBulk(items).catch(() => {
+      const ids = new Set(items.map((i) => i.id));
+      set((s) => ({ pantryItems: s.pantryItems.filter((i) => !ids.has(i.id)) }));
+    });
+  },
+  updatePantryItem: (id, updates) => {
+    const prev = get().pantryItems;
+    set((s) => ({ pantryItems: s.pantryItems.map((i) => (i.id === id ? { ...i, ...updates } : i)) }));
+    pantryService.updatePantryItemRemote(id, updates).catch(() => { set({ pantryItems: prev }); });
+  },
   deletePantryItem: (id) => {
-  set((s) => ({ pantryItems: s.pantryItems.filter((i) => i.id !== id) }));
-
-  enqueueSync({
-    entity: 'operations',
-    action: 'delete',
-    payload: { type: 'pantryItem', id },
-  });
-},
+    const prev = get().pantryItems;
+    set((s) => ({ pantryItems: s.pantryItems.filter((i) => i.id !== id) }));
+    pantryService.deletePantryItemRemote(id).catch(() => { set({ pantryItems: prev }); });
+  },
   addShoppingList: (list) => set((s) => ({ shoppingLists: [...s.shoppingLists, list] })),
   updateShoppingList: (id, updates) =>
     set((s) => ({ shoppingLists: s.shoppingLists.map((l) => (l.id === id ? { ...l, ...updates } : l)) })),
@@ -120,8 +125,11 @@ export const useOperationsStore = create<OperationsState>()(
 
   fetchFromServer: async () => {
     try {
-      const { assets } = await assetService.fetchAssets();
-      set({ assets, isLoaded: true });
+      const [{ assets }, { items }] = await Promise.all([
+        assetService.fetchAssets(),
+        pantryService.fetchPantryItems(),
+      ]);
+      set({ assets, pantryItems: items, isLoaded: true });
     } catch {
       set({ isLoaded: true });
     }

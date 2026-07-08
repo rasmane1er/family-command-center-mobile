@@ -8,6 +8,7 @@ import { SubscriptionGate } from '../components/common/SubscriptionGate';
 import { OperationsDashboardScreen } from '../screens/operations/OperationsDashboardScreen';
 import { VehiclesScreen } from '../screens/operations/VehiclesScreen';
 import { PantryScreen } from '../screens/operations/PantryScreen';
+import { ScanItemScreen } from '../screens/operations/ScanItemScreen';
 import { MealPlanningScreen } from '../screens/operations/MealPlanningScreen';
 import { DocumentsScreen } from '../screens/operations/DocumentsScreen';
 import { EmergencyScreen } from '../screens/operations/EmergencyScreen';
@@ -42,6 +43,7 @@ export function OperationsNavigator() {
         <Stack.Screen name="OperationsDashboard" component={OperationsDashboardScreen} />
         <Stack.Screen name="Vehicles" component={VehiclesScreen} />
         <Stack.Screen name="Pantry" component={PantryScreen} />
+        <Stack.Screen name="ScanItem" component={ScanItemScreen} />
 
         <Stack.Screen name="MealPlanning">
           {(props) => (
