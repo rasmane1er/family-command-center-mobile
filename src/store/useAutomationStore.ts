@@ -9,7 +9,7 @@ import * as automationRuleService from '../services/automationRuleService';
 import * as marketplaceListingService from '../services/marketplaceListingService';
 import { useFamilyStore } from './useFamilyStore';
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../utils/generateId';
 
 const HUE_IP_KEY = 'hue_bridge_ip';
 const HUE_APP_KEY_KEY = 'hue_application_key';

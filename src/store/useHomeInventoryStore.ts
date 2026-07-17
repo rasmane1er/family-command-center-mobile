@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { mmkvStorage } from '../storage/mmkvStorage';
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../utils/generateId';
 
 type InventoryRoom =
   | 'living_room'

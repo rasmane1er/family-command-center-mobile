@@ -3,7 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { mmkvStorage } from '../storage/mmkvStorage';
 import { apiRequest } from '../api/client';
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../utils/generateId';
 
 export type BucketCategory = 'travel' | 'experience' | 'achievement' | 'learn' | 'give' | 'adventure' | 'food' | 'other';
 

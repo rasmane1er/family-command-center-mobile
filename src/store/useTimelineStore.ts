@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { mmkvStorage } from '../storage/mmkvStorage';
 
 export type TimelineType = 'achievement' | 'milestone' | 'memory' | 'event' | 'goal' | 'streak' | 'family';
 
@@ -15,6 +15,10 @@ export interface TimelineEntry {
   color: string;
   isHighlight?: boolean;
 }
+
+// This store has no server sync (fetchFromServer is a no-op below), so the
+// local addEntry cap is the only thing bounding its persisted size.
+const MAX_ENTRIES = 500;
 
 interface TimelineState {
   entries: TimelineEntry[];
@@ -32,13 +36,13 @@ export const useTimelineStore = create<TimelineState>()(
       isLoaded: false,
       addEntry: (entry) =>
         set((s) => ({
-          entries: [{ ...entry, id: `timeline-${Date.now()}` }, ...s.entries].sort(
-            (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-          ),
+          entries: [{ ...entry, id: `timeline-${Date.now()}` }, ...s.entries]
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+            .slice(0, MAX_ENTRIES),
         })),
       deleteEntry: (id) => set((s) => ({ entries: s.entries.filter((e) => e.id !== id) })),
       fetchFromServer: async () => { set({ isLoaded: true }); },
     }),
-    { name: 'timeline-store', storage: createJSONStorage(() => AsyncStorage) }
+    { name: 'timeline-store', storage: createJSONStorage(() => mmkvStorage) }
   )
 );

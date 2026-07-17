@@ -26,12 +26,19 @@ import { ProgressBar } from '../../components/common/ProgressBar';
 import { useAIStore } from '../../store/useAIStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { useFinanceStore } from '../../store/useFinanceStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { useNotificationsStore } from '../../store/useNotificationsStore';
+
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../theme/ThemeContext';
 import { shadows } from '../../theme/spacing';
 import { getVisibleTasks, getVisibleEvents } from '../../utils/roleVisibility';
 import { getAllowedNotificationTypes } from '../../utils/roleFilters';
+import { DailyBriefCard } from '../../components/dashboard/DailyBriefCard';
+
+import { MemoryOfTheDayCard } from '../../components/dashboard/MemoryOfTheDayCard';
+import { ChoreLeaderboardCard } from '../../components/dashboard/ChoreLeaderboardCard';
+import { StreakCounterCard } from '../../components/dashboard/StreakCounterCard';
 
 const { width } = Dimensions.get('window');
 
@@ -63,19 +70,27 @@ export function DashboardScreen({ navigation }: any) {
   const tasks = useFamilyStore((s) => s.tasks);
   const events = useFamilyStore((s) => s.events);
   const activeMemberId = useFamilyStore((s) => s.activeMemberId);
+  const authUser = useAuthStore((s) => s.user);
   const activeMember = members.find((member) => member.id === activeMemberId);
   const fetchFamilyFromServer = useFamilyStore((s) => s.fetchFromServer);
   const hydrateEvents = useFamilyStore((s) => s.hydrateEvents);
 
+  const isFamilyLoaded = useFamilyStore((s) => s.isLoaded);
+  const familyId = useAuthStore((s) => s.familyId);
+
+
   // Home is often the very first screen opened after launch — nothing else
-  // may have hydrated family/members/tasks/events yet, so this dashboard
-  // would otherwise show whatever was last cached locally (or nothing) until
-  // the user happened to visit another tab that hydrates them.
+  // may have hydrated family/members/tasks/events yet. Only fetch when we
+  // have a confirmed backend session (familyId set) to avoid a 401 on first
+  // mount before the token is persisted.
   useEffect(() => {
-    fetchFamilyFromServer();
+    if (familyId && (!isFamilyLoaded || members.length === 0)) {
+      fetchFamilyFromServer();
+    }
     hydrateEvents();
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [familyId]);
 
   const isParent =
     activeMember?.role === 'parent' ||
@@ -517,12 +532,12 @@ export function DashboardScreen({ navigation }: any) {
               <View style={dynStyles.headerIdentity}>
                 <Text style={dynStyles.eyebrow}>{t('dashboard.screens.main.eyebrow')}</Text>
                 <Text style={dynStyles.greeting}>{greeting()}</Text>
-                <Text style={dynStyles.familyName} numberOfLines={1} ellipsizeMode="tail">
+                <Text style={dynStyles.familyName} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
                   {family?.name ?? t('dashboard.screens.main.defaultFamilyName')}
                 </Text>
                 <Text style={dynStyles.dateText}>{format(new Date(), 'EEEE, MMMM d')}</Text>
 
-                {activeMember && (
+                {(activeMember || authUser) && (
                   <Pressable
                     style={dynStyles.activeProfileBadge}
                     onPress={() =>
@@ -533,9 +548,13 @@ export function DashboardScreen({ navigation }: any) {
                       })
                     }
                   >
-                    <Avatar name={activeMember.name} color={activeMember.avatarColor} size={24} />
+                    <Avatar
+                      name={activeMember?.name ?? authUser?.displayName ?? 'Me'}
+                      color={activeMember?.avatarColor ?? authUser?.avatarColor ?? '#4A8FD9'}
+                      size={24}
+                    />
                     <Text style={dynStyles.activeProfileName} numberOfLines={1}>
-                      {activeMember.name} • {roleLabel}
+                      {activeMember?.name ?? authUser?.displayName ?? 'Me'} • {activeMember ? roleLabel : 'Parent'}
                     </Text>
                     <Ionicons name="chevron-down" size={13} color="#fff" />
                   </Pressable>
@@ -609,6 +628,8 @@ export function DashboardScreen({ navigation }: any) {
               </Pressable>
             ))}
           </View>
+
+          <DailyBriefCard />
 
           <View style={dynStyles.sectionHeader}>
             <View>
@@ -694,7 +715,7 @@ export function DashboardScreen({ navigation }: any) {
                       color={member.avatarColor}
                       size={44}
                       showBadge
-                      badgeColor={member.status === 'active' ? colors.success : colors.warning}
+                      badgeColor={member.status === 'ACTIVE' ? colors.success : colors.warning}
                     />
                     <View style={[dynStyles.memberRolePill, { backgroundColor: colors.primary + '12' }]}> 
                       <Text style={[dynStyles.memberRoleText, { color: colors.primary }]}>{member.role}</Text>
@@ -832,6 +853,11 @@ export function DashboardScreen({ navigation }: any) {
               </View>
             </LinearGradient>
           </Pressable>
+
+          <MemoryOfTheDayCard onPress={() => navigation.navigate('Family', { screen: 'FamilyTimeline', initial: false } as never)} />
+
+          <StreakCounterCard onPress={() => navigation.navigate('Family', { screen: 'Habits', initial: false } as never)} />
+          <ChoreLeaderboardCard onPress={() => navigation.navigate('Family', { screen: 'Tasks', initial: false } as never)} />
 
           <View style={dynStyles.sectionHeader}>
             <View>

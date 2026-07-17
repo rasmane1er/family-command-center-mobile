@@ -4,7 +4,7 @@ import { mmkvStorage } from '../storage/mmkvStorage';
 import type { WealthEntry, WealthProjection, ReputationScore } from '../types';
 import * as wealthService from '../services/wealthService';
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../utils/generateId';
 
 interface WealthState {
   entries: WealthEntry[];

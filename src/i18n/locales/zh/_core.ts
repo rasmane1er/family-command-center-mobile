@@ -297,7 +297,7 @@ export default {
         scoreStatPending: '待处理',
         scoreStatSavings: '储蓄',
         scoreStatTasksDone: '已完成任务',
-        scoreTrend: '较上周{{direction}}',
+        scoreTrend: '较上周+{{points}}分',
       },
     },
   },

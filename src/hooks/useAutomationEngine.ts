@@ -14,7 +14,7 @@ import type { AutomationRule } from '../types';
 // automation.
 const SCAN_INTERVAL_MS = 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../utils/generateId';
 
 const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 

@@ -3,15 +3,15 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { mmkvStorage } from '../storage/mmkvStorage';
 import { useFamilyStore } from './useFamilyStore';
 import { useFinanceStore } from './useFinanceStore';
-import { useAuthStore } from './useAuthStore';
+import { authBridge } from './authBridge';
 import type { Caregiver, Booking, CaregiverType, DaycareEnrollment, CalendarEvent, Bill } from '../types';
 
 export type { CaregiverType, Caregiver, Booking, DaycareEnrollment };
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../utils/generateId';
 
 function resolveFamilyId(): string {
-  return useFamilyStore.getState().family?.id ?? useAuthStore.getState().familyId ?? '';
+  return useFamilyStore.getState().family?.id ?? authBridge.getSnapshot().familyId ?? '';
 }
 
 interface ChildcareState {

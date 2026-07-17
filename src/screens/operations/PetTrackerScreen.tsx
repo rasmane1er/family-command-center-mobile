@@ -27,7 +27,7 @@ import { getPetCharges, type PetCharge } from '../../services/autoFillService';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useTranslation } from 'react-i18next';
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../../utils/generateId';
 
 const SPECIES_OPTIONS: { value: PetSpecies; label: string; emoji: string; color: string }[] = [
   { value: 'dog', label: 'Dog', emoji: '🐕', color: '#F5A623' },

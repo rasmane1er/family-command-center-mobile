@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { mmkvStorage } from '../storage/mmkvStorage';
 import * as familyGoalsService from '../services/familyGoalsService';
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../utils/generateId';
 
 export type GoalCategory = 'health' | 'finance' | 'education' | 'travel' | 'home' | 'relationships' | 'career' | 'fun' | 'other';
 

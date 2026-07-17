@@ -14,7 +14,7 @@ import { useFamilyStore } from '../../../store/useFamilyStore';
 import type { ChainOfCommandContact } from '../../../types';
 
 const MILITARY_GREEN = '#4A7C59';
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../../../utils/generateId';
 
 const BRANCHES = ['Army', 'Navy', 'Air Force', 'Marine Corps', 'Space Force', 'Coast Guard', 'National Guard'];
 

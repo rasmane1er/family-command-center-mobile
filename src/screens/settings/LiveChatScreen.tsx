@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  FlatList,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -49,7 +50,7 @@ export function LiveChatScreen({ navigation }: { navigation: { goBack: () => voi
   const [input, setInput] = useState('');
   const [showHistory, setShowHistory] = useState(false);
   const hasAutoOpened = useRef(false);
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<FlatList>(null);
   // Populates the input for review before sending, rather than auto-sending
   // like the AI Assistant's voice input — misheard words matter more in a
   // real support conversation with a person than in a one-shot AI query.
@@ -174,57 +175,63 @@ export function LiveChatScreen({ navigation }: { navigation: { goBack: () => voi
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={0}>
         <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
           {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
-            <ScrollView
+            <FlatList
               ref={scrollRef}
               style={{ flex: 1 }}
               onScroll={onScroll}
               onScrollEndDrag={onScrollEndDrag}
               onMomentumScrollEnd={onMomentumScrollEnd}
               scrollEventThrottle={scrollEventThrottle}
-              contentContainerStyle={[s.messages, { paddingTop: contentPaddingTop, paddingBottom: 16 }]}
+              contentContainerStyle={[
+                s.messages,
+                { paddingTop: contentPaddingTop, paddingBottom: 16 },
+                activeMessages.length === 0 && { flexGrow: 1 },
+              ]}
               onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: false })}
               showsVerticalScrollIndicator={false}
-            >
-              {isLoadingThreads && !activeThreadId ? (
-                <View style={s.loadingBlock}>
-                  <ActivityIndicator color={colors.primary} />
-                </View>
-              ) : !activeThreadId ? (
-                <View style={s.emptyChat}>
-                  <View style={s.emptyChatIcon}>
-                    <Ionicons name="chatbubble-ellipses-outline" size={40} color={colors.primary} />
-                  </View>
-                  <Text style={s.emptyChatTitle}>{t('settings.screens.liveChat.emptyChatTitle')}</Text>
-                  <Text style={s.emptyChatSubtitle}>
-                    {t('settings.screens.liveChat.emptyChatSubtitle')}
-                  </Text>
-                </View>
-              ) : isLoadingMessages && activeMessages.length === 0 ? (
-                <View style={s.loadingBlock}>
-                  <ActivityIndicator color={colors.primary} />
-                </View>
-              ) : (
-                activeMessages.map((msg) => {
-                  const isMine = msg.senderType === 'user';
-                  return (
-                    <View key={msg.id} style={[s.messageBubble, isMine ? s.userBubble : s.agentBubble]}>
-                      {!isMine && (
-                        <View style={s.agentAvatar}>
-                          <Ionicons name="headset-outline" size={14} color={colors.secondary} />
-                        </View>
-                      )}
-                      <View style={[s.bubbleContent, isMine ? s.userBubbleContent : s.agentBubbleContent]}>
-                        {!isMine && msg.senderName && <Text style={s.agentName}>{msg.senderName}</Text>}
-                        <Text style={[s.bubbleText, isMine ? s.userBubbleText : s.agentBubbleText]}>{msg.body}</Text>
-                        <Text style={[s.bubbleTime, isMine ? s.userBubbleTime : s.agentBubbleTime]}>
-                          {format(new Date(msg.createdAt), 'h:mm a')}
-                        </Text>
+              data={activeMessages}
+              keyExtractor={(msg) => msg.id}
+              renderItem={({ item: msg }) => {
+                const isMine = msg.senderType === 'user';
+                return (
+                  <View style={[s.messageBubble, isMine ? s.userBubble : s.agentBubble]}>
+                    {!isMine && (
+                      <View style={s.agentAvatar}>
+                        <Ionicons name="headset-outline" size={14} color={colors.secondary} />
                       </View>
+                    )}
+                    <View style={[s.bubbleContent, isMine ? s.userBubbleContent : s.agentBubbleContent]}>
+                      {!isMine && msg.senderName && <Text style={s.agentName}>{msg.senderName}</Text>}
+                      <Text style={[s.bubbleText, isMine ? s.userBubbleText : s.agentBubbleText]}>{msg.body}</Text>
+                      <Text style={[s.bubbleTime, isMine ? s.userBubbleTime : s.agentBubbleTime]}>
+                        {format(new Date(msg.createdAt), 'h:mm a')}
+                      </Text>
                     </View>
-                  );
-                })
-              )}
-            </ScrollView>
+                  </View>
+                );
+              }}
+              ListEmptyComponent={
+                isLoadingThreads && !activeThreadId ? (
+                  <View style={s.loadingBlock}>
+                    <ActivityIndicator color={colors.primary} />
+                  </View>
+                ) : !activeThreadId ? (
+                  <View style={s.emptyChat}>
+                    <View style={s.emptyChatIcon}>
+                      <Ionicons name="chatbubble-ellipses-outline" size={40} color={colors.primary} />
+                    </View>
+                    <Text style={s.emptyChatTitle}>{t('settings.screens.liveChat.emptyChatTitle')}</Text>
+                    <Text style={s.emptyChatSubtitle}>
+                      {t('settings.screens.liveChat.emptyChatSubtitle')}
+                    </Text>
+                  </View>
+                ) : isLoadingMessages ? (
+                  <View style={s.loadingBlock}>
+                    <ActivityIndicator color={colors.primary} />
+                  </View>
+                ) : null
+              }
+            />
           )}
         </CollapsibleHeader>
 

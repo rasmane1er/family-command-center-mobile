@@ -373,7 +373,7 @@ export default {
         scoreStatPending: 'معلق',
         scoreStatSavings: 'المدخرات',
         scoreStatTasksDone: 'مهام منجزة',
-        scoreTrend: '{{direction}} عن الأسبوع الماضي',
+        scoreTrend: '+{{points}} نقاط عن الأسبوع الماضي',
       },
     },
   },

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,6 +10,7 @@ import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { Card } from '../../components/common/Card';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import type { FamilyMember, MemberRole } from '../../types';
 import { defaultPermissionsForRole } from '../../types';
 
@@ -22,13 +23,40 @@ const roles: { value: MemberRole; labelKey: string; icon: string }[] = [
 
 export function MemberSetupScreen({ navigation }: any) {
   const { t } = useTranslation('onboarding');
-  const [members, setMembers] = useState<FamilyMember[]>([]);
+  const authUser = useAuthStore((s) => s.user);
+  const familyId = useFamilyStore((s) => s.family?.id || 'family-1');
+  const addMember = useFamilyStore((s) => s.addMember);
+
+  // Build the signed-in user's member entry once — this is always the first
+  // member and cannot be removed or duplicated.
+  const selfMember = useMemo<FamilyMember>(() => ({
+    id: `member-self-${authUser?.id ?? 'self'}`,
+    familyId,
+    name: authUser?.displayName ?? authUser?.firstName ?? 'Me',
+    role: (authUser?.familyRole as MemberRole) ?? 'parent',
+    avatarColor: authUser?.avatarColor ?? colors.avatars[0],
+    dateOfBirth: authUser?.dateOfBirth || undefined,
+    email: authUser?.email || undefined,
+    status: 'ACTIVE',
+    points: 0,
+    level: 1,
+    isAdmin: true,
+    isLocalProfile: false,
+    linkedUserId: authUser?.id ?? null,
+    isPinProtected: false,
+    permissions: defaultPermissionsForRole((authUser?.familyRole as MemberRole) ?? 'parent'),
+    inviteStatus: 'none',
+    createdAt: new Date().toISOString(),
+  }), [authUser, familyId]);
+
+  const [additionalMembers, setAdditionalMembers] = useState<FamilyMember[]>([]);
   const [name, setName] = useState('');
   const [role, setRole] = useState<MemberRole>('parent');
   const [dob, setDob] = useState('');
   const [email, setEmail] = useState('');
-  const familyId = useFamilyStore((s) => s.family?.id || 'family-1');
-  const addMember = useFamilyStore((s) => s.addMember);
+
+  // All members = locked self + any additional ones added manually
+  const allMembers = [selfMember, ...additionalMembers];
 
   const addMemberLocal = () => {
     if (!name.trim()) return;
@@ -37,10 +65,10 @@ export function MemberSetupScreen({ navigation }: any) {
       familyId,
       name: name.trim(),
       role,
-      avatarColor: colors.avatars[members.length % colors.avatars.length],
+      avatarColor: colors.avatars[allMembers.length % colors.avatars.length],
       dateOfBirth: dob || undefined,
       email: email.trim() || undefined,
-      status: 'active',
+      status: 'ACTIVE',
       points: 0,
       level: 1,
       isAdmin: role === 'parent' || role === 'guardian',
@@ -51,22 +79,19 @@ export function MemberSetupScreen({ navigation }: any) {
       inviteStatus: 'none',
       createdAt: new Date().toISOString(),
     };
-    setMembers([...members, newMember]);
+    setAdditionalMembers([...additionalMembers, newMember]);
     setName('');
     setDob('');
     setEmail('');
   };
 
-  const removeMember = (id: string) => setMembers(members.filter((m) => m.id !== id));
+  // Self member (index 0) cannot be removed
+  const removeMember = (id: string) => setAdditionalMembers(additionalMembers.filter((m) => m.id !== id));
 
   const roleLabelKeyByValue = Object.fromEntries(roles.map((r) => [r.value, r.labelKey])) as Record<MemberRole, string>;
 
   const handleNext = () => {
-    if (members.length === 0) {
-      Alert.alert(t('onboarding.screens.memberSetup.addMembersAlertTitle'), t('onboarding.screens.memberSetup.addMembersAlertMsg'));
-      return;
-    }
-    members.forEach(addMember);
+    allMembers.forEach(addMember);
     navigation.navigate('HomeSetup');
   };
 
@@ -87,25 +112,37 @@ export function MemberSetupScreen({ navigation }: any) {
           <View style={[styles.progressFill, { width: '28%' }]} />
         </View>
 
-        {members.length > 0 && (
-          <View style={styles.membersList}>
-            <Text style={styles.sectionLabel}>{t('onboarding.screens.memberSetup.addedMembersLabel', { count: members.length })}</Text>
-            {members.map((m) => (
+        <View style={styles.membersList}>
+          <Text style={styles.sectionLabel}>{t('onboarding.screens.memberSetup.addedMembersLabel', { count: allMembers.length })}</Text>
+          {allMembers.map((m, index) => {
+            const isSelf = index === 0;
+            return (
               <Card key={m.id} style={styles.memberCard} variant="elevated">
                 <View style={styles.memberRow}>
                   <Avatar name={m.name} color={m.avatarColor} size={44} />
                   <View style={{ flex: 1, marginLeft: 12 }}>
-                    <Text style={styles.memberName}>{m.name}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={styles.memberName}>{m.name}</Text>
+                      {isSelf && (
+                        <View style={styles.youBadge}>
+                          <Text style={styles.youBadgeText}>You</Text>
+                        </View>
+                      )}
+                    </View>
                     <Text style={styles.memberRole}>{t(`onboarding.screens.memberSetup.${roleLabelKeyByValue[m.role]}`)}</Text>
                   </View>
-                  <Pressable onPress={() => removeMember(m.id)}>
-                    <Ionicons name="trash-outline" size={20} color={colors.danger} />
-                  </Pressable>
+                  {isSelf ? (
+                    <Ionicons name="lock-closed-outline" size={18} color={colors.textMuted} />
+                  ) : (
+                    <Pressable onPress={() => removeMember(m.id)}>
+                      <Ionicons name="trash-outline" size={20} color={colors.danger} />
+                    </Pressable>
+                  )}
                 </View>
               </Card>
-            ))}
-          </View>
-        )}
+            );
+          })}
+        </View>
 
         <Text style={styles.sectionLabel}>{t('onboarding.screens.memberSetup.addAMemberLabel')}</Text>
 
@@ -148,7 +185,7 @@ export function MemberSetupScreen({ navigation }: any) {
         />
 
         <Button
-          title={name ? t('onboarding.screens.memberSetup.addMemberButton', { name }) : t('onboarding.screens.memberSetup.addMemberButton', { name: t('onboarding.screens.memberSetup.addMemberButtonDefault') })}
+          title={name.trim() ? t('onboarding.screens.memberSetup.addMemberButton', { name: name.trim() }) : t('onboarding.screens.memberSetup.addMemberButtonDefault')}
           onPress={addMemberLocal}
           variant="secondary"
           fullWidth
@@ -162,7 +199,7 @@ export function MemberSetupScreen({ navigation }: any) {
           onPress={handleNext}
           fullWidth
           size="lg"
-          disabled={members.length === 0}
+          disabled={false}
           rightIcon={<Ionicons name="arrow-forward" size={18} color="#fff" style={{ marginLeft: 8 }} />}
         />
 
@@ -199,4 +236,6 @@ const styles = StyleSheet.create({
   roleTextActive: { color: '#fff' },
   skipButton: { alignItems: 'center', paddingVertical: 16 },
   skipText: { color: colors.textMuted, fontSize: 14 },
+  youBadge: { backgroundColor: colors.primary + '18', borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2 },
+  youBadgeText: { fontSize: 11, fontWeight: '700', color: colors.primary },
 });

@@ -110,7 +110,7 @@ export function FamilyTimelineScreen({ navigation }: any) {
   const screenHeader = (
     <LinearGradient colors={['#4A0072', '#7B2D8B']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
       <View style={styles.headerRow}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Pressable onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.getParent()?.navigate("Home")} style={styles.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <View style={{ flex: 1 }}>
@@ -139,7 +139,7 @@ export function FamilyTimelineScreen({ navigation }: any) {
 
   const screenCompact = (
     <LinearGradient colors={['#4A0072', '#7B2D8B']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+      <Pressable onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.getParent()?.navigate("Home")} style={styles.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={styles.headerTitle}>{t('family.screens.familyTimeline.headerTitle')}</Text>

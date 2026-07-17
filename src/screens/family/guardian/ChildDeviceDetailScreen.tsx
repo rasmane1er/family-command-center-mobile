@@ -1,12 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   Alert,
+  Image,
+  ActivityIndicator,
+  FlatList,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -60,11 +65,166 @@ export function ChildDeviceDetailScreen({ navigation, route }: any) {
   const appUsage = useGuardianStore((s) => s.appUsage);
   const screenTimeRules = useGuardianStore((s) => s.screenTimeRules);
   const sendCommand = useGuardianStore((s) => s.sendCommand);
+  const hydrate = useGuardianStore((s) => s.hydrate);
+  const streamingDeviceId = useGuardianStore((s) => s.streamingDeviceId);
+  const setStreamingDeviceId = useGuardianStore((s) => s.setStreamingDeviceId);
+
+  const [repairCode, setRepairCode] = useState<string | null>(null);
+  const [repairing, setRepairing] = useState(false);
+
+  // Screenshot / live view state
+  const [screenshot, setScreenshot] = useState<string | null>(null);
+  const [screenshotAt, setScreenshotAt] = useState<string | null>(null);
+  const [screenshotLoading, setScreenshotLoading] = useState(false);
+  // liveViewActive is derived from the store so it persists across navigations
+  const liveViewActive = streamingDeviceId === deviceId;
+  const liveViewInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Web filter toggle — initialised from server state and kept in sync
+  const [webFilterOn, setWebFilterOn] = useState(false);
+
+  // Notification feed state
+  const [notifications, setNotifications] = useState<
+    { id: string; packageName: string; title: string; text: string; receivedAt: string }[]
+  >([]);
+  const [notifLoading, setNotifLoading] = useState(false);
+
+  const fetchScreenshot = useCallback(async () => {
+    if (!deviceId) return;
+    try {
+      const { apiRequest } = await import('../../../api/client');
+      const res = await apiRequest(`/guardian/devices/${deviceId}/screenshot`) as { jpeg: string | null; capturedAt: string | null };
+      if (res.jpeg) {
+        setScreenshot(res.jpeg);
+        setScreenshotAt(res.capturedAt);
+      }
+    } catch { /* silent */ }
+  }, [deviceId]);
+
+  const handleTakeScreenshot = useCallback(async () => {
+    if (!deviceId) return;
+    setScreenshotLoading(true);
+    const sentAt = Date.now();
+    sendCommand(deviceId, 'take_screenshot');
+    // Poll every 2s for up to 30s — child may need to grant screen capture permission first
+    const poll = async () => {
+      try {
+        const { apiRequest } = await import('../../../api/client');
+        const res = await apiRequest(`/guardian/devices/${deviceId}/screenshot`) as { jpeg: string | null; capturedAt: string | null };
+        if (res.jpeg && res.capturedAt && new Date(res.capturedAt).getTime() >= sentAt) {
+          setScreenshot(res.jpeg);
+          setScreenshotAt(res.capturedAt);
+          setScreenshotLoading(false);
+          return true;
+        }
+      } catch { /* retry */ }
+      return false;
+    };
+    for (let i = 0; i < 15; i++) {
+      await new Promise(r => setTimeout(r, 2000));
+      if (await poll()) return;
+    }
+    setScreenshotLoading(false);
+  }, [deviceId, sendCommand]);
+
+  const toggleLiveView = useCallback(async () => {
+    if (!deviceId) return;
+    if (liveViewActive) {
+      sendCommand(deviceId, 'stop_screen_stream');
+      if (liveViewInterval.current) clearInterval(liveViewInterval.current);
+      liveViewInterval.current = null;
+      setStreamingDeviceId(null);
+    } else {
+      sendCommand(deviceId, 'start_screen_stream', { intervalMs: 1500 });
+      setStreamingDeviceId(deviceId);
+      // Poll for frames every 1.5s
+      liveViewInterval.current = setInterval(fetchScreenshot, 1500);
+    }
+  }, [deviceId, liveViewActive, sendCommand, fetchScreenshot, setStreamingDeviceId]);
+
+  const handleSaveScreenshot = useCallback(async () => {
+    if (!screenshot || !deviceId) return;
+    try {
+      const filename = `child_screenshot_${Date.now()}.jpg`;
+      const path = `${FileSystem.cacheDirectory}${filename}`;
+      await FileSystem.writeAsStringAsync(path, screenshot, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      // Share sheet lets guardian save to Photos, Files, AirDrop, etc.
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(path, { mimeType: 'image/jpeg', dialogTitle: 'Save Screenshot' });
+      }
+      // Delete from server after sharing so it doesn't persist there
+      try {
+        const { apiRequest } = await import('../../../api/client');
+        await apiRequest(`/guardian/devices/${deviceId}/screenshot`, { method: 'DELETE' });
+      } catch { /* non-fatal */ }
+      setScreenshot(null);
+      setScreenshotAt(null);
+    } catch {
+      Alert.alert('Error', 'Could not save screenshot.');
+    }
+  }, [screenshot, deviceId]);
+
+  // Resume polling if live view was active when we navigated back
+  useEffect(() => {
+    if (liveViewActive && !liveViewInterval.current) {
+      liveViewInterval.current = setInterval(fetchScreenshot, 1500);
+    }
+    return () => {
+      if (liveViewInterval.current) {
+        clearInterval(liveViewInterval.current);
+        liveViewInterval.current = null;
+      }
+    };
+  }, [liveViewActive]);
+
+  const fetchNotifications = useCallback(async () => {
+    if (!deviceId) return;
+    setNotifLoading(true);
+    try {
+      const { apiRequest } = await import('../../../api/client');
+      const res = await apiRequest(`/guardian/devices/${deviceId}/notifications?limit=30`) as {
+        notifications: { id: string; packageName: string; title: string; text: string; receivedAt: string }[];
+      };
+      setNotifications(res.notifications ?? []);
+    } catch { /* silent */ } finally {
+      setNotifLoading(false);
+    }
+  }, [deviceId]);
+
+  useEffect(() => {
+    fetchNotifications();
+    fetchScreenshot();
+  }, [deviceId]);
+
+  const handleRepair = useCallback(async () => {
+    if (!deviceId) return;
+    setRepairing(true);
+    try {
+      const { apiRequest } = await import('../../../api/client');
+      const res = await apiRequest(`/guardian/devices/${deviceId}/repair`, { method: 'POST' }) as { pairingCode: string };
+      setRepairCode(res.pairingCode);
+      await hydrate();
+    } catch {
+      Alert.alert('Error', 'Could not generate a reconnect code. Please try again.');
+    } finally {
+      setRepairing(false);
+    }
+  }, [deviceId, hydrate]);
 
   const members = useFamilyStore((s) => s.members);
 
   const device = devices.find((d) => d.id === deviceId);
   const member = members.find((m) => m.id === device?.memberId);
+
+  // Sync web filter toggle from server-side device state (single source of truth)
+  useEffect(() => {
+    if (device?.webFilterEnabled !== undefined) {
+      setWebFilterOn(device.webFilterEnabled);
+    }
+  }, [device?.webFilterEnabled]);
 
   const [nativeUsage, setNativeUsage] = useState<NativeAppUsage[]>([]);
 
@@ -175,7 +335,7 @@ export function ChildDeviceDetailScreen({ navigation, route }: any) {
       <View style={styles.headerGlow} />
 
       <View style={styles.headerRow}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Pressable onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.getParent()?.navigate('Home')} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </Pressable>
 
@@ -234,7 +394,7 @@ export function ChildDeviceDetailScreen({ navigation, route }: any) {
       colors={['#081B33', '#0F2952']}
       style={[styles.compactHeader, { paddingTop: insets.top }]}
     >
-      <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+      <Pressable onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.getParent()?.navigate('Home')} style={styles.backBtn}>
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </Pressable>
 
@@ -270,26 +430,55 @@ export function ChildDeviceDetailScreen({ navigation, route }: any) {
               },
             ]}
           >
+            {/* Reconnect banner — shown when device is offline */}
+            {device.status === 'offline' && (
+              <View style={[styles.card, shadows.card, { marginBottom: 12 }]}>
+                <View style={styles.cardHeader}>
+                  <Ionicons name="wifi-outline" size={18} color={colors.warning} />
+                  <Text style={[styles.cardTitle, { color: colors.warning }]}>Device Offline</Text>
+                </View>
+                {repairCode ? (
+                  <View>
+                    <Text style={styles.sectionLabel}>Share this code with the child device to reconnect:</Text>
+                    <Text style={[styles.coordText, { fontSize: 28, letterSpacing: 6, textAlign: 'center', marginVertical: 12 }]}>
+                      {repairCode}
+                    </Text>
+                    <Text style={[styles.coordSubText, { textAlign: 'center' }]}>
+                      Open the Family Guardian app on the child device and enter this code.
+                    </Text>
+                    <Pressable
+                      style={[styles.commandBtn, { alignSelf: 'center', marginTop: 8, paddingHorizontal: 20 }]}
+                      onPress={() => setRepairCode(null)}
+                    >
+                      <Text style={[styles.commandLabel, { color: colors.textMuted }]}>Dismiss</Text>
+                    </Pressable>
+                  </View>
+                ) : (
+                  <Pressable
+                    style={[styles.commandBtn, { alignSelf: 'flex-start', flexDirection: 'row', gap: 8 }]}
+                    onPress={handleRepair}
+                    disabled={repairing}
+                  >
+                    <Ionicons name="refresh-circle-outline" size={20} color={colors.primary} />
+                    <Text style={[styles.commandLabel, { color: colors.primary }]}>
+                      {repairing ? 'Generating code…' : 'Reconnect Device'}
+                    </Text>
+                  </Pressable>
+                )}
+              </View>
+            )}
+
             <View style={styles.commandsRow}>
               {[
-                {
-                  label: 'Lock',
-                  icon: 'lock-closed',
-                  color: colors.danger,
-                  cmd: 'lock' as const,
-                },
-                {
-                  label: 'School',
-                  icon: 'school',
-                  color: '#2980B9',
-                  cmd: 'school_on' as const,
-                },
-                {
-                  label: 'Bedtime',
-                  icon: 'moon',
-                  color: '#6A1B9A',
-                  cmd: 'bedtime_on' as const,
-                },
+                (device.status === 'restricted' || (device.status as string) === 'locked')
+                  ? { label: 'Unlock', icon: 'lock-open', color: colors.success, cmd: 'unlock' as const }
+                  : { label: 'Lock', icon: 'lock-closed', color: colors.danger, cmd: 'lock' as const },
+                device.status === 'school_mode'
+                  ? { label: 'School ✓', icon: 'school', color: '#2980B9', cmd: 'school_off' as const }
+                  : { label: 'School', icon: 'school', color: '#2980B9', cmd: 'school_on' as const },
+                device.status === 'bedtime'
+                  ? { label: 'Bedtime ✓', icon: 'moon', color: '#6A1B9A', cmd: 'bedtime_off' as const }
+                  : { label: 'Bedtime', icon: 'moon', color: '#6A1B9A', cmd: 'bedtime_on' as const },
                 {
                   label: 'Location',
                   icon: 'locate',
@@ -539,17 +728,202 @@ export function ChildDeviceDetailScreen({ navigation, route }: any) {
               )}
             </View>
 
+            {/* ── Remote Screenshot / Live View ── */}
+            <View style={[styles.card, shadows.card]}>
+              <View style={styles.cardHeader}>
+                <Ionicons name="phone-portrait" size={18} color="#2980B9" />
+                <Text style={styles.cardTitle}>Remote Screen</Text>
+                {liveViewActive && device.platform !== 'ios' && (
+                  <View style={styles.liveBadge}>
+                    <View style={styles.liveDot} />
+                    <Text style={styles.liveBadgeText}>LIVE</Text>
+                  </View>
+                )}
+              </View>
+
+              {device.platform === 'ios' ? (
+                <View style={styles.iosScreenNote}>
+                  <Ionicons name="lock-closed-outline" size={28} color={colors.textMuted} />
+                  <Text style={styles.iosScreenNoteTitle}>Not available on iOS</Text>
+                  <Text style={styles.iosScreenNoteText}>
+                    Apple's iOS sandbox prevents silent screen capture from third-party apps.
+                    Use the Screen Time data above to monitor app usage.
+                  </Text>
+                  <Pressable
+                    style={[styles.screenshotBtn, { marginTop: 12, alignSelf: 'stretch' }]}
+                    onPress={() => sendCommand(device.id, 'open_app_picker')}
+                  >
+                    <Ionicons name="apps-outline" size={16} color={colors.primary} />
+                    <Text style={styles.screenshotBtnText}>Pick Apps to Block (on child device)</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <>
+                  {screenshot ? (
+                    <View>
+                      <Image
+                        source={{ uri: `data:image/jpeg;base64,${screenshot}` }}
+                        style={styles.screenshotImg}
+                        resizeMode="contain"
+                      />
+                      {screenshotAt && (
+                        <Text style={styles.coordSubText}>
+                          Captured {formatLastSeen(screenshotAt)}{liveViewActive ? ' · Live' : ''}
+                        </Text>
+                      )}
+                    </View>
+                  ) : (
+                    <Text style={styles.noLocationText}>No screenshot yet</Text>
+                  )}
+
+                  {/* Action buttons row */}
+                  <View style={styles.screenshotActions}>
+                    <Pressable
+                      style={[styles.screenshotBtn, { flex: 1 }]}
+                      onPress={handleTakeScreenshot}
+                      disabled={screenshotLoading || liveViewActive}
+                    >
+                      {screenshotLoading
+                        ? <ActivityIndicator size="small" color={colors.primary} />
+                        : <Ionicons name="camera" size={16} color={liveViewActive ? colors.textMuted : colors.primary} />
+                      }
+                      <Text style={[styles.screenshotBtnText, liveViewActive && { color: colors.textMuted }]}>
+                        {screenshotLoading ? 'Capturing…' : 'Screenshot'}
+                      </Text>
+                    </Pressable>
+
+                    <Pressable
+                      style={[
+                        styles.screenshotBtn,
+                        { flex: 1, backgroundColor: liveViewActive ? colors.danger + '18' : colors.background },
+                      ]}
+                      onPress={toggleLiveView}
+                    >
+                      <Ionicons
+                        name={liveViewActive ? 'stop-circle' : 'videocam'}
+                        size={16}
+                        color={liveViewActive ? colors.danger : '#2980B9'}
+                      />
+                      <Text style={[styles.screenshotBtnText, { color: liveViewActive ? colors.danger : '#2980B9' }]}>
+                        {liveViewActive ? 'Stop Live' : 'Live View'}
+                      </Text>
+                    </Pressable>
+
+                    {screenshot && (
+                      <Pressable
+                        style={[styles.screenshotBtn, { flex: 1 }]}
+                        onPress={handleSaveScreenshot}
+                      >
+                        <Ionicons name="download-outline" size={16} color={colors.success} />
+                        <Text style={[styles.screenshotBtnText, { color: colors.success }]}>Save</Text>
+                      </Pressable>
+                    )}
+                  </View>
+                </>
+              )}
+            </View>
+
+            {/* ── Web Filter ── */}
+            <View style={[styles.card, shadows.card]}>
+              <View style={styles.cardHeader}>
+                <Ionicons name="shield-checkmark" size={18} color="#16A085" />
+                <Text style={styles.cardTitle}>Web Filter</Text>
+              </View>
+              <Text style={[styles.noLocationText, { marginBottom: 10 }]}>
+                {device.platform === 'ios'
+                  ? 'Blocks all web content in Safari (iOS). Enable to shield from adult/gambling sites.'
+                  : 'Blocks adult, gambling & violence sites at DNS level (works in all browsers).'}
+              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <Pressable
+                  style={[
+                    styles.screenshotBtn,
+                    { flex: 1, backgroundColor: webFilterOn ? '#E8F5E9' : undefined },
+                  ]}
+                  onPress={() => {
+                    const next = !webFilterOn;
+                    setWebFilterOn(next);
+                    if (next) {
+                      sendCommand(device.id, 'web_filter_on', {
+                        categories: ['adult', 'violence', 'gambling'],
+                      });
+                    } else {
+                      sendCommand(device.id, 'web_filter_off');
+                    }
+                  }}
+                >
+                  <Ionicons
+                    name={webFilterOn ? 'shield-checkmark' : 'shield-outline'}
+                    size={16}
+                    color={webFilterOn ? '#16A085' : colors.textMuted}
+                  />
+                  <Text style={[styles.screenshotBtnText, webFilterOn && { color: '#16A085' }]}>
+                    {webFilterOn ? 'Web Filter ON' : 'Enable Web Filter'}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+
+            {/* ── Notification Feed ── */}
+            <View style={[styles.card, shadows.card]}>
+              <View style={styles.cardHeader}>
+                <Ionicons name="notifications" size={18} color="#E67E22" />
+                <Text style={styles.cardTitle}>Recent Notifications</Text>
+                <Pressable style={styles.cardAction} onPress={fetchNotifications}>
+                  <Ionicons name="refresh" size={14} color={colors.primary} />
+                </Pressable>
+              </View>
+
+              {notifLoading ? (
+                <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: 12 }} />
+              ) : notifications.length === 0 ? (
+                <Text style={styles.noLocationText}>No notifications captured yet</Text>
+              ) : (
+                notifications.slice(0, 10).map((n) => (
+                  <View key={n.id} style={styles.notifRow}>
+                    <View style={styles.notifIcon}>
+                      <Ionicons name="phone-portrait-outline" size={14} color="#E67E22" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.notifApp} numberOfLines={1}>{n.packageName.split('.').pop()}</Text>
+                      {n.title ? <Text style={styles.notifTitle} numberOfLines={1}>{n.title}</Text> : null}
+                      {n.text ? <Text style={styles.notifText} numberOfLines={2}>{n.text}</Text> : null}
+                    </View>
+                    <Text style={styles.notifTime}>{formatLastSeen(n.receivedAt)}</Text>
+                  </View>
+                ))
+              )}
+            </View>
+
+            <Pressable
+              style={[styles.navRow, shadows.sm]}
+              onPress={() => navigation.navigate('GuardianChat', { deviceId })}
+            >
+              <Ionicons name="chatbubbles" size={20} color={colors.primary} />
+              <Text style={styles.navRowText}>Messages</Text>
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color={colors.textMuted}
+              />
+            </Pressable>
+
             <Pressable
               style={[styles.navRow, shadows.sm]}
               onPress={() => navigation.navigate('Geofence')}
             >
               <Ionicons name="location" size={20} color="#2980B9" />
               <Text style={styles.navRowText}>Manage Geofence Zones</Text>
-              <Ionicons
-                name="chevron-forward"
-                size={18}
-                color={colors.textMuted}
-              />
+              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+            </Pressable>
+
+            <Pressable
+              style={[styles.navRow, shadows.sm]}
+              onPress={() => navigation.navigate('BlockedSites', { deviceId })}
+            >
+              <Ionicons name="shield" size={20} color="#E74C3C" />
+              <Text style={styles.navRowText}>Web Filter Log</Text>
+              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
             </Pressable>
           </ScrollView>
         )}
@@ -809,6 +1183,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
+  sectionLabel: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginBottom: 4,
+  },
+
   addressText: {
     fontSize: 14,
     color: colors.text,
@@ -957,5 +1337,121 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: colors.text,
+  },
+
+  screenshotImg: {
+    width: '100%',
+    height: 220,
+    borderRadius: 10,
+    backgroundColor: '#000',
+    marginBottom: 6,
+  },
+
+  screenshotActions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 12,
+  },
+
+  screenshotBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: 10,
+    backgroundColor: colors.background,
+  },
+
+  screenshotBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+
+  iosScreenNote: {
+    alignItems: 'center',
+    paddingVertical: 20,
+    gap: 8,
+  },
+  iosScreenNoteTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.textMuted,
+  },
+  iosScreenNoteText: {
+    fontSize: 12,
+    color: colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 18,
+    paddingHorizontal: 8,
+  },
+
+  liveBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: colors.danger + '18',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 999,
+  },
+
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.danger,
+  },
+
+  liveBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: colors.danger,
+    letterSpacing: 1,
+  },
+
+  notifRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+
+  notifIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: '#E67E2218',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  notifApp: {
+    fontSize: 11,
+    color: '#E67E22',
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+
+  notifTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.text,
+  },
+
+  notifText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+
+  notifTime: {
+    fontSize: 11,
+    color: colors.textMuted,
+    marginTop: 2,
   },
 });

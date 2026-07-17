@@ -5,6 +5,26 @@ import * as SecureStore from 'expo-secure-store';
 import { secureStorage } from '../storage/secureStorage';
 import { awsConfig } from '../config/aws';
 import { apiRequest } from '../api/client';
+import { resetAllStores } from '../storage/resetAllStores';
+import { registerAuthBridge } from './authBridge';
+// Only call after a backend session is confirmed (token in SecureStore).
+// Calling without a token causes a 401 which the fetchFromServer 401-handler
+// mistakes for a revoked session and signs the user back out.
+function fetchFamilyAfterSignIn() {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { useFamilyStore } = require('./useFamilyStore') as typeof import('./useFamilyStore');
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { useAppStore } = require('./useAppStore') as typeof import('./useAppStore');
+  useFamilyStore.getState().fetchFromServer().then(() => {
+    // If the server returned a real family (members > 0), this is an existing
+    // account signing in on a new device — skip onboarding and go straight to
+    // the dashboard. isOnboarded is MMKV-persisted so it resets on a fresh install.
+    const members = useFamilyStore.getState().members;
+    if (members.length > 0) {
+      useAppStore.getState().setOnboarded(true);
+    }
+  }).catch(() => {});
+}
 
 export interface AuthUser {
   id: string;
@@ -35,6 +55,7 @@ export interface AuthUser {
 
 interface AuthState {
   isAuthenticated: boolean;
+  pendingVerificationEmail: string | null;
   user: AuthUser | null;
   // Populated once the account is synced with the backend (see syncWithBackend
   // below). Null until then — features that need it (live chat, subscriptions)
@@ -44,7 +65,11 @@ interface AuthState {
 
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signUp: (data: SignUpData) => Promise<{ success: boolean; error?: string }>;
-  signInWithSocial: (user: Omit<AuthUser, 'createdAt'>) => Promise<void>;
+  // idToken is a Firebase ID token obtained by exchanging the native
+  // Google/Apple credential via @react-native-firebase/auth — the backend
+  // verifies it server-side (see /auth/social) rather than trusting
+  // whatever the client claims its email/provider to be.
+  signInWithSocial: (user: Omit<AuthUser, 'createdAt'>, idToken: string) => Promise<void>;
   signOut: () => void;
   // Permanently deletes the backend account (and the whole family, if this
   // was its last remaining login) via DELETE /auth/account, then clears
@@ -115,10 +140,16 @@ async function saveCredentials(data: Record<string, { displayName: string; hash:
 interface BackendAuthResult {
   accessToken: string;
   refreshToken: string;
+  emailVerified?: boolean;
   user: { id: string; email: string; role: string; familyId: string; familyName: string | null };
 }
 
 async function persistBackendSession(result: BackendAuthResult): Promise<{ familyId: string; backendUserId: string }> {
+  // Delete first so any pending sign-out deletion that fires after us is a no-op.
+  // Order: delete → write prevents the race where signOut's fire-and-forget
+  // removeToken lands after our setToken and wipes the freshly-written credential.
+  await secureStorage.removeToken('access_token').catch(() => {});
+  await secureStorage.removeToken('refresh_token').catch(() => {});
   await secureStorage.setToken('access_token', result.accessToken);
   await secureStorage.setToken('refresh_token', result.refreshToken);
   return { familyId: result.user.familyId, backendUserId: result.user.id };
@@ -136,13 +167,16 @@ async function persistBackendSession(result: BackendAuthResult): Promise<{ famil
 //  - legacy local-only accounts signing in for the first time since backend
 //    auth was wired up (same thing — no backend account yet → register
 //    bootstraps one from their current session, backend-linking them)
+type BackendSyncResult = { familyId: string; backendUserId: string; emailVerified: boolean } | { needsVerification: true } | null;
+
 async function syncWithBackend(params: {
   email: string;
   password: string;
   familyName?: string;
   memberName?: string;
-}): Promise<{ familyId: string; backendUserId: string } | null> {
-  const { email, password, familyName, memberName } = params;
+  memberRole?: string;
+}): Promise<BackendSyncResult> {
+  const { email, password, familyName, memberName, memberRole } = params;
 
   try {
     console.log('[auth] syncWithBackend: trying login at', `${awsConfig.apiBaseUrl}/auth/login`);
@@ -153,9 +187,25 @@ async function syncWithBackend(params: {
     });
     if (loginRes.ok) {
       console.log('[auth] syncWithBackend: login succeeded, familyId linked');
-      return persistBackendSession(await loginRes.json());
+      const data: BackendAuthResult = await loginRes.json();
+      const session = await persistBackendSession(data);
+      return { ...session, emailVerified: data.emailVerified ?? true };
     }
-    console.warn('[auth] syncWithBackend: login failed', loginRes.status, await loginRes.text().catch(() => ''));
+
+    // 403 email_not_verified — account exists but email not confirmed yet
+    if (loginRes.status === 403) {
+      const body = await loginRes.json().catch(() => ({}));
+      if (body?.error === 'email_not_verified') {
+        return { needsVerification: true };
+      }
+    }
+
+    console.warn('[auth] syncWithBackend: login failed', loginRes.status);
+
+    if (loginRes.status >= 500) {
+      console.warn('[auth] syncWithBackend: server error during login, not attempting register to avoid duplicate family');
+      return null;
+    }
 
     if (!familyName || !memberName) {
       console.warn('[auth] syncWithBackend: no familyName/memberName to fall back to register with — giving up');
@@ -166,18 +216,19 @@ async function syncWithBackend(params: {
     const registerRes = await fetch(`${awsConfig.apiBaseUrl}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, familyName, memberName }),
+      body: JSON.stringify({ email, password, familyName, memberName, memberRole }),
     });
     if (!registerRes.ok) {
-      console.warn('[auth] syncWithBackend: register failed', registerRes.status, await registerRes.text().catch(() => ''));
+      console.warn('[auth] syncWithBackend: register failed', registerRes.status);
       return null;
     }
 
-    console.log('[auth] syncWithBackend: register succeeded, familyId linked');
-    return persistBackendSession(await registerRes.json());
+    console.log('[auth] syncWithBackend: register succeeded');
+    const data: BackendAuthResult = await registerRes.json();
+    const session = await persistBackendSession(data);
+    return { ...session, emailVerified: data.emailVerified ?? true };
   } catch (err) {
-    // Offline or backend unreachable — local account still works.
-    console.warn('[auth] syncWithBackend: network error, could not reach backend at', awsConfig.apiBaseUrl, err);
+    console.warn('[auth] syncWithBackend: network error', awsConfig.apiBaseUrl, err);
     return null;
   }
 }
@@ -187,7 +238,7 @@ async function syncWithBackend(params: {
 // register flow. Same never-throws contract: an unreachable/failing backend
 // must not block the local social sign-in from working.
 async function syncSocialWithBackend(params: {
-  email: string;
+  idToken: string;
   displayName: string;
   provider: 'google' | 'apple';
   familyName?: string;
@@ -213,6 +264,7 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       isAuthenticated: false,
+      pendingVerificationEmail: null,
       user: null,
       familyId: null,
       backendUserId: null,
@@ -259,15 +311,40 @@ export const useAuthStore = create<AuthState>()(
           createdAt: new Date().toISOString(),
         };
 
-        set({ isAuthenticated: true, user });
-
+        // Backend sync is awaited BEFORE isAuthenticated flips true — screens
+        // mount the instant isAuthenticated is true and immediately call
+        // fetchFromServer(), which reads the access token from SecureStore.
+        // Setting isAuthenticated first left a window where that token
+        // hadn't been persisted yet, so the resulting 401 was mistaken for
+        // "session revoked" and force-signed the user right back out (see
+        // fetchFromServer's 401 handler in useFamilyStore.ts). syncWithBackend
+        // never throws — an unreachable backend still resolves (to null), so
+        // this doesn't break the local-first "sign in even if offline" contract.
         const backend = await syncWithBackend({
           email: normalizedEmail,
           password: data.password,
           familyName: data.familyName?.trim() || `${data.lastName.trim()} Family`,
           memberName: user.displayName,
+          memberRole: data.familyRole,
         });
-        if (backend) set({ familyId: backend.familyId, backendUserId: backend.backendUserId });
+
+        // If the backend created the account but email isn't verified yet,
+        // park in pending state — don't authenticate until verification is done.
+        if (backend && 'needsVerification' in backend) {
+          set({ pendingVerificationEmail: normalizedEmail });
+          return { success: true, needsEmailVerification: true } as any;
+        }
+        if (backend && 'emailVerified' in backend && !backend.emailVerified) {
+          set({ pendingVerificationEmail: normalizedEmail });
+          return { success: true, needsEmailVerification: true } as any;
+        }
+
+        set({
+          isAuthenticated: true,
+          pendingVerificationEmail: null,
+          user,
+          ...(backend && 'familyId' in backend && { familyId: backend.familyId, backendUserId: backend.backendUserId }),
+        });
 
         return { success: true };
       },
@@ -297,7 +374,11 @@ export const useAuthStore = create<AuthState>()(
             });
             if (!res.ok) {
               const body = await res.json().catch(() => ({}));
-              return { success: false, error: typeof body.error === 'string' ? body.error : 'No account found with this email.' };
+              if (res.status === 403 && body?.error === 'email_not_verified') {
+                set({ pendingVerificationEmail: normalizedEmail });
+                return { success: false, error: 'email_not_verified' };
+              }
+              return { success: false, error: typeof body.message === 'string' ? body.message : 'No account found with this email.' };
             }
 
             const authResult: BackendAuthResult = await res.json();
@@ -316,7 +397,8 @@ export const useAuthStore = create<AuthState>()(
               provider: 'email',
               createdAt: new Date().toISOString(),
             };
-            set({ isAuthenticated: true, user, familyId, backendUserId });
+            set({ isAuthenticated: true, pendingVerificationEmail: null, user, familyId, backendUserId });
+            fetchFamilyAfterSignIn();
             return { success: true };
           } catch {
             return { success: false, error: 'Could not reach the server. Check your connection and try again.' };
@@ -339,10 +421,14 @@ export const useAuthStore = create<AuthState>()(
           phone: existing?.phone,
           dateOfBirth: existing?.dateOfBirth,
           city: existing?.city,
+          streetAddress: existing?.streetAddress,
+          state: existing?.state,
+          zipCode: existing?.zipCode,
         };
 
-        set({ isAuthenticated: true, user });
-
+        // See the matching comment in signUp above — backend sync must be
+        // awaited before isAuthenticated flips true, or screens race ahead
+        // and call fetchFromServer() before any token is persisted.
         const backend = await syncWithBackend({
           email: normalizedEmail,
           password,
@@ -352,31 +438,63 @@ export const useAuthStore = create<AuthState>()(
           familyName: existing?.familyName?.trim() || `${stored.displayName}'s Family`,
           memberName: stored.displayName,
         });
-        if (backend) set({ familyId: backend.familyId, backendUserId: backend.backendUserId });
-
+        if (backend && 'needsVerification' in backend) {
+          set({ pendingVerificationEmail: normalizedEmail });
+          return { success: false, error: 'email_not_verified' };
+        }
+        set({
+          isAuthenticated: true,
+          pendingVerificationEmail: null,
+          user,
+          ...(backend && 'familyId' in backend && { familyId: backend.familyId, backendUserId: backend.backendUserId }),
+        });
+        if (backend && 'familyId' in backend) fetchFamilyAfterSignIn();
         return { success: true };
       },
 
-      signInWithSocial: async (userData) => {
+      signInWithSocial: async (userData, idToken) => {
         const user: AuthUser = {
           ...userData,
           createdAt: new Date().toISOString(),
         };
-        set({ isAuthenticated: true, user });
 
+        // See the matching comment in signUp above — this is the exact race
+        // that was causing Google/Apple sign-in to bounce straight back to
+        // the sign-in screen (isAuthenticated flipped true, a tab screen
+        // mounted and called fetchFromServer() before the token from
+        // syncSocialWithBackend had been written to SecureStore, the
+        // resulting 401 was read as "session revoked", and useFamilyStore
+        // force-signed the user back out).
         const backend = await syncSocialWithBackend({
-          email: user.email,
+          idToken,
           displayName: user.displayName,
           provider: user.provider as 'google' | 'apple',
           familyName: user.familyName,
         });
-        if (backend) set({ familyId: backend.familyId, backendUserId: backend.backendUserId });
+        set({
+          isAuthenticated: true,
+          user,
+          ...(backend && { familyId: backend.familyId, backendUserId: backend.backendUserId }),
+        });
+        if (backend) fetchFamilyAfterSignIn();
       },
 
       signOut: () => {
         set({ isAuthenticated: false, user: null, familyId: null, backendUserId: null });
-        secureStorage.removeToken('access_token').catch(() => {});
-        secureStorage.removeToken('refresh_token').catch(() => {});
+        // Await both deletions so a rapid sign-in cannot race past them and
+        // have the deletion wipe the freshly-written token.
+        Promise.all([
+          secureStorage.removeToken('access_token'),
+          secureStorage.removeToken('refresh_token'),
+        ]).catch(() => {});
+        // Every other store (family, tasks, finance, ...) is plain
+        // MMKV-persisted and otherwise survives sign-out untouched. Without
+        // this, signing out of one account and signing into a *different*
+        // one on the same device left the previous account's family/member
+        // data sitting in place — populateFromSignUp only seeds a family
+        // when none exists yet, so the new account would silently inherit
+        // and display the old one's data instead of getting its own.
+        resetAllStores();
       },
 
       deleteAccount: async () => {
@@ -427,4 +545,14 @@ export const useAuthStore = create<AuthState>()(
       }),
     }
   )
+);
+
+// Register after store creation so other stores can read auth state
+// without importing useAuthStore directly (which would create a cycle).
+registerAuthBridge(
+  () => {
+    const s = useAuthStore.getState();
+    return { user: s.user, familyId: s.familyId, backendUserId: s.backendUserId };
+  },
+  () => useAuthStore.getState().signOut(),
 );

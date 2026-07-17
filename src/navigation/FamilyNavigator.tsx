@@ -33,13 +33,18 @@ import { ActivitiesTrackerScreen } from '../screens/family/ActivitiesTrackerScre
 import { BirthdayTrackerScreen } from '../screens/family/BirthdayTrackerScreen';
 import { FamilyBoardScreen } from '../screens/family/FamilyBoardScreen';
 import { GuardianDashboardScreen } from '../screens/family/guardian/GuardianDashboardScreen';
+import { BlockedSitesScreen } from '../screens/family/guardian/BlockedSitesScreen';
 import { ChildDeviceDetailScreen } from '../screens/family/guardian/ChildDeviceDetailScreen';
 import { ScreenTimeScreen } from '../screens/family/guardian/ScreenTimeScreen';
 import { SOSAlertsScreen } from '../screens/family/guardian/SOSAlertsScreen';
 import { ApprovalRequestsScreen } from '../screens/family/guardian/ApprovalRequestsScreen';
 import { RegisterChildDeviceScreen } from '../screens/family/guardian/RegisterChildDeviceScreen';
 import { EnterPairingCodeScreen } from '../screens/family/guardian/EnterPairingCodeScreen';
+import { PairChildDeviceScreen } from '../screens/family/guardian/PairChildDeviceScreen';
+import { GuardianChatScreen } from '../screens/family/guardian/GuardianChatScreen';
 import { RewardsScreen } from '../screens/operations/RewardsScreen';
+import { FamilyConnectScreen } from '../screens/family/FamilyConnectScreen';
+import { CoParentingScreen } from '../screens/family/CoParentingScreen';
 
 
 const Stack = createNativeStackNavigator();
@@ -54,6 +59,8 @@ export function FamilyNavigator() {
       <Stack.Screen name="MemberDetails" component={MemberDetailsScreen} />
       <Stack.Screen name="Calendar" component={CalendarScreen} />
       <Stack.Screen name="FamilyBoard" component={FamilyBoardScreen} />
+      <Stack.Screen name="FamilyConnect" component={FamilyConnectScreen} />
+      <Stack.Screen name="CoParenting" component={CoParentingScreen} />
 
       {/* Invite / joining */}
       <Stack.Screen name="JoinFamily" component={JoinFamilyScreen} />
@@ -226,13 +233,80 @@ export function FamilyNavigator() {
       </Stack.Screen>
 
       {/* Guardian / parental controls */}
-      <Stack.Screen name="GuardianDashboard" component={GuardianDashboardScreen} />
-      <Stack.Screen name="ChildDeviceDetail" component={ChildDeviceDetailScreen} />
-      <Stack.Screen name="ScreenTime" component={ScreenTimeScreen} />
-      <Stack.Screen name="SOSAlerts" component={SOSAlertsScreen} />
-      <Stack.Screen name="ApprovalRequests" component={ApprovalRequestsScreen} />
-      <Stack.Screen name="RegisterChildDevice" component={RegisterChildDeviceScreen} />
-      <Stack.Screen name="EnterPairingCode" component={EnterPairingCodeScreen} />
+      <Stack.Screen name="GuardianDashboard">
+        {(props) => (
+          <RoleGuard allowParent allowChild>
+            <GuardianDashboardScreen {...props} />
+          </RoleGuard>
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="ChildDeviceDetail">
+        {(props) => (
+          <RoleGuard allowParent>
+            <ChildDeviceDetailScreen {...props} />
+          </RoleGuard>
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="ScreenTime">
+        {(props) => (
+          <RoleGuard allowParent>
+            <ScreenTimeScreen {...props} />
+          </RoleGuard>
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="SOSAlerts">
+        {(props) => (
+          <RoleGuard allowParent>
+            <SOSAlertsScreen {...props} />
+          </RoleGuard>
+        )}
+      </Stack.Screen>
+      <Stack.Screen
+        name="BlockedSites"
+        options={{ headerShown: false }}
+      >
+        {(props) => (
+          <RoleGuard allowParent>
+            <BlockedSitesScreen {...props} />
+          </RoleGuard>
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="ApprovalRequests">
+        {(props) => (
+          <RoleGuard allowParent>
+            <ApprovalRequestsScreen {...props} />
+          </RoleGuard>
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="RegisterChildDevice">
+        {(props) => (
+          <RoleGuard allowParent allowChild>
+            <RegisterChildDeviceScreen {...props} />
+          </RoleGuard>
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="EnterPairingCode">
+        {(props) => (
+          <RoleGuard allowParent allowChild>
+            <EnterPairingCodeScreen {...props} />
+          </RoleGuard>
+        )}
+      </Stack.Screen>
+
+      <Stack.Screen name="PairChildDevice">
+        {(props) => (
+          <RoleGuard allowParent>
+            <PairChildDeviceScreen {...props} />
+          </RoleGuard>
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="GuardianChat">
+        {(props) => (
+          <RoleGuard allowParent>
+            <GuardianChatScreen {...props} />
+          </RoleGuard>
+        )}
+      </Stack.Screen>
 
       {/* Child-specific */}
       <Stack.Screen name="KidsMode">

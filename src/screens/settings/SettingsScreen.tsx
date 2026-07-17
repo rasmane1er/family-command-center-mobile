@@ -374,7 +374,7 @@ export function SettingsScreen({ navigation }: any) {
         <Text style={s.headerTitle}>{t('settings.title')}</Text>
         <View style={{ width: 40 }} />
       </View>
-      <View style={s.profileRow}>
+      <Pressable style={s.profileRow} onPress={() => navigation.navigate('Profile')}>
         <View style={s.profileAvatar}>
           <Ionicons name={isChild ? 'school' : isGrandparent ? 'heart' : 'home'} size={24} color="#fff" />
         </View>
@@ -383,7 +383,8 @@ export function SettingsScreen({ navigation }: any) {
           <Text style={s.profilePlan}>{roleLabel} Profile • {family?.name || 'Family Command Center'}</Text>
           {user?.email && <Text style={s.profileEmail}>{user.email}</Text>}
         </View>
-      </View>
+        <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.5)" />
+      </Pressable>
     </LinearGradient>
   );
 
@@ -670,6 +671,24 @@ export function SettingsScreen({ navigation }: any) {
           )}
         </Card>
 
+        {/* ── REFER & EARN ── */}
+        <Pressable
+          style={({ pressed }) => [s.referBanner, { opacity: pressed ? 0.88 : 1 }]}
+          onPress={() => navigation.navigate('ReferAndEarn')}
+        >
+          <LinearGradient colors={['#0A1628', '#0B4F82']} style={s.referBannerGrad}>
+            <View style={s.referBannerOrb} />
+            <View style={s.referBannerLeft}>
+              <Ionicons name="gift-outline" size={26} color="#60A5FA" />
+              <View>
+                <Text style={s.referBannerTitle}>Refer &amp; Earn</Text>
+                <Text style={s.referBannerSub}>Invite 5 families → get 1 free month</Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.5)" />
+          </LinearGradient>
+        </Pressable>
+
         {/* ── ABOUT ── */}
         <Text style={s.sectionTitle}>{t('settings.about')}</Text>
         <Card style={s.settingCard} variant="elevated">
@@ -844,5 +863,12 @@ function makeStyles(colors: ReturnType<typeof useTheme>['colors'], isDark: boole
     languageName:       { fontSize: 16, fontWeight: '600', color: colors.text },
     languageNameActive: { color: colors.primary, fontWeight: '700' },
     languageNative:     { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
+
+    referBanner:        { marginHorizontal: 16, marginBottom: 10, borderRadius: 18, overflow: 'hidden' },
+    referBannerGrad:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18, paddingVertical: 18 },
+    referBannerOrb:     { position: 'absolute', width: 120, height: 120, borderRadius: 60, backgroundColor: 'rgba(56,130,255,0.14)', top: -40, right: 20 },
+    referBannerLeft:    { flexDirection: 'row', alignItems: 'center', gap: 14, flex: 1 },
+    referBannerTitle:   { fontSize: 15, fontWeight: '800', color: '#fff' },
+    referBannerSub:     { fontSize: 12, color: 'rgba(255,255,255,0.65)', marginTop: 2 },
   });
 }

@@ -3,7 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { mmkvStorage } from '../storage/mmkvStorage';
 import * as insuranceService from '../services/insuranceService';
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../utils/generateId';
 
 export type InsuranceType = 'health' | 'auto' | 'home' | 'life' | 'dental' | 'vision' | 'disability' | 'other';
 export type PremiumFrequency = 'monthly' | 'quarterly' | 'annual';

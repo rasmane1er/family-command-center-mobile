@@ -26,6 +26,11 @@ const MOOD_EMOJIS: Record<number, string> = { 1: '😢', 2: '😕', 3: '😐', 4
 
 export { MOOD_LABELS, MOOD_EMOJIS };
 
+// Bounds the local optimistic-add path between server syncs — fetchFromServer
+// already returns a server-capped list (see the API's DOMAIN_LIST_CAP), but
+// addEntry's local prepend has no cap of its own otherwise.
+const MAX_ENTRIES = 500;
+
 interface JournalStore {
   entries: JournalEntry[];
   isLoaded: boolean;
@@ -44,7 +49,7 @@ export const useJournalStore = create<JournalStore>()(
 
       addEntry: async (entry) => {
         const newEntry: JournalEntry = { ...entry, id: `journal-${Date.now()}`, reactions: [] };
-        set((s) => ({ entries: [newEntry, ...s.entries] }));
+        set((s) => ({ entries: [newEntry, ...s.entries].slice(0, MAX_ENTRIES) }));
         try {
           await journalService.createEntry(newEntry);
         } catch {

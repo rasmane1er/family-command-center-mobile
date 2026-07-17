@@ -22,7 +22,7 @@ import type { DetectedInsurance } from '../../services/autoFillService';
 import { useTranslation } from 'react-i18next';
 import { usePlaidAutoData } from '../../hooks/usePlaidAutoData';
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../../utils/generateId';
 
 const TYPE_COLORS: Record<InsuranceType, string> = {
   health: '#2980B9',

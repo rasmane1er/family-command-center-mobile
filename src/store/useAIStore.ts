@@ -24,7 +24,14 @@ interface AIState {
   seedDemoInsights: () => void;
 }
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../utils/generateId';
+
+// Persisted messages grow on every turn with no natural cap — the
+// slice(-10) inside sendMessage below is only the recency window sent to
+// the model as prompt context, not a limit on what's stored. Capped here so
+// the MMKV payload doesn't grow for the lifetime of the install.
+const MAX_MESSAGES = 500;
+const MAX_INSIGHTS = 200;
 
 export const useAIStore = create<AIState>()(
   persist(
@@ -34,10 +41,10 @@ export const useAIStore = create<AIState>()(
   isTyping: false,
   apiKey: '',
 
-  addMessage: (m) => set((s) => ({ messages: [...s.messages, m] })),
+  addMessage: (m) => set((s) => ({ messages: [...s.messages, m].slice(-MAX_MESSAGES) })),
   setTyping: (v) => set({ isTyping: v }),
   clearMessages: () => set({ messages: [] }),
-  addInsight: (i) => set((s) => ({ insights: [i, ...s.insights] })),
+  addInsight: (i) => set((s) => ({ insights: [i, ...s.insights].slice(0, MAX_INSIGHTS) })),
   clearInsights: () => set({ insights: [] }),
   markInsightRead: (id) =>
     set((s) => ({ insights: s.insights.map((i) => (i.id === id ? { ...i, isRead: true } : i)) })),
@@ -51,7 +58,7 @@ export const useAIStore = create<AIState>()(
       content,
       timestamp: new Date().toISOString(),
     };
-    set((s) => ({ messages: [...s.messages, userMessage], isTyping: true }));
+    set((s) => ({ messages: [...s.messages, userMessage].slice(-MAX_MESSAGES), isTyping: true }));
 
     try {
       const history = messages.slice(-10).map((m) => ({
@@ -111,7 +118,7 @@ export const useAIStore = create<AIState>()(
         ...(pendingAction ? { pendingAction } : {}),
       };
 
-      set((s) => ({ messages: [...s.messages, assistantMessage], isTyping: false }));
+      set((s) => ({ messages: [...s.messages, assistantMessage].slice(-MAX_MESSAGES), isTyping: false }));
     } catch {
       const assistantMessage: ChatMessage = {
         id: generateId(),
@@ -120,7 +127,7 @@ export const useAIStore = create<AIState>()(
         timestamp: new Date().toISOString(),
         suggestions: [],
       };
-      set((s) => ({ messages: [...s.messages, assistantMessage], isTyping: false }));
+      set((s) => ({ messages: [...s.messages, assistantMessage].slice(-MAX_MESSAGES), isTyping: false }));
     }
   },
 

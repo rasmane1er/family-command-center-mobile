@@ -209,7 +209,7 @@ export default {
         headerTitle: '주간 보고서',
         scoreStatTasksDone: '완료된 작업', scoreStatPending: '대기 중',
         scoreStatMembers: '멤버', scoreStatSavings: '저축',
-        scoreTrend: '지난주 대비 {{direction}}',
+        scoreTrend: '지난주 대비 +{{points}}점',
       },
     },
   },

@@ -2,10 +2,10 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { mmkvStorage } from '../storage/mmkvStorage';
 import type { FamilyMemory, MemoryType } from '../types';
-import { useAuthStore } from './useAuthStore';
+import { authBridge } from './authBridge';
 import { pushSyncEvent } from '../api/syncQueue';
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../utils/generateId';
 
 interface MemoryState {
   memories: FamilyMemory[];
@@ -27,7 +27,7 @@ export const useMemoryStore = create<MemoryState>()(
 
       addMemory: (m) => {
         const now = new Date().toISOString();
-        const memory = { ...m, id: generateId(), familyId: useAuthStore.getState().familyId ?? '', createdAt: now, lastAccessed: now };
+        const memory = { ...m, id: generateId(), familyId: authBridge.getSnapshot().familyId ?? '', createdAt: now, lastAccessed: now };
         set((s) => ({
           memories: [memory, ...s.memories],
         }));

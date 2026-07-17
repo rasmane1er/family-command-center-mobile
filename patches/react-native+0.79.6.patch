@@ -1,0 +1,16 @@
+diff --git a/node_modules/react-native/Libraries/EventEmitter/NativeEventEmitter.js b/node_modules/react-native/Libraries/EventEmitter/NativeEventEmitter.js
+index 28b19aa..c05e495 100644
+--- a/node_modules/react-native/Libraries/EventEmitter/NativeEventEmitter.js
++++ b/node_modules/react-native/Libraries/EventEmitter/NativeEventEmitter.js
+@@ -48,7 +48,10 @@ export default class NativeEventEmitter<
+   _nativeModule: ?NativeModule;
+ 
+   constructor(nativeModule: ?NativeModule) {
+-    if (Platform.OS === 'ios') {
++    // NOTE: patch-package — relaxed iOS null check so deprecated modules
++    // (e.g. PushNotificationIOS) can load when their native counterpart is
++    // not registered in new-arch builds without crashing at startup.
++    if (Platform.OS === 'ios' && nativeModule !== null && nativeModule !== undefined) {
+       invariant(
+         nativeModule != null,
+         '`new NativeEventEmitter()` requires a non-null argument.',

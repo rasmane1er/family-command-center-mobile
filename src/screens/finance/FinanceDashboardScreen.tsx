@@ -28,7 +28,7 @@ import type { AccountType, PlaidAccount, Bill, Subscription, FinancialAccount, A
 import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../../utils/generateId';
 const CARD_W = width * 0.72;
 const TOOL_W = (width - 52) / 3;
 

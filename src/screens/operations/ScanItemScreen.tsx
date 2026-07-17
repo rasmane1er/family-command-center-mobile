@@ -24,9 +24,10 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { lookupBarcode } from '../../services/barcodeService';
 import { scanPantryPhoto } from '../../services/pantryService';
 import type { PantryItem } from '../../types';
+import { PANTRY_CATEGORIES } from '../../constants/pantry';
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
-const CATEGORIES = ['Produce', 'Meat', 'Dairy', 'Grains', 'Frozen', 'Canned', 'Beverages', 'Condiments'];
+import { generateId } from '../../utils/generateId';
+const CATEGORIES = PANTRY_CATEGORIES;
 
 type ScanMode = 'barcode' | 'photo';
 type ScanState = 'scanning' | 'looking-up' | 'confirming' | 'not-found' | 'analyzing-photo' | 'reviewing-photo';

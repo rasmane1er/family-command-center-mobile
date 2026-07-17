@@ -21,7 +21,7 @@ import { useTranslation } from 'react-i18next';
 
 const EVENT_CATEGORIES = ['Family', 'School', 'Medical', 'Sports', 'Work', 'Social', 'Holiday', 'Other'];
 const EVENT_COLORS = ['#E74C3C', '#E67E22', '#F1C40F', '#27AE60', '#2980B9', '#9B59B6', '#E91E63', '#00BCD4'];
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../../utils/generateId';
 
 const { width } = Dimensions.get('window');
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];

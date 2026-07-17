@@ -8,7 +8,7 @@ import * as calendarService from '../services/calendarService';
 import * as taskService from '../services/taskService';
 import * as rewardService from '../services/rewardService';
 import { apiRequest } from '../api/client';
-import { useAuthStore } from './useAuthStore';
+import { authBridge } from './authBridge';
 
 interface FamilyState {
   family: Family | null;
@@ -31,7 +31,10 @@ interface FamilyState {
   addMember: (m: FamilyMember) => Promise<FamilyMember>;
   addLocalProfile: (m: FamilyMember) => void;
   updateMember: (id: string, updates: Partial<FamilyMember>) => void;
-  removeMember: (id: string) => void;
+  // Resolves false (after rolling back the optimistic removal) if the
+  // backend delete fails, so a confirmation-gated UI can tell the user it
+  // didn't actually happen instead of the member silently reappearing.
+  removeMember: (id: string) => Promise<boolean>;
   setActiveMember: (id: string | null) => void;
 
   addTask: (t: Task) => void;
@@ -90,9 +93,12 @@ interface FamilyState {
 
   isLoaded: boolean;
   fetchFromServer: () => Promise<void>;
+  // Child onboarding: look up a family by its 6-char invite code and
+  // set the local family state so the child can access the family.
+  joinWithCode: (code: string) => Promise<void>;
 }
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../utils/generateId';
 
 export const useFamilyStore = create<FamilyState>()(
   persist(
@@ -156,10 +162,13 @@ export const useFamilyStore = create<FamilyState>()(
     const prev = get().members;
     set((s) => ({ members: s.members.filter((m) => m.id !== id) }));
     const familyId = get().family?.id;
-    if (!familyId) return;
-    apiRequest(`/family/${familyId}/members/${id}`, { method: 'DELETE' }).catch(() => {
-      set({ members: prev });
-    });
+    if (!familyId) return Promise.resolve(true);
+    return apiRequest(`/family/${familyId}/members/${id}`, { method: 'DELETE' })
+      .then(() => true)
+      .catch(() => {
+        set({ members: prev });
+        return false;
+      });
   },
   setActiveMember: (id) => set({ activeMemberId: id }),
 
@@ -357,11 +366,13 @@ export const useFamilyStore = create<FamilyState>()(
   // GET /sync/family already existed and worked (it's what onboarding's
   // family-creation flow POSTs to); this just wires up the read side too.
   fetchFromServer: async () => {
+    let fetchSucceeded = false;
     try {
       const data = await apiRequest('/sync/family') as {
         family: Family; members: FamilyMember[];
       };
       set({ family: data.family, members: data.members });
+      fetchSucceeded = true;
 
       // Self-heal: a real backend family can exist with no member matching
       // the signed-in user (e.g. populateFromSignUp previously fabricated a
@@ -369,11 +380,22 @@ export const useFamilyStore = create<FamilyState>()(
       // bootstrapped some other way). Without this, isParent/activeMemberId
       // lookups silently fail and parent-only tabs disappear even though the
       // user genuinely owns this family.
-      const authUser = useAuthStore.getState().user;
+      const authUser = authBridge.getSnapshot().user;
+      // The backend User.id (resolved server-side off the Firebase-verified
+      // email on every social sign-in, so it's stable across sessions) —
+      // NOT authUser.id, which for social sign-in is whatever the client
+      // locally echoed back from the provider credential. Apple only
+      // discloses a real name/email on the very first authorization; every
+      // sign-in after that reconstructs a fallback email client-side, so
+      // matching on authUser.id/email alone made every repeat Apple sign-in
+      // fail to find its own member and self-heal-create a duplicate one.
+      const backendUserId = authBridge.getSnapshot().backendUserId;
       if (authUser?.email) {
         const email = authUser.email.toLowerCase();
         const findSelf = (members: FamilyMember[]) =>
-          members.find((m) => m.email?.toLowerCase() === email || m.linkedUserId === authUser.id);
+          members.find(
+            (m) => (backendUserId && m.linkedUserId === backendUserId) || m.email?.toLowerCase() === email
+          );
 
         let self = findSelf(data.members);
         if (!self) {
@@ -388,13 +410,13 @@ export const useFamilyStore = create<FamilyState>()(
             dateOfBirth: authUser.dateOfBirth,
             email: authUser.email,
             phone: authUser.phone,
-            status: 'active',
+            status: 'ACTIVE',
             points: 0,
             level: 1,
             isAdmin: true,
             createdAt: now,
             isLocalProfile: false,
-            linkedUserId: authUser.id,
+            linkedUserId: backendUserId ?? authUser.id,
             isPinProtected: false,
             permissions: defaultPermissionsForRole('parent'),
             inviteStatus: 'accepted',
@@ -404,13 +426,45 @@ export const useFamilyStore = create<FamilyState>()(
         const activeStillValid = get().members.some((m) => m.id === get().activeMemberId);
         if (!activeStillValid) set({ activeMemberId: self.id });
       }
-    } catch {
-      // offline or backend unreachable — keep whatever is already local.
+    } catch (err: any) {
+      console.warn('[family] fetchFromServer failed:', err);
+      // Only sign out on 401 if we had a backend session to begin with.
+      // When syncWithBackend fails (login 401 + register 409 = password mismatch
+      // or network issue), familyId/backendUserId are never set — the user is
+      // legitimately logged in locally but has no backend token. Signing out in
+      // that case creates an infinite loop: sign-out → re-auth → syncWithBackend
+      // fails again → fetchFromServer 401 → sign-out again.
+      if (err?.message?.includes('401')) {
+        const { familyId, backendUserId } = authBridge.getSnapshot();
+        if (familyId || backendUserId) {
+          // We had a real backend session that became invalid — sign out.
+          authBridge.signOut();
+        }
+        // No backend session established yet — stay logged in with local data.
+        return;
+      }
+      // Any other error (network, 5xx) — stay logged in with local data.
+      // Do NOT set isLoaded: true here — leave it false so the next screen
+      // mount can retry (isLoaded: true with empty members blocks all retries).
+      return;
     }
     await get().hydrateTasks();
     await get().hydrateRewards();
     get().seedRewardCatalogDefaults();
-    set({ isLoaded: true });
+    // Only mark loaded after a successful fetch — failing with empty members
+    // and isLoaded: true would prevent Dashboard from ever retrying.
+    if (fetchSucceeded) set({ isLoaded: true });
+  },
+
+  joinWithCode: async (code: string) => {
+    const normalized = code.trim().toUpperCase();
+    const result = await apiRequest<{ family: Family; members: FamilyMember[] }>(
+      `/family/join-code/${normalized}`,
+    );
+    set({ family: result.family, members: result.members, isLoaded: true });
+    // Auto-select the first child member (most likely the one the code was for)
+    const childMember = result.members.find((m) => m.role === 'child');
+    if (childMember) set({ activeMemberId: childMember.id });
   },
     }),
     {

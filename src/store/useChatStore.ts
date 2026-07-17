@@ -32,6 +32,12 @@ interface ChatState {
   clearError: () => void;
 }
 
+// Not persisted (no `persist` middleware here), so this doesn't grow MMKV
+// storage — but a support thread left open for a very long session would
+// otherwise accumulate messages in memory without bound. Caps to the most
+// recent N per thread instead.
+const MAX_MESSAGES_PER_THREAD = 1000;
+
 function upsertThread(threads: ChatThread[], thread: ChatThread): ChatThread[] {
   const others = threads.filter((t) => t.id !== thread.id);
   return [thread, ...others].sort(
@@ -61,7 +67,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
         const existing = s.messages[message.threadId] ?? [];
         if (existing.some((m) => m.id === message.id)) return s;
         return {
-          messages: { ...s.messages, [message.threadId]: [...existing, message] },
+          messages: {
+            ...s.messages,
+            [message.threadId]: [...existing, message].slice(-MAX_MESSAGES_PER_THREAD),
+          },
           threads: s.threads.some((t) => t.id === message.threadId)
             ? s.threads
                 .map((t) => (t.id === message.threadId ? { ...t, lastMessageAt: message.createdAt } : t))
@@ -186,7 +195,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
         if (existing.some((m) => m.id === res.message.id)) return { isSending: false };
         return {
           isSending: false,
-          messages: { ...s.messages, [threadId]: [...existing, res.message] },
+          messages: {
+            ...s.messages,
+            [threadId]: [...existing, res.message].slice(-MAX_MESSAGES_PER_THREAD),
+          },
           threads: s.threads
             .map((t) => (t.id === threadId ? { ...t, lastMessageAt: res.message.createdAt } : t))
             .sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()),

@@ -17,7 +17,7 @@ import type { ListingCategory } from '../../types';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useTranslation } from 'react-i18next';
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../../utils/generateId';
 const LISTING_CATEGORIES: ListingCategory[] = ['chores', 'skills', 'items', 'favors', 'lessons'];
 const LISTING_ICONS: Record<ListingCategory, string> = {
   chores: 'home',

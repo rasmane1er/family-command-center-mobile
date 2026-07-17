@@ -61,7 +61,7 @@ export async function populateFromSignUp(user: AuthUser) {
     dateOfBirth: user.dateOfBirth,
     email: user.email,
     phone: user.phone,
-    status: 'active',
+    status: 'ACTIVE',
     points: 0,
     level: 1,
     isAdmin: true,

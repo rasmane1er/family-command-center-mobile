@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { mmkvStorage } from '../storage/mmkvStorage';
 
 export interface DailySnapshot {
   date: string;
@@ -53,6 +53,6 @@ export const useDigitalTwinStore = create<DigitalTwinState>()(
         return snaps.slice(-days);
       },
     }),
-    { name: 'digital-twin-v1', storage: createJSONStorage(() => AsyncStorage) }
+    { name: 'digital-twin-v1', storage: createJSONStorage(() => mmkvStorage) }
   )
 );

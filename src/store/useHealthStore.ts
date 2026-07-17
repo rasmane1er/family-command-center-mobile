@@ -2,10 +2,10 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { mmkvStorage } from '../storage/mmkvStorage';
 import type { HealthRecord, HealthGoal, HealthMetricType, HealthAppointment } from '../types';
-import { useAuthStore } from './useAuthStore';
+import { authBridge } from './authBridge';
 import { pushSyncEvent } from '../api/syncQueue';
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../utils/generateId';
 
 interface HealthState {
   records: HealthRecord[];
@@ -31,7 +31,7 @@ export const useHealthStore = create<HealthState>()(
       isLoaded: false,
 
       addRecord: (r) => {
-        const record = { ...r, id: generateId(), familyId: useAuthStore.getState().familyId ?? '' };
+        const record = { ...r, id: generateId(), familyId: authBridge.getSnapshot().familyId ?? '' };
         set((s) => ({ records: [record, ...s.records] }));
         pushSyncEvent('activities', 'create', { type: 'health', ...record });
       },

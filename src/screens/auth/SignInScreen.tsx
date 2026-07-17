@@ -19,6 +19,8 @@ import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import * as SecureStore from 'expo-secure-store';
+import * as Crypto from 'expo-crypto';
+import { getAuth, GoogleAuthProvider, OAuthProvider, signInWithCredential, getIdToken } from '@react-native-firebase/auth';
 import { useAuthStore } from '../../store/useAuthStore';
 
 interface LocalAuthModule {
@@ -51,6 +53,40 @@ interface Props {
   navigation: any;
 }
 
+// Debug-only: pulls just the aud/iss claims out of a JWT payload, without a
+// full base64 API (Hermes doesn't reliably expose atob) and without logging
+// the whole bearer token. Used to diagnose Firebase's auth/internal-error,
+// which gives no detail on which audience it actually rejected.
+function decodeJwtClaims(jwt: string): { aud?: string; iss?: string } {
+  try {
+    const payload = jwt.split('.')[1];
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+    const bytes: number[] = [];
+    let buffer = 0;
+    let bits = 0;
+    for (const c of base64) {
+      if (c === '=') break;
+      const val = chars.indexOf(c);
+      if (val === -1) continue;
+      buffer = (buffer << 6) | val;
+      bits += 6;
+      if (bits >= 8) {
+        bits -= 8;
+        bytes.push((buffer >> bits) & 0xff);
+      }
+    }
+    const str = bytes.map((b) => String.fromCharCode(b)).join('');
+    const decoded = decodeURIComponent(
+      str.split('').map((c) => '%' + c.charCodeAt(0).toString(16).padStart(2, '0')).join(''),
+    );
+    const json = JSON.parse(decoded);
+    return { aud: json.aud, iss: json.iss };
+  } catch {
+    return {};
+  }
+}
+
 export default function SignInScreen({ navigation }: Props) {
   const { t } = useTranslation('auth');
   const { colors, isDark } = useTheme();
@@ -65,8 +101,11 @@ export default function SignInScreen({ navigation }: Props) {
   const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
   const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
   const googleConfigured = Boolean(googleAndroidClientId && googleIosClientId && googleWebClientId);
-  const googleHook = Google?.useAuthRequest && googleConfigured
-    ? Google.useAuthRequest({
+  // useIdTokenAuthRequest (vs. plain useAuthRequest) is what makes the SDK
+  // exchange the auth code for an id_token alongside the access_token on
+  // native — that id_token is what gets handed to Firebase below.
+  const googleHook = Google?.useIdTokenAuthRequest && googleConfigured
+    ? Google.useIdTokenAuthRequest({
         androidClientId: googleAndroidClientId,
         iosClientId: googleIosClientId,
         webClientId: googleWebClientId,
@@ -77,18 +116,44 @@ export default function SignInScreen({ navigation }: Props) {
   React.useEffect(() => {
     if (!googleResponse || (googleResponse as any).type !== 'success') return;
     const auth = (googleResponse as any).authentication;
+    // On native, expo-auth-session performs a code exchange and returns both
+    // an access token (for the userinfo REST call below) and an id_token
+    // (what Firebase's GoogleAuthProvider actually needs). On web it may
+    // only return params.id_token from the implicit flow.
+    const googleIdToken: string | undefined = auth?.idToken ?? (googleResponse as any).params?.id_token;
+    if (!googleIdToken) {
+      Alert.alert(t('auth.screens.signIn.googleProfileErrorTitle'), t('auth.screens.signIn.googleProfileErrorMsg'));
+      return;
+    }
     fetch('https://www.googleapis.com/userinfo/v2/me', {
       headers: { Authorization: `Bearer ${auth?.accessToken}` },
     })
       .then((r) => r.json())
       .then(async (info) => {
-        await signInWithSocial({
-          id: info.id ?? Math.random().toString(36),
-          email: info.email ?? '',
-          displayName: info.name ?? 'Google User',
-          avatarColor: '#4285F4',
-          provider: 'google',
-        });
+        {
+          const claims = decodeJwtClaims(googleIdToken);
+          console.log(
+            `[auth] Google id_token aud=${claims.aud} iss=${claims.iss} envIosClientId=${googleIosClientId} hasAccessToken=${Boolean(auth?.accessToken)}`,
+          );
+        }
+        // idToken alone is sufficient for Firebase's exchange — omitting a
+        // potentially malformed accessToken here to isolate whether IT was
+        // the actual cause of auth/internal-error (the aud/iss claims above
+        // already confirmed the idToken itself is well-formed and safelisted).
+        const credential = GoogleAuthProvider.credential(googleIdToken);
+        const userCredential = await signInWithCredential(getAuth(), credential);
+        const firebaseIdToken = await getIdToken(userCredential.user);
+
+        await signInWithSocial(
+          {
+            id: info.id ?? Math.random().toString(36),
+            email: info.email ?? '',
+            displayName: info.name || (info.email ? info.email.split('@')[0] : 'Google User'),
+            avatarColor: '#4285F4',
+            provider: 'google',
+          },
+          firebaseIdToken,
+        );
         const { user } = useAuthStore.getState();
         if (user) {
           const { useFamilyStore } = require('../../store/useFamilyStore');
@@ -99,14 +164,25 @@ export default function SignInScreen({ navigation }: Props) {
         }
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       })
-      .catch(() => Alert.alert(t('auth.screens.signIn.googleProfileErrorTitle'), t('auth.screens.signIn.googleProfileErrorMsg')));
+      .catch((err) => {
+        console.error('[auth] Google sign-in failed', err);
+        Alert.alert(t('auth.screens.signIn.googleProfileErrorTitle'), t('auth.screens.signIn.googleProfileErrorMsg'));
+      });
   }, [googleResponse]);
 
   const handleGoogleSignIn = () => {
-    if (!promptGoogleAsync) {
+    if (!Google) {
       Alert.alert(
         t('auth.screens.signIn.nativeBuildRequiredTitle'),
         t('auth.screens.signIn.googleNativeBuildMsg'),
+        [{ text: t('auth.screens.signIn.ok') }],
+      );
+      return;
+    }
+    if (!googleConfigured || !promptGoogleAsync) {
+      Alert.alert(
+        t('auth.screens.signIn.googleNotConfiguredTitle'),
+        t('auth.screens.signIn.googleNotConfiguredMsg'),
         [{ text: t('auth.screens.signIn.ok') }],
       );
       return;
@@ -124,23 +200,60 @@ export default function SignInScreen({ navigation }: Props) {
       return;
     }
     try {
+      // Firebase's Apple credential wants the RAW nonce, while Apple itself
+      // is only ever given the SHA-256 HASH of it (and echoes that hash back
+      // inside identityToken) — generating+hashing here, not relying on
+      // AppleAuthentication to do it, is what lets us hand the raw value to
+      // Firebase afterwards.
+      const rawNonce = Array.from(await Crypto.getRandomBytesAsync(16))
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('');
+      const hashedNonce = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, rawNonce);
+
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
           AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
           AppleAuthentication.AppleAuthenticationScope.EMAIL,
         ],
+        nonce: hashedNonce,
       });
+      if (!credential.identityToken) {
+        Alert.alert(t('auth.screens.signIn.appleSignInFailedTitle'), t('auth.screens.signIn.appleSignInFailedMsg'));
+        return;
+      }
+      const emailAddr = credential.email ?? `${credential.user}@privaterelay.appleid.com`;
+      // Apple only ever discloses the real name on the very first
+      // authorization for this app+Apple ID pair — every sign-in after that
+      // (even a first *successful* one, if an earlier attempt got this far
+      // before failing downstream) gets an empty fullName. Falling back to
+      // the email's local part (like the email/password signIn() flow does)
+      // is wrong here specifically: when Apple also withholds the real email,
+      // emailAddr becomes `${credential.user}@privaterelay.appleid.com`, so
+      // splitting on '@' just hands back credential.user — Apple's opaque
+      // per-app-per-user id — verbatim as the person's displayed "name".
+      // Only use the email-derived fallback when it's a real user email.
       const name = credential.fullName
         ? `${credential.fullName.givenName ?? ''} ${credential.fullName.familyName ?? ''}`.trim()
-        : 'Apple User';
-      const emailAddr = credential.email ?? `${credential.user}@privaterelay.appleid.com`;
-      await signInWithSocial({
-        id: credential.user,
-        email: emailAddr,
-        displayName: name || 'Apple User',
-        avatarColor: '#000000',
-        provider: 'apple',
+        : '';
+      const fallbackName = credential.email ? emailAddr.split('@')[0] : 'Apple User';
+
+      const appleFirebaseCredential = new OAuthProvider('apple.com').credential({
+        idToken: credential.identityToken,
+        rawNonce,
       });
+      const userCredential = await signInWithCredential(getAuth(), appleFirebaseCredential);
+      const firebaseIdToken = await getIdToken(userCredential.user);
+
+      await signInWithSocial(
+        {
+          id: credential.user,
+          email: emailAddr,
+          displayName: name || fallbackName,
+          avatarColor: '#000000',
+          provider: 'apple',
+        },
+        firebaseIdToken,
+      );
       const { user } = useAuthStore.getState();
       if (user) {
         const { useFamilyStore } = require('../../store/useFamilyStore');
@@ -152,6 +265,7 @@ export default function SignInScreen({ navigation }: Props) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (e: any) {
       if (e.code !== 'ERR_REQUEST_CANCELED') {
+        console.error('[auth] Apple sign-in failed', e);
         Alert.alert(t('auth.screens.signIn.appleSignInFailedTitle'), t('auth.screens.signIn.appleSignInFailedMsg'));
       }
     }
@@ -230,6 +344,11 @@ export default function SignInScreen({ navigation }: Props) {
     setLoading(false);
     if (!result.success) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      if (result.error === 'email_not_verified') {
+        // pendingVerificationEmail already set in the store — AuthNavigator
+        // will automatically switch to EmailVerificationScreen.
+        return;
+      }
       Alert.alert(t('auth.screens.signIn.signInFailedTitle'), result.error ?? t('auth.screens.signIn.genericError'));
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -462,7 +581,6 @@ export default function SignInScreen({ navigation }: Props) {
             <Pressable
               style={[styles.outlineButton, { borderColor: colors.border, backgroundColor: inputBg, marginTop: 10 }]}
               onPress={handleGoogleSignIn}
-              disabled={!googleRequest}
             >
               <Ionicons name="globe-outline" size={20} color={colors.text} />
               <Text style={[styles.outlineButtonText, { color: colors.text }]}>{t('auth.screens.signIn.continueWithGoogle')}</Text>

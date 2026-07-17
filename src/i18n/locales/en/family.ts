@@ -1,4 +1,5 @@
 import geofence from './family/geofence';
+import giftPlanner from './family/giftPlanner';
 
 export default {
   family: {
@@ -8,6 +9,7 @@ export default {
     familyScore: 'Family Health Score', pendingTasks: 'Pending', todayEvents: "Today's Events",
     quickNav: 'Quick Navigation',
     screens: {
+      giftPlanner,
       approvalRequests: {
         headerEyebrow: 'Guardian', headerTitle: 'Approval Requests', headerSubtitle: 'Review pending requests from family members',
         emptyTitle: 'All clear!', emptyDescPending: 'No pending requests', emptyDescOther: 'Nothing here yet',
@@ -227,11 +229,20 @@ export default {
         defaultDescription: 'A special family moment',
         deleteEntryTitle: 'Delete Entry', deleteEntryMsg: 'Remove this memory?',
         cancel: 'Cancel', delete: 'Delete',
+        filterAll: 'All', filterHighlights: 'Highlights',
+        filterWins: 'Wins', filterMilestones: 'Milestones', filterMemories: 'Memories',
+        filterGoals: 'Goals', filterStreaks: 'Streaks', filterFamily: 'Family',
+        typeAchievement: 'Achievement', typeMilestone: 'Milestone', typeMemory: 'Memory',
+        typeEvent: 'Event', typeGoal: 'Goal', typeStreak: 'Streak', typeFamily: 'Family',
       },
       geofence,
       guardianDashboard: {
-        lastSeenJustNow: 'Just now', lastSeenMinutesAgo: '{{min}}m ago',
-        lastSeenHoursAgo: '{{hrs}}h ago', lastSeenDaysAgo: '{{days}}d ago',
+        lastSeenJustNow: 'Just now', lastSeenMinutesAgo: '{{count}}m ago',
+        lastSeenHoursAgo: '{{count}}h ago', lastSeenDaysAgo: '{{count}}d ago',
+        statusOnline: 'Online', statusOffline: 'Offline',
+        statusSchoolMode: 'School Mode', statusBedtime: 'Bedtime', statusRestricted: 'Restricted',
+        quickLockLabel: 'Lock', quickSchoolLabel: 'School', quickBedtimeLabel: 'Bedtime',
+        confirmSend: 'Send', confirmCancel: 'Cancel',
       },
       habits: {
         headerTitle: 'Family Habits',
@@ -416,6 +427,10 @@ export default {
     totalTasks: 'Total Tasks', events: 'Events', loveLanguage: 'Love Language',
     assignedTasks: 'Assigned Tasks', upcomingEvents: 'Upcoming Events',
     noTasks: 'No tasks assigned.', noEvents: 'No events scheduled.',
+    dangerZone: 'Danger Zone', deleteMember: 'Delete Member',
+    deleteMemberConfirmTitle: 'Delete {{name}}?',
+    deleteMemberConfirmMsg: 'This will permanently remove {{name}} from the family, including their tasks and event assignments. This cannot be undone.',
+    deleteMemberFailedMsg: 'Failed to delete member. Please check your connection and try again.',
   },
   addMember: {
     title: 'Add Member', name: 'Name', role: 'Role', email: 'Email (optional)',

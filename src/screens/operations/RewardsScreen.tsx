@@ -18,7 +18,7 @@ import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useTranslation } from 'react-i18next';
 import type { RewardCatalogItem } from '../../types';
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../../utils/generateId';
 
 const REWARD_COLORS = ['#8E44AD', '#F5A623', '#2C3E50', '#E74C3C', '#E91E63', '#27AE60', '#2980B9', '#9B59B6'];
 

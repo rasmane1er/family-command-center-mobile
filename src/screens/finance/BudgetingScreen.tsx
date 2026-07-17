@@ -58,7 +58,7 @@ const PRESET_ICONS = [
   { icon: 'wallet', label: 'Savings' },
 ];
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../../utils/generateId';
 
 export function BudgetingScreen({ navigation, route }: any) {
   const { t } = useTranslation('finance');

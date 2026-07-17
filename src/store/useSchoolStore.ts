@@ -54,7 +54,7 @@ interface SchoolState {
   fetchFromServer: () => Promise<void>;
 }
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../utils/generateId';
 
 export const useSchoolStore = create<SchoolState>()(
   persist(

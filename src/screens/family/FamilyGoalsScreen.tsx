@@ -19,7 +19,7 @@ import { useFamilyStore } from '../../store/useFamilyStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useTranslation } from 'react-i18next';
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../../utils/generateId';
 
 const CATEGORY_COLORS: Record<GoalCategory, string> = {
   health: '#E74C3C',

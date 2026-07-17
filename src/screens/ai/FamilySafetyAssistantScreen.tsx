@@ -60,7 +60,7 @@ const QUICK_PROMPT_KEYS = [
   'quickPrompt6',
 ];
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../../utils/generateId';
 
 function buildStarterMessage(mode: ContextMode, t: TFunction): ChatMessage {
   return {

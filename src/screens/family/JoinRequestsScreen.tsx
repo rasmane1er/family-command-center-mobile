@@ -17,7 +17,7 @@ type RequestFilter = 'pending' | 'approved' | 'rejected';
 
 const FILTERS: RequestFilter[] = ['pending', 'approved', 'rejected'];
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../../utils/generateId';
 
 export function JoinRequestsScreen({ navigation, route }: any) {
   const { t } = useTranslation('family');
@@ -60,7 +60,7 @@ export function JoinRequestsScreen({ navigation, route }: any) {
       name: request.requesterName,
       role: request.requesterRole,
       avatarColor: '#2980B9',
-      status: 'active',
+      status: 'ACTIVE',
       points: 0,
       level: 1,
       isAdmin: false,

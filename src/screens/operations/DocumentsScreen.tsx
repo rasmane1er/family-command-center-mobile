@@ -43,7 +43,7 @@ const DOC_CATEGORIES: DocumentCategory[] = [
   'identity','medical','financial','insurance','legal','education','vehicle','home','other',
 ];
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../../utils/generateId';
 
 function formatBytes(bytes: number) {
   if (bytes < 1024)       return `${bytes} B`;

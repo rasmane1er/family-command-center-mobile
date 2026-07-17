@@ -5,6 +5,7 @@ import { mmkvStorage } from '../storage/mmkvStorage';
 import type { PantryItem, ShoppingList, MealPlan, Asset, Vehicle, Document } from '../types';
 import * as assetService from '../services/assetService';
 import * as pantryService from '../services/pantryService';
+import { apiRequest } from '../api/client';
 
 interface OperationsState {
   pantryItems: PantryItem[];
@@ -21,7 +22,7 @@ interface OperationsState {
   deletePantryItem: (id: string) => void;
   addShoppingList: (list: ShoppingList) => void;
   updateShoppingList: (id: string, updates: Partial<ShoppingList>) => void;
-  setMealPlan: (plan: MealPlan) => void;
+  setMealPlan: (plan: MealPlan, familyId?: string) => void;
   addAsset: (asset: Asset) => void;
   updateAsset: (id: string, updates: Partial<Asset>) => void;
   deleteAsset: (id: string) => void;
@@ -31,10 +32,10 @@ interface OperationsState {
   addDocument: (d: Document) => void;
   updateDocument: (id: string, updates: Partial<Document>) => void;
   deleteDocument: (id: string) => void;
-  fetchFromServer: () => Promise<void>;
+  fetchFromServer: (familyId?: string) => Promise<void>;
 }
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../utils/generateId';
 
 export const useOperationsStore = create<OperationsState>()(
   persist(
@@ -73,15 +74,23 @@ export const useOperationsStore = create<OperationsState>()(
   addShoppingList: (list) => set((s) => ({ shoppingLists: [...s.shoppingLists, list] })),
   updateShoppingList: (id, updates) =>
     set((s) => ({ shoppingLists: s.shoppingLists.map((l) => (l.id === id ? { ...l, ...updates } : l)) })),
-  setMealPlan: (plan) =>
+  setMealPlan: (plan, familyId) => {
     set((s) => {
-      const exists = s.mealPlans.find((p) => p.id === plan.id);
+      const exists = s.mealPlans.find((p) => p.weekStart === plan.weekStart);
       return {
         mealPlans: exists
-          ? s.mealPlans.map((p) => (p.id === plan.id ? plan : p))
+          ? s.mealPlans.map((p) => (p.weekStart === plan.weekStart ? plan : p))
           : [...s.mealPlans, plan],
       };
-    }),
+    });
+    const fid = familyId ?? plan.familyId;
+    if (fid) {
+      apiRequest(`/meal-plans/${fid}`, {
+        method: 'PUT',
+        body: JSON.stringify({ weekStart: plan.weekStart, meals: plan.meals }),
+      }).catch(() => {});
+    }
+  },
   addAsset: (asset) => {
     set((s) => ({ assets: [...s.assets, asset] }));
     assetService.createAsset(asset).catch(() => {
@@ -123,13 +132,16 @@ export const useOperationsStore = create<OperationsState>()(
     set((s) => ({ documents: s.documents.map((d) => (d.id === id ? { ...d, ...updates } : d)) })),
   deleteDocument: (id) => set((s) => ({ documents: s.documents.filter((d) => d.id !== id) })),
 
-  fetchFromServer: async () => {
+  fetchFromServer: async (familyId) => {
     try {
-      const [{ assets }, { items }] = await Promise.all([
+      const [{ assets }, { items }, mealRes] = await Promise.all([
         assetService.fetchAssets(),
         pantryService.fetchPantryItems(),
+        familyId
+          ? apiRequest<{ mealPlans: MealPlan[] }>(`/meal-plans/${familyId}`).catch(() => ({ mealPlans: [] as MealPlan[] }))
+          : Promise.resolve({ mealPlans: [] as MealPlan[] }),
       ]);
-      set({ assets, pantryItems: items, isLoaded: true });
+      set({ assets, pantryItems: items, mealPlans: mealRes.mealPlans, isLoaded: true });
     } catch {
       set({ isLoaded: true });
     }

@@ -42,7 +42,7 @@ const categoryColors: Record<string, string> = {
   'Other': '#95A5A6',
 };
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../../utils/generateId';
 
 export function AssetsScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();

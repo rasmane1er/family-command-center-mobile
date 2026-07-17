@@ -12,6 +12,7 @@ import { useShoppingStore }       from '../store/useShoppingStore';
 import { useActivitiesStore }     from '../store/useActivitiesStore';
 import { useAllowanceStore }      from '../store/useAllowanceStore';
 import { useAutomationStore }     from '../store/useAutomationStore';
+import { useConnectStore }        from '../store/useConnectStore';
 import { useBirthdayStore }       from '../store/useBirthdayStore';
 import { useBucketListStore }     from '../store/useBucketListStore';
 import { useCarpoolStore }        from '../store/useCarpoolStore';
@@ -68,7 +69,7 @@ export function resetAllStores() {
   useFamilyStore.setState({
     family: null, members: [], tasks: [], events: [],
     goals: [], rewards: [], rewardCatalog: [], hasSeededRewardCatalog: false,
-    achievements: [], activeMemberId: null,
+    achievements: [], activeMemberId: null, isLoaded: false,
   } as any);
 
   useFinanceStore.setState({
@@ -108,6 +109,12 @@ export function resetAllStores() {
   useAutomationStore.setState({
     rules: [], listings: [], conflicts: [], timeBlocks: [], devices: [], hasSeeded: false,
     hueBridgeIp: null, hueConnected: false, hueScenes: [], isRefreshingHue: false,
+  } as any);
+
+  useConnectStore.setState({
+    connections: [], incomingRequests: [], outgoingRequests: [], isLoaded: false, isLoading: false,
+    feedPosts: [], feedNextCursor: null, isFeedLoading: false, postComments: {}, postReactions: {},
+    coParentGrants: [], sharedChildren: {}, sharedCustodyEvents: [],
   } as any);
 
   useBirthdayStore.setState({ birthdays: [] } as any);

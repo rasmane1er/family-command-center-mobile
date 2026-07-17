@@ -108,7 +108,7 @@ export function HabitsScreen({ navigation }: any) {
   const screenHeader = (
     <LinearGradient colors={['#E67E22', '#D35400']} style={{ paddingTop: insets.top + 6, paddingHorizontal: 20, paddingBottom: 16 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
-        <Pressable onPress={() => navigation.goBack()} style={{ marginRight: 12 }}>
+        <Pressable onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.getParent()?.navigate('Home')} style={{ marginRight: 12 }}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <Text style={{ flex: 1, fontSize: 18, fontWeight: '800', color: '#fff' }}>{t('family.screens.habits.headerTitle')}</Text>

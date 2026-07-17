@@ -36,7 +36,7 @@ export interface AppNotification {
   title: string;
   body: string;
   isRead: boolean;
-  action?: { label: string; route: string };
+  action?: { label: string; route: string; params?: Record<string, string> };
   createdAt: string;
   memberId?: string;
 }
@@ -48,7 +48,7 @@ interface NotificationsState {
   // a periodic scanner (useNotificationTriggers.ts) doesn't recreate the
   // same notification every time it re-scans.
   notifiedSourceKeys: string[];
-  addNotification: (n: Omit<AppNotification, 'id' | 'createdAt'>) => void;
+  addNotification: (n: Omit<AppNotification, 'id' | 'createdAt'>, silent?: boolean) => void;
   hasBeenNotified: (sourceKey: string) => boolean;
   markNotified: (sourceKey: string) => void;
   clearNotified: (sourceKey: string) => void;
@@ -59,7 +59,14 @@ interface NotificationsState {
   fetchFromServer: () => Promise<void>;
 }
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../utils/generateId';
+
+// Both arrays below are append-only in normal usage (new notification /
+// new dedup key on every scan) with no natural cap, so they'd otherwise
+// grow for the lifetime of the install. Capped at write time to bound the
+// MMKV-persisted payload instead of relying on the user to clear them.
+const MAX_NOTIFICATIONS = 500;
+const MAX_NOTIFIED_SOURCE_KEYS = 1000;
 
 export const useNotificationsStore = create<NotificationsState>()(
   persist(
@@ -68,7 +75,7 @@ export const useNotificationsStore = create<NotificationsState>()(
   notifiedSourceKeys: [],
   isLoaded: false,
 
-  addNotification: (n) => {
+  addNotification: (n, silent = false) => {
   const notification = {
     ...n,
     id: generateId(),
@@ -76,10 +83,10 @@ export const useNotificationsStore = create<NotificationsState>()(
   };
 
   set((s) => ({
-    notifications: [notification, ...s.notifications],
+    notifications: [notification, ...s.notifications].slice(0, MAX_NOTIFICATIONS),
   }));
 
-  fireLocalNotification(notification.title, notification.body);
+  if (!silent) fireLocalNotification(notification.title, notification.body);
 
   enqueueSync({
     entity: 'notifications',
@@ -93,7 +100,9 @@ export const useNotificationsStore = create<NotificationsState>()(
   markNotified: (sourceKey) =>
     set((s) => (s.notifiedSourceKeys.includes(sourceKey)
       ? s
-      : { notifiedSourceKeys: [...s.notifiedSourceKeys, sourceKey] })),
+      // Drop from the front (oldest) when over cap — dedup keys for very
+      // old scans are the least likely to ever be checked again.
+      : { notifiedSourceKeys: [...s.notifiedSourceKeys, sourceKey].slice(-MAX_NOTIFIED_SOURCE_KEYS) })),
 
   clearNotified: (sourceKey) =>
     set((s) => ({ notifiedSourceKeys: s.notifiedSourceKeys.filter((k) => k !== sourceKey) })),

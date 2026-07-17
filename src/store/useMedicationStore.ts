@@ -1,10 +1,10 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { mmkvStorage } from '../storage/mmkvStorage';
-import { useAuthStore } from './useAuthStore';
+import { authBridge } from './authBridge';
 import { pushSyncEvent } from '../api/syncQueue';
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../utils/generateId';
 
 export type MedFrequency = 'daily' | 'twice_daily' | 'weekly' | 'as_needed' | 'monthly';
 
@@ -53,7 +53,7 @@ export const useMedicationStore = create<MedicationState>()(
       logs: [],
       isLoaded: false,
       addMedication: (m) => {
-        const med = { ...m, id: generateId(), familyId: useAuthStore.getState().familyId ?? '', createdAt: new Date().toISOString() };
+        const med = { ...m, id: generateId(), familyId: authBridge.getSnapshot().familyId ?? '', createdAt: new Date().toISOString() };
         set((s) => ({ medications: [med, ...s.medications] }));
         pushSyncEvent('activities', 'create', { type: 'medication', ...med });
       },

@@ -27,7 +27,7 @@ import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useTranslation } from 'react-i18next';
 import { usePlaidAutoData } from '../../hooks/usePlaidAutoData';
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../../utils/generateId';
 
 type UtilityType = 'electric' | 'water' | 'gas' | 'internet' | 'phone' | 'trash' | 'sewer' | 'other';
 

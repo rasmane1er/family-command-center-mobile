@@ -8,6 +8,8 @@ import { useSchoolStore } from '../store/useSchoolStore';
 import { useFamilyBoardStore } from '../store/useFamilyBoardStore';
 import { useAllowanceStore } from '../store/useAllowanceStore';
 import { useGiftStore } from '../store/useGiftStore';
+import { useConnectStore } from '../store/useConnectStore';
+import { useAuthStore } from '../store/useAuthStore';
 
 const SCAN_INTERVAL_MS = 5 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -22,10 +24,15 @@ const GIFT_BIRTHDAY_LEAD_DAYS = 14;
 // carries month/day meaningfully here (the year is their birth year, not
 // this year's), so this re-anchors it to whichever of this-year/next-year
 // hasn't passed yet.
-function nextBirthday(dateOfBirth: string, now: Date): Date {
-  const dob = new Date(dateOfBirth);
+function nextBirthday(dateOfBirth: string, now: Date): Date | null {
+  // Android's JS engine rejects some date formats (e.g. "MM/DD/YYYY") that
+  // iOS accepts — normalise slashes to dashes so new Date() parses reliably.
+  const normalised = dateOfBirth.replace(/\//g, '-');
+  const dob = new Date(normalised);
+  if (isNaN(dob.getTime())) return null;
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const thisYear = new Date(now.getFullYear(), dob.getMonth(), dob.getDate());
-  if (thisYear.getTime() >= new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()) return thisYear;
+  if (thisYear.getTime() >= today.getTime()) return thisYear;
   return new Date(now.getFullYear() + 1, dob.getMonth(), dob.getDate());
 }
 
@@ -53,6 +60,123 @@ function parseBookingStartMs(date: string, startTime: string): number | null {
   if (isNaN(d.getTime())) return null;
   d.setHours(hours, minutes, 0, 0);
   return d.getTime();
+}
+
+// Family Connect (cross-household requests/feed/co-parenting) is scanned
+// separately from everything else in scan() below: its data — incoming
+// requests, the feed, co-parent grants — is only ever fetched today when
+// the Family Connect screen itself is opened, so without an explicit
+// refetch here a user who never opens that screen would never be notified
+// of anything on it. This is the one section of the scanner that hits the
+// network instead of just reading whatever's already in memory.
+async function scanConnect(notif: ReturnType<typeof useNotificationsStore.getState>, family: ReturnType<typeof useFamilyStore.getState>) {
+  const auth = useAuthStore.getState();
+  await Promise.all([
+    useConnectStore.getState().fetchFromServer(),
+    useConnectStore.getState().fetchFeed(true),
+    useConnectStore.getState().fetchCoParentGrants(),
+  ]);
+  const connect = useConnectStore.getState();
+  const myFamilyId = family.family?.id;
+
+  // Incoming connection requests — never resolve/clear the way a bill does;
+  // once accepted/declined the request drops out of incomingRequests
+  // entirely, so there's nothing left here to re-check.
+  connect.incomingRequests.forEach((req) => {
+    const key = `connect-request-${req.id}`;
+    if (notif.hasBeenNotified(key)) return;
+    notif.markNotified(key);
+    notif.addNotification({
+      type: 'family',
+      isRead: false,
+      title: '🤝 New Connection Request',
+      body: `${req.requesterFamily?.name ?? 'A household'} wants to connect with your family.`,
+      action: { label: 'Review', route: 'FamilyConnect' },
+    });
+  });
+
+  connect.feedPosts.forEach((post) => {
+    if (post.familyId !== myFamilyId) {
+      // A post from a connected household — notify once per post.
+      const key = `connect-post-${post.id}`;
+      if (notif.hasBeenNotified(key)) return;
+      notif.markNotified(key);
+      notif.addNotification({
+        type: 'family',
+        isRead: false,
+        title: '📣 New Family Connect Post',
+        body: `${post.family?.name ?? 'A connected household'} shared an update.`,
+        action: { label: 'View Feed', route: 'FamilyConnect' },
+      });
+      return;
+    }
+    // Your own post — notify on comment/reaction count increases. The key
+    // encodes the count itself rather than just the post id, so a fresh
+    // notification fires every time the count goes up (3 comments today,
+    // 5 tomorrow = two separate notifications) without needing a numeric
+    // "last seen count" store this hook doesn't otherwise have.
+    if (!post._count) return;
+    if (post._count.comments > 0) {
+      const key = `connect-post-comments-${post.id}-${post._count.comments}`;
+      if (!notif.hasBeenNotified(key)) {
+        notif.markNotified(key);
+        notif.addNotification({
+          type: 'family',
+          isRead: false,
+          title: '💬 New Comment',
+          body: `Your Family Connect post has ${post._count.comments} comment${post._count.comments === 1 ? '' : 's'}.`,
+          action: { label: 'View Post', route: 'FamilyConnect' },
+        });
+      }
+    }
+    if (post._count.reactions > 0) {
+      const key = `connect-post-reactions-${post.id}-${post._count.reactions}`;
+      if (!notif.hasBeenNotified(key)) {
+        notif.markNotified(key);
+        notif.addNotification({
+          type: 'family',
+          isRead: false,
+          title: '❤️ New Reaction',
+          body: `Your Family Connect post has ${post._count.reactions} reaction${post._count.reactions === 1 ? '' : 's'}.`,
+          action: { label: 'View Post', route: 'FamilyConnect' },
+        });
+      }
+    }
+  });
+
+  connect.coParentGrants.forEach((grant) => {
+    if (grant.status === 'PENDING' && grant.holderFamilyId === myFamilyId) {
+      const key = `coparent-grant-pending-${grant.id}`;
+      if (notif.hasBeenNotified(key)) return;
+      notif.markNotified(key);
+      notif.addNotification({
+        type: 'family',
+        isRead: false,
+        title: '👨‍👩‍👧 Co-Parent Access Request',
+        body: `${grant.ownerFamily?.name ?? 'A connected household'} wants to share a child's profile with you.`,
+        action: { label: 'Review', route: 'FamilyConnect' },
+      });
+      return;
+    }
+    // Status change on a grant YOU sent — let you know once it's been acted on.
+    if (
+      (grant.status === 'ACTIVE' || grant.status === 'DECLINED') &&
+      grant.ownerFamilyId === myFamilyId &&
+      auth.backendUserId &&
+      grant.initiatedByUserId === auth.backendUserId
+    ) {
+      const key = `coparent-grant-resolved-${grant.id}-${grant.status}`;
+      if (notif.hasBeenNotified(key)) return;
+      notif.markNotified(key);
+      notif.addNotification({
+        type: 'family',
+        isRead: false,
+        title: grant.status === 'ACTIVE' ? '✅ Co-Parent Access Accepted' : '❌ Co-Parent Access Declined',
+        body: `${grant.holderFamily?.name ?? 'The household'} ${grant.status === 'ACTIVE' ? 'accepted' : 'declined'} your co-parent access request.`,
+        action: { label: 'View', route: 'FamilyConnect' },
+      });
+    }
+  });
 }
 
 function scan() {
@@ -292,6 +416,7 @@ function scan() {
     const key = `gift-birthday-${member.id}`;
 
     const upcoming = nextBirthday(member.dateOfBirth, nowDate);
+    if (!upcoming) return; // unparseable date — skip silently
     const daysUntil = (upcoming.getTime() - nowDate.getTime()) / DAY_MS;
 
     const hasGiftIdea = gifts.gifts.some((g) => g.forMemberId === member.id && g.occasion === 'birthday' && g.status !== 'given');
@@ -312,6 +437,14 @@ function scan() {
       action: { label: 'Plan a Gift', route: 'GiftPlanner' },
       memberId: member.id,
     });
+  });
+
+  // Fire-and-forget: Connect data has to be fetched over the network first
+  // (see scanConnect's comment), so it shouldn't hold up everything above,
+  // which only ever reads state that's already in memory.
+  scanConnect(notif, family).catch(() => {
+    // offline/unreachable — just skip this pass, same as every other
+    // best-effort fetch* action in useConnectStore.
   });
 }
 

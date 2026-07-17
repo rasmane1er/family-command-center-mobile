@@ -12,6 +12,7 @@ interface RoleGuardProps {
   allowParent?: boolean;
   allowChild?: boolean;
   allowGrandparent?: boolean;
+  allowCaregiver?: boolean;
   permission?: keyof MemberPermissions;
   title?: string;
   message?: string;
@@ -22,6 +23,7 @@ export function RoleGuard({
   allowParent = false,
   allowChild = false,
   allowGrandparent = false,
+  allowCaregiver = false,
   permission,
   title,
   message,
@@ -47,11 +49,13 @@ export function RoleGuard({
 
     const isChild = activeMember?.role === 'child';
     const isGrandparent = activeMember?.role === 'grandparent';
+    const isCaregiver = activeMember?.role === 'caregiver';
 
     allowed =
       (allowParent && isParent) ||
       (allowChild && isChild) ||
-      (allowGrandparent && isGrandparent);
+      (allowGrandparent && isGrandparent) ||
+      (allowCaregiver && isCaregiver);
   }
 
   if (!allowed) {

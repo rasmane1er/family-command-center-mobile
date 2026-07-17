@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { mmkvStorage } from '../storage/mmkvStorage';
 import { API_BASE_URL } from '../config/api';
 import { secureStorage } from '../storage/secureStorage';
 
@@ -170,7 +170,7 @@ export const useRecipesStore = create<RecipesState>()(
     }),
     {
       name: 'recipes-store',
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createJSONStorage(() => mmkvStorage),
       partialize: (state) => ({ recipes: state.recipes, isLoaded: state.isLoaded }),
     }
   )

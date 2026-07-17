@@ -182,8 +182,8 @@ const todayEvents = visibleEvents.filter(
                   <Text style={[styles.memberInitial, { color: m.avatarColor }]}>{m.name.charAt(0)}</Text>
                 </View>
                 <Text style={styles.memberName}>{m.name.split(' ')[0]}</Text>
-                <View style={[styles.statusDot, { backgroundColor: m.status === 'active' ? colors.success : m.status === 'work' || m.status === 'school' ? colors.warning : colors.textMuted }]} />
-                <Text style={styles.memberStatus}>{m.status}</Text>
+                <View style={[styles.statusDot, { backgroundColor: m.status === 'ACTIVE' ? colors.success : m.status === 'PENDING' ? colors.warning : colors.textMuted }]} />
+                <Text style={styles.memberStatus}>{m.status === 'ACTIVE' ? 'Active' : m.status === 'PENDING' ? 'Pending' : 'Inactive'}</Text>
                 {score && <Text style={styles.memberScore}>{t('dashboard.screens.commandWall.memberPoints', { score: score.overall })}</Text>}
               </Card>
             );

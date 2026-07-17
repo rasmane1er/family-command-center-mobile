@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import * as Notifications from 'expo-notifications';
-import messaging from '@react-native-firebase/messaging';
+import messaging, { getMessaging, onMessage } from '@react-native-firebase/messaging';
 import { Platform } from 'react-native';
 
 import { useGuardianStore } from '../store/useGuardianStore';
@@ -110,15 +110,41 @@ export function useGuardianCommandPolling() {
       }
     })();
 
+    // Forward any push notification received on this child device to the API
+    // so it appears in "Recent Notifications" on the parent's screen.
+    function forwardNotification(title: string, body: string, packageName: string) {
+      guardianService.postChildNotification(thisDeviceId, {
+        packageName: packageName || 'com.familycommandcenter.app',
+        title,
+        text: body,
+        receivedAt: Date.now(),
+      }).catch(() => {});
+    }
+
+    // Firebase onMessage fires when app is foregrounded (Android)
+    let unsubFirebase: (() => void) | null = null;
+    try {
+      unsubFirebase = onMessage(getMessaging(), (msg) => {
+        const data = msg.data as Record<string, unknown> | undefined;
+        if (data?.commandId || data?.type === 'command') poll();
+        const t = msg.notification?.title ?? '';
+        const b = msg.notification?.body ?? '';
+        if (t || b) forwardNotification(t, b, 'com.familycommandcenter.app');
+      });
+    } catch {}
+
+    // Expo listener fires on iOS foreground + catches backgrounded taps
     const subscription = Notifications.addNotificationReceivedListener((event) => {
       const data = event.request.content.data as Record<string, unknown> | undefined;
-      if (data?.commandId || data?.type === 'command') {
-        poll();
-      }
+      if (data?.commandId || data?.type === 'command') poll();
+      const t = event.request.content.title ?? '';
+      const b = event.request.content.body ?? '';
+      if (t || b) forwardNotification(t, b, 'com.familycommandcenter.app');
     });
 
     return () => {
       clearInterval(interval);
+      unsubFirebase?.();
       subscription.remove();
     };
   }, [thisDeviceId, setPendingCommands, markCommandExecuted, updateDeviceStatus]);

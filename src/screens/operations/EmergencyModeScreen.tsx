@@ -143,9 +143,9 @@ export function EmergencyModeScreen({ navigation }: any) {
     { name: 'Poison Control', number: '1-800-222-1222', icon: 'medical', color: '#E67E22', type: 'poisoning' },
     { name: 'Crisis Helpline', number: '988', icon: 'heart', color: '#8E44AD', type: 'mental health' },
     { name: 'Red Cross', number: '1-800-733-2767', icon: 'shield', color: '#E74C3C', type: 'disaster relief' },
-    ...members.filter((m) => m.medicalInfo?.emergencyContact).map((m) => ({
-      name: m.medicalInfo!.emergencyContact!.name,
-      number: m.medicalInfo!.emergencyContact!.phone,
+    ...members.filter((m) => m.emergencyContactName).map((m) => ({
+      name: m.emergencyContactName!,
+      number: m.emergencyContactPhone ?? '',
       icon: 'person' as const,
       color: m.avatarColor,
       type: `${m.name}'s contact`,

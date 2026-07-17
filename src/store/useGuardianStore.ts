@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Alert } from 'react-native';
+import { mmkvStorage } from '../storage/mmkvStorage';
 
 import type {
   ChildDevice,
@@ -75,7 +76,7 @@ interface GuardianStore {
 
   // Pairing
   registerThisDevice: (input: { deviceName: string; platform: 'ios' | 'android'; memberId: string }) => Promise<string>;
-  pairWithCode: (pairingCode: string) => Promise<void>;
+  pairWithCode: (pairingCode: string) => Promise<string>;
 
   // Geofence CRUD
   addGeofenceZone: (zone: GeofenceZone) => void;
@@ -94,6 +95,8 @@ interface GuardianStore {
   // SOS alerts
   addSOSAlert: (alert: SOSAlert) => void;
   resolveSOSAlert: (id: string, resolvedBy: string) => void;
+  deleteSOSAlert: (id: string) => void;
+  clearResolvedSOSAlerts: () => void;
 
   // Approval requests
   addApprovalRequest: (request: ParentApprovalRequest) => void;
@@ -104,6 +107,10 @@ interface GuardianStore {
   markCommandExecuted: (id: string) => void;
   markCommandFailed: (id: string) => void;
   setPendingCommands: (deviceId: string, commands: GuardianCommand[]) => void;
+
+  // Live screen stream tracking (persists across navigation)
+  streamingDeviceId: string | null;
+  setStreamingDeviceId: (id: string | null) => void;
 }
 
 export const useGuardianStore = create<GuardianStore>()(
@@ -130,14 +137,53 @@ export const useGuardianStore = create<GuardianStore>()(
           guardianService.fetchApprovals(),
         ]);
 
-        set((s) => ({
-          devices: devicesRes.status === 'fulfilled' ? devicesRes.value.devices : s.devices,
-          geofenceZones: geofencesRes.status === 'fulfilled' ? geofencesRes.value.zones : s.geofenceZones,
-          screenTimeRules: screenTimeRes.status === 'fulfilled' ? screenTimeRes.value.rules : s.screenTimeRules,
-          sosAlerts: sosRes.status === 'fulfilled' ? sosRes.value.alerts : s.sosAlerts,
-          approvalRequests: approvalsRes.status === 'fulfilled' ? approvalsRes.value.approvals : s.approvalRequests,
-          isHydrating: false,
-        }));
+        const newDevices = devicesRes.status === 'fulfilled' ? devicesRes.value.devices : null;
+
+        // Fetch today's app usage for every paired device
+        let mergedUsage: AppUsageEntry[] = [];
+        if (newDevices && newDevices.length > 0) {
+          const today = new Date().toISOString().split('T')[0];
+          const usageResults = await Promise.allSettled(
+            newDevices.map((d) => guardianService.fetchAppUsage(d.id, today)),
+          );
+          mergedUsage = usageResults.flatMap((r) =>
+            r.status === 'fulfilled' ? r.value.usage : [],
+          );
+        }
+
+        set((s) => {
+          // Don't let a stale server status overwrite an optimistic lock/unlock
+          // that hasn't been executed by the child yet. A pending lock/unlock
+          // command means we intentionally changed the status locally; keeping
+          // the server value would flip the button back immediately.
+          const pendingByDevice = new Map<string, string>();
+          for (const cmd of s.pendingCommands) {
+            if (cmd.status === 'pending') {
+              if (cmd.type === 'lock') pendingByDevice.set(cmd.deviceId, 'restricted');
+              else if (cmd.type === 'unlock') pendingByDevice.set(cmd.deviceId, 'online');
+              else if (cmd.type === 'school_on') pendingByDevice.set(cmd.deviceId, 'school_mode');
+              else if (cmd.type === 'bedtime_on') pendingByDevice.set(cmd.deviceId, 'bedtime');
+              else if (cmd.type === 'school_off' || cmd.type === 'bedtime_off') pendingByDevice.set(cmd.deviceId, 'online');
+            }
+          }
+
+          const mergedDevices = newDevices
+            ? newDevices.map((d) => {
+                const pendingStatus = pendingByDevice.get(d.id);
+                return pendingStatus ? { ...d, status: pendingStatus as typeof d.status } : d;
+              })
+            : s.devices;
+
+          return {
+            devices: mergedDevices,
+            geofenceZones: geofencesRes.status === 'fulfilled' ? geofencesRes.value.zones : s.geofenceZones,
+            screenTimeRules: screenTimeRes.status === 'fulfilled' ? screenTimeRes.value.rules : s.screenTimeRules,
+            sosAlerts: sosRes.status === 'fulfilled' ? sosRes.value.alerts : s.sosAlerts,
+            approvalRequests: approvalsRes.status === 'fulfilled' ? approvalsRes.value.approvals : s.approvalRequests,
+            appUsage: mergedUsage.length > 0 ? mergedUsage : s.appUsage,
+            isHydrating: false,
+          };
+        });
       },
 
       // Device CRUD (local-only helpers used by the command-polling hook to
@@ -177,12 +223,12 @@ export const useGuardianStore = create<GuardianStore>()(
       },
 
       pairWithCode: async (pairingCode) => {
-        const { device } = await guardianService.pairDevice(pairingCode);
-        set((s) => ({
-          devices: s.devices.some((d) => d.id === device.id)
-            ? s.devices.map((d) => (d.id === device.id ? device : d))
-            : [...s.devices, device],
-        }));
+        const result = await guardianService.pairDevice(pairingCode);
+        // Reload the full device list from the server so the newly-paired
+        // device appears with all its fields (name, status, etc.)
+        const { devices } = await guardianService.fetchDevices();
+        set({ devices });
+        return result.deviceId;
       },
 
       // Geofence CRUD
@@ -355,6 +401,20 @@ export const useGuardianStore = create<GuardianStore>()(
         })();
       },
 
+      deleteSOSAlert: (id) => {
+        set((s) => ({ sosAlerts: s.sosAlerts.filter((a) => a.id !== id) }));
+        (async () => {
+          try { await guardianService.deleteSOSAlert(id); } catch { /* best-effort */ }
+        })();
+      },
+
+      clearResolvedSOSAlerts: () => {
+        set((s) => ({ sosAlerts: s.sosAlerts.filter((a) => !a.isResolved) }));
+        (async () => {
+          try { await guardianService.clearResolvedSOSAlerts(); } catch { /* best-effort */ }
+        })();
+      },
+
       // Approval requests
       addApprovalRequest: (request) => {
         set((s) => ({ approvalRequests: [...s.approvalRequests, request] }));
@@ -411,6 +471,30 @@ export const useGuardianStore = create<GuardianStore>()(
         };
         set((s) => ({ pendingCommands: [...s.pendingCommands, optimistic] }));
 
+        // Immediately flip the device status locally so buttons update
+        // without waiting for the next hydrate or child confirmation.
+        const OPTIMISTIC_STATUS: Partial<Record<string, import('../types').ChildDeviceStatus>> = {
+          lock: 'restricted',
+          unlock: 'online',
+          school_on: 'school_mode',
+          school_off: 'online',
+          bedtime_on: 'bedtime',
+          bedtime_off: 'online',
+        };
+        const optimisticStatus = OPTIMISTIC_STATUS[type];
+        if (optimisticStatus) {
+          set((s) => ({
+            devices: s.devices.map((d) =>
+              d.id === deviceId ? { ...d, status: optimisticStatus } : d,
+            ),
+          }));
+        }
+
+        // Snapshot the pre-optimistic status so we can roll back if the request fails.
+        // This is read synchronously before the async block starts, so it reflects
+        // the state BEFORE the optimistic update above.
+        const previousStatus = useGuardianStore.getState().devices.find((d) => d.id === deviceId)?.status;
+
         (async () => {
           try {
             const serverDeviceId = await deviceIds.resolve(deviceId);
@@ -418,10 +502,35 @@ export const useGuardianStore = create<GuardianStore>()(
             set((s) => ({
               pendingCommands: s.pendingCommands.map((c) => (c.id === optimistic.id ? { ...command, id: c.id } : c)),
             }));
-          } catch {
+          } catch (err: any) {
+            // Roll back optimistic status
+            if (optimisticStatus && previousStatus) {
+              set((s) => ({
+                devices: s.devices.map((d) =>
+                  d.id === deviceId ? { ...d, status: previousStatus } : d,
+                ),
+              }));
+            }
             set((s) => ({
               pendingCommands: s.pendingCommands.map((c) => (c.id === optimistic.id ? { ...c, status: 'failed' } : c)),
             }));
+
+            // Surface a meaningful error to the guardian
+            const isOffline =
+              typeof err?.message === 'string' && err.message.includes('409');
+            if (isOffline) {
+              // Mark device offline locally right away — don't wait for next poll
+              set((s) => ({
+                devices: s.devices.map((d) =>
+                  d.id === deviceId ? { ...d, status: 'offline' as const } : d,
+                ),
+              }));
+              Alert.alert(
+                'Device Offline',
+                'This device is not reachable. The child app may have been uninstalled or the device is off.\n\nUse "Reconnect Device" to pair again.',
+                [{ text: 'OK' }],
+              );
+            }
           }
         })();
       },
@@ -444,10 +553,13 @@ export const useGuardianStore = create<GuardianStore>()(
           ...commands,
         ],
       })),
+
+      streamingDeviceId: null,
+      setStreamingDeviceId: (id) => set({ streamingDeviceId: id }),
     }),
     {
       name: 'guardian-store',
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createJSONStorage(() => mmkvStorage),
       partialize: (s) => ({
         devices: s.devices,
         geofenceZones: s.geofenceZones,

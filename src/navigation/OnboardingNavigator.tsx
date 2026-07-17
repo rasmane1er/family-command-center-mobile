@@ -8,6 +8,7 @@ import { HomeSetupScreen } from '../screens/onboarding/HomeSetupScreen';
 import { VehicleSetupScreen } from '../screens/onboarding/VehicleSetupScreen';
 import { FinancialSetupScreen } from '../screens/onboarding/FinancialSetupScreen';
 import { GoalsSetupScreen } from '../screens/onboarding/GoalsSetupScreen';
+import { ChildConnectScreen } from '../screens/onboarding/ChildConnectScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -22,6 +23,7 @@ export function OnboardingNavigator() {
       <Stack.Screen name="VehicleSetup" component={VehicleSetupScreen} />
       <Stack.Screen name="FinancialSetup" component={FinancialSetupScreen} />
       <Stack.Screen name="GoalsSetup" component={GoalsSetupScreen} />
+      <Stack.Screen name="ChildConnect" component={ChildConnectScreen} />
     </Stack.Navigator>
   );
 }

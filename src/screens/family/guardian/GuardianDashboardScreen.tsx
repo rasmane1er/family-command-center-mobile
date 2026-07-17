@@ -1,6 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
+import * as Notifications from 'expo-notifications';
 import {
   Alert,
+  AppState,
+  AppStateStatus,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -81,8 +84,39 @@ export function GuardianDashboardScreen({ navigation }: any) {
   const activeMember = members.find((m) => m.id === activeMemberId);
   const showChildRegistrationBanner = activeMember?.role === 'child' && !thisDeviceId;
 
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   useEffect(() => {
     hydrate();
+    // Poll every 10s — fast enough to feel instant for reconnects without hammering the server.
+    // FCM push triggers immediate hydrate() when working, this is the reliable fallback.
+    pollRef.current = setInterval(() => { hydrate(); }, 10_000);
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+  }, [hydrate]);
+
+  // Hydrate immediately when the guardian app comes back to the foreground —
+  // catches reconnections that happened while the app was backgrounded.
+  useEffect(() => {
+    let prev: AppStateStatus = AppState.currentState;
+    const sub = AppState.addEventListener('change', (next: AppStateStatus) => {
+      if (prev !== 'active' && next === 'active') {
+        hydrate();
+      }
+      prev = next;
+    });
+    return () => sub.remove();
+  }, [hydrate]);
+
+  // Trigger immediate hydrate when the backend pushes a device_status_changed
+  // notification — this makes guardian status updates near real-time.
+  useEffect(() => {
+    const sub = Notifications.addNotificationReceivedListener((notification) => {
+      const data = notification.request.content.data as Record<string, unknown> | undefined;
+      if (data?.type === 'device_status_changed' || data?.type === 'sos') {
+        hydrate();
+      }
+    });
+    return () => sub.remove();
   }, [hydrate]);
 
   const unresolved = sosAlerts.filter((a) => !a.isResolved);
@@ -98,22 +132,25 @@ export function GuardianDashboardScreen({ navigation }: any) {
   const getMemberColor = (memberId: string) =>
     members.find((m) => m.id === memberId)?.avatarColor ?? '#94A3B8';
 
-  const handleQuickCommand = (device: ChildDevice, type: 'lock' | 'school_on' | 'bedtime_on') => {
+  const handleQuickCommand = (device: ChildDevice, type: string) => {
     const labels: Record<string, string> = {
       lock: 'Lock Device',
+      unlock: 'Unlock Device',
       school_on: 'Enable School Mode',
+      school_off: 'Disable School Mode',
       bedtime_on: 'Enable Bedtime Mode',
+      bedtime_off: 'Disable Bedtime Mode',
     };
 
     Alert.alert(
-      labels[type],
-      `Send "${labels[type]}" command to ${device.deviceName}?`,
+      labels[type] ?? type,
+      `Send "${labels[type] ?? type}" command to ${device.deviceName}?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Send',
           onPress: () => {
-            sendCommand(device.id, type);
+            sendCommand(device.id, type as any);
           },
         },
       ]
@@ -128,7 +165,7 @@ export function GuardianDashboardScreen({ navigation }: any) {
       style={[styles.header, { paddingTop: insets.top + 8 }]}
     >
       <View style={styles.headerRow}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.headerIconButton}>
+        <Pressable onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.getParent()?.navigate('Home')} style={styles.headerIconButton}>
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </Pressable>
 
@@ -225,7 +262,7 @@ export function GuardianDashboardScreen({ navigation }: any) {
       end={{ x: 1, y: 1 }}
       style={[styles.compactHeader, { paddingTop: insets.top }]}
     >
-      <Pressable onPress={() => navigation.goBack()} style={styles.compactBack}>
+      <Pressable onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.getParent()?.navigate('Home')} style={styles.compactBack}>
         <Ionicons name="arrow-back" size={21} color="#fff" />
       </Pressable>
 
@@ -378,29 +415,82 @@ export function GuardianDashboardScreen({ navigation }: any) {
                 </View>
 
                 <View style={styles.deviceActions}>
-                  <Pressable
-                    style={styles.deviceActionBtn}
-                    onPress={() => handleQuickCommand(device, 'lock')}
-                  >
-                    <Ionicons name="lock-closed" size={16} color={colors.danger} />
-                    <Text style={[styles.deviceActionText, { color: colors.danger }]}>Lock</Text>
-                  </Pressable>
+                  {(() => {
+                    const isOffline = device.status === 'offline';
+                    return (
+                      <>
+                        {isOffline && (
+                          <View style={styles.offlineBar}>
+                            <Ionicons name="cloud-offline-outline" size={13} color={colors.textMuted} />
+                            <Text style={styles.offlineBarText}>Device offline — commands unavailable</Text>
+                          </View>
+                        )}
 
-                  <Pressable
-                    style={styles.deviceActionBtn}
-                    onPress={() => handleQuickCommand(device, 'school_on')}
-                  >
-                    <Ionicons name="school" size={16} color="#2980B9" />
-                    <Text style={[styles.deviceActionText, { color: '#2980B9' }]}>School</Text>
-                  </Pressable>
+                        {/* Lock / Unlock toggle */}
+                        {device.status === 'restricted' ? (
+                          <Pressable
+                            style={[styles.deviceActionBtn, isOffline && styles.deviceActionBtnDisabled]}
+                            disabled={isOffline}
+                            onPress={() => handleQuickCommand(device, 'unlock')}
+                          >
+                            <Ionicons name="lock-open" size={16} color={colors.success} />
+                            <Text style={[styles.deviceActionText, { color: colors.success }]}>Unlock</Text>
+                          </Pressable>
+                        ) : (
+                          <Pressable
+                            style={[styles.deviceActionBtn, isOffline && styles.deviceActionBtnDisabled]}
+                            disabled={isOffline}
+                            onPress={() => handleQuickCommand(device, 'lock')}
+                          >
+                            <Ionicons name="lock-closed" size={16} color={isOffline ? colors.textMuted : colors.danger} />
+                            <Text style={[styles.deviceActionText, { color: isOffline ? colors.textMuted : colors.danger }]}>Lock</Text>
+                          </Pressable>
+                        )}
 
-                  <Pressable
-                    style={styles.deviceActionBtn}
-                    onPress={() => handleQuickCommand(device, 'bedtime_on')}
-                  >
-                    <Ionicons name="moon" size={16} color="#6A1B9A" />
-                    <Text style={[styles.deviceActionText, { color: '#6A1B9A' }]}>Bedtime</Text>
-                  </Pressable>
+                        {/* School mode toggle */}
+                        {device.status === 'school_mode' ? (
+                          <Pressable
+                            style={[styles.deviceActionBtn, isOffline && styles.deviceActionBtnDisabled]}
+                            disabled={isOffline}
+                            onPress={() => handleQuickCommand(device, 'school_off')}
+                          >
+                            <Ionicons name="school" size={16} color={colors.textMuted} />
+                            <Text style={[styles.deviceActionText, { color: colors.textMuted }]}>School ✓</Text>
+                          </Pressable>
+                        ) : (
+                          <Pressable
+                            style={[styles.deviceActionBtn, isOffline && styles.deviceActionBtnDisabled]}
+                            disabled={isOffline}
+                            onPress={() => handleQuickCommand(device, 'school_on')}
+                          >
+                            <Ionicons name="school" size={16} color={isOffline ? colors.textMuted : '#2980B9'} />
+                            <Text style={[styles.deviceActionText, { color: isOffline ? colors.textMuted : '#2980B9' }]}>School</Text>
+                          </Pressable>
+                        )}
+
+                        {/* Bedtime toggle */}
+                        {device.status === 'bedtime' ? (
+                          <Pressable
+                            style={[styles.deviceActionBtn, isOffline && styles.deviceActionBtnDisabled]}
+                            disabled={isOffline}
+                            onPress={() => handleQuickCommand(device, 'bedtime_off')}
+                          >
+                            <Ionicons name="moon" size={16} color={colors.textMuted} />
+                            <Text style={[styles.deviceActionText, { color: colors.textMuted }]}>Bedtime ✓</Text>
+                          </Pressable>
+                        ) : (
+                          <Pressable
+                            style={[styles.deviceActionBtn, isOffline && styles.deviceActionBtnDisabled]}
+                            disabled={isOffline}
+                            onPress={() => handleQuickCommand(device, 'bedtime_on')}
+                          >
+                            <Ionicons name="moon" size={16} color={isOffline ? colors.textMuted : '#6A1B9A'} />
+                            <Text style={[styles.deviceActionText, { color: isOffline ? colors.textMuted : '#6A1B9A' }]}>Bedtime</Text>
+                          </Pressable>
+                        )}
+                      </>
+                    );
+                  })()}
 
                   <Pressable
                     style={styles.deviceActionBtn}
@@ -424,7 +514,7 @@ export function GuardianDashboardScreen({ navigation }: any) {
             bottom: Math.max(insets.bottom, 16) + FAB_BOTTOM_OFFSET,
           },
         ]}
-        onPress={() => navigation.navigate('EnterPairingCode')}
+        onPress={() => navigation.navigate('PairChildDevice')}
       >
         <Ionicons name="add" size={28} color="#fff" />
       </Pressable>
@@ -876,6 +966,26 @@ const styles = StyleSheet.create({
   deviceActionText: {
     fontSize: 11,
     fontWeight: '700',
+  },
+
+  deviceActionBtnDisabled: {
+    opacity: 0.35,
+  },
+
+  offlineBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    width: '100%',
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+    marginBottom: 4,
+  },
+
+  offlineBarText: {
+    fontSize: 11,
+    color: colors.textMuted,
+    fontStyle: 'italic',
   },
 
   fab: {

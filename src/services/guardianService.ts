@@ -21,12 +21,23 @@ export type GuardianCommandType =
   | 'location_request'
   | 'sos_ack'
   | 'web_filter_on'
-  | 'web_filter_off';
+  | 'web_filter_off'
+  | 'take_screenshot'
+  | 'start_screen_stream'
+  | 'stop_screen_stream'
+  | 'set_mode'
+  | 'block_apps'
+  | 'unblock_all_apps'
+  | 'set_screen_time_rule';
 
 // ─── Devices / pairing ────────────────────────────────────────────────────
 
 export function fetchDevices(): Promise<{ devices: ChildDevice[] }> {
   return apiRequest('/guardian/devices');
+}
+
+export function fetchInstalledApps(deviceId: string): Promise<{ apps: { packageName: string; label: string }[] }> {
+  return apiRequest(`/guardian/devices/${deviceId}/installed-apps`);
 }
 
 export function registerDevice(input: {
@@ -42,7 +53,14 @@ export function registerDevice(input: {
   });
 }
 
-export function pairDevice(pairingCode: string): Promise<{ device: ChildDevice }> {
+export function pairDevice(pairingCode: string): Promise<{
+  deviceId: string;
+  accessToken: string;
+  memberId: string;
+  familyId: string;
+  childName: string;
+  avatarColor: string;
+}> {
   return apiRequest('/guardian/devices/pair', {
     method: 'POST',
     body: JSON.stringify({ pairingCode }),
@@ -230,6 +248,14 @@ export function resolveSOSAlert(id: string, resolvedBy: string): Promise<{ alert
   });
 }
 
+export function deleteSOSAlert(id: string): Promise<{ ok: boolean }> {
+  return apiRequest(`/guardian/sos/${id}`, { method: 'DELETE' });
+}
+
+export function clearResolvedSOSAlerts(): Promise<{ ok: boolean; deleted: number }> {
+  return apiRequest('/guardian/sos', { method: 'DELETE' });
+}
+
 // ─── Approval requests ──────────────────────────────────────────────────
 
 export function fetchApprovals(status?: string): Promise<{ approvals: ParentApprovalRequest[] }> {
@@ -300,5 +326,15 @@ export function sendMessage(
   return apiRequest(`/guardian/devices/${deviceId}/messages`, {
     method: 'POST',
     body: JSON.stringify({ content, role }),
+  });
+}
+
+export function postChildNotification(
+  deviceId: string,
+  n: { packageName: string; title: string; text: string; receivedAt: number }
+): Promise<{ ok: boolean }> {
+  return apiRequest(`/guardian/devices/${deviceId}/notifications`, {
+    method: 'POST',
+    body: JSON.stringify(n),
   });
 }

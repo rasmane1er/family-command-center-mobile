@@ -196,13 +196,11 @@ export function OperationsDashboardScreen({ navigation }: any) {
             <Text style={styles.dateText}>{today}</Text>
           </View>
         </View>
-        <Pressable style={styles.headerIconBtn} onPress={() => {}}>
-          <Ionicons name="notifications-outline" size={20} color="#fff" />
-          {totalAlerts > 0 && <View style={styles.notifDot} />}
-        </Pressable>
-        <Pressable style={[styles.headerIconBtn, { marginLeft: 8 }]} onPress={() => {}}>
-          <Ionicons name="settings-outline" size={20} color="#fff" />
-        </Pressable>
+        {totalAlerts > 0 && (
+          <View style={styles.alertBadge}>
+            <Text style={styles.alertBadgeText}>{totalAlerts}</Text>
+          </View>
+        )}
       </View>
 
       {/* Divider */}
@@ -213,30 +211,34 @@ export function OperationsDashboardScreen({ navigation }: any) {
         {alertCards.map((item) => {
           const hasAlert = item.count > 0;
           return (
-            <Pressable
-              key={item.label}
-              onPress={() => navigation.navigate(item.screen)}
-              style={({ pressed }) => [styles.alertCard, pressed && styles.pressed]}
-            >
-              <LinearGradient
-                colors={hasAlert
-                  ? ['rgba(255,255,255,0.18)', 'rgba(255,255,255,0.08)']
-                  : ['rgba(255,255,255,0.07)', 'rgba(255,255,255,0.03)']}
-                style={styles.alertCardInner}
+            <View key={item.label} style={styles.alertCard}>
+              <Pressable
+                onPress={() => navigation.navigate(item.screen)}
+                style={({ pressed }) => [styles.alertCardInner, pressed && styles.pressed]}
               >
-                <View style={[styles.alertIconWrap, { backgroundColor: hasAlert ? item.color + '30' : 'rgba(255,255,255,0.08)' }]}>
+                {/* Colored top bar */}
+                <View style={[styles.alertTopBar, { backgroundColor: hasAlert ? item.color : 'rgba(255,255,255,0.15)' }]} />
+
+                {/* Icon */}
+                <View style={[styles.alertIconWrap, { backgroundColor: hasAlert ? item.color + '18' : 'rgba(255,255,255,0.08)' }]}>
                   <Ionicons
                     name={item.icon as any}
-                    size={14}
-                    color={hasAlert ? item.color : 'rgba(255,255,255,0.38)'}
+                    size={16}
+                    color={hasAlert ? item.color : 'rgba(255,255,255,0.4)'}
                   />
                 </View>
-                <Text style={[styles.alertNumber, { color: hasAlert ? item.color : 'rgba(255,255,255,0.35)' }]}>
+
+                {/* Count */}
+                <Text style={[styles.alertNumber, { color: hasAlert ? '#fff' : 'rgba(255,255,255,0.35)' }]}>
                   {item.count}
                 </Text>
-                <Text style={styles.alertLabel}>{item.label}</Text>
-              </LinearGradient>
-            </Pressable>
+
+                {/* Label */}
+                <Text style={[styles.alertLabel, { color: hasAlert ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.38)' }]}>
+                  {item.label}
+                </Text>
+              </Pressable>
+            </View>
           );
         })}
       </View>
@@ -447,19 +449,39 @@ export function OperationsDashboardScreen({ navigation }: any) {
   );
 }
 
-function QuickTile({ title, subtitle, icon, color, bg, onPress }: any) {
+function QuickTile({ title, subtitle, icon, color, onPress }: any) {
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [styles.quickTile, pressed && styles.pressed]}
-    >
-      <View style={[styles.quickIcon, { backgroundColor: bg }]}>
-        <Ionicons name={icon as any} size={26} color={color} />
-      </View>
+    // Shadow wrapper — must NOT have overflow:hidden so Android elevation is visible
+    <View style={[styles.quickTile, { shadowColor: color }]}>
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => [styles.quickTileInner, pressed && styles.pressed]}
+      >
+        <LinearGradient
+          colors={[color, color + 'BB']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.quickTileGrad}
+        >
+          {/* Ambient orb */}
+          <View style={styles.quickOrb} />
 
-      <Text style={styles.quickTitle}>{title}</Text>
-      <Text style={styles.quickSubtitle}>{subtitle}</Text>
-    </Pressable>
+          {/* Top row: icon + chevron */}
+          <View style={styles.quickTopRow}>
+            <View style={styles.quickIcon}>
+              <Ionicons name={icon as any} size={26} color="#fff" />
+            </View>
+            <View style={styles.quickChevron}>
+              <Ionicons name="arrow-forward" size={14} color="rgba(255,255,255,0.7)" />
+            </View>
+          </View>
+
+          {/* Labels */}
+          <Text style={styles.quickTitle}>{title}</Text>
+          <Text style={styles.quickSubtitle}>{subtitle}</Text>
+        </LinearGradient>
+      </Pressable>
+    </View>
   );
 }
 
@@ -588,28 +610,20 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
 
-  headerIconBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+  alertBadge: {
+    minWidth: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#FF5A4F',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    position: 'relative',
+    paddingHorizontal: 8,
   },
 
-  notifDot: {
-    position: 'absolute',
-    top: 7,
-    right: 7,
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: '#FF5A4F',
-    borderWidth: 1.5,
-    borderColor: '#0E3D6E',
+  alertBadgeText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '900',
   },
 
   headerDivider: {
@@ -626,39 +640,45 @@ const styles = StyleSheet.create({
   alertCard: {
     flex: 1,
     borderRadius: 16,
-    overflow: 'hidden',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderColor: 'rgba(255,255,255,0.15)',
+    overflow: 'hidden',
   },
 
   alertCardInner: {
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    gap: 3,
+    paddingBottom: 12,
+    gap: 5,
+  },
+
+  alertTopBar: {
+    width: '100%',
+    height: 3,
+    borderRadius: 2,
+    marginBottom: 8,
   },
 
   alertIconWrap: {
-    width: 26,
-    height: 26,
-    borderRadius: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 2,
   },
 
   alertNumber: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: '900',
-    lineHeight: 22,
+    lineHeight: 24,
+    letterSpacing: -0.5,
   },
 
   alertLabel: {
     fontSize: 9,
-    fontWeight: '800',
-    color: 'rgba(255,255,255,0.65)',
+    fontWeight: '700',
     textAlign: 'center',
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
 
   content: {
@@ -754,43 +774,80 @@ const styles = StyleSheet.create({
   quickGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 16,
+    gap: 14,
     marginBottom: 28,
   },
 
+  // Shadow wrapper — no overflow:hidden so Android elevation renders
   quickTile: {
     width: QUICK_WIDTH,
-    minHeight: 118,
-    borderRadius: 28,
-    backgroundColor: '#FFFFFF',
-    padding: 15,
-    shadowColor: '#10345F',
-    shadowOpacity: 0.055,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 2,
+    borderRadius: 24,
+    shadowOpacity: 0.25,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
+  },
+
+  // Clips gradient and orb; separate from shadow wrapper
+  quickTileInner: {
+    borderRadius: 24,
+    overflow: 'hidden',
+  },
+
+  quickTileGrad: {
+    minHeight: 130,
+    padding: 16,
+    justifyContent: 'space-between',
+    overflow: 'hidden',
+  },
+
+  quickOrb: {
+    position: 'absolute',
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    bottom: -30,
+    right: -30,
+  },
+
+  quickTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 20,
   },
 
   quickIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 19,
+    width: 50,
+    height: 50,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.22)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 13,
+  },
+
+  quickChevron: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   quickTitle: {
     fontSize: 15,
     fontWeight: '900',
-    color: '#0F1E36',
+    color: '#fff',
+    letterSpacing: -0.3,
   },
 
   quickSubtitle: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
-    color: '#6A7890',
-    marginTop: 4,
+    color: 'rgba(255,255,255,0.75)',
+    marginTop: 3,
   },
 
   filterRow: {

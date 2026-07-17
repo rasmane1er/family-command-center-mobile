@@ -213,7 +213,7 @@ export default {
         headerTitle: 'Wochenbericht',
         scoreStatTasksDone: 'Erledigte Aufgaben', scoreStatPending: 'Ausstehend',
         scoreStatMembers: 'Mitglieder', scoreStatSavings: 'Ersparnisse',
-        scoreTrend: '{{direction}} gegenüber letzter Woche',
+        scoreTrend: '+{{points}} Pkt. gegenüber letzter Woche',
       },
     },
   },

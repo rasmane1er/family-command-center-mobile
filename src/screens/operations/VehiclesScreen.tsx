@@ -26,7 +26,7 @@ import { useTranslation } from 'react-i18next';
 const FUEL_TYPES = ['Gasoline', 'Diesel', 'Hybrid', 'Electric', 'Plug-in Hybrid'];
 const SERVICE_TYPES = ['Oil Change', 'Tire Rotation', 'Brake Service', 'Air Filter', 'Transmission', 'Inspection', 'Detailing', 'Other'];
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../../utils/generateId';
 
 // ─── types ────────────────────────────────────────────────────────────────────
 

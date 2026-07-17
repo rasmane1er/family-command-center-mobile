@@ -25,7 +25,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { getRetailPurchases, type RetailPurchase } from '../../services/autoFillService';
 import { useTranslation } from 'react-i18next';
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../../utils/generateId';
 
 type InventoryRoom =
   | 'living_room' | 'kitchen' | 'master_bedroom' | 'bedroom_2' | 'bedroom_3'

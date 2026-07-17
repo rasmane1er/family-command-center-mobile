@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { mmkvStorage } from '../storage/mmkvStorage';
 import { useFamilyStore } from './useFamilyStore';
-import { useAuthStore } from './useAuthStore';
+import { authBridge } from './authBridge';
 import type {
   Deployment,
   PCSMove,
@@ -12,7 +12,7 @@ import type {
   CalendarEvent,
 } from '../types';
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../utils/generateId';
 
 // Day-offsets relative to moveDate — a real, well-known PCS (Permanent
 // Change of Station) checklist, not a generic "moving checklist". Written
@@ -160,7 +160,7 @@ export const useMilitaryStore = create<MilitaryState>()(
         const family = useFamilyStore.getState().family;
         set((s) => {
           const base: FamilyReadiness = s.readiness ?? {
-            familyId: family?.id ?? useAuthStore.getState().familyId ?? '',
+            familyId: family?.id ?? authBridge.getSnapshot().familyId ?? '',
             contacts: [],
             updatedAt: new Date().toISOString(),
           };
@@ -171,7 +171,7 @@ export const useMilitaryStore = create<MilitaryState>()(
         const family = useFamilyStore.getState().family;
         set((s) => {
           const base: FamilyReadiness = s.readiness ?? {
-            familyId: family?.id ?? useAuthStore.getState().familyId ?? '',
+            familyId: family?.id ?? authBridge.getSnapshot().familyId ?? '',
             contacts: [],
             updatedAt: new Date().toISOString(),
           };

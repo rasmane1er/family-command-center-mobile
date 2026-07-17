@@ -1,7 +1,11 @@
 // ===================== FAMILY & MEMBERS =====================
 
 export type MemberRole = 'parent' | 'child' | 'guardian' | 'grandparent' | 'caregiver';
-export type MemberStatus = 'active' | 'away' | 'school' | 'work' | 'sleeping';
+// Matches Prisma's MemberStatus enum exactly (account/membership lifecycle,
+// not live presence — there's no "away/school/work/sleeping" data anywhere
+// in the backend; a previous version of this type claimed there was, which
+// silently broke every presence-color UI reading real synced member data).
+export type MemberStatus = 'ACTIVE' | 'INACTIVE' | 'PENDING';
 
 export interface MemberPermissions {
   viewFinance: boolean;
@@ -39,7 +43,21 @@ export interface FamilyMember {
   points: number;
   level: number;
   isAdmin: boolean;
-  medicalInfo?: MedicalInfo;
+  // Matches Prisma's flat FamilyMember columns exactly (also the source of
+  // truth for the co-parenting shared-child view in connect.ts) — a previous
+  // nested MedicalInfo shape here didn't match any backend field, so the
+  // Childcare Manager Care Info form silently discarded every save.
+  allergies?: string;
+  medicalNotes?: string;
+  medications?: string;
+  bloodType?: string;
+  conditions?: string;
+  doctorName?: string;
+  doctorPhone?: string;
+  schoolName?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  emergencyContactRelationship?: string;
   createdAt: string;
   // Household model additions
   linkedUserId?: string | null;
@@ -104,6 +122,9 @@ export interface Family {
   squareFootage?: number;
   bedrooms?: number;
   ownsHome?: boolean;
+  // Short 6-char alphanumeric code parents share with children to join.
+  // Assigned by the backend on family creation; may be absent on older families.
+  inviteCode?: string;
   // Deliberately no `healthScore` field — a family's health score is
   // always computed live via useFinancialHealth.ts (financial/tasks/goals/
   // wellness) or useHealthStore data, never stored/seeded here. A stored
@@ -468,18 +489,6 @@ export interface Document {
 
 // ===================== MEDICAL =====================
 
-export interface MedicalInfo {
-  bloodType?: string;
-  allergies?: string[];
-  medications?: Medication[];
-  conditions?: string[];
-  emergencyContact?: EmergencyContact;
-  doctorName?: string;
-  doctorPhone?: string;
-  insuranceId?: string;
-  insuranceProvider?: string;
-}
-
 export interface Medication {
   id: string;
   name: string;
@@ -487,14 +496,6 @@ export interface Medication {
   frequency: string;
   prescribedBy?: string;
   refillDate?: string;
-}
-
-export interface EmergencyContact {
-  name: string;
-  relationship: string;
-  phone: string;
-  email?: string;
-  address?: string;
 }
 
 // ===================== CHILDCARE =====================
@@ -616,6 +617,110 @@ export interface RewardCatalogItem {
   cost: number;
   icon?: string;
   color?: string;
+}
+
+// Family Connect — household-to-household trusted connections. This is
+// deliberately separate from FamilyMember: a grandparent with several kids
+// who each run their own household doesn't join any of those households as
+// a member; their own household connects to each as a peer. See design
+// notes on HouseholdConnection in the API's schema.prisma.
+export type ConnectionStatus = 'PENDING' | 'ACCEPTED' | 'LIMITED' | 'DECLINED' | 'REMOVED' | 'BLOCKED';
+export type ConnectionRelationshipType = 'RELATIVE' | 'FRIEND' | 'NEIGHBOR' | 'SCHOOL' | 'MILITARY' | 'CHURCH' | 'SPORTS' | 'OTHER';
+
+export interface HouseholdConnection {
+  id: string;
+  requesterFamilyId: string;
+  recipientFamilyId: string;
+  status: ConnectionStatus;
+  relationshipType: ConnectionRelationshipType;
+  initiatedByUserId: string;
+  acceptedByUserId?: string;
+  message?: string;
+  createdAt: string;
+  acceptedAt?: string;
+  removedAt?: string;
+  requesterFamily?: { id: string; name: string };
+  recipientFamily?: { id: string; name: string };
+}
+
+// Family Connect Phase 2 — the private feed. Every post has an explicit
+// audience; there is no "public" option (see PostAudienceType).
+export type PostType = 'UPDATE' | 'ANNOUNCEMENT' | 'PHOTO' | 'QUESTION' | 'POLL' | 'CELEBRATION' | 'REQUEST' | 'RECOMMENDATION';
+export type PostAudienceType = 'CONNECTED_HOUSEHOLDS' | 'SELECTED_HOUSEHOLDS';
+
+export interface ConnectPost {
+  id: string;
+  familyId: string;
+  authorMemberId: string;
+  type: PostType;
+  text?: string;
+  mediaKeys: string[];
+  audienceType: PostAudienceType;
+  audienceFamilyIds: string[];
+  commentsEnabled: boolean;
+  createdAt: string;
+  editedAt?: string;
+  family?: { id: string; name: string };
+  _count?: { comments: number; reactions: number };
+}
+
+export interface PostComment {
+  id: string;
+  postId: string;
+  familyId: string;
+  authorMemberId: string;
+  text: string;
+  createdAt: string;
+  // Resolved server-side (the author may belong to any connected household,
+  // not just the viewer's own — the client has no local record to name
+  // them from otherwise). Null only if the member has since been deleted.
+  authorName?: string | null;
+  authorFamilyName?: string | null;
+}
+
+export interface PostReaction {
+  id: string;
+  postId: string;
+  familyId: string;
+  authorMemberId: string;
+  type: string;
+  createdAt: string;
+}
+
+// Co-parenting shared-child access — see design notes on CoParentAccess in
+// the API's schema.prisma. The child stays a FamilyMember of exactly one
+// household (ownerFamilyId); this grant gives a second household
+// (holderFamilyId) read/write access to that child's shared fields.
+export type CoParentPermission = 'VIEW' | 'EDIT';
+export type CoParentGrantStatus = 'PENDING' | 'ACTIVE' | 'REVOKED' | 'DECLINED';
+
+export interface CoParentAccessGrant {
+  id: string;
+  childMemberId: string;
+  ownerFamilyId: string;
+  holderFamilyId: string;
+  permission: CoParentPermission;
+  status: CoParentGrantStatus;
+  initiatedByUserId: string;
+  createdAt: string;
+  respondedAt?: string;
+  revokedAt?: string;
+  ownerFamily?: { id: string; name: string };
+  holderFamily?: { id: string; name: string };
+}
+
+export interface SharedChildFields {
+  id: string;
+  name: string;
+  avatar?: string;
+  avatarColor: string;
+  dateOfBirth?: string;
+  allergies?: string;
+  medicalNotes?: string;
+  medications?: string;
+  schoolName?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
 }
 
 export interface Achievement {
@@ -951,6 +1056,10 @@ export interface ChildDevice {
   isPaired: boolean;
   fcmToken?: string | null;
   createdAt: string;
+  // Single source of truth for guardian-set control state
+  controlMode: 'normal' | 'locked' | 'school' | 'bedtime';
+  webFilterEnabled: boolean;
+  blockedApps: string[] | null;
 }
 
 export type GeofenceAction = 'alert' | 'lock' | 'notify' | 'alert_entry' | 'alert_exit' | 'alert_both';

@@ -6,6 +6,7 @@ import * as Clipboard from 'expo-clipboard';
 import * as Contacts from 'expo-contacts';
 import { Alert } from 'react-native';
 import {
+  ActivityIndicator,
   Dimensions,
   Modal,
   Pressable,
@@ -57,7 +58,7 @@ const AVATAR_COLORS = [
 
 const levelThresholds = [0, 100, 250, 500, 1000, 2000, 3500, 5000, 7500, 10000, 15000];
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../../utils/generateId';
 
 function getLevelProgress(points: number, level: number): number {
   const current = levelThresholds[level - 1] || 0;
@@ -131,6 +132,22 @@ const QUICK_NAV = [
     iconBg: '#FFF8E1',
     iconColor: '#F57C00',
   },
+  {
+    key: 'FamilyConnect',
+    icon: 'people-circle',
+    label: 'Family Connect',
+    desc: 'Trusted households',
+    iconBg: '#E3F2FD',
+    iconColor: '#0F2952',
+  },
+  {
+    key: 'CoParenting',
+    icon: 'swap-horizontal',
+    label: 'Co-Parenting',
+    desc: 'Shared child info',
+    iconBg: '#F3E5F5',
+    iconColor: '#6A1B9A',
+  },
 ];
 
 export function FamilyProfilesScreen({ navigation, route }: any) {
@@ -138,12 +155,15 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
   const { colors } = useTheme();
   const { t } = useTranslation('family');
 
-  const statusColors = {
-    active: colors.success,
-    away: colors.warning,
-    school: '#45B7D1',
-    work: '#F5A623',
-    sleeping: '#94A3B8',
+  // Membership status, not live presence — MemberStatus mirrors the
+  // backend's account lifecycle (ACTIVE/INACTIVE/PENDING) exactly. There's
+  // no real "away/school/work/sleeping" data anywhere in the app; an
+  // earlier version of this map claimed there was, which meant every real
+  // synced member fell through to the muted fallback color below.
+  const statusColors: Record<string, string> = {
+    ACTIVE: colors.success,
+    INACTIVE: colors.textMuted,
+    PENDING: colors.warning,
   };
 
   const [showModal, setShowModal] = useState(false);
@@ -153,8 +173,14 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
   const [newColor, setNewColor] = useState('#2980B9');
 
   const members = useFamilyStore((s) => s.members);
+  const isLoaded = useFamilyStore((s) => s.isLoaded);
+  const fetchFromServer = useFamilyStore((s) => s.fetchFromServer);
   const activeMemberId = useFamilyStore((s) => s.activeMemberId);
   const activeMember = members.find((member) => member.id === activeMemberId);
+  const canManageMembers =
+    activeMember?.role === 'parent' ||
+    activeMember?.role === 'guardian' ||
+    activeMember?.isAdmin === true;
   const family = useFamilyStore((s) => s.family);
   const tasks = useFamilyStore((s) => s.tasks);
   const events = useFamilyStore((s) => s.events);
@@ -172,6 +198,10 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
   const totalPoints = members.reduce((sum, m) => sum + m.points, 0);
   const healthScore = familyHealth.overall;
   const pendingTasks = tasks.filter((t) => t.status === 'pending').length;
+
+  useEffect(() => {
+    fetchFromServer();
+  }, [fetchFromServer]);
 
   useEffect(() => {
     if (route?.params?.openInviteOptions) {
@@ -213,7 +243,7 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
       name: newName.trim(),
       role: newRole,
       avatarColor: newColor,
-      status: 'active',
+      status: 'ACTIVE',
       points: 0,
       level: 1,
       isAdmin: false,
@@ -336,9 +366,11 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
               <Ionicons name="chevron-down" size={13} color="rgba(255,255,255,0.8)" style={{ marginLeft: 6 }} />
             </Pressable>
           )}
-          <Pressable onPress={openAddMemberModal} style={dynStyles.addBtn}>
-            <Ionicons name="person-add-outline" size={20} color="#fff" />
-          </Pressable>
+          {canManageMembers && (
+            <Pressable onPress={openAddMemberModal} style={dynStyles.addBtn}>
+              <Ionicons name="person-add-outline" size={20} color="#fff" />
+            </Pressable>
+          )}
         </View>
       </View>
 
@@ -381,9 +413,11 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
         </View>
         <Text style={[dynStyles.headerTitle, { fontSize: 17 }]}>{t('family.title')}</Text>
       </View>
-      <Pressable onPress={openAddMemberModal} style={dynStyles.addBtn}>
-        <Ionicons name="person-add-outline" size={20} color="#fff" />
-      </Pressable>
+      {canManageMembers && (
+        <Pressable onPress={openAddMemberModal} style={dynStyles.addBtn}>
+          <Ionicons name="person-add-outline" size={20} color="#fff" />
+        </Pressable>
+      )}
     </LinearGradient>
   );
 
@@ -488,20 +522,28 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
             );
           })}
 
-          {/* Add member card */}
-          <Pressable onPress={openAddMemberModal} style={dynStyles.addMemberCard}>
-            <View style={dynStyles.addMemberIcon}>
-              <Ionicons name="person-add-outline" size={24} color="#1E4A8A" />
-            </View>
-            <Text style={dynStyles.addMemberLabel}>{t('family.screens.familyProfiles.addMemberLabel')}</Text>
-          </Pressable>
+          {/* Add member card — only visible to parents/guardians */}
+          {canManageMembers && (
+            <Pressable onPress={openAddMemberModal} style={dynStyles.addMemberCard}>
+              <View style={dynStyles.addMemberIcon}>
+                <Ionicons name="person-add-outline" size={24} color="#1E4A8A" />
+              </View>
+              <Text style={dynStyles.addMemberLabel}>{t('family.screens.familyProfiles.addMemberLabel')}</Text>
+            </Pressable>
+          )}
         </ScrollView>
 
         {members.length === 0 && (
           <View style={dynStyles.emptyState}>
-            <Ionicons name="people-outline" size={60} color={colors.textMuted} />
-            <Text style={dynStyles.emptyTitle}>{t('family.screens.familyProfiles.emptyStateTitle')}</Text>
-            <Text style={dynStyles.emptyDesc}>{t('family.screens.familyProfiles.emptyStateDesc')}</Text>
+            {!isLoaded ? (
+              <ActivityIndicator size="large" color={colors.primary} />
+            ) : (
+              <>
+                <Ionicons name="people-outline" size={60} color={colors.textMuted} />
+                <Text style={dynStyles.emptyTitle}>{t('family.screens.familyProfiles.emptyStateTitle')}</Text>
+                <Text style={dynStyles.emptyDesc}>{t('family.screens.familyProfiles.emptyStateDesc')}</Text>
+              </>
+            )}
           </View>
         )}
 

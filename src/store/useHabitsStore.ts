@@ -29,7 +29,7 @@ interface HabitsState {
   fetchFromServer: (familyId?: string) => Promise<void>;
 }
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../utils/generateId';
 const toDateStr = (d: Date) => d.toISOString().split('T')[0];
 
 function calcStreak(dates: string[], from: string): number {

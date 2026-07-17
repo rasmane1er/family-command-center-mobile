@@ -46,7 +46,7 @@ interface PantryDraftItem {
   selected: boolean;
 }
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../../utils/generateId';
 
 async function scanReceipt(imageBase64: string): Promise<ReceiptData> {
   const token = await SecureStore.getItemAsync('access_token');

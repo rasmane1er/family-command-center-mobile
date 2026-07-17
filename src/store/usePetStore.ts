@@ -3,7 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { mmkvStorage } from '../storage/mmkvStorage';
 import * as petService from '../services/petService';
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../utils/generateId';
 
 export type PetSpecies = 'dog' | 'cat' | 'bird' | 'fish' | 'rabbit' | 'other';
 export type PetEventType = 'vet' | 'grooming' | 'medication' | 'vaccine' | 'feeding' | 'other';

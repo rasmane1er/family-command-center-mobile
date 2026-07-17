@@ -147,20 +147,20 @@ export function EmergencyScreen({ navigation }: any) {
               <View style={{ flex: 1, marginLeft: 12 }}>
                 <Text style={styles.memberName}>{member.name}</Text>
                 <Text style={styles.memberRole}>{member.role} • DOB: {member.dateOfBirth || 'N/A'}</Text>
-                {member.medicalInfo?.bloodType && (
+                {member.bloodType && (
                   <View style={styles.bloodTypeBadge}>
                     <Ionicons name="water" size={12} color={colors.danger} />
-                    <Text style={styles.bloodTypeText}>Blood Type: {member.medicalInfo.bloodType}</Text>
+                    <Text style={styles.bloodTypeText}>Blood Type: {member.bloodType}</Text>
                   </View>
                 )}
-                {member.medicalInfo?.allergies && member.medicalInfo.allergies.length > 0 && (
+                {!!member.allergies && (
                   <Text style={styles.allergiesText}>
-                    ⚠️ Allergies: {member.medicalInfo.allergies.join(', ')}
+                    ⚠️ Allergies: {member.allergies}
                   </Text>
                 )}
-                {member.medicalInfo?.medications && member.medicalInfo.medications.length > 0 && (
+                {!!member.medications && (
                   <Text style={styles.medicationsText}>
-                    💊 Medications: {member.medicalInfo.medications.map((m) => m.name).join(', ')}
+                    💊 Medications: {member.medications}
                   </Text>
                 )}
               </View>

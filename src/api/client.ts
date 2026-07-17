@@ -52,7 +52,7 @@ export async function apiRequest<T>(
 
   let response = await doFetch(token);
 
-  if (response.status === 401 && token) {
+  if (response.status === 401) {
     const newToken = await refreshAccessToken();
     if (newToken) {
       response = await doFetch(newToken);

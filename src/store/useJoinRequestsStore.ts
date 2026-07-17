@@ -21,7 +21,7 @@ interface JoinRequestsState {
   clearHistory: () => void;
 }
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../utils/generateId';
 
 export const useJoinRequestsStore = create<JoinRequestsState>()(
   persist(

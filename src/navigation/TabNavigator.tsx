@@ -24,10 +24,14 @@ export function TabNavigator() {
 
   const activeMember = members.find((m) => m.id === activeMemberId);
 
+  // If activeMember hasn't resolved yet (store still loading), default to
+  // parent so Finance/Operations tabs don't flash away and then reappear.
+  // Only restrict tabs once we positively know the active member is a child.
   const isParent =
-    activeMember?.role === 'parent' ||
-    activeMember?.role === 'guardian' ||
-    activeMember?.isAdmin === true;
+    !activeMember ||
+    activeMember.role === 'parent' ||
+    activeMember.role === 'guardian' ||
+    activeMember.isAdmin === true;
 
   const isChild = activeMember?.role === 'child';
 

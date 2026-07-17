@@ -37,7 +37,7 @@ interface HomeworkState {
   fetchFromServer: (familyId?: string) => Promise<void>;
 }
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../utils/generateId';
 
 export const useHomeworkStore = create<HomeworkState>()(
   persist(

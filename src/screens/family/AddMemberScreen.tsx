@@ -32,7 +32,7 @@ const AVATAR_COLORS = [
   '#1ABC9C', '#E91E63', '#FF5722', '#607D8B', '#795548',
 ];
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../../utils/generateId';
 
 export function AddMemberScreen({ navigation }: any) {
   const { colors } = useTheme();
@@ -101,7 +101,7 @@ export function AddMemberScreen({ navigation }: any) {
       name: name.trim(),
       role,
       avatarColor,
-      status: 'active',
+      status: 'ACTIVE',
       points: 0,
       level: 1,
       isAdmin: false,

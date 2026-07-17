@@ -338,33 +338,28 @@ export function ChildcareManagerScreen({ navigation }: any) {
 
   const openCareInfoModal = (memberId: string) => {
     const member = members.find((m) => m.id === memberId);
-    const info = member?.medicalInfo;
-    setCiAllergies(info?.allergies?.join(', ') ?? '');
-    setCiConditions(info?.conditions?.join(', ') ?? '');
-    setCiBloodType(info?.bloodType ?? '');
-    setCiDoctorName(info?.doctorName ?? '');
-    setCiDoctorPhone(info?.doctorPhone ?? '');
-    setCiEcName(info?.emergencyContact?.name ?? '');
-    setCiEcPhone(info?.emergencyContact?.phone ?? '');
-    setCiEcRelationship(info?.emergencyContact?.relationship ?? '');
+    setCiAllergies(member?.allergies ?? '');
+    setCiConditions(member?.conditions ?? '');
+    setCiBloodType(member?.bloodType ?? '');
+    setCiDoctorName(member?.doctorName ?? '');
+    setCiDoctorPhone(member?.doctorPhone ?? '');
+    setCiEcName(member?.emergencyContactName ?? '');
+    setCiEcPhone(member?.emergencyContactPhone ?? '');
+    setCiEcRelationship(member?.emergencyContactRelationship ?? '');
     setShowCareInfoModal(memberId);
   };
 
   const handleSaveCareInfo = () => {
     if (!showCareInfoModal) return;
-    const member = members.find((m) => m.id === showCareInfoModal);
     updateMember(showCareInfoModal, {
-      medicalInfo: {
-        ...member?.medicalInfo,
-        bloodType: ciBloodType.trim() || undefined,
-        allergies: ciAllergies ? ciAllergies.split(',').map((s) => s.trim()).filter(Boolean) : undefined,
-        conditions: ciConditions ? ciConditions.split(',').map((s) => s.trim()).filter(Boolean) : undefined,
-        doctorName: ciDoctorName.trim() || undefined,
-        doctorPhone: ciDoctorPhone.trim() || undefined,
-        emergencyContact: ciEcName.trim()
-          ? { name: ciEcName.trim(), phone: ciEcPhone.trim(), relationship: ciEcRelationship.trim() }
-          : undefined,
-      },
+      bloodType: ciBloodType.trim() || undefined,
+      allergies: ciAllergies.trim() || undefined,
+      conditions: ciConditions.trim() || undefined,
+      doctorName: ciDoctorName.trim() || undefined,
+      doctorPhone: ciDoctorPhone.trim() || undefined,
+      emergencyContactName: ciEcName.trim() || undefined,
+      emergencyContactPhone: ciEcName.trim() ? ciEcPhone.trim() : undefined,
+      emergencyContactRelationship: ciEcName.trim() ? ciEcRelationship.trim() : undefined,
     });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setShowCareInfoModal(null);
@@ -736,8 +731,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
               </View>
             ) : (
               children.map((child) => {
-                const info = child.medicalInfo;
-                const hasInfo = !!(info?.allergies?.length || info?.conditions?.length || info?.emergencyContact || info?.doctorName);
+                const hasInfo = !!(child.allergies || child.conditions || child.emergencyContactName || child.doctorName);
                 return (
                   <Card key={child.id} variant="elevated" style={styles.careInfoCard}>
                     <View style={styles.careInfoTop}>
@@ -755,29 +749,29 @@ export function ChildcareManagerScreen({ navigation }: any) {
                       <Text style={styles.enrollmentEmptyText}>No care info on file yet.</Text>
                     ) : (
                       <>
-                        {info?.allergies && info.allergies.length > 0 && (
+                        {!!child.allergies && (
                           <View style={styles.careInfoRow}>
                             <Ionicons name="alert-circle-outline" size={13} color={colors.danger} />
-                            <Text style={styles.careInfoText}>Allergies: {info.allergies.join(', ')}</Text>
+                            <Text style={styles.careInfoText}>Allergies: {child.allergies}</Text>
                           </View>
                         )}
-                        {info?.conditions && info.conditions.length > 0 && (
+                        {!!child.conditions && (
                           <View style={styles.careInfoRow}>
                             <Ionicons name="medical-outline" size={13} color={colors.textMuted} />
-                            <Text style={styles.careInfoText}>Conditions: {info.conditions.join(', ')}</Text>
+                            <Text style={styles.careInfoText}>Conditions: {child.conditions}</Text>
                           </View>
                         )}
-                        {info?.doctorName && (
+                        {!!child.doctorName && (
                           <View style={styles.careInfoRow}>
                             <Ionicons name="person-outline" size={13} color={colors.textMuted} />
-                            <Text style={styles.careInfoText}>Dr. {info.doctorName}{info.doctorPhone ? ` · ${info.doctorPhone}` : ''}</Text>
+                            <Text style={styles.careInfoText}>Dr. {child.doctorName}{child.doctorPhone ? ` · ${child.doctorPhone}` : ''}</Text>
                           </View>
                         )}
-                        {info?.emergencyContact && (
+                        {!!child.emergencyContactName && (
                           <View style={styles.careInfoRow}>
                             <Ionicons name="call-outline" size={13} color={colors.textMuted} />
                             <Text style={styles.careInfoText}>
-                              Emergency: {info.emergencyContact.name} ({info.emergencyContact.relationship}) · {info.emergencyContact.phone}
+                              Emergency: {child.emergencyContactName}{child.emergencyContactRelationship ? ` (${child.emergencyContactRelationship})` : ''} · {child.emergencyContactPhone}
                             </Text>
                           </View>
                         )}

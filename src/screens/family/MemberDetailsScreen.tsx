@@ -1,5 +1,5 @@
-import React from 'react';
-import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native';
+import React, { useState } from 'react';
+import { ScrollView, StyleSheet, Text, View, Pressable, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,6 +9,7 @@ import { Avatar } from '../../components/common/Avatar';
 import { Card } from '../../components/common/Card';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { useHasPermission } from '../../hooks/usePermissions';
 import { colors } from '../../theme/colors';
 import { useTranslation } from 'react-i18next';
 
@@ -25,10 +26,42 @@ export function MemberDetailsScreen({ route, navigation: navProp }: any) {
   const allTasks = useFamilyStore((s) => s.tasks);
   const allEvents = useFamilyStore((s) => s.events);
   const updateMember = useFamilyStore((s) => s.updateMember);
+  const removeMember = useFamilyStore((s) => s.removeMember);
+  const activeMemberId = useFamilyStore((s) => s.activeMemberId);
+  const canManageFamily = useHasPermission('manageFamily');
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const member = members.find((m) => m.id === memberId);
   const tasks = allTasks.filter((t) => t.assignedTo?.includes(memberId));
   const events = allEvents.filter((e) => e.attendees?.includes(memberId));
+
+  const goBackToList = () =>
+    route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack();
+
+  const handleDeleteMember = () => {
+    if (!member) return;
+    Alert.alert(
+      t('memberDetails.deleteMemberConfirmTitle', { name: member.name }),
+      t('memberDetails.deleteMemberConfirmMsg', { name: member.name }),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('memberDetails.deleteMember'),
+          style: 'destructive',
+          onPress: async () => {
+            setIsDeleting(true);
+            const success = await removeMember(member.id);
+            setIsDeleting(false);
+            if (success) {
+              goBackToList();
+            } else {
+              Alert.alert(t('common.error'), t('memberDetails.deleteMemberFailedMsg'));
+            }
+          },
+        },
+      ]
+    );
+  };
 
   if (!member) {
     return (
@@ -51,7 +84,7 @@ export function MemberDetailsScreen({ route, navigation: navProp }: any) {
       colors={[member.avatarColor + 'DD', member.avatarColor + '99', colors.background]}
       style={[styles.header, { paddingTop: insets.top + 6 }]}
     >
-      <Pressable onPress={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()} style={styles.backBtn}>
+      <Pressable onPress={goBackToList} style={styles.backBtn}>
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </Pressable>
 
@@ -73,8 +106,8 @@ export function MemberDetailsScreen({ route, navigation: navProp }: any) {
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={[styles.statValue, { color: member.status === 'active' ? colors.success : colors.warning }]}>
-              {member.status ?? 'active'}
+            <Text style={[styles.statValue, { color: member.status === 'ACTIVE' ? colors.success : colors.warning }]}>
+              {member.status === 'ACTIVE' ? 'Active' : member.status === 'PENDING' ? 'Pending' : 'Inactive'}
             </Text>
             <Text style={styles.statLabel}>Status</Text>
           </View>
@@ -85,7 +118,7 @@ export function MemberDetailsScreen({ route, navigation: navProp }: any) {
 
   const screenCompact = (
     <View style={{ backgroundColor: member.avatarColor + 'DD', paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()} style={styles.backBtn}>
+      <Pressable onPress={goBackToList} style={styles.backBtn}>
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </Pressable>
       <Text style={styles.name}>{member.name}</Text>
@@ -193,6 +226,20 @@ export function MemberDetailsScreen({ route, navigation: navProp }: any) {
             ))
           )}
         </Card>
+
+        {canManageFamily && member.id !== activeMemberId && (
+          <Card style={styles.card}>
+            <Text style={[styles.cardTitle, { color: colors.danger }]}>{t('memberDetails.dangerZone')}</Text>
+            <Pressable onPress={handleDeleteMember} style={styles.deleteRow} disabled={isDeleting}>
+              {isDeleting ? (
+                <ActivityIndicator size="small" color={colors.danger} />
+              ) : (
+                <Ionicons name="trash-outline" size={20} color={colors.danger} />
+              )}
+              <Text style={styles.deleteRowText}>{t('memberDetails.deleteMember')}</Text>
+            </Pressable>
+          </Card>
+        )}
       </ScrollView>
         )}
       </CollapsibleHeader>
@@ -251,6 +298,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   llChipText: { fontSize: 12.5, fontWeight: '600', color: colors.textSecondary },
+
+  deleteRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4 },
+  deleteRowText: { fontSize: 14, fontWeight: '700', color: colors.danger },
 
   item: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
   prioDot: { width: 8, height: 8, borderRadius: 4, marginTop: 5 },

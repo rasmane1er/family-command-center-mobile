@@ -33,6 +33,8 @@ export function SOSAlertsScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const sosAlerts = useGuardianStore((s) => s.sosAlerts);
   const resolveSOSAlert = useGuardianStore((s) => s.resolveSOSAlert);
+  const deleteSOSAlert = useGuardianStore((s) => s.deleteSOSAlert);
+  const clearResolvedSOSAlerts = useGuardianStore((s) => s.clearResolvedSOSAlerts);
   const members = useFamilyStore((s) => s.members);
   const activeMemberId = useFamilyStore((s) => s.activeMemberId);
 
@@ -55,10 +57,30 @@ export function SOSAlertsScreen({ navigation }: any) {
       `Mark this SOS alert from ${memberName} as resolved?`,
       [
         { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Resolve',
-          onPress: () => resolveSOSAlert(id, activeMemberId ?? 'parent'),
-        },
+        { text: 'Resolve', onPress: () => resolveSOSAlert(id, activeMemberId ?? 'parent') },
+      ]
+    );
+  };
+
+  const handleDelete = (id: string) => {
+    Alert.alert(
+      'Delete Alert',
+      'Permanently delete this SOS alert?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: () => deleteSOSAlert(id) },
+      ]
+    );
+  };
+
+  const handleClearAll = () => {
+    if (resolvedCount === 0) return;
+    Alert.alert(
+      'Clear Resolved Alerts',
+      `Delete all ${resolvedCount} resolved alert${resolvedCount > 1 ? 's' : ''}? This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Clear All', style: 'destructive', onPress: () => clearResolvedSOSAlerts() },
       ]
     );
   };
@@ -144,6 +166,12 @@ export function SOSAlertsScreen({ navigation }: any) {
 
       <Text style={styles.compactTitle}>SOS Alerts</Text>
 
+      {resolvedCount > 0 && (
+        <Pressable onPress={handleClearAll} style={styles.clearBtn}>
+          <Ionicons name="trash-outline" size={16} color="rgba(255,255,255,0.8)" />
+        </Pressable>
+      )}
+
       <View
         style={[
           styles.compactBadge,
@@ -178,6 +206,13 @@ export function SOSAlertsScreen({ navigation }: any) {
               },
             ]}
           >
+            {resolvedCount > 0 && (
+              <Pressable style={styles.clearAllBar} onPress={handleClearAll}>
+                <Ionicons name="trash-outline" size={15} color={colors.danger} />
+                <Text style={styles.clearAllText}>Clear all {resolvedCount} resolved alert{resolvedCount > 1 ? 's' : ''}</Text>
+              </Pressable>
+            )}
+
             {sorted.length === 0 && (
               <View style={styles.allClear}>
                 <View style={styles.allClearIcon}>
@@ -301,12 +336,18 @@ export function SOSAlertsScreen({ navigation }: any) {
                       style={styles.resolveBtn}
                       onPress={() => handleResolve(alert.id, memberName)}
                     >
-                      <Ionicons
-                        name="checkmark-circle-outline"
-                        size={18}
-                        color="#fff"
-                      />
+                      <Ionicons name="checkmark-circle-outline" size={18} color="#fff" />
                       <Text style={styles.resolveBtnText}>Mark as Resolved</Text>
+                    </Pressable>
+                  )}
+
+                  {alert.isResolved && (
+                    <Pressable
+                      style={styles.deleteBtn}
+                      onPress={() => handleDelete(alert.id)}
+                    >
+                      <Ionicons name="trash-outline" size={14} color={colors.danger} />
+                      <Text style={styles.deleteBtnText}>Delete</Text>
                     </Pressable>
                   )}
                 </View>
@@ -642,5 +683,53 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: '#fff',
+  },
+
+  deleteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-end',
+    marginTop: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.danger + '40',
+    backgroundColor: colors.danger + '10',
+  },
+
+  deleteBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.danger,
+  },
+
+  clearAllBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.danger + '12',
+    borderWidth: 1,
+    borderColor: colors.danger + '30',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginBottom: 14,
+  },
+
+  clearAllText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.danger,
+  },
+
+  clearBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

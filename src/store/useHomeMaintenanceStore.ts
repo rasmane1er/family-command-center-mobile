@@ -3,7 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { mmkvStorage } from '../storage/mmkvStorage';
 import * as homeMaintenanceService from '../services/homeMaintenanceService';
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../utils/generateId';
 
 export type MaintenanceCategory = 'plumbing' | 'electrical' | 'hvac' | 'appliances' | 'exterior' | 'lawn' | 'cleaning' | 'painting' | 'flooring' | 'other';
 export type MaintenancePriority = 'low' | 'medium' | 'high' | 'urgent';

@@ -75,7 +75,7 @@ function useRealAchievements(): Achievement[] {
   const budgetsUnderLimit = budgets.filter((b) => b.spent <= b.monthlyLimit).length;
   const longestHabitStreak = habits.reduce((max, h) => Math.max(max, h.longestStreak), 0);
   const paidOffDebts = debts.filter((d) => d.balance === 0 && d.originalBalance > 0).length;
-  const readyMembers = members.filter((m) => !!m.medicalInfo && ((m.medicalInfo.allergies?.length ?? 0) > 0 || !!m.medicalInfo.bloodType || !!m.medicalInfo.doctorName)).length;
+  const readyMembers = members.filter((m) => !!(m.allergies || m.bloodType || m.doctorName)).length;
   const exerciseThisMonth = healthRecords.filter((r) => r.metric === 'exercise' && new Date(r.date).getMonth() === new Date().getMonth() && new Date(r.date).getFullYear() === new Date().getFullYear()).length;
   const pantryStocked = pantryItems.filter((p) => !(p.minQuantity !== undefined && p.quantity <= p.minQuantity)).length;
 

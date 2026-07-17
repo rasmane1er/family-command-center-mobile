@@ -29,6 +29,8 @@ export default {
         genericError: 'Sign in failed. Please try again.',
         ok: 'OK',
         googleNativeBuildMsg: 'Google Sign-In requires a native build',
+        googleNotConfiguredTitle: 'Google Sign-In Not Set Up',
+        googleNotConfiguredMsg: 'This build is missing its Google client IDs, so Google Sign-In can\'t be used yet.',
         appleNativeBuildMsg: 'Apple Sign-In requires a native build',
         googleProfileErrorMsg: 'Could not retrieve Google profile',
         appleSignInFailedMsg: 'Apple Sign-In failed',

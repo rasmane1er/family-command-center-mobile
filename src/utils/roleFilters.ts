@@ -23,6 +23,10 @@ export function getAllowedNotificationTypes(role?: string): NotificationType[] {
     return ['family', 'health', 'ai', 'emergency'];
   }
 
+  if (role === 'caregiver') {
+    return ['task', 'health', 'family', 'ai', 'emergency', 'school'];
+  }
+
   return [
     'task',
     'bill',

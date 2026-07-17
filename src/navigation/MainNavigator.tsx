@@ -5,10 +5,12 @@ import { useTranslation } from 'react-i18next';
 import { TabNavigator } from './TabNavigator';
 
 import { SettingsScreen } from '../screens/settings/SettingsScreen';
+import { ProfileScreen } from '../screens/settings/ProfileScreen';
 import HelpSupportScreen from '../screens/settings/HelpSupportScreen';
 import { LiveChatScreen } from '../screens/settings/LiveChatScreen';
 import { PrivacyPolicyScreen } from '../screens/settings/PrivacyPolicyScreen';
 import { TermsOfServiceScreen } from '../screens/settings/TermsOfServiceScreen';
+import { ReferAndEarnScreen } from '../screens/settings/ReferAndEarnScreen';
 import { HealthHubScreen } from '../screens/health/HealthHubScreen';
 import { MedicationManagerScreen } from '../screens/health/MedicationManagerScreen';
 import { SleepTrackerScreen } from '../screens/health/SleepTrackerScreen';
@@ -26,6 +28,8 @@ import { FamilyReadinessScreen } from '../screens/family/military/FamilyReadines
 import { SubscriptionGate } from '../components/common/SubscriptionGate';
 
 import { useFamilyStore } from '../store/useFamilyStore';
+import { useAuthStore } from '../store/useAuthStore';
+import { usePushRegistration } from '../hooks/usePushRegistration';
 
 const Stack = createNativeStackNavigator();
 
@@ -67,6 +71,9 @@ function ProtectedRoute({
 
 export function MainNavigator() {
   const { t } = useTranslation('onboarding');
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  usePushRegistration(isAuthenticated);
+
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {/* Core */}
@@ -104,6 +111,12 @@ export function MainNavigator() {
       <Stack.Screen
         name="Settings"
         component={SettingsScreen}
+        options={{ animation: 'slide_from_right' }}
+      />
+
+      <Stack.Screen
+        name="Profile"
+        component={ProfileScreen}
         options={{ animation: 'slide_from_right' }}
       />
 
@@ -158,6 +171,12 @@ export function MainNavigator() {
         name="LiveChat"
         component={LiveChatScreen}
         options={{ animation: 'slide_from_right' }}
+      />
+
+      <Stack.Screen
+        name="ReferAndEarn"
+        component={ReferAndEarnScreen}
+        options={{ headerShown: false, animation: 'slide_from_right' }}
       />
 
       <Stack.Screen

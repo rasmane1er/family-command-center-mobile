@@ -12,7 +12,16 @@
           "package_name": "com.familycommandcenter.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "908895908238-qhah0te4q0sde11co45g7onh43nk52hi.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.familycommandcenter.app",
+            "certificate_hash": "ef28c135f1d9e115d353d0dc15526a0d2b8ff1a6"
+          }
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBUpOUh8pSs3oL-AxFGbqUE_d28uzIx1Oc"

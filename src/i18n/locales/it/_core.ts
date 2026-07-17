@@ -211,7 +211,7 @@ export default {
         headerTitle: 'Rapporto settimanale',
         scoreStatTasksDone: 'Compiti completati', scoreStatPending: 'In sospeso',
         scoreStatMembers: 'Membri', scoreStatSavings: 'Risparmi',
-        scoreTrend: '{{direction}} rispetto alla settimana scorsa',
+        scoreTrend: '+{{points}} pts rispetto alla settimana scorsa',
       },
     },
   },

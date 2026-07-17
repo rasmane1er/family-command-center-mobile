@@ -30,7 +30,7 @@ const CATEGORY_ICONS: Record<string, string> = {
   Phone: 'phone-portrait', Health: 'medical', Education: 'school', Subscriptions: 'reload', Other: 'receipt',
 };
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../../utils/generateId';
 
 export function BillsScreen({ navigation, route }: any) {
   const { t } = useTranslation('finance');

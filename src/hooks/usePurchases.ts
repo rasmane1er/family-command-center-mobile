@@ -2,10 +2,10 @@ import { useCallback, useEffect, useState } from 'react';
 import Purchases, { type CustomerInfo, type PurchasesOffering, type PurchasesPackage } from 'react-native-purchases';
 import { PAYWALL_RESULT } from 'react-native-purchases-ui';
 import { useAppStore } from '../store/useAppStore';
+import { useAuthStore } from '../store/useAuthStore';
 import {
   describePurchaseError,
   getOfferings,
-  isPurchasesConfigured,
   presentCustomerCenter as presentCustomerCenterService,
   presentPaywallIfNeeded as presentPaywallIfNeededService,
   purchasePackage as purchasePackageService,
@@ -45,12 +45,17 @@ function syncTierFromCustomerInfo(customerInfo: CustomerInfo) {
 
 export function usePurchases(): UsePurchasesResult {
   const { tier: currentTier } = useSubscription();
+  const familyId = useAuthStore((s) => s.familyId);
   const [offerings, setOfferings] = useState<PurchasesOffering | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isPurchasesConfigured()) return;
+    // Wait until the account is backend-linked (familyId available) so
+    // configurePurchases() in App.tsx has already run before we try to
+    // load offerings. getOfferings() calls ensureConfigured() internally,
+    // so no separate isPurchasesConfigured() guard is needed.
+    if (!familyId) return;
 
     let cancelled = false;
     setIsLoading(true);
@@ -74,7 +79,7 @@ export function usePurchases(): UsePurchasesResult {
       cancelled = true;
       Purchases.removeCustomerInfoUpdateListener(listener);
     };
-  }, []);
+  }, [familyId]);
 
   const purchase = useCallback(async (pkg: PurchasesPackage) => {
     setIsLoading(true);

@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { mmkvStorage } from '../storage/mmkvStorage';
 import * as giftService from '../services/giftService';
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../utils/generateId';
 
 export type GiftOccasion = 'birthday' | 'christmas' | 'anniversary' | 'graduation' | 'mothers_day' | 'fathers_day' | 'valentines' | 'other';
 export type GiftStatus = 'idea' | 'purchased' | 'wrapped' | 'given';

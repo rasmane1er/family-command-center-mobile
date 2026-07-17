@@ -3,7 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { mmkvStorage } from '../storage/mmkvStorage';
 import * as utilityService from '../services/utilityService';
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../utils/generateId';
 
 export type UtilityType = 'electric' | 'water' | 'gas' | 'internet' | 'phone' | 'trash' | 'sewer' | 'other';
 

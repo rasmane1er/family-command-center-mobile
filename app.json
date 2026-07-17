@@ -15,11 +15,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.familycommandcenter.app",
+      "bundleIdentifier": "com.grasmane.familycommandcenter",
       "googleServicesFile": "./GoogleService-Info.plist",
-      "config": {
-        "googleMapsApiKey": "AIzaSyCXf-KFuYmIAvNOGmQ3WgnmvCbqjMQoMYs"
-      },
+      "usesAppleSignIn": true,
+      "config": {},
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsLocalNetworking": true
@@ -29,16 +28,12 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./src/assets/icon.png",
+        "foregroundImage": "./src/assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.familycommandcenter.app",
       "googleServicesFile": "./google-services.json",
-      "config": {
-        "googleMaps": {
-          "apiKey": "AIzaSyDhNVbWQT2Sd4EE6rfJFUuf9-cn3f7PQh4"
-        }
-      },
+      "config": {},
       "permissions": [
         "android.permission.RECORD_AUDIO",
         "android.permission.READ_CONTACTS",
@@ -110,6 +105,7 @@
       ],
       "expo-localization",
       "@react-native-firebase/app",
+      "@react-native-firebase/auth",
       "@react-native-firebase/messaging",
       "@sentry/react-native"
     ],

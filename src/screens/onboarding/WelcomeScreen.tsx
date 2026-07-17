@@ -37,6 +37,8 @@ export function WelcomeScreen({ navigation }: any) {
 
   const handleStartSetup = () => navigation.navigate('FamilySetup');
 
+  const handleJoinFamily = () => navigation.navigate('ChildConnect');
+
   const handleDemoMode = () => {
     Alert.alert(
       t('onboarding.screens.welcome.demoAlertTitle'),
@@ -92,6 +94,10 @@ export function WelcomeScreen({ navigation }: any) {
 
         <View style={styles.ctaArea}>
           <Button title={t('onboarding.screens.welcome.setupButton')} onPress={handleStartSetup} fullWidth size="lg" />
+          <Pressable onPress={handleJoinFamily} style={[styles.demoButton, styles.joinButton]}>
+            <Ionicons name="people-outline" size={20} color={colors.primary} />
+            <Text style={styles.demoText}>Join an Existing Family</Text>
+          </Pressable>
           <View style={styles.divider}>
             <View style={styles.dividerLine} />
             <Text style={styles.dividerText}>{t('onboarding.screens.welcome.orDivider')}</Text>
@@ -150,7 +156,8 @@ const styles = StyleSheet.create({
   divider: { flexDirection: 'row', alignItems: 'center', marginVertical: 16 },
   dividerLine: { flex: 1, height: 1, backgroundColor: colors.border },
   dividerText: { marginHorizontal: 16, color: colors.textMuted, fontSize: 13 },
-  demoButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 14, borderRadius: 12, borderWidth: 1.5, borderColor: colors.primary },
+  joinButton: { marginTop: 10, borderColor: colors.primary },
+  demoButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 14, borderRadius: 12, borderWidth: 1.5, borderColor: colors.border },
   demoText: { fontSize: 15, color: colors.primary, fontWeight: '600' },
   tierBadges: { flexDirection: 'row', gap: 8, marginBottom: 20, justifyContent: 'center' },
   tierBadge: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 20, backgroundColor: colors.border },

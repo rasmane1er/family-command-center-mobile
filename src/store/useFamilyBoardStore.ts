@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { mmkvStorage } from '../storage/mmkvStorage';
 import * as boardService from '../services/boardService';
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../utils/generateId';
 
 type PostPriority = 'low' | 'normal' | 'high' | 'urgent';
 type PostCategory = 'announcement' | 'reminder' | 'rule' | 'celebration' | 'info' | 'question';

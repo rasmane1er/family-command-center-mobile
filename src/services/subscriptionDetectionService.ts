@@ -35,7 +35,7 @@ export async function getDetectedSubscriptions(): Promise<{ subscriptions: Detec
   return authFetch('/plaid/detected-subscriptions');
 }
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../utils/generateId';
 
 export function confirmSubscription(detected: DetectedSubscription): void {
   const { addSubscription } = useFinanceStore.getState();

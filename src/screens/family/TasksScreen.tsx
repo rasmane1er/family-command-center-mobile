@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuthStore } from '../../store/useAuthStore';
-import { View, Text, StyleSheet, ScrollView, Pressable, Modal, TextInput, Image, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, FlatList, Pressable, Modal, TextInput, Image, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { colors } from '../../theme/colors';
@@ -122,7 +122,10 @@ const filteredTasks = visibleTasks
   const screenHeader = (
         <PremiumHeader
           title={t('tasks.title')}
-          onBack={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()}
+          onBack={() => {
+            if (route.params?.source === 'dashboard') { navigation.getParent()?.navigate('Home'); return; }
+            if (navigation.canGoBack()) { navigation.goBack(); } else { navigation.getParent()?.navigate('Home'); }
+          }}
           rightAction={
             <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
               <Ionicons name="add" size={26} color="#fff" />
@@ -172,112 +175,116 @@ const filteredTasks = visibleTasks
 
       <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
         {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
-          <ScrollView
-            contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+          <FlatList
+            data={filteredTasks}
+            keyExtractor={(task) => task.id}
+            contentContainerStyle={[
+              styles.content,
+              { paddingBottom: 100, paddingTop: contentPaddingTop },
+              filteredTasks.length === 0 && { flexGrow: 1 },
+            ]}
             onScroll={onScroll}
             onScrollEndDrag={onScrollEndDrag}
             onMomentumScrollEnd={onMomentumScrollEnd}
             scrollEventThrottle={scrollEventThrottle}
-          >
-        {filteredTasks.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Ionicons name="checkmark-done-circle-outline" size={64} color={colors.textMuted} />
-            <Text style={styles.emptyTitle}>No tasks here!</Text>
-            <Text style={styles.emptyDesc}>{filter === 'Completed' ? 'Complete some tasks to see them here.' : 'All caught up! Add new tasks above.'}</Text>
-          </View>
-        ) : (
-          filteredTasks.map((task) => {
-            const assignees = members.filter((m) => task.assignedTo?.includes(m.id));
-            const assigneeId = assignees[0]?.id || members[0]?.id || '';
-            const isPendingApproval = task.status === 'pending_approval';
-            const isDone = task.status === 'completed';
-            return (
-              <Card key={task.id} style={styles.taskCard} variant="elevated">
-                <View style={styles.taskRow}>
-                  <Pressable
-                    onPress={() => handleTaskPress(task, assigneeId)}
-                    disabled={isPendingApproval}
-                    style={[
-                      styles.checkCircle,
-                      isDone && styles.checkCircleComplete,
-                      isPendingApproval && styles.checkCirclePending,
-                      { borderColor: isPendingApproval ? '#F5A623' : priorityColors[task.priority] },
-                    ]}
-                  >
-                    {isDone && <Ionicons name="checkmark" size={16} color="#fff" />}
-                    {isPendingApproval && <Ionicons name="hourglass-outline" size={14} color="#F5A623" />}
-                  </Pressable>
+            ListEmptyComponent={
+              <View style={styles.emptyState}>
+                <Ionicons name="checkmark-done-circle-outline" size={64} color={colors.textMuted} />
+                <Text style={styles.emptyTitle}>No tasks here!</Text>
+                <Text style={styles.emptyDesc}>{filter === 'Completed' ? 'Complete some tasks to see them here.' : 'All caught up! Add new tasks above.'}</Text>
+              </View>
+            }
+            renderItem={({ item: task }) => {
+              const assignees = members.filter((m) => task.assignedTo?.includes(m.id));
+              const assigneeId = assignees[0]?.id || members[0]?.id || '';
+              const isPendingApproval = task.status === 'pending_approval';
+              const isDone = task.status === 'completed';
+              return (
+                <Card style={styles.taskCard} variant="elevated">
+                  <View style={styles.taskRow}>
+                    <Pressable
+                      onPress={() => handleTaskPress(task, assigneeId)}
+                      disabled={isPendingApproval}
+                      style={[
+                        styles.checkCircle,
+                        isDone && styles.checkCircleComplete,
+                        isPendingApproval && styles.checkCirclePending,
+                        { borderColor: isPendingApproval ? '#F5A623' : priorityColors[task.priority] },
+                      ]}
+                    >
+                      {isDone && <Ionicons name="checkmark" size={16} color="#fff" />}
+                      {isPendingApproval && <Ionicons name="hourglass-outline" size={14} color="#F5A623" />}
+                    </Pressable>
 
-                  <View style={{ flex: 1, marginLeft: 14 }}>
-                    <Text style={[styles.taskTitle, isDone && styles.taskTitleDone]}>
-                      {task.title}
-                    </Text>
-                    {task.description && (
-                      <Text style={styles.taskDesc} numberOfLines={1}>{task.description}</Text>
-                    )}
-                    <View style={styles.taskMeta}>
-                      <Badge
-                        label={task.priority}
-                        variant={task.priority === 'urgent' || task.priority === 'high' ? 'danger' : task.priority === 'medium' ? 'warning' : 'neutral'}
-                        dot
-                      />
-                      <Badge label={task.category} variant="neutral" size="sm" style={{ marginLeft: 6 }} />
-                      <Text style={styles.taskPoints}>+{task.points} pts</Text>
-                    </View>
-                    {task.dueDate && (
-                      <View style={styles.dueDateRow}>
-                        <Ionicons name="calendar-outline" size={12} color={colors.textMuted} />
-                        <Text style={styles.dueDate}>Due {format(new Date(task.dueDate), 'MMM d, yyyy')}</Text>
+                    <View style={{ flex: 1, marginLeft: 14 }}>
+                      <Text style={[styles.taskTitle, isDone && styles.taskTitleDone]}>
+                        {task.title}
+                      </Text>
+                      {task.description && (
+                        <Text style={styles.taskDesc} numberOfLines={1}>{task.description}</Text>
+                      )}
+                      <View style={styles.taskMeta}>
+                        <Badge
+                          label={task.priority}
+                          variant={task.priority === 'urgent' || task.priority === 'high' ? 'danger' : task.priority === 'medium' ? 'warning' : 'neutral'}
+                          dot
+                        />
+                        <Badge label={task.category} variant="neutral" size="sm" style={{ marginLeft: 6 }} />
+                        <Text style={styles.taskPoints}>+{task.points} pts</Text>
                       </View>
-                    )}
-                    {task.rejectionNote !== undefined && task.status === 'pending' && (
-                      <Text style={styles.rejectedHint}>Sent back — try again</Text>
-                    )}
+                      {task.dueDate && (
+                        <View style={styles.dueDateRow}>
+                          <Ionicons name="calendar-outline" size={12} color={colors.textMuted} />
+                          <Text style={styles.dueDate}>Due {format(new Date(task.dueDate), 'MMM d, yyyy')}</Text>
+                        </View>
+                      )}
+                      {task.rejectionNote !== undefined && task.status === 'pending' && (
+                        <Text style={styles.rejectedHint}>Sent back — try again</Text>
+                      )}
 
-                    {isPendingApproval && (
-                      <View style={styles.reviewBox}>
-                        <View style={styles.reviewRow}>
-                          <Ionicons name="hourglass-outline" size={13} color="#B85C00" />
-                          <Text style={styles.reviewText}>Waiting for approval</Text>
-                          {task.completionPhotoUrl && (
-                            <Pressable onPress={() => setPreviewPhotoUrl(task.completionPhotoUrl ?? null)}>
-                              <SignedImage uri={task.completionPhotoUrl} style={styles.reviewThumb} />
-                            </Pressable>
+                      {isPendingApproval && (
+                        <View style={styles.reviewBox}>
+                          <View style={styles.reviewRow}>
+                            <Ionicons name="hourglass-outline" size={13} color="#B85C00" />
+                            <Text style={styles.reviewText}>Waiting for approval</Text>
+                            {task.completionPhotoUrl && (
+                              <Pressable onPress={() => setPreviewPhotoUrl(task.completionPhotoUrl ?? null)}>
+                                <SignedImage uri={task.completionPhotoUrl} style={styles.reviewThumb} />
+                              </Pressable>
+                            )}
+                          </View>
+                          {role !== 'child' && (
+                            <View style={styles.reviewActions}>
+                              <Pressable onPress={() => approveTask(task.id)} style={styles.approveBtn}>
+                                <Ionicons name="checkmark" size={14} color="#fff" />
+                                <Text style={styles.approveBtnText}>Approve</Text>
+                              </Pressable>
+                              <Pressable onPress={() => handleReject(task)} style={styles.rejectBtn}>
+                                <Text style={styles.rejectBtnText}>Send Back</Text>
+                              </Pressable>
+                            </View>
                           )}
                         </View>
-                        {role !== 'child' && (
-                          <View style={styles.reviewActions}>
-                            <Pressable onPress={() => approveTask(task.id)} style={styles.approveBtn}>
-                              <Ionicons name="checkmark" size={14} color="#fff" />
-                              <Text style={styles.approveBtnText}>Approve</Text>
-                            </Pressable>
-                            <Pressable onPress={() => handleReject(task)} style={styles.rejectBtn}>
-                              <Text style={styles.rejectBtnText}>Send Back</Text>
-                            </Pressable>
-                          </View>
-                        )}
-                      </View>
-                    )}
-                  </View>
+                      )}
+                    </View>
 
-                  <View style={styles.taskRight}>
-                    {assignees.length > 0 && (
-                      <View style={styles.assignees}>
-                        {assignees.slice(0, 2).map((a, i) => (
-                          <Avatar key={a.id} name={a.name} color={a.avatarColor} size={28} style={{ marginLeft: i > 0 ? -8 : 0 }} />
-                        ))}
-                      </View>
-                    )}
-                    <Pressable onPress={() => deleteTask(task.id)} style={styles.deleteBtn}>
-                      <Ionicons name="trash-outline" size={16} color={colors.danger} />
-                    </Pressable>
+                    <View style={styles.taskRight}>
+                      {assignees.length > 0 && (
+                        <View style={styles.assignees}>
+                          {assignees.slice(0, 2).map((a, i) => (
+                            <Avatar key={a.id} name={a.name} color={a.avatarColor} size={28} style={{ marginLeft: i > 0 ? -8 : 0 }} />
+                          ))}
+                        </View>
+                      )}
+                      <Pressable onPress={() => deleteTask(task.id)} style={styles.deleteBtn}>
+                        <Ionicons name="trash-outline" size={16} color={colors.danger} />
+                      </Pressable>
+                    </View>
                   </View>
-                </View>
-              </Card>
-            );
-          })
-        )}
-          </ScrollView>
+                </Card>
+              );
+            }}
+          />
         )}
       </CollapsibleHeader>
 

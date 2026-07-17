@@ -247,38 +247,38 @@ export function HealthHubScreen({ navigation: navProp }: any) {
 
             <Text style={s.sectionTitle}>{t('health.screens.healthHub.sectionFamilyMedicalInfo')}</Text>
             {members.map((member) => (
-              member.medicalInfo && (
+              (member.allergies || member.medications || member.bloodType || member.doctorName) && (
                 <Card key={member.id} style={s.memberCard} variant="elevated">
                   <View style={s.memberHeader}>
                     <View style={[s.avatar, { backgroundColor: member.avatarColor + '20' }]}>
                       <Text style={[s.avatarText, { color: member.avatarColor }]}>{member.name.charAt(0)}</Text>
                     </View>
                     <Text style={s.memberName}>{member.name}</Text>
-                    {member.medicalInfo.bloodType && (
+                    {member.bloodType && (
                       <View style={s.bloodType}>
-                        <Text style={s.bloodTypeText}>{member.medicalInfo.bloodType}</Text>
+                        <Text style={s.bloodTypeText}>{member.bloodType}</Text>
                       </View>
                     )}
                   </View>
-                  {member.medicalInfo.allergies && member.medicalInfo.allergies.length > 0 && (
+                  {!!member.allergies && (
                     <View style={s.infoRow}>
                       <Ionicons name="warning" size={13} color={colors.danger} />
                       <Text style={s.infoLabel}>{t('health.screens.healthHub.allergiesLabel')}</Text>
-                      <Text style={s.infoVal}>{member.medicalInfo.allergies.join(', ')}</Text>
+                      <Text style={s.infoVal}>{member.allergies}</Text>
                     </View>
                   )}
-                  {member.medicalInfo.medications && member.medicalInfo.medications.length > 0 && (
+                  {!!member.medications && (
                     <View style={s.infoRow}>
                       <Ionicons name="medical" size={13} color={colors.primary} />
                       <Text style={s.infoLabel}>{t('health.screens.healthHub.medsLabel')}</Text>
-                      <Text style={s.infoVal}>{member.medicalInfo.medications.map((m) => m.name).join(', ')}</Text>
+                      <Text style={s.infoVal}>{member.medications}</Text>
                     </View>
                   )}
-                  {member.medicalInfo.doctorName && (
+                  {member.doctorName && (
                     <View style={s.infoRow}>
                       <Ionicons name="person" size={13} color={colors.textMuted} />
                       <Text style={s.infoLabel}>{t('health.screens.healthHub.doctorLabel')}</Text>
-                      <Text style={s.infoVal}>{member.medicalInfo.doctorName}</Text>
+                      <Text style={s.infoVal}>{member.doctorName}</Text>
                     </View>
                   )}
                 </Card>

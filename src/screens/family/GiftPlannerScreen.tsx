@@ -20,7 +20,7 @@ import { ProgressBar } from '../../components/common/ProgressBar';
 import { useGiftStore, GiftOccasion, GiftStatus, GiftPriority, GiftIdea } from '../../store/useGiftStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../../utils/generateId';
 
 const OCCASION_EMOJIS: Record<GiftOccasion, string> = {
   birthday: '🎂',

@@ -43,7 +43,7 @@ const SUB_COLORS: Record<string, string> = {
   Other: '#7F8C8D',
 };
 const BILLING_CYCLES = ['monthly', 'quarterly', 'annual'] as const;
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../../utils/generateId';
 
 export function SubscriptionsScreen({ navigation }: any) {
   const { t } = useTranslation('finance');

@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
+  ActivityIndicator,
   Alert,
+  FlatList,
   Modal,
   Platform,
   Pressable,
@@ -24,6 +26,7 @@ import { shadows } from '../../../theme/spacing';
 import { CollapsibleHeader } from '../../../components/common/CollapsibleHeader';
 import type { DayOfWeek, ScheduledDowntime, ScreenTimeRule } from '../../../types';
 import { useTranslation } from 'react-i18next';
+import { fetchInstalledApps } from '../../../services/guardianService';
 
 const ALL_DAYS: DayOfWeek[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
@@ -38,6 +41,55 @@ const DAY_LABELS: Record<DayOfWeek, string> = {
 };
 
 const LIMIT_STEPS = [0, 30, 60, 90, 120, 150, 180, 240, 300, 360, 420, 480];
+
+// Map common app display names → Android package names so the guardian can
+// type a friendly name and the child's AppBlockerService gets the right package.
+const COMMON_APP_PACKAGES: Record<string, string> = {
+  'gmail': 'com.google.android.gm',
+  'youtube': 'com.google.android.youtube',
+  'chrome': 'com.android.chrome',
+  'maps': 'com.google.android.apps.maps',
+  'google maps': 'com.google.android.apps.maps',
+  'photos': 'com.google.android.apps.photos',
+  'google photos': 'com.google.android.apps.photos',
+  'instagram': 'com.instagram.android',
+  'tiktok': 'com.zhiliaoapp.musically',
+  'snapchat': 'com.snapchat.android',
+  'facebook': 'com.facebook.katana',
+  'messenger': 'com.facebook.orca',
+  'whatsapp': 'com.whatsapp',
+  'twitter': 'com.twitter.android',
+  'x': 'com.twitter.android',
+  'netflix': 'com.netflix.mediaclient',
+  'spotify': 'com.spotify.music',
+  'discord': 'com.discord',
+  'roblox': 'com.roblox.client',
+  'minecraft': 'com.mojang.minecraftpe',
+  'settings': 'com.android.settings',
+  'play store': 'com.android.vending',
+  'camera': 'com.android.camera2',
+  'messages': 'com.google.android.apps.messaging',
+  'phone': 'com.android.dialer',
+  'contacts': 'com.android.contacts',
+  'calculator': 'com.android.calculator2',
+  'clock': 'com.android.deskclock',
+  'reddit': 'com.reddit.frontpage',
+  'pinterest': 'com.pinterest',
+  'twitch': 'tv.twitch.android.app',
+  'amazon': 'com.amazon.mShop.android.shopping',
+  'ebay': 'com.ebay.mobile',
+  'zoom': 'us.zoom.videomeetings',
+  'teams': 'com.microsoft.teams',
+  'outlook': 'com.microsoft.office.outlook',
+  'word': 'com.microsoft.office.word',
+  'excel': 'com.microsoft.office.excel',
+  'chrome music lab': 'com.google.android.apps.chromecast.app',
+};
+
+function resolvePackageName(input: string): string {
+  const lower = input.trim().toLowerCase();
+  return COMMON_APP_PACKAGES[lower] ?? input.trim();
+}
 
 function formatLimit(mins: number) {
   if (mins === 0) return 'No Limit';
@@ -57,6 +109,7 @@ export function ScreenTimeScreen({ navigation }: any) {
   const addScreenTimeRule = useGuardianStore((s) => s.addScreenTimeRule);
   const updateScreenTimeRule = useGuardianStore((s) => s.updateScreenTimeRule);
   const removeScreenTimeRule = useGuardianStore((s) => s.removeScreenTimeRule);
+  const devices = useGuardianStore((s) => s.devices);
 
   const members = useFamilyStore((s) => s.members);
   const family = useFamilyStore((s) => s.family);
@@ -73,6 +126,11 @@ export function ScreenTimeScreen({ navigation }: any) {
   const [appInput, setAppInput] = useState('');
   const [blockedMode, setBlockedMode] = useState(true);
 
+  // Installed apps picker state
+  const [installedApps, setInstalledApps] = useState<{ packageName: string; label: string }[]>([]);
+  const [appsLoading, setAppsLoading] = useState(false);
+  const [appsSearch, setAppsSearch] = useState('');
+
   const [iosPickerResult, setIosPickerResult] = useState<{
     applicationCount: number;
     categoryCount: number;
@@ -83,6 +141,38 @@ export function ScreenTimeScreen({ navigation }: any) {
   const activeMemberId = selectedMemberId ?? childMembers[0]?.id ?? null;
   const activeMember = members.find((m) => m.id === activeMemberId);
   const memberRule = rules.find((r) => r.memberId === activeMemberId);
+  const activeDevice = devices.find((d) => d.memberId === activeMemberId);
+
+  // Load installed apps from the child's device when the picker opens.
+  const loadInstalledApps = useCallback(async () => {
+    if (!activeDevice) return;
+    setAppsLoading(true);
+    try {
+      const { apps } = await fetchInstalledApps(activeDevice.id);
+      setInstalledApps(apps.sort((a, b) => a.label.localeCompare(b.label)));
+    } catch {
+      setInstalledApps([]);
+    } finally {
+      setAppsLoading(false);
+    }
+  }, [activeDevice]);
+
+  const handleToggleApp = (pkg: string, currentlyBlocked: boolean) => {
+    const rid = ensureRule();
+    if (blockedMode) {
+      const existing = memberRule?.blockedApps ?? [];
+      const next = currentlyBlocked
+        ? existing.filter((a) => a !== pkg)
+        : [...existing, pkg];
+      updateScreenTimeRule(rid, { blockedApps: next });
+    } else {
+      const existing = memberRule?.allowedApps ?? [];
+      const next = currentlyBlocked
+        ? existing.filter((a) => a !== pkg)
+        : [...existing, pkg];
+      updateScreenTimeRule(rid, { allowedApps: next });
+    }
+  };
 
   const ensureRule = (): string => {
     if (memberRule) return memberRule.id;
@@ -194,18 +284,18 @@ export function ScreenTimeScreen({ navigation }: any) {
     if (!activeMemberId || !appInput.trim()) return;
 
     const rid = ensureRule();
+    const pkg = resolvePackageName(appInput);
 
     if (blockedMode) {
       const existing = memberRule?.blockedApps ?? [];
-
+      if (existing.includes(pkg)) { setAppInput(''); setShowAddApp(false); return; }
       updateScreenTimeRule(rid, {
-        blockedApps: [...existing, appInput.trim()],
+        blockedApps: [...existing, pkg],
       });
     } else {
       const existing = memberRule?.allowedApps ?? [];
-
       updateScreenTimeRule(rid, {
-        allowedApps: [...existing, appInput.trim()],
+        allowedApps: [...existing, pkg],
       });
     }
 
@@ -536,7 +626,9 @@ export function ScreenTimeScreen({ navigation }: any) {
                   <Pressable
                     onPress={() => {
                       setBlockedMode(true);
+                      setAppsSearch('');
                       setShowAddApp(true);
+                      loadInstalledApps();
                     }}
                     style={styles.smallAddBtn}
                   >
@@ -645,7 +737,9 @@ export function ScreenTimeScreen({ navigation }: any) {
                   <Pressable
                     onPress={() => {
                       setBlockedMode(false);
+                      setAppsSearch('');
                       setShowAddApp(true);
+                      loadInstalledApps();
                     }}
                     style={styles.smallAddBtn}
                   >
@@ -762,36 +856,92 @@ export function ScreenTimeScreen({ navigation }: any) {
       >
         <View style={styles.modal}>
           <View style={styles.modalHandle} />
-          <Text style={styles.modalTitle}>
-            {blockedMode ? 'Block App' : 'Allow App'}
-          </Text>
-
-          <Text style={styles.modalSubtitle}>
-            Enter the package name or bundle ID, for example com.instagram.android.
-          </Text>
+          <View style={styles.pickerHeader}>
+            <Text style={styles.modalTitle}>
+              {blockedMode ? 'Block Apps' : 'Allow Apps'}
+            </Text>
+            <Pressable onPress={() => setShowAddApp(false)} style={styles.pickerClose}>
+              <Ionicons name="close" size={22} color={colors.text} />
+            </Pressable>
+          </View>
 
           <TextInput
-            style={styles.input}
-            placeholder="com.example.app"
-            value={appInput}
-            onChangeText={setAppInput}
+            style={[styles.input, { marginHorizontal: 16, marginTop: 4 }]}
+            placeholder="Search apps…"
+            value={appsSearch}
+            onChangeText={setAppsSearch}
             autoCapitalize="none"
             placeholderTextColor={colors.textMuted}
-            autoFocus
+            clearButtonMode="while-editing"
           />
 
-          <Pressable style={styles.saveBtn} onPress={handleAddApp}>
-            <Text style={styles.saveBtnText}>
-              {blockedMode ? 'Block App' : 'Add to Allowlist'}
-            </Text>
-          </Pressable>
-
-          <Pressable
-            style={[styles.cancelBtn, { marginTop: 10 }]}
-            onPress={() => setShowAddApp(false)}
-          >
-            <Text style={styles.cancelBtnText}>Cancel</Text>
-          </Pressable>
+          {appsLoading ? (
+            <View style={styles.pickerLoading}>
+              <ActivityIndicator color={colors.primary} />
+              <Text style={styles.pickerLoadingText}>Loading apps from child device…</Text>
+            </View>
+          ) : installedApps.length === 0 ? (
+            <View style={styles.pickerLoading}>
+              <Ionicons name="phone-portrait-outline" size={40} color={colors.textMuted} />
+              <Text style={styles.pickerLoadingText}>
+                No app list available yet.{'\n'}The child device syncs its app list on startup.
+              </Text>
+              {/* Fallback: manual entry */}
+              <Text style={[styles.fieldLabel, { marginTop: 20, marginHorizontal: 16 }]}>Or enter manually:</Text>
+              <TextInput
+                style={[styles.input, { marginHorizontal: 16, marginTop: 4 }]}
+                placeholder="Gmail or com.example.app"
+                value={appInput}
+                onChangeText={setAppInput}
+                autoCapitalize="none"
+                placeholderTextColor={colors.textMuted}
+              />
+              <Pressable style={[styles.saveBtn, { marginHorizontal: 16, marginTop: 12 }]} onPress={handleAddApp}>
+                <Text style={styles.saveBtnText}>{blockedMode ? 'Block App' : 'Add to Allowlist'}</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <FlatList
+              data={installedApps.filter((a) =>
+                appsSearch.trim() === '' ||
+                a.label.toLowerCase().includes(appsSearch.toLowerCase()) ||
+                a.packageName.toLowerCase().includes(appsSearch.toLowerCase())
+              )}
+              keyExtractor={(item) => item.packageName}
+              style={{ flex: 1 }}
+              contentContainerStyle={{ paddingBottom: 40 }}
+              renderItem={({ item }) => {
+                const isBlocked = blockedMode
+                  ? (memberRule?.blockedApps ?? []).includes(item.packageName)
+                  : (memberRule?.allowedApps ?? []).includes(item.packageName);
+                return (
+                  <Pressable
+                    style={styles.appPickerRow}
+                    onPress={() => handleToggleApp(item.packageName, isBlocked)}
+                  >
+                    <View style={[styles.appPickerIcon, { backgroundColor: isBlocked ? (blockedMode ? '#fef2f2' : '#f0fdf4') : '#f5f5f5' }]}>
+                      <Ionicons
+                        name={isBlocked ? (blockedMode ? 'ban' : 'checkmark-circle') : 'apps-outline'}
+                        size={20}
+                        color={isBlocked ? (blockedMode ? colors.danger : colors.success) : colors.textMuted}
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.appPickerLabel}>{item.label}</Text>
+                      <Text style={styles.appPickerPkg} numberOfLines={1}>{item.packageName}</Text>
+                    </View>
+                    {isBlocked && (
+                      <Ionicons
+                        name="checkmark-circle"
+                        size={20}
+                        color={blockedMode ? colors.danger : colors.success}
+                      />
+                    )}
+                  </Pressable>
+                );
+              }}
+            />
+          )}
         </View>
       </Modal>
     </View>
@@ -1275,5 +1425,55 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: colors.textSecondary,
+  },
+
+  pickerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    marginBottom: 8,
+  },
+  pickerClose: {
+    padding: 4,
+  },
+  pickerLoading: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    padding: 24,
+  },
+  pickerLoadingText: {
+    fontSize: 14,
+    color: colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  appPickerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
+  appPickerIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  appPickerLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  appPickerPkg: {
+    fontSize: 11,
+    color: colors.textMuted,
+    marginTop: 1,
   },
 });

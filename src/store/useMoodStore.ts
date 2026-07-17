@@ -24,7 +24,7 @@ interface MoodState {
   fetchFromServer: () => Promise<void>;
 }
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../utils/generateId';
 const toDateStr = (d: Date) => d.toISOString().split('T')[0];
 
 export const useMoodStore = create<MoodState>()(

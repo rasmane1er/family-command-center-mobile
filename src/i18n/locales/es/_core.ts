@@ -209,7 +209,7 @@ export default {
         headerTitle: 'Informe semanal',
         scoreStatTasksDone: 'Tareas realizadas', scoreStatPending: 'Pendiente',
         scoreStatMembers: 'Miembros', scoreStatSavings: 'Ahorros',
-        scoreTrend: '{{direction}} respecto a la semana pasada',
+        scoreTrend: '+{{points}} pts respecto a la semana pasada',
       },
     },
   },

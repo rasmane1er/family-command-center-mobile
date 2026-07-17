@@ -8,6 +8,7 @@ import { colors } from '../../theme/colors';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import type { Family } from '../../types';
 
 const timezones = ['America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles', 'America/Phoenix', 'Pacific/Honolulu'];
@@ -15,9 +16,20 @@ const currencies = [{ code: 'USD', label: '$ USD' }, { code: 'EUR', label: '€ 
 
 export function FamilySetupScreen({ navigation }: any) {
   const { t } = useTranslation('onboarding');
-  const [familyName, setFamilyName] = useState('');
+  const authUser = useAuthStore((s) => s.user);
+
+  // Build a full address string from whatever the user entered at sign-up
+  // so they don't have to type it again.
+  const inferredAddress = [
+    authUser?.streetAddress,
+    authUser?.city,
+    authUser?.state,
+    authUser?.zipCode,
+  ].filter(Boolean).join(', ');
+
+  const [familyName, setFamilyName] = useState(authUser?.familyName ?? '');
   const [motto, setMotto] = useState('');
-  const [address, setAddress] = useState('');
+  const [address, setAddress] = useState(inferredAddress);
   const [currency, setCurrency] = useState('USD');
   const [timezone, setTimezone] = useState(() => {
     const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;

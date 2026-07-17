@@ -16,7 +16,7 @@ import type { Deployment, DeploymentType } from '../../../types';
 import { useTranslation } from 'react-i18next';
 
 const MILITARY_GREEN = '#4A7C59';
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../../../utils/generateId';
 
 const TYPE_LABELS: Record<DeploymentType, string> = {
   deployment: 'Deployment',

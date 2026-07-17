@@ -213,7 +213,7 @@ export default {
         headerTitle: '週次レポート',
         scoreStatTasksDone: '完了したタスク', scoreStatPending: '保留中',
         scoreStatMembers: 'メンバー', scoreStatSavings: '貯蓄',
-        scoreTrend: '先週比 {{direction}}',
+        scoreTrend: '先週比 +{{points}}pts',
       },
     },
   },

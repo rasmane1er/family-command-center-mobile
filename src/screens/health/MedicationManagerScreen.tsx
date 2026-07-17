@@ -26,7 +26,7 @@ import { useFamilyStore } from '../../store/useFamilyStore';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../../utils/generateId';
 
 const FREQ_OPTIONS: { value: MedFrequency; labelKey: string; times: number }[] = [
   { value: 'daily', labelKey: 'freqOnceDaily', times: 1 },

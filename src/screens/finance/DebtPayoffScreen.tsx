@@ -80,7 +80,7 @@ const DEBT_TYPE_ICONS: Record<DebtType, keyof typeof Ionicons.glyphMap> = {
   other: 'wallet',
 };
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../../utils/generateId';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

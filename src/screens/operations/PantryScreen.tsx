@@ -18,21 +18,13 @@ import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+import { PANTRY_CATEGORIES, PANTRY_CATEGORY_ICONS } from '../../constants/pantry';
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import { generateId } from '../../utils/generateId';
 
-const CATEGORIES = ['All', 'Meat', 'Dairy', 'Grains', 'Frozen', 'Canned', 'Beverages', 'Condiments', 'Produce'];
+const CATEGORIES = ['All', ...PANTRY_CATEGORIES];
 
-const categoryIcons: Record<string, string> = {
-  Meat: 'fast-food',
-  Dairy: 'water',
-  Grains: 'leaf',
-  Frozen: 'snow',
-  Canned: 'cube',
-  Beverages: 'wine',
-  Condiments: 'flask',
-  Produce: 'nutrition',
-};
+const categoryIcons = PANTRY_CATEGORY_ICONS;
 
 export function PantryScreen({ navigation }: any) {
   const { t } = useTranslation('ops');

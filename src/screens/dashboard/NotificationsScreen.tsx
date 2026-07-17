@@ -56,19 +56,28 @@ export function NotificationsScreen({ navigation }: any) {
   // sibling of the Tabs screen in MainNavigator, not inside the tab
   // navigator itself. Bare tab names (e.g. 'Finance', 'Family') resolve
   // fine on their own via React Navigation's action bubbling.
-  const NESTED_FAMILY_ROUTES = ['JoinRequests', 'SOSAlerts', 'ApprovalRequests'];
+  const NESTED_FAMILY_ROUTES = [
+    'JoinRequests', 'SOSAlerts', 'ApprovalRequests', 'GiftPlanner', 'BirthdayTracker',
+    'FamilyConnect', 'FamilyBoard', 'Allowance', 'SchoolCenter', 'GuardianChat',
+  ];
+  const NESTED_OPERATIONS_ROUTES = ['ChildcareManager'];
 
-  const handlePress = (id: string, route?: string) => {
+  const handlePress = (id: string, route?: string, params?: Record<string, string>) => {
     markRead(id);
 
     if (!route) return;
 
     if (NESTED_FAMILY_ROUTES.includes(route)) {
-      navigation.navigate('Family', { screen: route });
+      navigation.navigate('Family', { screen: route, params, initial: false } as never);
       return;
     }
 
-    navigation.navigate(route);
+    if (NESTED_OPERATIONS_ROUTES.includes(route)) {
+      navigation.navigate('Operations', { screen: route, params, initial: false } as never);
+      return;
+    }
+
+    navigation.navigate(route as never);
   };
 
   const handleDelete = (id: string) => {
@@ -198,7 +207,7 @@ export function NotificationsScreen({ navigation }: any) {
             return (
               <Pressable
                 key={notif.id}
-                onPress={() => handlePress(notif.id, notif.action?.route)}
+                onPress={() => handlePress(notif.id, notif.action?.route, notif.action?.params)}
                 onLongPress={() => handleDelete(notif.id)}
               >
                 <Card
