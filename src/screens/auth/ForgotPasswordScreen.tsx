@@ -29,13 +29,22 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
   const { t } = useTranslation('auth');
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
-  const { resetPassword } = useAuthStore();
+  const { resetPassword, confirmPasswordReset } = useAuthStore();
 
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [emailFocused, setEmailFocused] = useState(false);
   const [sent, setSent] = useState(false);
   const [countdown, setCountdown] = useState(0);
+
+  const [code, setCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [codeFocused, setCodeFocused] = useState(false);
+  const [newPasswordFocused, setNewPasswordFocused] = useState(false);
+  const [confirmPasswordFocused, setConfirmPasswordFocused] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
 
   const buttonScale = useRef(new Animated.Value(1)).current;
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -88,6 +97,38 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
     setSent(false);
     setCountdown(0);
     await handleReset();
+  };
+
+  const handleConfirmReset = async () => {
+    if (code.trim().length !== 6) {
+      Alert.alert(t('auth.screens.forgotPassword.missingEmailTitle'), t('auth.screens.forgotPassword.missingCodeMsg'));
+      return;
+    }
+    if (newPassword.length < 8) {
+      Alert.alert(t('auth.screens.forgotPassword.resetFailedTitle'), t('auth.screens.forgotPassword.passwordTooShortMsg'));
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      Alert.alert(t('auth.screens.forgotPassword.resetFailedTitle'), t('auth.screens.forgotPassword.passwordsMismatchMsg'));
+      return;
+    }
+
+    setResetLoading(true);
+    const result = await confirmPasswordReset(email.trim().toLowerCase(), code.trim(), newPassword);
+    setResetLoading(false);
+
+    if (!result.success) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert(t('auth.screens.forgotPassword.resetFailedTitle'), result.error ?? t('auth.screens.forgotPassword.genericError'));
+      return;
+    }
+
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    Alert.alert(
+      t('auth.screens.forgotPassword.resetSuccessTitle'),
+      t('auth.screens.forgotPassword.resetSuccessMsg'),
+      [{ text: 'OK', onPress: () => navigation.navigate('SignIn') }],
+    );
   };
 
   const inputBg = isDark ? colors.surface : '#F8FAFD';
@@ -242,6 +283,130 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
               </Pressable>
             </Animated.View>
 
+            {/* Step 2: code + new password, shown once the email has been sent */}
+            {sent && (
+              <View style={styles.resetStep}>
+                <View style={styles.fieldGroup}>
+                  <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>{t('auth.screens.forgotPassword.codeLabel')}</Text>
+                  <View
+                    style={[
+                      styles.inputRow,
+                      { backgroundColor: inputBg, borderColor: codeFocused ? colors.primary : colors.border },
+                    ]}
+                  >
+                    <Ionicons
+                      name="keypad-outline"
+                      size={18}
+                      color={codeFocused ? colors.primary : colors.textSecondary}
+                      style={styles.inputIcon}
+                    />
+                    <TextInput
+                      style={[styles.textInput, { color: colors.text, letterSpacing: 4 }]}
+                      placeholder={t('auth.screens.forgotPassword.codePlaceholder')}
+                      placeholderTextColor={colors.textSecondary}
+                      value={code}
+                      onChangeText={(v) => setCode(v.replace(/[^0-9]/g, '').slice(0, 6))}
+                      keyboardType="number-pad"
+                      maxLength={6}
+                      onFocus={() => setCodeFocused(true)}
+                      onBlur={() => setCodeFocused(false)}
+                      returnKeyType="next"
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.fieldGroup}>
+                  <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>{t('auth.screens.forgotPassword.newPasswordLabel')}</Text>
+                  <View
+                    style={[
+                      styles.inputRow,
+                      { backgroundColor: inputBg, borderColor: newPasswordFocused ? colors.primary : colors.border },
+                    ]}
+                  >
+                    <Ionicons
+                      name="lock-closed-outline"
+                      size={18}
+                      color={newPasswordFocused ? colors.primary : colors.textSecondary}
+                      style={styles.inputIcon}
+                    />
+                    <TextInput
+                      style={[styles.textInput, { color: colors.text }]}
+                      placeholder={t('auth.screens.forgotPassword.newPasswordPlaceholder')}
+                      placeholderTextColor={colors.textSecondary}
+                      value={newPassword}
+                      onChangeText={setNewPassword}
+                      secureTextEntry={!showNewPassword}
+                      autoCapitalize="none"
+                      autoComplete="password-new"
+                      onFocus={() => setNewPasswordFocused(true)}
+                      onBlur={() => setNewPasswordFocused(false)}
+                      returnKeyType="next"
+                    />
+                    <Pressable onPress={() => setShowNewPassword(!showNewPassword)} hitSlop={8}>
+                      <Ionicons
+                        name={showNewPassword ? 'eye-off-outline' : 'eye-outline'}
+                        size={18}
+                        color={colors.textSecondary}
+                      />
+                    </Pressable>
+                  </View>
+                </View>
+
+                <View style={styles.fieldGroup}>
+                  <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>{t('auth.screens.forgotPassword.confirmPasswordLabel')}</Text>
+                  <View
+                    style={[
+                      styles.inputRow,
+                      { backgroundColor: inputBg, borderColor: confirmPasswordFocused ? colors.primary : colors.border },
+                    ]}
+                  >
+                    <Ionicons
+                      name="lock-closed-outline"
+                      size={18}
+                      color={confirmPasswordFocused ? colors.primary : colors.textSecondary}
+                      style={styles.inputIcon}
+                    />
+                    <TextInput
+                      style={[styles.textInput, { color: colors.text }]}
+                      placeholder={t('auth.screens.forgotPassword.confirmPasswordPlaceholder')}
+                      placeholderTextColor={colors.textSecondary}
+                      value={confirmPassword}
+                      onChangeText={setConfirmPassword}
+                      secureTextEntry={!showNewPassword}
+                      autoCapitalize="none"
+                      autoComplete="password-new"
+                      onFocus={() => setConfirmPasswordFocused(true)}
+                      onBlur={() => setConfirmPasswordFocused(false)}
+                      returnKeyType="done"
+                      onSubmitEditing={handleConfirmReset}
+                    />
+                  </View>
+                </View>
+
+                <Pressable
+                  style={[styles.primaryButton, resetLoading && styles.primaryButtonDisabled]}
+                  onPress={handleConfirmReset}
+                  disabled={resetLoading}
+                >
+                  <LinearGradient
+                    colors={['#1E4A8A', '#0F2952']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.primaryButtonGradient}
+                  >
+                    {resetLoading ? (
+                      <ActivityIndicator color="#FFFFFF" size="small" />
+                    ) : (
+                      <>
+                        <Ionicons name="checkmark-outline" size={16} color="#FFFFFF" style={{ marginRight: 8 }} />
+                        <Text style={styles.primaryButtonText}>{t('auth.screens.forgotPassword.resetButton')}</Text>
+                      </>
+                    )}
+                  </LinearGradient>
+                </Pressable>
+              </View>
+            )}
+
             {/* Divider */}
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
@@ -390,6 +555,12 @@ const styles = StyleSheet.create({
   resendRow: {
     alignItems: 'center',
     marginBottom: 16,
+  },
+  resetStep: {
+    marginTop: 20,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(148,163,184,0.25)',
   },
   resendCountdown: {
     fontSize: 13,

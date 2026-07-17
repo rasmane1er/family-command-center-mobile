@@ -77,7 +77,15 @@ interface AuthState {
   // (SettingsScreen) are responsible for resetAllStores()+signOut() after
   // this resolves, same as any other full-wipe flow in this app.
   deleteAccount: () => Promise<{ success: boolean; error?: string }>;
+  // Requests a 6-digit reset code via POST /auth/forgot-password. Always
+  // resolves success:true if the request reached the server — the backend
+  // itself never reveals whether the email matches an account, so there's
+  // nothing more specific to surface here either.
   resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
+  // Verifies the code from resetPassword and sets a new password via
+  // POST /auth/reset-password. Doesn't touch local auth state — the user
+  // still has to sign in with the new password afterward.
+  confirmPasswordReset: (email: string, code: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
   updateProfile: (updates: Partial<AuthUser>) => void;
   // Verifies a password against the currently signed-in account without
   // touching auth state — used to gate device-lock changes (see
@@ -510,12 +518,36 @@ export const useAuthStore = create<AuthState>()(
       },
 
       resetPassword: async (email) => {
-        const normalizedEmail = email.toLowerCase().trim();
-        const credentials = (await getStoredCredentials()) ?? {};
-        if (!credentials[normalizedEmail]) {
-          return { success: false, error: 'No account found with this email.' };
+        try {
+          const res = await fetch(`${awsConfig.apiBaseUrl}/auth/forgot-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email.toLowerCase().trim() }),
+          });
+          if (!res.ok) {
+            return { success: false, error: 'Something went wrong. Please try again.' };
+          }
+          return { success: true };
+        } catch {
+          return { success: false, error: 'Could not reach the server. Check your connection and try again.' };
         }
-        return { success: true };
+      },
+
+      confirmPasswordReset: async (email, code, newPassword) => {
+        try {
+          const res = await fetch(`${awsConfig.apiBaseUrl}/auth/reset-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email.toLowerCase().trim(), code, newPassword }),
+          });
+          if (!res.ok) {
+            const body = await res.json().catch(() => ({}));
+            return { success: false, error: body?.error ?? 'Invalid or expired code. Please request a new one.' };
+          }
+          return { success: true };
+        } catch {
+          return { success: false, error: 'Could not reach the server. Check your connection and try again.' };
+        }
       },
 
       updateProfile: (updates) => {
