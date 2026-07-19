@@ -1,0 +1,257 @@
+:root {
+  --primary: #0F2952;
+  --primary-light: #1E4A8A;
+  --secondary: #F5A623;
+  --accent: #00D4AA;
+  --bg: #F0F3F9;
+  --card: #FFFFFF;
+  --border: #E4EAF2;
+  --text: #0D1B2A;
+  --text-secondary: #64748B;
+  --text-muted: #94A3B8;
+  --radius: 16px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0D1B2A;
+    --card: #132338;
+    --border: #1E3A5F;
+    --text: #F4F6FB;
+    --text-secondary: #9FB0C9;
+    --text-muted: #6E85A5;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 20px 64px;
+}
+
+header.site {
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  padding: 40px 20px 56px;
+  color: #fff;
+}
+
+header.site .inner {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.brand img {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: block;
+}
+
+.brand .name {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+nav.site {
+  margin-top: 28px;
+  display: flex;
+  gap: 20px;
+}
+
+nav.site a {
+  color: rgba(255,255,255,0.82);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  padding-bottom: 4px;
+  border-bottom: 2px solid transparent;
+}
+
+nav.site a:hover,
+nav.site a.active {
+  color: #fff;
+  border-bottom-color: var(--secondary);
+}
+
+h1.page-title {
+  margin: 28px 0 6px;
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.subtitle {
+  color: rgba(255,255,255,0.75);
+  font-size: 15px;
+  max-width: 520px;
+}
+
+main {
+  margin-top: -32px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(13, 27, 42, 0.06);
+}
+
+.contact-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 4px;
+}
+
+@media (max-width: 520px) {
+  .contact-grid { grid-template-columns: 1fr; }
+}
+
+.contact-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  text-decoration: none;
+  color: var(--text);
+}
+
+.contact-card .icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  background: var(--primary);
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.contact-card .label {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.contact-card .sub {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+
+h2 {
+  font-size: 19px;
+  margin: 0 0 14px;
+}
+
+details.faq {
+  border-bottom: 1px solid var(--border);
+  padding: 14px 0;
+}
+
+details.faq:last-child { border-bottom: none; }
+
+details.faq summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 15px;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+details.faq summary::-webkit-details-marker { display: none; }
+
+details.faq summary::after {
+  content: "+";
+  color: var(--secondary);
+  font-size: 20px;
+  font-weight: 400;
+  margin-left: 12px;
+}
+
+details.faq[open] summary::after { content: "\2212"; }
+
+details.faq p {
+  margin: 10px 0 0;
+  color: var(--text-secondary);
+  font-size: 14.5px;
+}
+
+.legal-updated {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin-bottom: 24px;
+}
+
+.legal-intro {
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+}
+
+section.legal-section {
+  margin-bottom: 26px;
+}
+
+section.legal-section h3 {
+  font-size: 16.5px;
+  margin: 0 0 10px;
+}
+
+section.legal-section p {
+  color: var(--text-secondary);
+  font-size: 14.5px;
+  margin: 0 0 10px;
+}
+
+section.legal-section ul {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--text-secondary);
+  font-size: 14.5px;
+}
+
+section.legal-section li {
+  margin-bottom: 8px;
+}
+
+footer.site {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 32px 20px 0;
+}
+
+footer.site a {
+  color: var(--text-secondary);
+}
+
+.btn-back {
+  display: inline-block;
+  margin-top: 8px;
+  color: rgba(255,255,255,0.85);
+  text-decoration: none;
+  font-size: 13px;
+}
