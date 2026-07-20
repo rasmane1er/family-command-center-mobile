@@ -13,6 +13,12 @@ const { withPodfile } = require('@expo/config-plugins');
 // validation, and the rest of the project keeps using C++20 (RN's own code
 // needs it). This project doesn't commit ios/ — Expo regenerates it fresh on
 // every prebuild — hence a config plugin instead of hand-editing the Podfile.
+//
+// Must run AFTER react_native_post_install(...), not before: that helper
+// re-applies CLANG_CXX_LANGUAGE_STANDARD=c++20 across pod targets itself, so
+// an override placed earlier in post_install gets silently clobbered —
+// confirmed by a real EAS build still failing identically with the fix
+// applied at the top of the block.
 const AFFECTED_PODS = ['fmt', 'RCT-Folly'];
 
 module.exports = function withFmtConstevalFix(config) {
@@ -30,14 +36,27 @@ module.exports = function withFmtConstevalFix(config) {
   end
 `;
 
-    const postInstallRegex = /(post_install do \|installer\|)/;
-    if (postInstallRegex.test(config.modResults.contents)) {
+    // Insert right after the react_native_post_install(...) call closes, so
+    // this fix applies on top of (not underneath) whatever it sets.
+    const reactNativePostInstallRegex = /(react_native_post_install\(\s*installer,[\s\S]*?\n\s*\)\n)/;
+    if (reactNativePostInstallRegex.test(config.modResults.contents)) {
       config.modResults.contents = config.modResults.contents.replace(
-        postInstallRegex,
-        `$1\n${hook}`
+        reactNativePostInstallRegex,
+        `$1${hook}`
       );
     } else {
-      config.modResults.contents += `\npost_install do |installer|\n${hook}end\n`;
+      // Fallback: no react_native_post_install call found (unexpected
+      // template shape) — append right after post_install opens instead of
+      // silently doing nothing.
+      const postInstallRegex = /(post_install do \|installer\|)/;
+      if (postInstallRegex.test(config.modResults.contents)) {
+        config.modResults.contents = config.modResults.contents.replace(
+          postInstallRegex,
+          `$1\n${hook}`
+        );
+      } else {
+        config.modResults.contents += `\npost_install do |installer|\n${hook}end\n`;
+      }
     }
 
     return config;
