@@ -1,28 +1,31 @@
 const { withPodfile } = require('@expo/config-plugins');
 
-// Xcode 26's Clang enforces C++20 consteval strictly, which breaks fmt (bundled
-// transitively via RCT-Folly, a React Native native dependency) on RN 0.79 —
-// fmt's compile-time format-string validation relies on consteval constructors
-// that Xcode 26 rejects with "call to consteval function ... is not a constant
-// expression". Fixed upstream in later RN/fmt releases, but until this project
-// upgrades off RN 0.79, defining FMT_CONSTEVAL as empty disables that
-// compile-time check (fmt falls back to runtime validation) and lets the same
-// code compile under the newer toolchain. This project doesn't commit ios/, so
-// there's no Podfile to hand-edit — Expo regenerates it fresh on every prebuild,
-// hence a config plugin instead.
+// Xcode 26 ships a newer Clang that tightened how it validates C++20 consteval
+// functions. The {fmt} library vendored inside React Native (via RCT-Folly,
+// on RN 0.79) relies on compile-time format-string checking through consteval
+// constructors that no longer satisfy the stricter constant-expression rules,
+// so the Xcode build fails with "call to consteval function ... is not a
+// constant expression" deep inside fmt's headers — nothing in this project's
+// own code is at fault. Fixed upstream in later fmt/RN releases; until this
+// project upgrades off RN 0.79, compiling just the 'fmt' (and 'RCT-Folly',
+// which bundles it) pod targets against C++17 instead of C++20 skips the
+// consteval code path entirely — fmt falls back to its runtime format-string
+// validation, and the rest of the project keeps using C++20 (RN's own code
+// needs it). This project doesn't commit ios/ — Expo regenerates it fresh on
+// every prebuild — hence a config plugin instead of hand-editing the Podfile.
+const AFFECTED_PODS = ['fmt', 'RCT-Folly'];
+
 module.exports = function withFmtConstevalFix(config) {
   return withPodfile(config, (config) => {
-    const marker = "FMT_CONSTEVAL fix for Xcode 26";
+    const marker = 'fmt consteval fix for Xcode 26';
     if (config.modResults.contents.includes(marker)) return config;
 
     const hook = `
   # ${marker} (see plugins/withFmtConstevalFix.js)
   installer.pods_project.targets.each do |target|
+    next unless ${JSON.stringify(AFFECTED_PODS)}.include?(target.name)
     target.build_configurations.each do |build_config|
-      defs = build_config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] || ['$(inherited)']
-      defs = [defs] if defs.is_a?(String)
-      defs << 'FMT_CONSTEVAL='
-      build_config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] = defs
+      build_config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'
     end
   end
 `;
