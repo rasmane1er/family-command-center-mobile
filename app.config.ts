@@ -110,6 +110,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
     './plugins/withAndroidSpeechQueries.js',
+    './plugins/withFmtConstevalFix.js',
     [
       'expo-build-properties',
       {
