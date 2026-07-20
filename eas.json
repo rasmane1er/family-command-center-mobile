@@ -23,7 +23,8 @@
       "channel": "production",
       "autoIncrement": true,
       "ios": {
-        "credentialsSource": "remote"
+        "credentialsSource": "remote",
+        "image": "latest"
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://api.myfamilycommandcenter.com",
