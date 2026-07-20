@@ -12,6 +12,7 @@ import { FinanceNavigator } from './FinanceNavigator';
 import { OperationsNavigator } from './OperationsNavigator';
 import { AINavigator } from './AINavigator';
 import { CustomTabBar } from './CustomTabBar';
+import { withScreenErrorBoundary } from './withScreenErrorBoundary';
 
 const Tab = createBottomTabNavigator();
 
@@ -53,27 +54,27 @@ export function TabNavigator() {
     >
       <Tab.Screen
         name="Home"
-        component={DashboardScreen}
+        component={withScreenErrorBoundary(DashboardScreen)}
         options={{ tabBarBadge: unreadNotifications > 0 ? unreadNotifications : undefined }}
       />
 
       <Tab.Screen
         name="Family"
-        component={FamilyNavigator}
+        component={withScreenErrorBoundary(FamilyNavigator)}
         options={{ tabBarBadge: pendingTasks > 9 ? '9+' : pendingTasks > 0 ? pendingTasks : undefined }}
       />
 
       {isParent && (
         <Tab.Screen
           name="Finance"
-          component={FinanceNavigator}
+          component={withScreenErrorBoundary(FinanceNavigator)}
           options={{ tabBarBadge: overdueBills > 0 ? overdueBills : undefined }}
         />
       )}
 
-      {isParent && <Tab.Screen name="Operations" component={OperationsNavigator} />}
+      {isParent && <Tab.Screen name="Operations" component={withScreenErrorBoundary(OperationsNavigator)} />}
 
-      <Tab.Screen name="AI Assistant" component={AINavigator} />
+      <Tab.Screen name="AI Assistant" component={withScreenErrorBoundary(AINavigator)} />
     </Tab.Navigator>
   );
 }

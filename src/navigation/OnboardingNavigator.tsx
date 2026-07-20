@@ -9,21 +9,22 @@ import { VehicleSetupScreen } from '../screens/onboarding/VehicleSetupScreen';
 import { FinancialSetupScreen } from '../screens/onboarding/FinancialSetupScreen';
 import { GoalsSetupScreen } from '../screens/onboarding/GoalsSetupScreen';
 import { ChildConnectScreen } from '../screens/onboarding/ChildConnectScreen';
+import { withScreenErrorBoundary } from './withScreenErrorBoundary';
 
 const Stack = createNativeStackNavigator();
 
 export function OnboardingNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', gestureEnabled: false }}>
-      <Stack.Screen name="Splash" component={SplashScreen} />
-      <Stack.Screen name="Welcome" component={WelcomeScreen} />
-      <Stack.Screen name="FamilySetup" component={FamilySetupScreen} />
-      <Stack.Screen name="MemberSetup" component={MemberSetupScreen} />
-      <Stack.Screen name="HomeSetup" component={HomeSetupScreen} />
-      <Stack.Screen name="VehicleSetup" component={VehicleSetupScreen} />
-      <Stack.Screen name="FinancialSetup" component={FinancialSetupScreen} />
-      <Stack.Screen name="GoalsSetup" component={GoalsSetupScreen} />
-      <Stack.Screen name="ChildConnect" component={ChildConnectScreen} />
+      <Stack.Screen name="Splash" component={withScreenErrorBoundary(SplashScreen)} />
+      <Stack.Screen name="Welcome" component={withScreenErrorBoundary(WelcomeScreen)} />
+      <Stack.Screen name="FamilySetup" component={withScreenErrorBoundary(FamilySetupScreen)} />
+      <Stack.Screen name="MemberSetup" component={withScreenErrorBoundary(MemberSetupScreen)} />
+      <Stack.Screen name="HomeSetup" component={withScreenErrorBoundary(HomeSetupScreen)} />
+      <Stack.Screen name="VehicleSetup" component={withScreenErrorBoundary(VehicleSetupScreen)} />
+      <Stack.Screen name="FinancialSetup" component={withScreenErrorBoundary(FinancialSetupScreen)} />
+      <Stack.Screen name="GoalsSetup" component={withScreenErrorBoundary(GoalsSetupScreen)} />
+      <Stack.Screen name="ChildConnect" component={withScreenErrorBoundary(ChildConnectScreen)} />
     </Stack.Navigator>
   );
 }

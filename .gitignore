@@ -9,3 +9,5 @@ web-build/
 ios/
 android/
 .claude/
+credentials/
+*.p8

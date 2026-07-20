@@ -26,10 +26,12 @@ import { DeploymentTrackerScreen } from '../screens/family/military/DeploymentTr
 import { PCSMoveScreen } from '../screens/family/military/PCSMoveScreen';
 import { FamilyReadinessScreen } from '../screens/family/military/FamilyReadinessScreen';
 import { SubscriptionGate } from '../components/common/SubscriptionGate';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 import { useFamilyStore } from '../store/useFamilyStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { usePushRegistration } from '../hooks/usePushRegistration';
+import { withScreenErrorBoundary } from './withScreenErrorBoundary';
 
 const Stack = createNativeStackNavigator();
 
@@ -77,18 +79,18 @@ export function MainNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {/* Core */}
-      <Stack.Screen name="Tabs" component={TabNavigator} />
+      <Stack.Screen name="Tabs" component={withScreenErrorBoundary(TabNavigator)} />
 
       {/* Shared */}
       <Stack.Screen
         name="Notifications"
-        component={NotificationsScreen}
+        component={withScreenErrorBoundary(NotificationsScreen)}
         options={{ animation: 'slide_from_right' }}
       />
 
       <Stack.Screen
         name="Search"
-        component={SearchScreen}
+        component={withScreenErrorBoundary(SearchScreen)}
         options={{
           animation: 'slide_from_bottom',
           presentation: 'modal',
@@ -97,33 +99,33 @@ export function MainNavigator() {
 
       <Stack.Screen
         name="CommandWall"
-        component={CommandWallScreen}
+        component={withScreenErrorBoundary(CommandWallScreen)}
         options={{ animation: 'slide_from_right' }}
       />
 
       <Stack.Screen
         name="WeeklyReport"
-        component={WeeklyReportScreen}
+        component={withScreenErrorBoundary(WeeklyReportScreen)}
         options={{ animation: 'slide_from_right' }}
       />
 
       {/* Parent only */}
       <Stack.Screen
         name="Settings"
-        component={SettingsScreen}
+        component={withScreenErrorBoundary(SettingsScreen)}
         options={{ animation: 'slide_from_right' }}
       />
 
       <Stack.Screen
         name="Profile"
-        component={ProfileScreen}
+        component={withScreenErrorBoundary(ProfileScreen)}
         options={{ animation: 'slide_from_right' }}
       />
 
       {/* Shared health */}
       <Stack.Screen
         name="HealthHub"
-        component={HealthHubScreen}
+        component={withScreenErrorBoundary(HealthHubScreen)}
         options={{ animation: 'slide_from_right' }}
       />
 
@@ -133,9 +135,11 @@ export function MainNavigator() {
         options={{ animation: 'slide_from_right' }}
       >
         {(props) => (
-          <ProtectedRoute allowParent allowChild>
-            <MedicationManagerScreen {...props} />
-          </ProtectedRoute>
+          <ErrorBoundary>
+            <ProtectedRoute allowParent allowChild>
+              <MedicationManagerScreen {...props} />
+            </ProtectedRoute>
+          </ErrorBoundary>
         )}
       </Stack.Screen>
 
@@ -144,9 +148,11 @@ export function MainNavigator() {
         options={{ animation: 'slide_from_right' }}
       >
         {(props) => (
-          <ProtectedRoute allowParent allowChild>
-            <SleepTrackerScreen {...props} />
-          </ProtectedRoute>
+          <ErrorBoundary>
+            <ProtectedRoute allowParent allowChild>
+              <SleepTrackerScreen {...props} />
+            </ProtectedRoute>
+          </ErrorBoundary>
         )}
       </Stack.Screen>
 
@@ -155,46 +161,48 @@ export function MainNavigator() {
         options={{ animation: 'slide_from_right' }}
       >
         {(props) => (
-          <ProtectedRoute allowParent allowChild>
-            <WorkoutTrackerScreen {...props} />
-          </ProtectedRoute>
+          <ErrorBoundary>
+            <ProtectedRoute allowParent allowChild>
+              <WorkoutTrackerScreen {...props} />
+            </ProtectedRoute>
+          </ErrorBoundary>
         )}
       </Stack.Screen>
 
       <Stack.Screen
         name="HelpSupport"
-        component={HelpSupportScreen}
+        component={withScreenErrorBoundary(HelpSupportScreen)}
         options={{ animation: 'slide_from_right' }}
       />
 
       <Stack.Screen
         name="LiveChat"
-        component={LiveChatScreen}
+        component={withScreenErrorBoundary(LiveChatScreen)}
         options={{ animation: 'slide_from_right' }}
       />
 
       <Stack.Screen
         name="ReferAndEarn"
-        component={ReferAndEarnScreen}
+        component={withScreenErrorBoundary(ReferAndEarnScreen)}
         options={{ headerShown: false, animation: 'slide_from_right' }}
       />
 
       <Stack.Screen
         name="PrivacyPolicy"
-        component={PrivacyPolicyScreen}
+        component={withScreenErrorBoundary(PrivacyPolicyScreen)}
         options={{ animation: 'slide_from_right' }}
       />
 
       <Stack.Screen
         name="TermsOfService"
-        component={TermsOfServiceScreen}
+        component={withScreenErrorBoundary(TermsOfServiceScreen)}
         options={{ animation: 'slide_from_right' }}
       />
 
       {/* Full-screen map screens — no tab bar */}
       <Stack.Screen
         name="Geofence"
-        component={GeofenceScreen}
+        component={withScreenErrorBoundary(GeofenceScreen)}
         options={{ animation: 'slide_from_right' }}
       />
 
@@ -203,33 +211,41 @@ export function MainNavigator() {
           OperationsNavigator). */}
       <Stack.Screen name="MilitaryHub" options={{ animation: 'slide_from_right' }}>
         {(props) => (
-          <SubscriptionGate requiredTier="family_pro" featureName={t('military.title')}>
-            <MilitaryHubScreen {...props} />
-          </SubscriptionGate>
+          <ErrorBoundary>
+            <SubscriptionGate requiredTier="family_pro" featureName={t('military.title')}>
+              <MilitaryHubScreen {...props} />
+            </SubscriptionGate>
+          </ErrorBoundary>
         )}
       </Stack.Screen>
 
       <Stack.Screen name="DeploymentTracker" options={{ animation: 'slide_from_right' }}>
         {(props) => (
-          <SubscriptionGate requiredTier="family_pro" featureName={t('military.deployment')}>
-            <DeploymentTrackerScreen {...props} />
-          </SubscriptionGate>
+          <ErrorBoundary>
+            <SubscriptionGate requiredTier="family_pro" featureName={t('military.deployment')}>
+              <DeploymentTrackerScreen {...props} />
+            </SubscriptionGate>
+          </ErrorBoundary>
         )}
       </Stack.Screen>
 
       <Stack.Screen name="PCSMove" options={{ animation: 'slide_from_right' }}>
         {(props) => (
-          <SubscriptionGate requiredTier="family_pro" featureName={t('military.pcsFeature')}>
-            <PCSMoveScreen {...props} />
-          </SubscriptionGate>
+          <ErrorBoundary>
+            <SubscriptionGate requiredTier="family_pro" featureName={t('military.pcsFeature')}>
+              <PCSMoveScreen {...props} />
+            </SubscriptionGate>
+          </ErrorBoundary>
         )}
       </Stack.Screen>
 
       <Stack.Screen name="FamilyReadiness" options={{ animation: 'slide_from_right' }}>
         {(props) => (
-          <SubscriptionGate requiredTier="family_pro" featureName={t('military.readinessFeature')}>
-            <FamilyReadinessScreen {...props} />
-          </SubscriptionGate>
+          <ErrorBoundary>
+            <SubscriptionGate requiredTier="family_pro" featureName={t('military.readinessFeature')}>
+              <FamilyReadinessScreen {...props} />
+            </SubscriptionGate>
+          </ErrorBoundary>
         )}
       </Stack.Screen>
 

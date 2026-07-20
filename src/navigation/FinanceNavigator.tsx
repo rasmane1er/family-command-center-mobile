@@ -17,6 +17,7 @@ import { TransactionsScreen } from '../screens/finance/TransactionsScreen';
 import { SpendingInsightsScreen } from '../screens/finance/SpendingInsightsScreen';
 import { ReceiptScannerScreen } from '../screens/finance/ReceiptScannerScreen';
 import { TaxCenterScreen } from '../screens/finance/TaxCenterScreen';
+import { withScreenErrorBoundary } from './withScreenErrorBoundary';
 
 const Stack = createNativeStackNavigator();
 
@@ -29,21 +30,21 @@ export function FinanceNavigator() {
       description={t('gates.financeToolsDesc')}
     >
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="FinanceDashboard" component={FinanceDashboardScreen} />
-        <Stack.Screen name="Budgeting" component={BudgetingScreen} />
-        <Stack.Screen name="Bills" component={BillsScreen} />
-        <Stack.Screen name="Subscriptions" component={SubscriptionsScreen} />
-        <Stack.Screen name="Assets" component={AssetsScreen} />
-        <Stack.Screen name="WealthBuilder" component={WealthBuilderScreen} />
-        <Stack.Screen name="InsuranceManager" component={InsuranceManagerScreen} />
-        <Stack.Screen name="DebtPayoff" component={DebtPayoffScreen} />
-        <Stack.Screen name="DebtDetail" component={DebtDetailScreen} options={{ title: t('debt.detailsTitle') }} />
-        <Stack.Screen name="UtilityTracker" component={UtilityTrackerScreen} />
-        <Stack.Screen name="ConnectBank" component={ConnectBankScreen} />
-        <Stack.Screen name="Transactions" component={TransactionsScreen} options={{ title: t('transactions.title') }} />
-        <Stack.Screen name="SpendingInsights" component={SpendingInsightsScreen} options={{ title: t('spending.title') }} />
-        <Stack.Screen name="ReceiptScanner" component={ReceiptScannerScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="TaxCenter" component={TaxCenterScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="FinanceDashboard" component={withScreenErrorBoundary(FinanceDashboardScreen)} />
+        <Stack.Screen name="Budgeting" component={withScreenErrorBoundary(BudgetingScreen)} />
+        <Stack.Screen name="Bills" component={withScreenErrorBoundary(BillsScreen)} />
+        <Stack.Screen name="Subscriptions" component={withScreenErrorBoundary(SubscriptionsScreen)} />
+        <Stack.Screen name="Assets" component={withScreenErrorBoundary(AssetsScreen)} />
+        <Stack.Screen name="WealthBuilder" component={withScreenErrorBoundary(WealthBuilderScreen)} />
+        <Stack.Screen name="InsuranceManager" component={withScreenErrorBoundary(InsuranceManagerScreen)} />
+        <Stack.Screen name="DebtPayoff" component={withScreenErrorBoundary(DebtPayoffScreen)} />
+        <Stack.Screen name="DebtDetail" component={withScreenErrorBoundary(DebtDetailScreen)} options={{ title: t('debt.detailsTitle') }} />
+        <Stack.Screen name="UtilityTracker" component={withScreenErrorBoundary(UtilityTrackerScreen)} />
+        <Stack.Screen name="ConnectBank" component={withScreenErrorBoundary(ConnectBankScreen)} />
+        <Stack.Screen name="Transactions" component={withScreenErrorBoundary(TransactionsScreen)} options={{ title: t('transactions.title') }} />
+        <Stack.Screen name="SpendingInsights" component={withScreenErrorBoundary(SpendingInsightsScreen)} options={{ title: t('spending.title') }} />
+        <Stack.Screen name="ReceiptScanner" component={withScreenErrorBoundary(ReceiptScannerScreen)} options={{ headerShown: false }} />
+        <Stack.Screen name="TaxCenter" component={withScreenErrorBoundary(TaxCenterScreen)} options={{ headerShown: false }} />
       </Stack.Navigator>
     </SubscriptionGate>
   );

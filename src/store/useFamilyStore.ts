@@ -7,7 +7,7 @@ import { defaultPermissionsForRole } from '../types';
 import * as calendarService from '../services/calendarService';
 import * as taskService from '../services/taskService';
 import * as rewardService from '../services/rewardService';
-import { apiRequest } from '../api/client';
+import { apiRequest, ApiRequestError } from '../api/client';
 import { authBridge } from './authBridge';
 
 interface FamilyState {
@@ -136,8 +136,16 @@ export const useFamilyStore = create<FamilyState>()(
         }
         return { ...m, id: finalId };
       })
-      .catch(() => {
+      .catch((err) => {
         set((s) => ({ members: s.members.filter((x) => x.id !== m.id) }));
+        // The client-side check in AddMemberScreen (features.maxFamilyMembers)
+        // normally blocks this before it reaches the server — this only fires
+        // if that check was stale or bypassed. Re-thrown (unlike every other
+        // error here) so the caller can show the same UpgradePrompt instead of
+        // the member silently vanishing with no explanation.
+        if (err instanceof ApiRequestError && (err.body as { error?: string } | undefined)?.error === 'member_limit_exceeded') {
+          throw err;
+        }
         return m;
       });
   },

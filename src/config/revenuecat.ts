@@ -32,22 +32,19 @@ if (!__DEV__ && (revenueCatConfig.iosApiKey === TEST_API_KEY || revenueCatConfig
 // ('premium' | 'family_pro') so feature-gating via useSubscription() elsewhere
 // in the app works unchanged.
 //
-// "family command center Pro" already exists in the dashboard (originally set
-// up as a single-tier product) — it's kept as-is and repurposed as the
-// FAMILY PRO tier's entitlement. "premium" is a NEW entitlement that still
-// needs to be created in the dashboard for the Premium tier to actually be
-// purchasable — see the setup checklist wherever this is discussed.
+// Both entitlements exist in the dashboard: "family command center Pro"
+// (originally set up as a single-tier product, repurposed as the FAMILY PRO
+// tier's entitlement) and "premium" (Premium tier), each with its products
+// attached and included in the "default" offering.
 export const REVENUECAT_ENTITLEMENTS = {
   premium: 'premium',
   familyPro: 'family command center Pro',
 } as const;
 
-// Product identifiers configured in the RevenueCat dashboard. "monthly"/
-// "yearly" already exist (attached to the family_pro entitlement above) —
-// the premium_* ones are new and still need to be created, attached to the
-// "premium" entitlement, and added to the "default" offering alongside the
-// existing two. Presented automatically by the RevenueCat Paywall UI — these
-// constants are for reference/debugging, not manual lookup.
+// Product identifiers configured in the RevenueCat dashboard, all four
+// already created and attached to their entitlements above. Presented
+// automatically by the RevenueCat Paywall UI — these constants are for
+// reference/debugging, not manual lookup.
 export const REVENUECAT_PRODUCTS = {
   premiumMonthly: 'premium_monthly',
   premiumYearly: 'premium_yearly',

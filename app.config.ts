@@ -1,5 +1,10 @@
 import { ExpoConfig, ConfigContext } from 'expo/config';
 
+// EAS Build sets this during cloud builds (matches the profile names in
+// eas.json); unset locally for `expo start`/`expo run:android`, which is
+// also a real dev scenario needing plain HTTP to a LAN IP.
+const isDevBuild = !process.env.EAS_BUILD_PROFILE || process.env.EAS_BUILD_PROFILE === 'development';
+
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: 'Family Command Center',
@@ -108,7 +113,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       'expo-build-properties',
       {
-        android: { usesCleartextTraffic: true },
+        android: { usesCleartextTraffic: isDevBuild },
         ios: { useFrameworks: 'static' },
       },
     ],

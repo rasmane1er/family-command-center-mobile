@@ -85,7 +85,7 @@ export function AddMemberScreen({ navigation }: any) {
     return valid;
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!validate()) return;
     if (!family) return;
 
@@ -117,8 +117,14 @@ export function AddMemberScreen({ navigation }: any) {
       ...(phone.trim() ? { phone: phone.trim() } : {}),
     };
 
-    addMember(member);
-    navigation.goBack();
+    try {
+      await addMember(member);
+      navigation.goBack();
+    } catch {
+      // Server-side member cap rejected this (client-side check above was
+      // stale or bypassed) — same upgrade prompt as the client-side gate.
+      setShowUpgrade(true);
+    }
   };
 
   const roleLabel = (r: MemberRole) =>

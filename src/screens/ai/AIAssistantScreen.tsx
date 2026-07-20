@@ -73,6 +73,8 @@ export function AIAssistantScreen({ navigation }: any) {
   const { messages, insights, isTyping, sendMessage, clearMessages } = useAIStore();
   const { features } = useSubscription();
   const aiQueryCount = useAIStore((s) => s.messages?.filter((m) => m.role === 'user').length ?? 0);
+  const serverQuotaExceeded = useAIStore((s) => s.quotaExceeded);
+  const dismissQuotaExceeded = useAIStore((s) => s.dismissQuotaExceeded);
   const members = useFamilyStore((s) => s.members);
   const { bills } = useFinanceStore();
   const { pantryItems, vehicles } = useOperationsStore();
@@ -473,8 +475,11 @@ export function AIAssistantScreen({ navigation }: any) {
       </KeyboardAvoidingView>
 
       <UpgradePrompt
-        visible={showUpgradePrompt}
-        onClose={() => setShowUpgradePrompt(false)}
+        visible={showUpgradePrompt || serverQuotaExceeded}
+        onClose={() => {
+          setShowUpgradePrompt(false);
+          dismissQuotaExceeded();
+        }}
         featureName="Unlimited AI Queries"
         requiredTier="premium"
         description="You've used your monthly AI queries. Upgrade to Premium for 100 queries/month or Family Pro for unlimited access."

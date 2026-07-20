@@ -22,15 +22,23 @@
     "production": {
       "channel": "production",
       "autoIncrement": true,
+      "ios": {
+        "credentialsSource": "remote"
+      },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://api.myfamilycommandcenter.com",
-        "EXPO_PUBLIC_GOOGLE_MAPS_IOS_KEY": "AIzaSyCXf-KFuYmIAvNOGmQ3WgnmvCbqjMQoMYs",
-        "EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_KEY": "AIzaSyDhNVbWQT2Sd4EE6rfJFUuf9-cn3f7PQh4",
         "EXPO_PUBLIC_SENTRY_DSN": "https://33a4b674382cbded0ce1de0cfe36cc75@o4511719557496832.ingest.us.sentry.io/4511727955738624"
       }
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "ascApiKeyPath": "./credentials/AuthKey_6XC6KQ6L9W.p8",
+        "ascApiKeyIssuerId": "6007fa8e-e3bf-4d0d-9f75-7d7429a39fab",
+        "ascApiKeyId": "6XC6KQ6L9W",
+        "ascAppId": "6792257899"
+      }
+    }
   }
 }

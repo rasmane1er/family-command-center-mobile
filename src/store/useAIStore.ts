@@ -12,6 +12,10 @@ interface AIState {
   insights: AIInsight[];
   isTyping: boolean;
   apiKey: string;
+  // Set when the backend's requireAiQuota middleware (src/middleware/subscription.ts
+  // on the API) rejects a call with 429 ai_quota_exceeded — the client-side count
+  // in AIAssistantScreen is only an approximation, so this is the source of truth.
+  quotaExceeded: boolean;
 
   addMessage: (m: ChatMessage) => void;
   setTyping: (v: boolean) => void;
@@ -21,6 +25,7 @@ interface AIState {
   markInsightRead: (id: string) => void;
   setApiKey: (key: string) => void;
   sendMessage: (content: string, familyContext: string) => Promise<void>;
+  dismissQuotaExceeded: () => void;
   seedDemoInsights: () => void;
 }
 
@@ -40,6 +45,7 @@ export const useAIStore = create<AIState>()(
   insights: [],
   isTyping: false,
   apiKey: '',
+  quotaExceeded: false,
 
   addMessage: (m) => set((s) => ({ messages: [...s.messages, m].slice(-MAX_MESSAGES) })),
   setTyping: (v) => set({ isTyping: v }),
@@ -49,6 +55,7 @@ export const useAIStore = create<AIState>()(
   markInsightRead: (id) =>
     set((s) => ({ insights: s.insights.map((i) => (i.id === id ? { ...i, isRead: true } : i)) })),
   setApiKey: (key) => set({ apiKey: key }),
+  dismissQuotaExceeded: () => set({ quotaExceeded: false }),
 
   sendMessage: async (content: string, familyContext: string) => {
     const { messages } = get();
@@ -105,6 +112,17 @@ export const useAIStore = create<AIState>()(
         if (data.action) {
           pendingAction = data.action;
         }
+      } else if (response.status === 429) {
+        const errorBody = await response.json().catch(() => undefined) as { error?: string } | undefined;
+        if (errorBody?.error === 'ai_quota_exceeded') {
+          // Same upgrade prompt as the client-side aiQueryCount check in
+          // AIAssistantScreen — this is the server-side rejection path (that
+          // check is only an approximation of the real monthly counter).
+          set({ isTyping: false, quotaExceeded: true });
+          set((s) => ({ messages: s.messages.filter((m) => m.id !== userMessage.id) }));
+          return;
+        }
+        assistantContent = AI_UNAVAILABLE_MESSAGE;
       } else {
         assistantContent = AI_UNAVAILABLE_MESSAGE;
       }

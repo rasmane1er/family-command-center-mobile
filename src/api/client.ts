@@ -34,6 +34,21 @@ export async function refreshAccessToken(): Promise<string | null> {
   return refreshPromise;
 }
 
+// Carries the parsed error body (e.g. { error: 'member_limit_exceeded', tier, limit })
+// alongside the status, so callers that need to react to a specific server-side
+// error code (paywall gates, etc.) can — while callers that don't care can keep
+// treating this like a plain Error (message is unchanged from before).
+export class ApiRequestError extends Error {
+  status: number;
+  body: unknown;
+  constructor(status: number, body: unknown) {
+    super(`API error ${status}`);
+    this.name = 'ApiRequestError';
+    this.status = status;
+    this.body = body;
+  }
+}
+
 export async function apiRequest<T>(
   path: string,
   options: RequestInit = {}
@@ -60,7 +75,8 @@ export async function apiRequest<T>(
   }
 
   if (!response.ok) {
-    throw new Error(`API error ${response.status}`);
+    const body = await response.json().catch(() => undefined);
+    throw new ApiRequestError(response.status, body);
   }
 
   if (response.status === 204) {
