@@ -214,6 +214,8 @@ export function FamilyProfilesScreen({ navigation }: any) {
             { key: 'ActivitiesTracker', icon: 'football', label: 'Activities', color: '#00695C', bg: '#E0F2F1', desc: 'Sports & lessons' },
             { key: 'BirthdayTracker', icon: 'gift', label: 'Birthdays', color: '#AD1457', bg: '#FCE4EC', desc: 'Countdown & wishes' },
             { key: 'FamilyBoard', icon: 'megaphone', label: 'Family Board', color: '#1B2838', bg: '#ECEFF1', desc: 'Announcements' },
+            { key: 'ReadingTracker', icon: 'book', label: 'Reading', color: '#4A148C', bg: '#EDE7F6', desc: 'Books & goals' },
+            { key: 'VolunteerTracker', icon: 'heart-circle', label: 'Volunteer', color: '#E65100', bg: '#FFF3E0', desc: 'Service hours' },
           ].map((feat) => (
             <Pressable key={feat.key} onPress={() => navigation.navigate(feat.key)} style={[styles.featureCard, shadows.sm]}>
               <View style={[styles.featureIcon, { backgroundColor: feat.bg }]}>

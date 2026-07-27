@@ -9,6 +9,7 @@ import { WealthBuilderScreen } from '../screens/finance/WealthBuilderScreen';
 import { InsuranceManagerScreen } from '../screens/finance/InsuranceManagerScreen';
 import { DebtPayoffScreen } from '../screens/finance/DebtPayoffScreen';
 import { UtilityTrackerScreen } from '../screens/finance/UtilityTrackerScreen';
+import { TaxOrganizerScreen } from '../screens/finance/TaxOrganizerScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -24,6 +25,7 @@ export function FinanceNavigator() {
       <Stack.Screen name="InsuranceManager" component={InsuranceManagerScreen} />
       <Stack.Screen name="DebtPayoff" component={DebtPayoffScreen} />
       <Stack.Screen name="UtilityTracker" component={UtilityTrackerScreen} />
+      <Stack.Screen name="TaxOrganizer" component={TaxOrganizerScreen} />
     </Stack.Navigator>
   );
 }

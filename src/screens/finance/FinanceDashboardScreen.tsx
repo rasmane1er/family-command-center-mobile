@@ -271,6 +271,7 @@ export function FinanceDashboardScreen({ navigation }: any) {
             { key: 'Assets', icon: 'briefcase', label: 'Assets', color: '#E65100', bg: '#FFF3E0', desc: 'Net worth tracker' },
             { key: 'DebtPayoff', icon: 'trending-down', label: 'Debt Payoff', color: '#B71C1C', bg: '#FFEBEE', desc: 'Payoff strategies' },
             { key: 'UtilityTracker', icon: 'flash', label: 'Utilities', color: '#006064', bg: '#E0F7FA', desc: 'Electric, water, gas' },
+            { key: 'TaxOrganizer', icon: 'document-text', label: 'Tax Organizer', color: '#1A237E', bg: '#E8EAF6', desc: 'Docs & deductions' },
           ].map((tool) => (
             <Pressable key={tool.key} onPress={() => navigation.navigate(tool.key)} style={[styles.toolCard, shadows.sm]}>
               <View style={[styles.toolIcon, { backgroundColor: tool.bg }]}>

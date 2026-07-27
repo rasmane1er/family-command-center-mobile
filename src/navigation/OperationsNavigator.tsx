@@ -20,6 +20,10 @@ import { HomeMaintenanceScreen } from '../screens/operations/HomeMaintenanceScre
 import { ChildcareManagerScreen } from '../screens/operations/ChildcareManagerScreen';
 import { HomeInventoryScreen } from '../screens/operations/HomeInventoryScreen';
 import { CarpoolManagerScreen } from '../screens/operations/CarpoolManagerScreen';
+import { GardenPlannerScreen } from '../screens/operations/GardenPlannerScreen';
+import { HOAManagerScreen } from '../screens/operations/HOAManagerScreen';
+import { EventPlannerScreen } from '../screens/operations/EventPlannerScreen';
+import { MealPrepScreen } from '../screens/operations/MealPrepScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -46,6 +50,10 @@ export function OperationsNavigator() {
       <Stack.Screen name="ChildcareManager" component={ChildcareManagerScreen} />
       <Stack.Screen name="HomeInventory" component={HomeInventoryScreen} />
       <Stack.Screen name="CarpoolManager" component={CarpoolManagerScreen} />
+      <Stack.Screen name="GardenPlanner" component={GardenPlannerScreen} />
+      <Stack.Screen name="HOAManager" component={HOAManagerScreen} />
+      <Stack.Screen name="EventPlanner" component={EventPlannerScreen} />
+      <Stack.Screen name="MealPrep" component={MealPrepScreen} />
     </Stack.Navigator>
   );
 }
