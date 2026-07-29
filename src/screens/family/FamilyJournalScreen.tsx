@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput,
+  View, Text, StyleSheet, ScrollView, FlatList, Pressable, Alert, Modal, TextInput,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -221,29 +221,28 @@ export function FamilyJournalScreen({ navigation }: any) {
 
       <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
         {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
-      <ScrollView
+      <FlatList
+        data={filtered}
+        keyExtractor={(entry) => entry.id}
         onScroll={onScroll}
         onScrollEndDrag={onScrollEndDrag}
         onMomentumScrollEnd={onMomentumScrollEnd}
         scrollEventThrottle={scrollEventThrottle}
-        contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+        contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }, filtered.length === 0 && { flexGrow: 1 }]}
         showsVerticalScrollIndicator={false}
-      >
-        {filtered.length === 0 && (
+        ListEmptyComponent={
           <View style={styles.empty}>
             <Text style={{ fontSize: 56 }}>📖</Text>
             <Text style={styles.emptyTitle}>{t('family.screens.familyJournal.emptyTitle')}</Text>
             <Text style={styles.emptyDesc}>{t('family.screens.familyJournal.emptyDesc')}</Text>
           </View>
-        )}
-
-        {filtered.map((entry) => {
+        }
+        renderItem={({ item: entry }) => {
           const author = getMember(entry.authorId);
           const reactionCount = entry.reactions.length;
 
           return (
             <Pressable
-              key={entry.id}
               onPress={() => setSelectedEntry(entry)}
               onLongPress={() => Alert.alert(
                 t('family.screens.familyJournal.deleteEntryTitle'),
@@ -295,8 +294,8 @@ export function FamilyJournalScreen({ navigation }: any) {
               </Card>
             </Pressable>
           );
-        })}
-      </ScrollView>
+        }}
+      />
         )}
       </CollapsibleHeader>
 

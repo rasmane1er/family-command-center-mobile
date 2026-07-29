@@ -270,7 +270,7 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
 
   const handleShareInvite = async () => {
     try {
-      const inviteLink = `https://familycommandcenter.app/join/${useAuthStore.getState().familyId ?? family?.id ?? ''}`;
+      const inviteLink = `https://myfamilycommandcenter.com/join/${useAuthStore.getState().familyId ?? family?.id ?? ''}`;
       await Clipboard.setStringAsync(inviteLink);
       Alert.alert(
         t('family.screens.familyProfiles.inviteLinkReadyTitle'),

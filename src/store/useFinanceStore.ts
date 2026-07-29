@@ -3,8 +3,12 @@ import { apiRequest } from '../api/client';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { mmkvStorage } from '../storage/mmkvStorage';
-import type { Transaction, Budget, Bill, Subscription, FinancialAccount, FinancialGoal, Debt } from '../types';
+import type {
+  Transaction, Budget, Bill, Subscription, FinancialAccount, FinancialGoal, Debt,
+  AccountTransaction, RecurringAccountTransaction,
+} from '../types';
 import * as financeAccountService from '../services/financeAccountService';
+import type { CreateAccountTransactionInput, CreateRecurringInput } from '../services/financeAccountService';
 
 interface FinanceState {
   accounts: FinancialAccount[];
@@ -20,9 +24,24 @@ interface FinanceState {
   monthlySavings: number;
   isLoaded: boolean;
 
+  // Account ledger — keyed by accountId. Not eagerly fetched with the rest
+  // of the store; AccountDetailScreen calls fetchAccountLedger on mount.
+  accountTransactions: Record<string, AccountTransaction[]>;
+  recurringTransactions: Record<string, RecurringAccountTransaction[]>;
+
   addAccount: (a: FinancialAccount) => void;
   updateAccount: (id: string, updates: Partial<FinancialAccount>) => void;
   deleteAccount: (id: string) => void;
+  confirmAccountBalance: (accountId: string, actualBalance: number, reason?: string) => Promise<void>;
+  fetchAccountLedger: (accountId: string) => Promise<void>;
+  addAccountTransaction: (accountId: string, input: CreateAccountTransactionInput) => Promise<void>;
+  updateAccountTransaction: (accountId: string, id: string, updates: Partial<CreateAccountTransactionInput>) => Promise<void>;
+  deleteAccountTransaction: (accountId: string, id: string) => Promise<void>;
+  addRecurringTransaction: (accountId: string, input: CreateRecurringInput) => Promise<void>;
+  updateRecurringTransaction: (accountId: string, id: string, updates: Partial<CreateRecurringInput> & { isActive?: boolean }) => Promise<void>;
+  deleteRecurringTransaction: (accountId: string, id: string) => Promise<void>;
+  confirmRecurringTransaction: (accountId: string, id: string) => Promise<void>;
+  skipRecurringTransaction: (accountId: string, id: string) => Promise<void>;
   addTransaction: (t: Transaction) => void;
   deleteTransaction: (id: string) => void;
   addBudget: (b: Budget) => void;
@@ -66,6 +85,8 @@ export const useFinanceStore = create<FinanceState>()(
   subscriptions: [],
   financialGoals: [],
   debts: [],
+  accountTransactions: {},
+  recurringTransactions: {},
   totalNetWorth: 0,
   monthlyIncome: 0,
   monthlyExpenses: 0,
@@ -104,6 +125,84 @@ export const useFinanceStore = create<FinanceState>()(
       set((s) => ({ accounts: prev, ...calcDerived(prev, s.transactions) }));
     });
   },
+
+  // Ledger: server is the source of truth for account.balance from here on,
+  // so every action below applies the server's returned balance rather than
+  // computing it locally, then refetches that account's ledger to stay exact.
+  confirmAccountBalance: async (accountId, actualBalance, reason) => {
+    const { account } = await financeAccountService.confirmAccountBalance(accountId, actualBalance, reason);
+    set((s) => {
+      const accounts = s.accounts.map((a) => (a.id === accountId ? account : a));
+      return { accounts, ...calcDerived(accounts, s.transactions) };
+    });
+    await get().fetchAccountLedger(accountId);
+  },
+  fetchAccountLedger: async (accountId) => {
+    const [{ transactions }, { rules }] = await Promise.all([
+      financeAccountService.fetchAccountTransactions(accountId),
+      financeAccountService.fetchRecurringTransactions(accountId),
+    ]);
+    set((s) => ({
+      accountTransactions: { ...s.accountTransactions, [accountId]: transactions },
+      recurringTransactions: { ...s.recurringTransactions, [accountId]: rules },
+    }));
+  },
+  addAccountTransaction: async (accountId, input) => {
+    const result = await financeAccountService.createAccountTransaction(accountId, input);
+    set((s) => {
+      const accounts = s.accounts.map((a) => {
+        if (a.id === accountId) return { ...a, balance: result.balance };
+        if (input.transferToAccountId && a.id === input.transferToAccountId && result.transferAccountBalance !== undefined) {
+          return { ...a, balance: result.transferAccountBalance };
+        }
+        return a;
+      });
+      return { accounts, ...calcDerived(accounts, s.transactions) };
+    });
+    await get().fetchAccountLedger(accountId);
+    if (input.transferToAccountId) await get().fetchAccountLedger(input.transferToAccountId);
+  },
+  updateAccountTransaction: async (accountId, id, updates) => {
+    const { balance } = await financeAccountService.updateAccountTransaction(accountId, id, updates);
+    set((s) => {
+      const accounts = s.accounts.map((a) => (a.id === accountId ? { ...a, balance } : a));
+      return { accounts, ...calcDerived(accounts, s.transactions) };
+    });
+    await get().fetchAccountLedger(accountId);
+  },
+  deleteAccountTransaction: async (accountId, id) => {
+    const { balance } = await financeAccountService.deleteAccountTransaction(accountId, id);
+    set((s) => {
+      const accounts = s.accounts.map((a) => (a.id === accountId ? { ...a, balance } : a));
+      return { accounts, ...calcDerived(accounts, s.transactions) };
+    });
+    await get().fetchAccountLedger(accountId);
+  },
+  addRecurringTransaction: async (accountId, input) => {
+    await financeAccountService.createRecurringTransaction(accountId, input);
+    await get().fetchAccountLedger(accountId);
+  },
+  updateRecurringTransaction: async (accountId, id, updates) => {
+    await financeAccountService.updateRecurringTransaction(accountId, id, updates);
+    await get().fetchAccountLedger(accountId);
+  },
+  deleteRecurringTransaction: async (accountId, id) => {
+    await financeAccountService.deleteRecurringTransaction(accountId, id);
+    await get().fetchAccountLedger(accountId);
+  },
+  confirmRecurringTransaction: async (accountId, id) => {
+    const { balance } = await financeAccountService.confirmRecurringTransaction(accountId, id);
+    set((s) => {
+      const accounts = s.accounts.map((a) => (a.id === accountId ? { ...a, balance } : a));
+      return { accounts, ...calcDerived(accounts, s.transactions) };
+    });
+    await get().fetchAccountLedger(accountId);
+  },
+  skipRecurringTransaction: async (accountId, id) => {
+    await financeAccountService.skipRecurringTransaction(accountId, id);
+    await get().fetchAccountLedger(accountId);
+  },
+
   addTransaction: (t) => {
     set((s) => {
       const transactions = [t, ...s.transactions];
@@ -216,6 +315,8 @@ export const useFinanceStore = create<FinanceState>()(
         subscriptions: state.subscriptions,
         financialGoals: state.financialGoals,
         debts: state.debts,
+        accountTransactions: state.accountTransactions,
+        recurringTransactions: state.recurringTransactions,
         totalNetWorth: state.totalNetWorth,
         monthlyIncome: state.monthlyIncome,
         monthlyExpenses: state.monthlyExpenses,

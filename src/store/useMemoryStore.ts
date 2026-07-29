@@ -7,6 +7,12 @@ import { pushSyncEvent } from '../api/syncQueue';
 
 import { generateId } from '../utils/generateId';
 
+// This store has no server sync (fetchFromServer is a no-op below), so the
+// local addMemory cap is the only thing bounding its persisted size — same
+// convention as useTimelineStore.ts, but pinned memories are always kept
+// since a user pinning something is an explicit "don't let this age out".
+const MAX_MEMORIES = 1000;
+
 interface MemoryState {
   memories: FamilyMemory[];
   isLoaded: boolean;
@@ -28,9 +34,18 @@ export const useMemoryStore = create<MemoryState>()(
       addMemory: (m) => {
         const now = new Date().toISOString();
         const memory = { ...m, id: generateId(), familyId: authBridge.getSnapshot().familyId ?? '', createdAt: now, lastAccessed: now };
-        set((s) => ({
-          memories: [memory, ...s.memories],
-        }));
+        set((s) => {
+          const next = [memory, ...s.memories];
+          if (next.length <= MAX_MEMORIES) return { memories: next };
+          // Trim oldest unpinned entries first so pinned memories are never evicted.
+          const pinned = next.filter((mm) => mm.isPinned);
+          const unpinned = next.filter((mm) => !mm.isPinned);
+          const keepUnpinned = unpinned.slice(0, Math.max(0, MAX_MEMORIES - pinned.length));
+          const merged = [...pinned, ...keepUnpinned].sort(
+            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+          return { memories: merged };
+        });
         pushSyncEvent('ai', 'create', { ...memory, type: 'memory' });
       },
 

@@ -27,6 +27,11 @@ interface MoodState {
 import { generateId } from '../utils/generateId';
 const toDateStr = (d: Date) => d.toISOString().split('T')[0];
 
+// This store has no server sync (fetchFromServer is a no-op below), so the
+// local addMoodEntry cap is the only thing bounding its persisted size —
+// same convention as useTimelineStore.ts.
+const MAX_ENTRIES = 2000;
+
 export const useMoodStore = create<MoodState>()(
   persist(
     (set, get) => ({
@@ -36,7 +41,9 @@ export const useMoodStore = create<MoodState>()(
   addMoodEntry: (entry) => {
     const { entries } = get();
     const filtered = entries.filter((e) => !(e.memberId === entry.memberId && e.date === entry.date));
-    set({ entries: [...filtered, { ...entry, id: generateId(), createdAt: new Date().toISOString() }] });
+    const next = [...filtered, { ...entry, id: generateId(), createdAt: new Date().toISOString() }]
+      .sort((a, b) => b.date.localeCompare(a.date));
+    set({ entries: next.slice(0, MAX_ENTRIES) });
   },
 
   deleteMoodEntry: (id) => set((s) => ({ entries: s.entries.filter((e) => e.id !== id) })),

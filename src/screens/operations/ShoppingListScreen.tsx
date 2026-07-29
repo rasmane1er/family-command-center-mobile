@@ -18,6 +18,7 @@ import {
 import { useOperationsStore } from '../../store/useOperationsStore';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useTranslation } from 'react-i18next';
+import { useTabBarInset } from '../../hooks/useTabBarInset';
 
 const UNITS = ['ea', 'lbs', 'oz', 'g', 'kg', 'cup', 'tbsp', 'tsp', 'bag', 'box', 'bottle', 'can', 'pack', 'bunch', 'carton', 'gallon', 'loaf', 'jar', 'pint', 'block'];
 
@@ -25,6 +26,7 @@ export function ShoppingListScreen({ navigation }: any) {
   const { colors } = useTheme();
   const { t } = useTranslation('ops');
   const insets = useSafeAreaInsets();
+  const tabBarInset = useTabBarInset();
   const { items, budget, isLoaded, addItem, toggleItem, deleteItem, clearChecked, fetchFromServer } = useShoppingStore();
   const { pantryItems } = useOperationsStore();
   const [showAdd, setShowAdd] = useState(false);
@@ -261,7 +263,7 @@ export function ShoppingListScreen({ navigation }: any) {
       </CollapsibleHeader>
 
       {/* FAB */}
-      <Pressable onPress={() => setShowAdd(true)} style={[s.fab, { bottom: insets.bottom + 24 }]}>
+      <Pressable onPress={() => setShowAdd(true)} style={[s.fab, { bottom: tabBarInset }]}>
         <LinearGradient colors={['#1A6B3C', '#27AE60']} style={s.fabGrad}>
           <Ionicons name="add" size={28} color="#fff" />
         </LinearGradient>

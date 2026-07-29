@@ -5,6 +5,12 @@ import * as boardService from '../services/boardService';
 
 import { generateId } from '../utils/generateId';
 
+// Server-authoritative via boardService (fetchFromServer/hydratePosts fully
+// replace this array), so this cap only bounds the local mirror between
+// fetches — a trimmed-but-still-server-side post is restored on next sync.
+// Pinned posts are always kept, mirroring useMemoryStore.ts's convention.
+const MAX_POSTS = 1000;
+
 type PostPriority = 'low' | 'normal' | 'high' | 'urgent';
 type PostCategory = 'announcement' | 'reminder' | 'rule' | 'celebration' | 'info' | 'question';
 
@@ -44,7 +50,17 @@ export const useFamilyBoardStore = create<FamilyBoardState>()(
 
       addPost: async (p) => {
         const post: BoardPost = { ...p, id: generateId(), createdAt: new Date().toISOString(), reactions: [] };
-        set((s) => ({ posts: [post, ...s.posts] }));
+        set((s) => {
+          const next = [post, ...s.posts];
+          if (next.length <= MAX_POSTS) return { posts: next };
+          const pinned = next.filter((x) => x.isPinned);
+          const unpinned = next.filter((x) => !x.isPinned);
+          const keepUnpinned = unpinned.slice(0, Math.max(0, MAX_POSTS - pinned.length));
+          const merged = [...pinned, ...keepUnpinned].sort(
+            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+          return { posts: merged };
+        });
         try {
           await boardService.createPost(post);
         } catch {

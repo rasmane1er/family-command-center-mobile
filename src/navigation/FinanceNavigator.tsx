@@ -11,6 +11,7 @@ import { WealthBuilderScreen } from '../screens/finance/WealthBuilderScreen';
 import { InsuranceManagerScreen } from '../screens/finance/InsuranceManagerScreen';
 import { DebtPayoffScreen } from '../screens/finance/DebtPayoffScreen';
 import { DebtDetailScreen } from '../screens/finance/DebtDetailScreen';
+import { AccountDetailScreen } from '../screens/finance/AccountDetailScreen';
 import { UtilityTrackerScreen } from '../screens/finance/UtilityTrackerScreen';
 import { ConnectBankScreen } from '../screens/finance/ConnectBankScreen';
 import { TransactionsScreen } from '../screens/finance/TransactionsScreen';
@@ -39,6 +40,7 @@ export function FinanceNavigator() {
         <Stack.Screen name="InsuranceManager" component={withScreenErrorBoundary(InsuranceManagerScreen)} />
         <Stack.Screen name="DebtPayoff" component={withScreenErrorBoundary(DebtPayoffScreen)} />
         <Stack.Screen name="DebtDetail" component={withScreenErrorBoundary(DebtDetailScreen)} options={{ title: t('debt.detailsTitle') }} />
+        <Stack.Screen name="AccountDetail" component={withScreenErrorBoundary(AccountDetailScreen)} />
         <Stack.Screen name="UtilityTracker" component={withScreenErrorBoundary(UtilityTrackerScreen)} />
         <Stack.Screen name="ConnectBank" component={withScreenErrorBoundary(ConnectBankScreen)} />
         <Stack.Screen name="Transactions" component={withScreenErrorBoundary(TransactionsScreen)} options={{ title: t('transactions.title') }} />

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Modal, Alert, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { differenceInDays } from 'date-fns';
@@ -110,11 +110,11 @@ export function PantryScreen({ navigation }: any) {
     ]);
   };
 
-  const filtered = pantryItems.filter((item) => {
+  const filtered = useMemo(() => pantryItems.filter((item) => {
     const matchSearch = item.name.toLowerCase().includes(search.toLowerCase());
     const matchCat = category === 'All' || item.category === category;
     return matchSearch && matchCat;
-  });
+  }), [pantryItems, search, category]);
 
   const getExpiryStatus = (expiryDate?: string): { label: string; variant: 'success' | 'warning' | 'danger' | 'neutral' } => {
     if (!expiryDate) return { label: 'No expiry', variant: 'neutral' };
@@ -125,8 +125,11 @@ export function PantryScreen({ navigation }: any) {
     return { label: `${days}d left`, variant: 'success' };
   };
 
-  const lowStock = pantryItems.filter((i) => i.minQuantity && i.quantity <= i.minQuantity).length;
-  const expiring = pantryItems.filter((i) => {
+  const lowStock = useMemo(
+    () => pantryItems.filter((i) => i.minQuantity && i.quantity <= i.minQuantity).length,
+    [pantryItems]
+  );
+  const expiring = useMemo(() => pantryItems.filter((i) => {
     if (!i.expiryDate) return false;
     // "Expiring soon" is distinct from already-expired (see getExpiryStatus
     // above, which already treats them as separate states) — without the
@@ -134,7 +137,7 @@ export function PantryScreen({ navigation }: any) {
     // with both its own per-item badges and OperationsDashboardScreen's count.
     const days = differenceInDays(new Date(i.expiryDate), new Date());
     return days <= 3 && days >= 0;
-  }).length;
+  }).length, [pantryItems]);
 
   const s = makeStyles(colors);
 

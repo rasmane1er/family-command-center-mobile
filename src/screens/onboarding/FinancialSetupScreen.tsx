@@ -30,14 +30,18 @@ export function FinancialSetupScreen({ navigation }: any) {
 
   const addAccountLocal = () => {
     if (!accountName.trim()) return;
+    const openingBalance = parseFloat(accountBalance) || 0;
+    const now = new Date().toISOString();
     const acc: FinancialAccount = {
       id: `acc-${Date.now()}`,
       familyId: 'family-1',
       name: accountName.trim(),
       type: selectedType,
-      balance: parseFloat(accountBalance) || 0,
-      lastUpdated: new Date().toISOString(),
+      balance: openingBalance,
+      lastUpdated: now,
       isShared: true,
+      openingBalance,
+      openingBalanceDate: now,
     };
     setAccounts([...accounts, acc]);
     setAccountName('');

@@ -29,6 +29,7 @@ import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 import { generateId } from '../../utils/generateId';
+import { balanceFreshness, FRESHNESS_LABEL, FRESHNESS_COLOR } from '../../utils/accountFreshness';
 const CARD_W = width * 0.72;
 const TOOL_W = (width - 52) / 3;
 
@@ -446,11 +447,14 @@ export function FinanceDashboardScreen({ navigation }: any) {
         lastUpdated: new Date().toISOString(),
       });
     } else {
+      const openingBalance = parseFloat(newAccBalance) || 0;
+      const now = new Date().toISOString();
       addAccount({
         id: generateId(), familyId: useAuthStore.getState().familyId ?? '', name: newAccName.trim(),
-        type: newAccType, balance: parseFloat(newAccBalance) || 0,
+        type: newAccType, balance: openingBalance,
         institution: newAccInstitution.trim() || undefined,
-        lastUpdated: new Date().toISOString(), isShared: true,
+        lastUpdated: now, isShared: true,
+        openingBalance, openingBalanceDate: now,
       });
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -806,8 +810,11 @@ export function FinanceDashboardScreen({ navigation }: any) {
           style={s.cardsScroll} contentContainerStyle={s.cardsContent}>
           {accounts.map((acc) => {
             const grad = ACCOUNT_GRADIENTS[acc.type] ?? ACCOUNT_GRADIENTS.checking;
+            const hasPendingLedgerActivity = false; // per-account pending state loads on AccountDetail; dashboard uses date-only freshness
+            const freshness = balanceFreshness(acc.type, acc.lastVerifiedAt ?? acc.openingBalanceDate, hasPendingLedgerActivity);
             return (
-              <LinearGradient key={acc.id} colors={grad}
+              <Pressable key={acc.id} onPress={() => navigation.navigate('AccountDetail', { accountId: acc.id })}>
+              <LinearGradient colors={grad}
                 start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.accountCard}>
                 {/* Shimmer stripe */}
                 <View style={s.cardShimmer} />
@@ -852,7 +859,13 @@ export function FinanceDashboardScreen({ navigation }: any) {
                 </View>
                 {/* Card number dots */}
                 <Text style={s.cardDots}>•••• •••• •••• 4242</Text>
+                {/* Balance freshness */}
+                <View style={s.freshnessRow}>
+                  <View style={[s.freshnessDot, { backgroundColor: FRESHNESS_COLOR[freshness] }]} />
+                  <Text style={s.freshnessText}>{FRESHNESS_LABEL[freshness]}</Text>
+                </View>
               </LinearGradient>
+              </Pressable>
             );
           })}
 
@@ -1718,6 +1731,9 @@ const s = StyleSheet.create({
   contactless: { alignItems: 'center', justifyContent: 'center', width: 30, height: 30 },
   contactlessArc: { position: 'absolute', borderWidth: 2, borderColor: 'rgba(255,255,255,0.4)' },
   cardDots: { fontSize: 11, color: 'rgba(255,255,255,0.35)', letterSpacing: 2, marginTop: 2 },
+  freshnessRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 8 },
+  freshnessDot: { width: 6, height: 6, borderRadius: 3 },
+  freshnessText: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.85)', textTransform: 'uppercase', letterSpacing: 0.3 },
   addCard: { width: CARD_W * 0.55, height: 190, borderRadius: 24, overflow: 'hidden' },
   addCardInner: {
     flex: 1, alignItems: 'center', justifyContent: 'center',

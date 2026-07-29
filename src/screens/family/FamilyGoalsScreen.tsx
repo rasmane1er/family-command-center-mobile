@@ -18,6 +18,7 @@ import { useFamilyGoalsStore, FamilyGoal, GoalCategory, GoalMilestone } from '..
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useTranslation } from 'react-i18next';
+import type { FamilyMember } from '../../types';
 
 import { generateId } from '../../utils/generateId';
 
@@ -49,6 +50,113 @@ const ALL_CATEGORIES: GoalCategory[] = ['health', 'finance', 'education', 'trave
 const PRIORITY_COLORS = { low: colors.textMuted, medium: colors.warning, high: colors.danger };
 const COLOR_PALETTE = ['#E74C3C', '#27AE60', '#F5A623', '#2980B9', '#8E44AD', '#E91E63', '#16A085', '#95A5A6'];
 const ICON_OPTIONS = ['airplane', 'car', 'school', 'fitness', 'home', 'heart'];
+
+const GoalCard = React.memo(function GoalCard({
+  goal, showComplete = false, members, onDelete, onToggleMilestone, onComplete,
+}: {
+  goal: FamilyGoal;
+  showComplete?: boolean;
+  members: FamilyMember[];
+  onDelete: (id: string, title: string) => void;
+  onToggleMilestone: (goalId: string, milestoneId: string) => void;
+  onComplete: (goal: FamilyGoal) => void;
+}) {
+  const { t } = useTranslation('family');
+  const involvedMembers = goal.membersInvolved
+    .map((id) => members.find((m) => m.id === id))
+    .filter(Boolean);
+
+  return (
+    <Card style={styles.goalCard} variant="elevated">
+      {/* Goal header */}
+      <View style={styles.goalHeader}>
+        <View style={[styles.goalIconCircle, { backgroundColor: goal.color + '20' }]}>
+          <Ionicons name={goal.icon as any} size={22} color={goal.color} />
+        </View>
+        <View style={{ flex: 1, marginLeft: 12 }}>
+          <View style={styles.goalTitleRow}>
+            <Text style={styles.goalTitle}>{goal.title}</Text>
+            <Pressable onPress={() => onDelete(goal.id, goal.title)} style={styles.deleteBtn}>
+              <Ionicons name="trash-outline" size={15} color={colors.danger} />
+            </Pressable>
+          </View>
+          <View style={styles.goalMetaRow}>
+            <Badge
+              label={t(`family.screens.familyGoals.categoryLabels.${goal.category}`)}
+              variant="info"
+              size="sm"
+            />
+            <View style={[styles.priorityDot, { backgroundColor: PRIORITY_COLORS[goal.priority] }]} />
+            {goal.targetDate && (
+              <Text style={styles.targetDate}>{t('family.screens.familyGoals.targetDate', { date: goal.targetDate })}</Text>
+            )}
+          </View>
+        </View>
+      </View>
+
+      {goal.description ? (
+        <Text style={styles.goalDesc}>{goal.description}</Text>
+      ) : null}
+
+      {/* Progress bar */}
+      <View style={styles.progressRow}>
+        <ProgressBar progress={goal.progress / 100} color={goal.color} height={8} />
+        <Text style={[styles.progressLabel, { color: goal.color }]}>{goal.progress}%</Text>
+      </View>
+
+      {/* Members */}
+      {involvedMembers.length > 0 && (
+        <View style={styles.membersRow}>
+          {involvedMembers.map((m) => m && (
+            <View key={m.id} style={[styles.memberAvatar, { backgroundColor: m.avatarColor }]}>
+              <Text style={styles.memberAvatarText}>{m.name[0]}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {/* Milestones */}
+      {goal.milestones.length > 0 && (
+        <View style={styles.milestonesSection}>
+          <Text style={styles.milestonesTitle}>{t('family.screens.familyGoals.milestonesTitle')}</Text>
+          {goal.milestones.map((milestone) => (
+            <Pressable
+              key={milestone.id}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onToggleMilestone(goal.id, milestone.id);
+              }}
+              style={styles.milestoneRow}
+            >
+              <View style={[styles.milestoneCheckbox, milestone.isDone && { backgroundColor: goal.color, borderColor: goal.color }]}>
+                {milestone.isDone && <Ionicons name="checkmark" size={12} color="#fff" />}
+              </View>
+              <Text style={[styles.milestoneText, milestone.isDone && styles.milestoneDone]}>
+                {milestone.text}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
+
+      {/* Complete button when 100% */}
+      {goal.progress >= 100 && !goal.isCompleted && showComplete && (
+        <Pressable onPress={() => onComplete(goal)} style={[styles.completeBtn, { backgroundColor: goal.color }]}>
+          <Ionicons name="trophy" size={16} color="#fff" />
+          <Text style={styles.completeBtnText}>{t('family.screens.familyGoals.markComplete')}</Text>
+        </Pressable>
+      )}
+
+      {/* Completed badge */}
+      {goal.isCompleted && (
+        <View style={styles.completedBadgeRow}>
+          <Ionicons name="checkmark-circle" size={20} color={colors.success} />
+          <Text style={styles.completedBadgeText}>{t('family.screens.familyGoals.goalCompleted')}</Text>
+        </View>
+      )}
+    </Card>
+  );
+});
 
 export function FamilyGoalsScreen({ navigation }: any) {
   const { t } = useTranslation('family');
@@ -177,103 +285,6 @@ export function FamilyGoalsScreen({ navigation }: any) {
     ? activeGoals
     : activeGoals.filter((g) => g.category === selectedCategory);
 
-  const GoalCard = ({ goal, showComplete = false }: { goal: FamilyGoal; showComplete?: boolean }) => {
-    const involvedMembers = goal.membersInvolved
-      .map((id) => members.find((m) => m.id === id))
-      .filter(Boolean);
-
-    return (
-      <Card style={styles.goalCard} variant="elevated">
-        {/* Goal header */}
-        <View style={styles.goalHeader}>
-          <View style={[styles.goalIconCircle, { backgroundColor: goal.color + '20' }]}>
-            <Ionicons name={goal.icon as any} size={22} color={goal.color} />
-          </View>
-          <View style={{ flex: 1, marginLeft: 12 }}>
-            <View style={styles.goalTitleRow}>
-              <Text style={styles.goalTitle}>{goal.title}</Text>
-              <Pressable onPress={() => handleDelete(goal.id, goal.title)} style={styles.deleteBtn}>
-                <Ionicons name="trash-outline" size={15} color={colors.danger} />
-              </Pressable>
-            </View>
-            <View style={styles.goalMetaRow}>
-              <Badge
-                label={t(`family.screens.familyGoals.categoryLabels.${goal.category}`)}
-                variant="info"
-                size="sm"
-              />
-              <View style={[styles.priorityDot, { backgroundColor: PRIORITY_COLORS[goal.priority] }]} />
-              {goal.targetDate && (
-                <Text style={styles.targetDate}>{t('family.screens.familyGoals.targetDate', { date: goal.targetDate })}</Text>
-              )}
-            </View>
-          </View>
-        </View>
-
-        {goal.description ? (
-          <Text style={styles.goalDesc}>{goal.description}</Text>
-        ) : null}
-
-        {/* Progress bar */}
-        <View style={styles.progressRow}>
-          <ProgressBar progress={goal.progress / 100} color={goal.color} height={8} />
-          <Text style={[styles.progressLabel, { color: goal.color }]}>{goal.progress}%</Text>
-        </View>
-
-        {/* Members */}
-        {involvedMembers.length > 0 && (
-          <View style={styles.membersRow}>
-            {involvedMembers.map((m) => m && (
-              <View key={m.id} style={[styles.memberAvatar, { backgroundColor: m.avatarColor }]}>
-                <Text style={styles.memberAvatarText}>{m.name[0]}</Text>
-              </View>
-            ))}
-          </View>
-        )}
-
-        {/* Milestones */}
-        {goal.milestones.length > 0 && (
-          <View style={styles.milestonesSection}>
-            <Text style={styles.milestonesTitle}>{t('family.screens.familyGoals.milestonesTitle')}</Text>
-            {goal.milestones.map((milestone) => (
-              <Pressable
-                key={milestone.id}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  toggleMilestone(goal.id, milestone.id);
-                }}
-                style={styles.milestoneRow}
-              >
-                <View style={[styles.milestoneCheckbox, milestone.isDone && { backgroundColor: goal.color, borderColor: goal.color }]}>
-                  {milestone.isDone && <Ionicons name="checkmark" size={12} color="#fff" />}
-                </View>
-                <Text style={[styles.milestoneText, milestone.isDone && styles.milestoneDone]}>
-                  {milestone.text}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        )}
-
-        {/* Complete button when 100% */}
-        {goal.progress >= 100 && !goal.isCompleted && showComplete && (
-          <Pressable onPress={() => handleComplete(goal)} style={[styles.completeBtn, { backgroundColor: goal.color }]}>
-            <Ionicons name="trophy" size={16} color="#fff" />
-            <Text style={styles.completeBtnText}>{t('family.screens.familyGoals.markComplete')}</Text>
-          </Pressable>
-        )}
-
-        {/* Completed badge */}
-        {goal.isCompleted && (
-          <View style={styles.completedBadgeRow}>
-            <Ionicons name="checkmark-circle" size={20} color={colors.success} />
-            <Text style={styles.completedBadgeText}>{t('family.screens.familyGoals.goalCompleted')}</Text>
-          </View>
-        )}
-      </Card>
-    );
-  };
-
   const screenHeader = (
     <LinearGradient colors={['#1A237E', '#283593']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
       <View style={styles.headerTop}>
@@ -360,7 +371,7 @@ export function FamilyGoalsScreen({ navigation }: any) {
                   const pOrder = { high: 0, medium: 1, low: 2 };
                   return pOrder[a.priority] - pOrder[b.priority];
                 })
-                .map((goal) => <GoalCard key={goal.id} goal={goal} showComplete />)
+                .map((goal) => <GoalCard key={goal.id} goal={goal} showComplete members={members} onDelete={handleDelete} onToggleMilestone={toggleMilestone} onComplete={handleComplete} />)
             )}
           </>
         )}
@@ -377,7 +388,7 @@ export function FamilyGoalsScreen({ navigation }: any) {
             ) : (
               completedGoals.map((goal) => (
                 <View key={goal.id}>
-                  <GoalCard goal={goal} />
+                  <GoalCard goal={goal} members={members} onDelete={handleDelete} onToggleMilestone={toggleMilestone} onComplete={handleComplete} />
                 </View>
               ))
             )}
@@ -421,7 +432,7 @@ export function FamilyGoalsScreen({ navigation }: any) {
                 <Text style={styles.emptyTitle}>{t('family.screens.familyGoals.noCategoryGoalsTitle')}</Text>
               </View>
             ) : (
-              categoryGoals.map((goal) => <GoalCard key={goal.id} goal={goal} showComplete />)
+              categoryGoals.map((goal) => <GoalCard key={goal.id} goal={goal} showComplete members={members} onDelete={handleDelete} onToggleMilestone={toggleMilestone} onComplete={handleComplete} />)
             )}
           </>
         )}

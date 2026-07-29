@@ -14,6 +14,26 @@ import type {
 } from '../types';
 import * as guardianService from '../services/guardianService';
 
+// pendingCommands is in-memory only (not persisted, see partialize below),
+// but it's never trimmed on its own — completed/failed commands are only
+// status-flipped, so a long-running app session keeps growing this array
+// forever and it's iterated on every hydrate() call. Trim resolved
+// (executed/failed) entries first, oldest-first, and never drop anything
+// still 'pending' since that's load-bearing for the optimistic-update flow.
+const MAX_PENDING_COMMANDS = 200;
+function trimPendingCommands(commands: GuardianCommand[]): GuardianCommand[] {
+  if (commands.length <= MAX_PENDING_COMMANDS) return commands;
+  const pending = commands.filter((c) => c.status === 'pending');
+  const resolved = commands.filter((c) => c.status !== 'pending');
+  const keepResolved = resolved.slice(-Math.max(0, MAX_PENDING_COMMANDS - pending.length));
+  return [...keepResolved, ...pending];
+}
+
+// appUsage currently has no callers anywhere in the app (reporting-only,
+// dead today per the comment at addAppUsage below), but cap it defensively
+// in case it gets wired up — same convention as the other unbounded stores.
+const MAX_APP_USAGE = 1000;
+
 // Screens create entries with their own locally-generated `id` (e.g.
 // `geo-${Date.now()}`) and, in a few places (ScreenTimeScreen's
 // `ensureRule()`), immediately chain an update against that same id in the
@@ -344,7 +364,7 @@ export const useGuardianStore = create<GuardianStore>()(
       // beyond the optimistic add (screens read historical usage via
       // hydrate-adjacent fetches, not this local cache, for cross-device data)
       addAppUsage: (entry) => {
-        set((s) => ({ appUsage: [...s.appUsage, entry] }));
+        set((s) => ({ appUsage: [...s.appUsage, entry].slice(-MAX_APP_USAGE) }));
         guardianService
           .submitAppUsage(entry.deviceId, [
             { appName: entry.appName, packageName: entry.packageName, usageMinutes: entry.usageMinutes, date: entry.date },
@@ -469,7 +489,7 @@ export const useGuardianStore = create<GuardianStore>()(
           sentAt: new Date().toISOString(),
           status: 'pending',
         };
-        set((s) => ({ pendingCommands: [...s.pendingCommands, optimistic] }));
+        set((s) => ({ pendingCommands: trimPendingCommands([...s.pendingCommands, optimistic]) }));
 
         // Immediately flip the device status locally so buttons update
         // without waiting for the next hydrate or child confirmation.
@@ -548,10 +568,10 @@ export const useGuardianStore = create<GuardianStore>()(
       })),
 
       setPendingCommands: (deviceId, commands) => set((s) => ({
-        pendingCommands: [
+        pendingCommands: trimPendingCommands([
           ...s.pendingCommands.filter((c) => c.deviceId !== deviceId || c.status !== 'pending'),
           ...commands,
-        ],
+        ]),
       })),
 
       streamingDeviceId: null,

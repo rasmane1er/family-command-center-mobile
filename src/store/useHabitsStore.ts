@@ -32,6 +32,11 @@ interface HabitsState {
 import { generateId } from '../utils/generateId';
 const toDateStr = (d: Date) => d.toISOString().split('T')[0];
 
+// calcStreak() below only ever looks back 365 days, and HabitsScreen only
+// ever renders the last 7 days, so nothing reads completedDates entries
+// older than a year — cap with margin instead of growing this forever.
+const MAX_COMPLETED_DATES = 400;
+
 function calcStreak(dates: string[], from: string): number {
   let streak = 0;
   const base = new Date(from);
@@ -78,7 +83,7 @@ export const useHabitsStore = create<HabitsState>()(
         set((s) => ({
           habits: s.habits.map((h) => {
             if (h.id !== id || h.completedDates.includes(date)) return h;
-            const newDates = [...h.completedDates, date].sort();
+            const newDates = [...h.completedDates, date].sort().slice(-MAX_COMPLETED_DATES);
             const streak = calcStreak(newDates, date);
             return { ...h, completedDates: newDates, streak, longestStreak: Math.max(h.longestStreak, streak) };
           }),

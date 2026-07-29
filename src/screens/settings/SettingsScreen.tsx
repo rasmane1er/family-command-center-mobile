@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator, Alert, I18nManager, Linking, Modal, Platform, Pressable, ScrollView, Share,
-  StyleSheet, Switch, Text, TextInput, TouchableOpacity, View,
+  StyleSheet, Switch, Text, TouchableOpacity, View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -16,7 +16,6 @@ import { i18n } from '../../i18n';
 import { Card } from '../../components/common/Card';
 import { clearLocalAppData } from '../../storage/resetLocalData';
 import { resetAllStores } from '../../storage/resetAllStores';
-import { useAIStore } from '../../store/useAIStore';
 import { useAppStore } from '../../store/useAppStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -87,8 +86,6 @@ export function SettingsScreen({ navigation }: any) {
   const isGrandparent = activeMember?.role === 'grandparent';
   const roleLabel     = activeMember ? activeMember.role.charAt(0).toUpperCase() + activeMember.role.slice(1) : 'Family';
 
-  const [apiKeyInput,       setApiKeyInput]       = useState('');
-  const [showApiKey,        setShowApiKey]         = useState(false);
   const [showLanguageModal, setShowLanguageModal]  = useState(false);
   const [biometricEnabled,  setBiometricEnabled]   = useState(settings.biometricLock ?? false);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
@@ -101,8 +98,6 @@ export function SettingsScreen({ navigation }: any) {
     budgetAlerts: true, achievementAlerts: true, familyUpdates: true,
     birthdayReminders: true, eventReminders: true,
   });
-
-  const setAIKey = useAIStore((s) => s.setApiKey);
 
   const currentLanguage = LANGUAGES.find((l) => l.code === (settings.language || 'en')) || LANGUAGES[0];
 
@@ -132,13 +127,6 @@ export function SettingsScreen({ navigation }: any) {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const handleSaveApiKey = () => {
-    if (!apiKeyInput.trim()) { Alert.alert(t('common.error'), t('settings.apiKeyInvalid')); return; }
-    setAIKey(apiKeyInput.trim());
-    Alert.alert(t('settings.apiKeySaved'), t('settings.apiKeySavedMsg'));
-    setApiKeyInput('');
-  };
 
   const handleResetLocalData = () => {
     Alert.alert(t('settings.resetConfirm'), t('settings.resetConfirmMsg'), [
@@ -289,7 +277,7 @@ export function SettingsScreen({ navigation }: any) {
       // fall through to a direct store link
     }
 
-    const appStoreUrl = 'https://apps.apple.com/app/id000000000?action=write-review';
+    const appStoreUrl = 'https://apps.apple.com/app/id6792257899?action=write-review';
     const playStoreUrl = 'https://play.google.com/store/apps/details?id=com.familycommandcenter.app';
     const url = Platform.OS === 'ios' ? appStoreUrl : playStoreUrl;
     Linking.openURL(url).catch(() => {
@@ -305,7 +293,7 @@ export function SettingsScreen({ navigation }: any) {
     Share.share({
       title: 'Family Command Center',
       message:
-        'Check out Family Command Center — the all-in-one app to manage your family\'s life! Tasks, finance, health, AI assistant and more.\n\nhttps://familycommandcenter.app',
+        'Check out Family Command Center — the all-in-one app to manage your family\'s life! Tasks, finance, health, AI assistant and more.\n\nhttps://myfamilycommandcenter.com',
     }).catch(() => {});
   };
 
@@ -522,24 +510,6 @@ export function SettingsScreen({ navigation }: any) {
                 </View>
               </View>
             )}
-
-            {/* ── AI CONFIG ── */}
-            <Text style={s.sectionTitle}>{t('settings.aiConfig')}</Text>
-            <Card style={s.settingCard} variant="elevated">
-              <Text style={s.settingLabel}>{t('settings.apiKey')}</Text>
-              <Text style={s.settingDesc}>{t('settings.apiKeyDesc')}</Text>
-              <View style={s.apiKeyRow}>
-                <TextInput style={s.apiKeyInput} value={apiKeyInput} onChangeText={setApiKeyInput}
-                  placeholder={t('settings.apiKeyPlaceholder')} placeholderTextColor={colors.textMuted}
-                  secureTextEntry={!showApiKey} autoCapitalize="none" autoCorrect={false} />
-                <Pressable onPress={() => setShowApiKey((v) => !v)} style={s.apiToggle}>
-                  <Ionicons name={showApiKey ? 'eye-off' : 'eye'} size={18} color={colors.textMuted} />
-                </Pressable>
-              </View>
-              <Pressable onPress={handleSaveApiKey} style={s.saveKeyBtn}>
-                <Text style={s.saveKeyText}>{t('settings.saveApiKey')}</Text>
-              </Pressable>
-            </Card>
         </>
 
         {/* ── NOTIFICATIONS ── */}
@@ -840,11 +810,6 @@ function makeStyles(colors: ReturnType<typeof useTheme>['colors'], isDark: boole
     settingCard:     { borderRadius: 14, marginBottom: 4, backgroundColor: colors.card },
     settingLabel:    { fontSize: 15, fontWeight: '700', color: colors.text, marginBottom: 4 },
     settingDesc:     { fontSize: 12, color: colors.textSecondary, marginBottom: 10 },
-    apiKeyRow:       { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.background, borderRadius: 10, borderWidth: 1, borderColor: colors.border, marginBottom: 10 },
-    apiKeyInput:     { flex: 1, paddingVertical: 10, paddingHorizontal: 12, fontSize: 14, color: colors.text },
-    apiToggle:       { padding: 10 },
-    saveKeyBtn:      { backgroundColor: colors.primary, borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
-    saveKeyText:     { fontSize: 14, fontWeight: '700', color: '#fff' },
     toggleRow:       { flexDirection: 'row', alignItems: 'center', paddingVertical: 13 },
     toggleRowBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
     toggleLabel:     { fontSize: 14, fontWeight: '600', color: colors.text },

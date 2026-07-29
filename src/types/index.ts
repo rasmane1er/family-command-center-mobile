@@ -321,10 +321,63 @@ export interface FinancialAccount {
   familyId: string;
   name: string;
   type: AccountType;
+  // Derived from openingBalance + cleared/reconciled AccountTransaction rows
+  // — recomputed server-side on every ledger mutation, never client-set.
   balance: number;
   institution?: string;
   lastUpdated: string;
   isShared: boolean;
+  openingBalance: number;
+  openingBalanceDate: string;
+  lastVerifiedBalance?: number;
+  lastVerifiedAt?: string;
+}
+
+export type AccountTransactionType = 'INCOME' | 'EXPENSE' | 'ADJUSTMENT';
+export type AccountTransactionStatus = 'PENDING' | 'CLEARED' | 'SKIPPED' | 'RECONCILED';
+export type RecurringFrequency = 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY' | 'YEARLY';
+
+export interface AccountTransaction {
+  id: string;
+  accountId: string;
+  familyId: string;
+  type: AccountTransactionType;
+  amount: number;
+  date: string;
+  status: AccountTransactionStatus;
+  category?: string;
+  merchant?: string;
+  notes?: string;
+  recurringRuleId?: string;
+  transferGroupId?: string;
+  createdByUserId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RecurringAccountTransaction {
+  id: string;
+  accountId: string;
+  familyId: string;
+  name: string;
+  type: 'INCOME' | 'EXPENSE';
+  amount: number;
+  frequency: RecurringFrequency;
+  startDate: string;
+  nextDueDate: string;
+  category?: string;
+  isActive: boolean;
+}
+
+export interface BalanceAdjustment {
+  id: string;
+  accountId: string;
+  familyId: string;
+  previousCalculatedBalance: number;
+  enteredActualBalance: number;
+  adjustmentAmount: number;
+  reason?: string;
+  createdAt: string;
 }
 
 export interface FinancialGoal {

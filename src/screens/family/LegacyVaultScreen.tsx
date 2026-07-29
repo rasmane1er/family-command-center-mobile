@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, FlatList, Pressable, Alert, Modal, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -137,88 +137,91 @@ export function LegacyVaultScreen({ navigation }: any) {
 
       <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
         {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
-        <ScrollView
+        <FlatList
+          data={filtered}
+          keyExtractor={(item) => item.id}
           contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
           onScroll={onScroll}
           onScrollEndDrag={onScrollEndDrag}
           onMomentumScrollEnd={onMomentumScrollEnd}
           scrollEventThrottle={scrollEventThrottle}
-        >
-        {filter === 'all' && featured.length > 0 && (
-          <>
-            <Text style={styles.sectionTitle}>Featured</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.featuredScroll}>
-              {featured.map((item) => {
-                const cfg = TYPE_CONFIG[item.type];
-                return (
-                  <Pressable key={item.id} style={[styles.featuredCard, { backgroundColor: cfg.color + '15', borderColor: cfg.color + '40' }]}>
-                    <Ionicons name={cfg.icon as any} size={28} color={cfg.color} />
-                    <Text style={styles.featuredTitle} numberOfLines={2}>{item.title}</Text>
-                    <Text style={styles.featuredAuthor}>{getMemberName(item.memberId)}</Text>
+          ListHeaderComponent={
+            <>
+              {filter === 'all' && featured.length > 0 && (
+                <>
+                  <Text style={styles.sectionTitle}>Featured</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.featuredScroll}>
+                    {featured.map((item) => {
+                      const cfg = TYPE_CONFIG[item.type];
+                      return (
+                        <Pressable key={item.id} style={[styles.featuredCard, { backgroundColor: cfg.color + '15', borderColor: cfg.color + '40' }]}>
+                          <Ionicons name={cfg.icon as any} size={28} color={cfg.color} />
+                          <Text style={styles.featuredTitle} numberOfLines={2}>{item.title}</Text>
+                          <Text style={styles.featuredAuthor}>{getMemberName(item.memberId)}</Text>
+                        </Pressable>
+                      );
+                    })}
+                  </ScrollView>
+                </>
+              )}
+              <Text style={styles.sectionTitle}>{filter === 'all' ? 'All Entries' : FILTER_TYPES.find((f) => f.key === filter)?.label}</Text>
+            </>
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Ionicons name="library-outline" size={60} color={colors.textMuted} />
+              <Text style={styles.emptyTitle}>No entries yet</Text>
+              <Text style={styles.emptyDesc}>Start preserving your family's legacy by adding stories, traditions, and milestones.</Text>
+            </View>
+          }
+          renderItem={({ item }) => {
+            const cfg = TYPE_CONFIG[item.type];
+            return (
+              <Card style={styles.itemCard} variant="elevated">
+                <View style={styles.itemHeader}>
+                  <View style={[styles.typeIcon, { backgroundColor: cfg.color + '15' }]}>
+                    <Ionicons name={cfg.icon as any} size={18} color={cfg.color} />
+                  </View>
+                  <View style={{ flex: 1, marginLeft: 10 }}>
+                    <Text style={styles.itemTitle}>{item.title}</Text>
+                    <Text style={styles.itemMeta}>{getMemberName(item.memberId)} {item.date ? `• ${new Date(item.date).getFullYear()}` : ''}</Text>
+                  </View>
+                  <Pressable onPress={() => toggleFeatured(item.id)} style={{ marginRight: 12 }}>
+                    <Ionicons name={item.isFeatured ? 'star' : 'star-outline'} size={20} color={item.isFeatured ? colors.secondary : colors.textMuted} />
                   </Pressable>
-                );
-              })}
-            </ScrollView>
-          </>
-        )}
-
-        <Text style={styles.sectionTitle}>{filter === 'all' ? 'All Entries' : FILTER_TYPES.find((f) => f.key === filter)?.label}</Text>
-        {filtered.map((item) => {
-          const cfg = TYPE_CONFIG[item.type];
-          return (
-            <Card key={item.id} style={styles.itemCard} variant="elevated">
-              <View style={styles.itemHeader}>
-                <View style={[styles.typeIcon, { backgroundColor: cfg.color + '15' }]}>
-                  <Ionicons name={cfg.icon as any} size={18} color={cfg.color} />
-                </View>
-                <View style={{ flex: 1, marginLeft: 10 }}>
-                  <Text style={styles.itemTitle}>{item.title}</Text>
-                  <Text style={styles.itemMeta}>{getMemberName(item.memberId)} {item.date ? `• ${new Date(item.date).getFullYear()}` : ''}</Text>
-                </View>
-                <Pressable onPress={() => toggleFeatured(item.id)} style={{ marginRight: 12 }}>
-                  <Ionicons name={item.isFeatured ? 'star' : 'star-outline'} size={20} color={item.isFeatured ? colors.secondary : colors.textMuted} />
-                </Pressable>
-                <Pressable
-                  onPress={() => {
-                    Alert.alert('Delete Entry', `Remove "${item.title}" from the vault?`, [
-                      { text: 'Cancel', style: 'cancel' },
-                      { text: 'Delete', style: 'destructive', onPress: () => deleteItem(item.id) },
-                    ]);
-                  }}
-                >
-                  <Ionicons name="trash-outline" size={20} color={colors.textMuted} />
-                </Pressable>
-              </View>
-              <Text style={styles.itemContent} numberOfLines={3}>{item.content}</Text>
-              <View style={styles.itemFooter}>
-                <View style={styles.reactionsRow}>
-                  {item.reactions.slice(0, 4).map((r, i) => (
-                    <Text key={i} style={styles.reactionEmoji}>{r.emoji}</Text>
-                  ))}
-                  {item.reactions.length > 0 && (
-                    <Text style={styles.reactionCount}>{item.reactions.length}</Text>
-                  )}
                   <Pressable
-                    onPress={() => addReaction(item.id, 'member-1', '❤️')}
-                    style={styles.addReactionBtn}
+                    onPress={() => {
+                      Alert.alert('Delete Entry', `Remove "${item.title}" from the vault?`, [
+                        { text: 'Cancel', style: 'cancel' },
+                        { text: 'Delete', style: 'destructive', onPress: () => deleteItem(item.id) },
+                      ]);
+                    }}
                   >
-                    <Ionicons name="add-circle-outline" size={18} color={colors.textMuted} />
+                    <Ionicons name="trash-outline" size={20} color={colors.textMuted} />
                   </Pressable>
                 </View>
-                <Badge label={cfg.label} variant="neutral" size="sm" />
-              </View>
-            </Card>
-          );
-        })}
-
-        {filtered.length === 0 && (
-          <View style={styles.emptyState}>
-            <Ionicons name="library-outline" size={60} color={colors.textMuted} />
-            <Text style={styles.emptyTitle}>No entries yet</Text>
-            <Text style={styles.emptyDesc}>Start preserving your family's legacy by adding stories, traditions, and milestones.</Text>
-          </View>
-        )}
-        </ScrollView>
+                <Text style={styles.itemContent} numberOfLines={3}>{item.content}</Text>
+                <View style={styles.itemFooter}>
+                  <View style={styles.reactionsRow}>
+                    {item.reactions.slice(0, 4).map((r, i) => (
+                      <Text key={i} style={styles.reactionEmoji}>{r.emoji}</Text>
+                    ))}
+                    {item.reactions.length > 0 && (
+                      <Text style={styles.reactionCount}>{item.reactions.length}</Text>
+                    )}
+                    <Pressable
+                      onPress={() => addReaction(item.id, 'member-1', '❤️')}
+                      style={styles.addReactionBtn}
+                    >
+                      <Ionicons name="add-circle-outline" size={18} color={colors.textMuted} />
+                    </Pressable>
+                  </View>
+                  <Badge label={cfg.label} variant="neutral" size="sm" />
+                </View>
+              </Card>
+            );
+          }}
+        />
         )}
       </CollapsibleHeader>
 

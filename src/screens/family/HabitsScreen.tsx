@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, FlatList, Pressable, Alert, Modal, TextInput, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -177,19 +177,35 @@ export function HabitsScreen({ navigation }: any) {
 
       <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
         {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
-      <ScrollView
+      <FlatList
+        data={displayed}
+        keyExtractor={(habit) => habit.id}
         onScroll={onScroll}
         onScrollEndDrag={onScrollEndDrag}
         onMomentumScrollEnd={onMomentumScrollEnd}
         scrollEventThrottle={scrollEventThrottle}
         contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
-      >
-        {displayed.map((habit) => {
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            <Text style={{ fontSize: 56 }}>🌱</Text>
+            <Text style={styles.emptyTitle}>No {tab} habits yet</Text>
+            <Text style={styles.emptyDesc}>Start building healthy habits for your family. Tap + to add your first habit!</Text>
+          </View>
+        }
+        ListFooterComponent={
+          <Card variant="elevated" style={styles.tipsCard}>
+            <Text style={styles.tipsTitle}>💡 Habit Science</Text>
+            <Text style={styles.tipText}>• It takes 21 days to form a new habit, 66 days for it to become automatic.</Text>
+            <Text style={styles.tipText}>• Family habits are 73% more likely to stick than solo habits.</Text>
+            <Text style={styles.tipText}>• Habit streaks release dopamine — celebrate every milestone!</Text>
+          </Card>
+        }
+        renderItem={({ item: habit }) => {
           const done = isCompletedToday(habit.id);
           const member = habit.memberId ? members.find((m) => m.id === habit.memberId) : null;
 
           return (
-            <Card key={habit.id} style={{ ...styles.habitCard, ...(done ? styles.habitCardDone : {}) }} variant="elevated">
+            <Card style={{ ...styles.habitCard, ...(done ? styles.habitCardDone : {}) }} variant="elevated">
               <View style={styles.habitTop}>
                 <Pressable onPress={() => handleToggle(habit.id)} style={[styles.habitIcon, { backgroundColor: done ? habit.color : habit.color + '20' }]}>
                   <Ionicons name={habit.icon as any} size={22} color={done ? '#fff' : habit.color} />
@@ -252,23 +268,8 @@ export function HabitsScreen({ navigation }: any) {
               </View>
             </Card>
           );
-        })}
-
-        {displayed.length === 0 && (
-          <View style={styles.empty}>
-            <Text style={{ fontSize: 56 }}>🌱</Text>
-            <Text style={styles.emptyTitle}>No {tab} habits yet</Text>
-            <Text style={styles.emptyDesc}>Start building healthy habits for your family. Tap + to add your first habit!</Text>
-          </View>
-        )}
-
-        <Card variant="elevated" style={styles.tipsCard}>
-          <Text style={styles.tipsTitle}>💡 Habit Science</Text>
-          <Text style={styles.tipText}>• It takes 21 days to form a new habit, 66 days for it to become automatic.</Text>
-          <Text style={styles.tipText}>• Family habits are 73% more likely to stick than solo habits.</Text>
-          <Text style={styles.tipText}>• Habit streaks release dopamine — celebrate every milestone!</Text>
-        </Card>
-      </ScrollView>
+        }}
+      />
         )}
       </CollapsibleHeader>
 

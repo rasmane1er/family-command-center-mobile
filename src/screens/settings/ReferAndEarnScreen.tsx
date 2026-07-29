@@ -16,7 +16,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../theme/ThemeContext';
 import { getReferralInfo, ReferralStats } from '../../api/referrals';
 
-const APP_STORE_LINK = 'https://familycommandcenter.app'; // replace with real deep link / store URL
+const APP_STORE_LINK = 'https://myfamilycommandcenter.com';
 
 export function ReferAndEarnScreen() {
   const { colors } = useTheme();

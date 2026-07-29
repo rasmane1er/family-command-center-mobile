@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, Pressable, TextInput, Modal,
+  View, Text, StyleSheet, ScrollView, FlatList, Pressable, TextInput, Modal,
   KeyboardAvoidingView, Platform, Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -236,32 +236,32 @@ export function FamilyPollsScreen({ navigation }: any) {
 
       <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
         {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
-      <ScrollView
+      <FlatList
+        data={displayed}
+        keyExtractor={(poll) => poll.id}
         onScroll={onScroll}
         onScrollEndDrag={onScrollEndDrag}
         onMomentumScrollEnd={onMomentumScrollEnd}
         scrollEventThrottle={scrollEventThrottle}
-        contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+        contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }, displayed.length === 0 && { flexGrow: 1 }]}
         showsVerticalScrollIndicator={false}
-      >
-        {displayed.map((poll) => (
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            <Text style={{ fontSize: 48 }}>🗳️</Text>
+            <Text style={styles.emptyTitle}>{activeTab === 'active' ? t('family.screens.familyPolls.emptyTitleActive') : t('family.screens.familyPolls.emptyTitleClosed')}</Text>
+            <Text style={styles.emptyDesc}>{activeTab === 'active' ? t('family.screens.familyPolls.emptyDescActive') : t('family.screens.familyPolls.emptyDescClosed')}</Text>
+          </View>
+        }
+        renderItem={({ item: poll }) => (
           <PollCard
-            key={poll.id}
             poll={poll}
             memberId={me?.id || 'member-1'}
             onVote={(optId) => handleVote(poll.id, optId)}
             onClose={() => { Alert.alert(t('family.screens.familyPolls.closePollTitle'), t('family.screens.familyPolls.closePollMsg'), [{ text: t('family.screens.familyPolls.cancel'), style: 'cancel' }, { text: t('family.screens.familyPolls.close'), onPress: () => closePoll(poll.id) }]); }}
             onDelete={() => handleDelete(poll.id, poll.question)}
           />
-        ))}
-        {displayed.length === 0 && (
-          <View style={styles.empty}>
-            <Text style={{ fontSize: 48 }}>🗳️</Text>
-            <Text style={styles.emptyTitle}>{activeTab === 'active' ? t('family.screens.familyPolls.emptyTitleActive') : t('family.screens.familyPolls.emptyTitleClosed')}</Text>
-            <Text style={styles.emptyDesc}>{activeTab === 'active' ? t('family.screens.familyPolls.emptyDescActive') : t('family.screens.familyPolls.emptyDescClosed')}</Text>
-          </View>
         )}
-      </ScrollView>
+      />
         )}
       </CollapsibleHeader>
 

@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useAuthStore } from '../../store/useAuthStore';
 import {
-  View, Text, StyleSheet, ScrollView, Pressable, TextInput, Modal,
+  View, Text, StyleSheet, ScrollView, FlatList, Pressable, TextInput, Modal,
   KeyboardAvoidingView, Platform, Alert, Switch, RefreshControl,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -479,47 +479,50 @@ export function FamilyBoardScreen({ navigation }: any) {
 
       <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
         {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
-          <ScrollView
-            contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+          <FlatList
+            data={filtered}
+            keyExtractor={(post) => post.id}
+            contentContainerStyle={[
+              styles.content,
+              { paddingBottom: 100, paddingTop: contentPaddingTop },
+              filtered.length === 0 && { flexGrow: 1 },
+            ]}
             showsVerticalScrollIndicator={false}
             onScroll={onScroll}
             onScrollEndDrag={onScrollEndDrag}
             onMomentumScrollEnd={onMomentumScrollEnd}
             scrollEventThrottle={scrollEventThrottle}
             refreshControl={<RefreshControl refreshing={isHydrating} onRefresh={onRefresh} tintColor={colors.primary} />}
-          >
-        {activePosts.length === 0 && isLoaded && (
-          <View style={styles.emptyState}>
-            <Text style={{ fontSize: 60 }}>📋</Text>
-            <Text style={styles.emptyTitle}>Board is Empty</Text>
-            <Text style={styles.emptyDesc}>Post announcements, reminders, and updates for the whole family</Text>
-            <Pressable
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setShowAdd(true); }}
-              style={styles.demoBtn}
-            >
-              <Text style={styles.demoBtnText}>Add First Post</Text>
-            </Pressable>
-          </View>
-        )}
-
-        {filtered.map((post) => (
-          <PostCard
-            key={post.id}
-            post={post}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setSelectedPost(post);
-            }}
+            ListEmptyComponent={
+              activePosts.length === 0 && isLoaded ? (
+                <View style={styles.emptyState}>
+                  <Text style={{ fontSize: 60 }}>📋</Text>
+                  <Text style={styles.emptyTitle}>Board is Empty</Text>
+                  <Text style={styles.emptyDesc}>Post announcements, reminders, and updates for the whole family</Text>
+                  <Pressable
+                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setShowAdd(true); }}
+                    style={styles.demoBtn}
+                  >
+                    <Text style={styles.demoBtnText}>Add First Post</Text>
+                  </Pressable>
+                </View>
+              ) : activePosts.length > 0 ? (
+                <View style={styles.emptyState}>
+                  <Text style={{ fontSize: 40 }}>🔍</Text>
+                  <Text style={styles.emptyTitle}>No posts match this filter</Text>
+                </View>
+              ) : null
+            }
+            renderItem={({ item: post }) => (
+              <PostCard
+                post={post}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setSelectedPost(post);
+                }}
+              />
+            )}
           />
-        ))}
-
-        {filtered.length === 0 && activePosts.length > 0 && (
-          <View style={styles.emptyState}>
-            <Text style={{ fontSize: 40 }}>🔍</Text>
-            <Text style={styles.emptyTitle}>No posts match this filter</Text>
-          </View>
-        )}
-          </ScrollView>
         )}
       </CollapsibleHeader>
 

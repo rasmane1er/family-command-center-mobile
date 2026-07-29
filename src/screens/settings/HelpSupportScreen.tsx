@@ -23,7 +23,7 @@ import { useTheme } from '../../theme/ThemeContext';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useChatStore } from '../../store/useChatStore';
 
-const SUPPORT_EMAIL = 'support@familycommandcenter.app';
+const SUPPORT_EMAIL = 'support@myfamilycommandcenter.com';
 
 // ─── Data ────────────────────────────────────────────────────────────────────
 

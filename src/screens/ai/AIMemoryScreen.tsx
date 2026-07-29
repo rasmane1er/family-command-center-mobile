@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Modal, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { AIResetMenu } from '../../components/ai/AIResetMenu';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -163,7 +163,7 @@ export function AIMemoryScreen({ navigation }: any) {
     setNewSentiment('positive');
   };
 
-  const filtered = memories
+  const filtered = useMemo(() => memories
     .filter((m) => filter === 'all' || m.type === filter)
     .filter((m) =>
       search === '' ||
@@ -171,10 +171,10 @@ export function AIMemoryScreen({ navigation }: any) {
       m.content.toLowerCase().includes(search.toLowerCase()) ||
       m.tags.some((t) => t.toLowerCase().includes(search.toLowerCase()))
     )
-    .sort((a, b) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0));
+    .sort((a, b) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0)), [memories, filter, search]);
 
-  const pinned = filtered.filter((m) => m.isPinned);
-  const unpinned = filtered.filter((m) => !m.isPinned);
+  const pinned = useMemo(() => filtered.filter((m) => m.isPinned), [filtered]);
+  const unpinned = useMemo(() => filtered.filter((m) => !m.isPinned), [filtered]);
 
   const dynStyles = makeStyles(colors);
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -139,6 +139,21 @@ export function HomeInventoryScreen({ navigation }: any) {
   const [expandedRooms, setExpandedRooms] = useState<Set<InventoryRoom>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState<ItemCategory | 'all'>('all');
+
+  const sortedFilteredItems = useMemo(() => {
+    let filtered = items;
+    if (searchQuery) {
+      filtered = filtered.filter(
+        (i) =>
+          i.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (i.brand ?? '').toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+    if (filterCategory !== 'all') {
+      filtered = filtered.filter((i) => i.category === filterCategory);
+    }
+    return [...filtered].sort((a, b) => (b.currentValue ?? 0) - (a.currentValue ?? 0));
+  }, [items, searchQuery, filterCategory]);
 
   // Add modal state
   const [newRoom, setNewRoom] = useState<InventoryRoom>('living_room');
@@ -339,18 +354,7 @@ export function HomeInventoryScreen({ navigation }: any) {
   );
 
   const renderAllItemsTab = () => {
-    let filtered = items;
-    if (searchQuery) {
-      filtered = filtered.filter(
-        (i) =>
-          i.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (i.brand ?? '').toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-    if (filterCategory !== 'all') {
-      filtered = filtered.filter((i) => i.category === filterCategory);
-    }
-    const sorted = [...filtered].sort((a, b) => (b.currentValue ?? 0) - (a.currentValue ?? 0));
+    const sorted = sortedFilteredItems;
     return (
       <View style={styles.tabContent}>
         <TextInput

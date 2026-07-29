@@ -19,6 +19,7 @@ import { Button } from '../../components/common/Button';
 import { ProgressBar } from '../../components/common/ProgressBar';
 import { useGiftStore, GiftOccasion, GiftStatus, GiftPriority, GiftIdea } from '../../store/useGiftStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import type { FamilyMember } from '../../types';
 
 import { generateId } from '../../utils/generateId';
 
@@ -81,6 +82,59 @@ const OCCASION_LABEL_KEYS: Record<GiftOccasion, string> = {
   valentines: 'occasionValentines',
   other: 'occasionOther',
 };
+
+const GiftCard = React.memo(function GiftCard({
+  gift, members, onStatusAdvance, onDelete,
+}: {
+  gift: GiftIdea;
+  members: FamilyMember[];
+  onStatusAdvance: (gift: GiftIdea) => void;
+  onDelete: (id: string, title: string) => void;
+}) {
+  const { t } = useTranslation('family');
+  const buyer = members.find((m) => m.id === gift.purchasedBy);
+  const nextStatus = STATUS_NEXT[gift.status];
+
+  return (
+    <Card style={styles.giftCard} variant="elevated">
+      <View style={styles.giftCardTop}>
+        <View style={{ flex: 1 }}>
+          <View style={styles.giftTitleRow}>
+            <Text style={styles.giftTitle}>{gift.title}</Text>
+            {gift.isSurprise && <Ionicons name="lock-closed" size={13} color={colors.textMuted} />}
+          </View>
+          {gift.description ? <Text style={styles.giftDesc}>{gift.description}</Text> : null}
+          <View style={styles.giftBadgeRow}>
+            <Badge label={STATUS_LABELS[gift.status]} variant={STATUS_VARIANTS[gift.status]} size="sm" />
+            <Badge label={`${OCCASION_EMOJIS[gift.occasion]} ${t('family.screens.giftPlanner.' + OCCASION_LABEL_KEYS[gift.occasion])}`} variant="neutral" size="sm" />
+            <View style={[styles.priorityDot, { backgroundColor: PRIORITY_COLORS[gift.priority] }]} />
+          </View>
+        </View>
+        {gift.estimatedPrice !== undefined && (
+          <Text style={styles.giftPrice}>${gift.estimatedPrice}</Text>
+        )}
+      </View>
+
+      {buyer && (
+        <Text style={styles.giftBuyer}>Purchased by {buyer.name}</Text>
+      )}
+
+      <View style={styles.giftActions}>
+        {nextStatus && (
+          <Pressable onPress={() => onStatusAdvance(gift)} style={[styles.statusBtn, { backgroundColor: STATUS_COLORS[nextStatus] + '20' }]}>
+            <Text style={[styles.statusBtnText, { color: STATUS_COLORS[nextStatus] }]}>
+              Mark as {STATUS_LABELS[nextStatus]}
+            </Text>
+            <Ionicons name="chevron-forward" size={14} color={STATUS_COLORS[nextStatus]} />
+          </Pressable>
+        )}
+        <Pressable onPress={() => onDelete(gift.id, gift.title)} style={styles.deleteBtn}>
+          <Ionicons name="trash-outline" size={15} color={colors.danger} />
+        </Pressable>
+      </View>
+    </Card>
+  );
+});
 
 export function GiftPlannerScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
@@ -188,51 +242,6 @@ export function GiftPlannerScreen({ navigation }: any) {
     return { member: m, total, spent, gifts: mGifts };
   }).filter((x) => x.gifts.length > 0);
 
-  const GiftCard = ({ gift }: { gift: GiftIdea }) => {
-    const buyer = members.find((m) => m.id === gift.purchasedBy);
-    const nextStatus = STATUS_NEXT[gift.status];
-
-    return (
-      <Card style={styles.giftCard} variant="elevated">
-        <View style={styles.giftCardTop}>
-          <View style={{ flex: 1 }}>
-            <View style={styles.giftTitleRow}>
-              <Text style={styles.giftTitle}>{gift.title}</Text>
-              {gift.isSurprise && <Ionicons name="lock-closed" size={13} color={colors.textMuted} />}
-            </View>
-            {gift.description ? <Text style={styles.giftDesc}>{gift.description}</Text> : null}
-            <View style={styles.giftBadgeRow}>
-              <Badge label={STATUS_LABELS[gift.status]} variant={STATUS_VARIANTS[gift.status]} size="sm" />
-              <Badge label={`${OCCASION_EMOJIS[gift.occasion]} ${t(`family.screens.giftPlanner.${OCCASION_LABEL_KEYS[gift.occasion]}`)}`} variant="neutral" size="sm" />
-              <View style={[styles.priorityDot, { backgroundColor: PRIORITY_COLORS[gift.priority] }]} />
-            </View>
-          </View>
-          {gift.estimatedPrice !== undefined && (
-            <Text style={styles.giftPrice}>${gift.estimatedPrice}</Text>
-          )}
-        </View>
-
-        {buyer && (
-          <Text style={styles.giftBuyer}>Purchased by {buyer.name}</Text>
-        )}
-
-        <View style={styles.giftActions}>
-          {nextStatus && (
-            <Pressable onPress={() => handleStatusAdvance(gift)} style={[styles.statusBtn, { backgroundColor: STATUS_COLORS[nextStatus] + '20' }]}>
-              <Text style={[styles.statusBtnText, { color: STATUS_COLORS[nextStatus] }]}>
-                Mark as {STATUS_LABELS[nextStatus]}
-              </Text>
-              <Ionicons name="chevron-forward" size={14} color={STATUS_COLORS[nextStatus]} />
-            </Pressable>
-          )}
-          <Pressable onPress={() => handleDelete(gift.id, gift.title)} style={styles.deleteBtn}>
-            <Ionicons name="trash-outline" size={15} color={colors.danger} />
-          </Pressable>
-        </View>
-      </Card>
-    );
-  };
-
   const screenHeader = (
     <LinearGradient colors={['#880E4F', '#C2185B']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
       <View style={styles.headerTop}>
@@ -326,7 +335,7 @@ export function GiftPlannerScreen({ navigation }: any) {
                 <Text style={styles.emptyDesc}>Tap + to add a gift idea.</Text>
               </View>
             ) : (
-              memberGifts.map((gift) => <GiftCard key={gift.id} gift={gift} />)
+              memberGifts.map((gift) => <GiftCard key={gift.id} gift={gift} members={members} onStatusAdvance={handleStatusAdvance} onDelete={handleDelete} />)
             )}
           </>
         )}
@@ -346,7 +355,7 @@ export function GiftPlannerScreen({ navigation }: any) {
                     {OCCASION_EMOJIS[occ]} {t(`family.screens.giftPlanner.${OCCASION_LABEL_KEYS[occ]}`)}
                     <Text style={styles.occasionCount}> ({oGifts.length})</Text>
                   </Text>
-                  {oGifts.map((gift) => <GiftCard key={gift.id} gift={gift} />)}
+                  {oGifts.map((gift) => <GiftCard key={gift.id} gift={gift} members={members} onStatusAdvance={handleStatusAdvance} onDelete={handleDelete} />)}
                 </View>
               ))
             )}

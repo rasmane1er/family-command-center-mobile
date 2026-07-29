@@ -39,6 +39,10 @@
         "ascApiKeyIssuerId": "6007fa8e-e3bf-4d0d-9f75-7d7429a39fab",
         "ascApiKeyId": "6XC6KQ6L9W",
         "ascAppId": "6792257899"
+      },
+      "android": {
+        "serviceAccountKeyPath": "./credentials/play-console-publisher.json",
+        "track": "internal"
       }
     }
   }

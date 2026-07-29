@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput, ActivityIndicator,
+  View, Text, StyleSheet, ScrollView, FlatList, Pressable, Alert, Modal, TextInput, ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -203,29 +203,29 @@ export function ChoreRotationScreen({ navigation }: any) {
 
       <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
         {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
-      <ScrollView
+      <FlatList
+        data={filtered}
+        keyExtractor={(chore) => chore.id}
         onScroll={onScroll}
         onScrollEndDrag={onScrollEndDrag}
         onMomentumScrollEnd={onMomentumScrollEnd}
         scrollEventThrottle={scrollEventThrottle}
-        contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+        contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }, filtered.length === 0 && { flexGrow: 1 }]}
         showsVerticalScrollIndicator={false}
-      >
-        {filtered.length === 0 && (
+        ListEmptyComponent={
           <View style={styles.empty}>
             <Text style={{ fontSize: 56 }}>🧹</Text>
             <Text style={styles.emptyTitle}>{t('family.screens.choreRotation.emptyTitle')}</Text>
             <Text style={styles.emptyDesc}>{t('family.screens.choreRotation.emptyDesc')}</Text>
           </View>
-        )}
-
-        {filtered.map((chore) => {
+        }
+        renderItem={({ item: chore }) => {
           const assignee = getMember(chore.assignedMemberIds[chore.currentAssigneeIndex]);
           const done = isDoneToday(chore);
           const overdue = isOverdue(chore);
 
           return (
-            <Pressable key={chore.id} onLongPress={() => handleDelete(chore)}>
+            <Pressable onLongPress={() => handleDelete(chore)}>
               <Card
                 style={{
                   ...styles.choreCard,
@@ -291,8 +291,8 @@ export function ChoreRotationScreen({ navigation }: any) {
               </Card>
             </Pressable>
           );
-        })}
-      </ScrollView>
+        }}
+      />
 
         )}
       </CollapsibleHeader>
