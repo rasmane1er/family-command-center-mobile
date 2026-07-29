@@ -11,6 +11,7 @@ import * as Haptics from 'expo-haptics';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { useTabBarInset } from '../../hooks/useTabBarInset';
 import { Button } from '../../components/common/Button';
+import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { balanceFreshness, FRESHNESS_LABEL, FRESHNESS_COLOR } from '../../utils/accountFreshness';
 import type { AccountType, AccountTransactionType, RecurringFrequency } from '../../types';
 
@@ -23,12 +24,17 @@ const TEXT = '#1A1A2E';
 const SUBTEXT = '#6B7280';
 const BORDER = '#E5E7EB';
 
-const ACCOUNT_COLORS: Record<AccountType, string> = {
-  checking: '#1E6ECC',
-  savings: '#13A05A',
-  investment: '#7C3AED',
-  credit: '#DC2626',
-  cash: '#D97706',
+// Matches ACCOUNT_GRADIENTS/ACCOUNT_ICONS in FinanceDashboardScreen so an
+// account's color identity is consistent between the card and its detail page.
+const ACCOUNT_GRADIENTS: Record<AccountType, readonly [string, string, string]> = {
+  checking:   ['#0C1E3E', '#1040A0', '#1E6ECC'],
+  savings:    ['#063D28', '#0D6B3A', '#13A05A'],
+  investment: ['#2D0A6B', '#5B21B6', '#7C3AED'],
+  credit:     ['#5C0A0A', '#9B1C1C', '#DC2626'],
+  cash:       ['#4A2800', '#92550A', '#D97706'],
+};
+const ACCOUNT_ICONS: Record<AccountType, keyof typeof Ionicons.glyphMap> = {
+  checking: 'card', savings: 'save', investment: 'trending-up', credit: 'card-outline', cash: 'cash',
 };
 
 const TX_TYPES: AccountTransactionType[] = ['INCOME', 'EXPENSE'];
@@ -105,7 +111,8 @@ export function AccountDetailScreen({ navigation, route }: Props) {
     );
   }
 
-  const color = ACCOUNT_COLORS[account.type];
+  const gradient = ACCOUNT_GRADIENTS[account.type];
+  const color = gradient[2];
 
   const resetTxForm = () => {
     setTxType('EXPENSE'); setTxAmount(''); setTxCategory(''); setTxMerchant(''); setTxPending(false);
@@ -207,29 +214,58 @@ export function AccountDetailScreen({ navigation, route }: Props) {
     );
   };
 
+  const screenHeader = (
+    <LinearGradient
+      colors={gradient}
+      start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+      style={[styles.header, { paddingTop: insets.top + 6 }]}
+    >
+      <View style={styles.headerTop}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <Text style={styles.headerTitle} numberOfLines={1}>{account.name}</Text>
+        <View style={styles.addBtn}>
+          <Ionicons name={ACCOUNT_ICONS[account.type]} size={20} color="#fff" />
+        </View>
+      </View>
+
+      <View style={styles.freshnessRow}>
+        <View style={[styles.freshnessDot, { backgroundColor: FRESHNESS_COLOR[freshness] }]} />
+        <Text style={styles.weekLabel}>
+          {FRESHNESS_LABEL[freshness]}
+          {account.lastVerifiedAt ? ` · Verified ${formatDate(account.lastVerifiedAt)}` : ' · Never verified'}
+        </Text>
+      </View>
+
+      <Text style={styles.headerBalance}>${formatMoney(account.balance)}</Text>
+    </LinearGradient>
+  );
+
+  const screenCompact = (
+    <LinearGradient
+      colors={gradient}
+      start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+      style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+    >
+      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </Pressable>
+      <Text style={styles.headerTitle} numberOfLines={1}>{account.name}</Text>
+      <Text style={{ fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.9)' }}>${formatMoney(account.balance)}</Text>
+    </LinearGradient>
+  );
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
 
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: tabBarInset + 80 }]}>
-        <LinearGradient colors={[color, color + 'CC']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
-          <View style={styles.headerTop}>
-            <Pressable onPress={() => navigation.goBack()} hitSlop={12}>
-              <Ionicons name="arrow-back" size={24} color="#fff" />
-            </Pressable>
-            <Text style={styles.headerTitle} numberOfLines={1}>{account.name}</Text>
-            <View style={{ width: 24 }} />
-          </View>
-          <Text style={styles.headerBalance}>${formatMoney(account.balance)}</Text>
-          <View style={styles.freshnessRow}>
-            <View style={[styles.freshnessDot, { backgroundColor: FRESHNESS_COLOR[freshness] }]} />
-            <Text style={styles.freshnessText}>
-              {FRESHNESS_LABEL[freshness]}
-              {account.lastVerifiedAt ? ` • Verified ${formatDate(account.lastVerifiedAt)}` : ' • Never verified'}
-            </Text>
-          </View>
-        </LinearGradient>
-
+      <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
+        {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingTop: contentPaddingTop + 16, paddingBottom: tabBarInset + 80 }]}
+        onScroll={onScroll} onScrollEndDrag={onScrollEndDrag} onMomentumScrollEnd={onMomentumScrollEnd} scrollEventThrottle={scrollEventThrottle}
+      >
         {/* Ledger summary */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Balance Breakdown</Text>
@@ -312,6 +348,8 @@ export function AccountDetailScreen({ navigation, route }: Props) {
           ))}
         </View>
       </ScrollView>
+        )}
+      </CollapsibleHeader>
 
       {/* FAB */}
       <Pressable onPress={() => setShowAddTx(true)} style={[styles.fab, { bottom: tabBarInset, backgroundColor: color }]}>
@@ -385,13 +423,18 @@ const styles = StyleSheet.create({
   notFoundText: { fontSize: 16, color: TEXT },
   backLink: { fontSize: 14, color: PRIMARY, marginTop: 12 },
 
-  header: { paddingBottom: 20, paddingHorizontal: 20 },
-  headerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
-  headerTitle: { flex: 1, textAlign: 'center', fontSize: 17, fontWeight: '800', color: '#fff' },
-  headerBalance: { fontSize: 36, fontWeight: '900', color: '#fff', textAlign: 'center' },
-  freshnessRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 8 },
-  freshnessDot: { width: 8, height: 8, borderRadius: 4 },
-  freshnessText: { fontSize: 12, color: 'rgba(255,255,255,0.85)', fontWeight: '600' },
+  header: { width: '100%', paddingHorizontal: 20, paddingBottom: 16 },
+  headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
+  back: { marginRight: 12 },
+  headerTitle: { flex: 1, fontSize: 18, fontWeight: '800', color: '#fff' },
+  addBtn: {
+    width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+  freshnessRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 },
+  freshnessDot: { width: 7, height: 7, borderRadius: 3.5 },
+  weekLabel: { fontSize: 13, color: 'rgba(255,255,255,0.8)' },
+  headerBalance: { fontSize: 32, fontWeight: '900', color: '#fff', letterSpacing: -0.5 },
 
   content: { padding: 16 },
   card: { backgroundColor: CARD, borderRadius: 16, padding: 16, marginBottom: 14, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
