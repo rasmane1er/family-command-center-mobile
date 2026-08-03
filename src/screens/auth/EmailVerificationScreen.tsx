@@ -58,8 +58,12 @@ export function EmailVerificationScreen({ navigation }: any) {
     if (token) {
       useAuthStore.setState({ isAuthenticated: true, pendingVerificationEmail: null });
     } else {
+      // AuthNavigator renders either EmailVerification or the SignIn stack
+      // based on pendingVerificationEmail (never both), so clearing it here
+      // is what swaps the navigator over — an explicit navigation.reset()
+      // to 'SignIn' fails because that route isn't registered yet in the
+      // same tick this state change is made.
       useAuthStore.setState({ pendingVerificationEmail: null });
-      navigation.reset({ index: 0, routes: [{ name: 'SignIn' }] });
     }
   }
 
@@ -139,10 +143,7 @@ export function EmailVerificationScreen({ navigation }: any) {
         </Pressable>
 
         <Pressable
-          onPress={() => {
-            useAuthStore.setState({ pendingVerificationEmail: null });
-            navigation.reset({ index: 0, routes: [{ name: 'SignIn' }] });
-          }}
+          onPress={() => useAuthStore.setState({ pendingVerificationEmail: null })}
           style={styles.backBtn}
         >
           <Text style={styles.backText}>← Back to Sign In</Text>
