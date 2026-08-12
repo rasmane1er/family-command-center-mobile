@@ -85,13 +85,12 @@
         }
       ],
       [
-        "@react-native-voice/voice",
+        "expo-speech-recognition",
         {
           "microphonePermission": "Allow Family Command Center to access the microphone for voice input to the AI Assistant.",
           "speechRecognitionPermission": "Allow Family Command Center to recognize your speech for voice input to the AI Assistant."
         }
       ],
-      "./plugins/withAndroidSpeechQueries.js",
       [
         "expo-build-properties",
         {

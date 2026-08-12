@@ -35,6 +35,10 @@ interface FinanceState {
   confirmAccountBalance: (accountId: string, actualBalance: number, reason?: string) => Promise<void>;
   fetchAccountLedger: (accountId: string) => Promise<void>;
   addAccountTransaction: (accountId: string, input: CreateAccountTransactionInput) => Promise<void>;
+  importStatementRows: (
+    accountId: string,
+    rows: Array<{ date: string; description: string; amount: number; type: 'INCOME' | 'EXPENSE' }>,
+  ) => Promise<number>;
   updateAccountTransaction: (accountId: string, id: string, updates: Partial<CreateAccountTransactionInput>) => Promise<void>;
   deleteAccountTransaction: (accountId: string, id: string) => Promise<void>;
   addRecurringTransaction: (accountId: string, input: CreateRecurringInput) => Promise<void>;
@@ -64,6 +68,11 @@ interface FinanceState {
 }
 
 import { generateId } from '../utils/generateId';
+
+// Unlike every other log-like persisted store (notifications, journal,
+// memories, chat, timeline), this array had no growth cap — manual entries
+// plus ongoing Plaid sync accumulate indefinitely over months/years.
+const MAX_TRANSACTIONS = 2000;
 
 function calcDerived(
   accounts: FinancialAccount[],
@@ -162,6 +171,15 @@ export const useFinanceStore = create<FinanceState>()(
     await get().fetchAccountLedger(accountId);
     if (input.transferToAccountId) await get().fetchAccountLedger(input.transferToAccountId);
   },
+  importStatementRows: async (accountId, rows) => {
+    const { balance, imported } = await financeAccountService.confirmStatementImport(accountId, rows);
+    set((s) => {
+      const accounts = s.accounts.map((a) => (a.id === accountId ? { ...a, balance } : a));
+      return { accounts, ...calcDerived(accounts, s.transactions) };
+    });
+    await get().fetchAccountLedger(accountId);
+    return imported;
+  },
   updateAccountTransaction: async (accountId, id, updates) => {
     const { balance } = await financeAccountService.updateAccountTransaction(accountId, id, updates);
     set((s) => {
@@ -205,7 +223,7 @@ export const useFinanceStore = create<FinanceState>()(
 
   addTransaction: (t) => {
     set((s) => {
-      const transactions = [t, ...s.transactions];
+      const transactions = [t, ...s.transactions].slice(0, MAX_TRANSACTIONS);
       return { transactions, ...calcDerived(s.accounts, transactions) };
     });
     enqueueSync({ entity: 'finance', action: 'create', payload: { type: 'transaction', data: t } });

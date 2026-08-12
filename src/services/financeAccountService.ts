@@ -103,3 +103,32 @@ export function confirmRecurringTransaction(accountId: string, id: string): Prom
 export function skipRecurringTransaction(accountId: string, id: string): Promise<void> {
   return apiRequest(`/finance/accounts/${accountId}/recurring/${id}/skip`, { method: 'POST' });
 }
+
+export interface StatementImportRow {
+  date: string;
+  description: string;
+  amount: number;
+  type: 'INCOME' | 'EXPENSE';
+  isLikelyDuplicate: boolean;
+}
+
+export function previewStatementImport(
+  accountId: string,
+  filename: string,
+  content: string,
+): Promise<{ rows: StatementImportRow[]; errors: string[]; totalParsed: number }> {
+  return apiRequest(`/finance/accounts/${accountId}/import/preview`, {
+    method: 'POST',
+    body: JSON.stringify({ filename, content }),
+  });
+}
+
+export function confirmStatementImport(
+  accountId: string,
+  rows: Array<{ date: string; description: string; amount: number; type: 'INCOME' | 'EXPENSE' }>,
+): Promise<{ balance: number; imported: number }> {
+  return apiRequest(`/finance/accounts/${accountId}/import/confirm`, {
+    method: 'POST',
+    body: JSON.stringify({ rows }),
+  });
+}

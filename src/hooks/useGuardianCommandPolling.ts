@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import * as Notifications from 'expo-notifications';
 import messaging, { getMessaging, onMessage } from '@react-native-firebase/messaging';
 import { Platform } from 'react-native';
@@ -7,6 +7,7 @@ import { useGuardianStore } from '../store/useGuardianStore';
 import * as guardianService from '../services/guardianService';
 import { GuardianNative } from '../native/GuardianNative';
 import type { GuardianCommand } from '../types';
+import { useAppStateInterval } from './useAppStateInterval';
 
 const POLL_INTERVAL_MS = 25000;
 
@@ -52,44 +53,46 @@ export function useGuardianCommandPolling() {
 
   const inFlight = useRef(false);
 
+  const poll = useCallback(async () => {
+    if (!thisDeviceId || inFlight.current) return;
+    inFlight.current = true;
+
+    try {
+      const { commands } = await guardianService.fetchPendingCommands(thisDeviceId);
+      setPendingCommands(thisDeviceId, commands);
+
+      for (const command of commands) {
+        try {
+          await executeCommand(command);
+        } catch {
+          // GuardianNative calls are non-blocking no-ops today — nothing
+          // real to fail on yet, but don't let a thrown promise stop the
+          // command from being marked executed below.
+        }
+        try {
+          await guardianService.markCommandExecuted(command.id);
+        } catch {
+          // best-effort
+        }
+        markCommandExecuted(command.id);
+      }
+
+      updateDeviceStatus(thisDeviceId, { status: 'online' });
+      guardianService.updateDeviceStatus(thisDeviceId, { status: 'online' }).catch(() => {});
+    } catch {
+      // offline or backend unreachable — try again next tick
+    } finally {
+      inFlight.current = false;
+    }
+  }, [thisDeviceId, setPendingCommands, markCommandExecuted, updateDeviceStatus]);
+
+  // Paused entirely while backgrounded — no point hammering the commands
+  // endpoint for an app the OS has suspended anyway — and resumes with an
+  // immediate poll on return to foreground.
+  useAppStateInterval(poll, POLL_INTERVAL_MS, !!thisDeviceId);
+
   useEffect(() => {
     if (!thisDeviceId) return;
-
-    const poll = async () => {
-      if (inFlight.current) return;
-      inFlight.current = true;
-
-      try {
-        const { commands } = await guardianService.fetchPendingCommands(thisDeviceId);
-        setPendingCommands(thisDeviceId, commands);
-
-        for (const command of commands) {
-          try {
-            await executeCommand(command);
-          } catch {
-            // GuardianNative calls are non-blocking no-ops today — nothing
-            // real to fail on yet, but don't let a thrown promise stop the
-            // command from being marked executed below.
-          }
-          try {
-            await guardianService.markCommandExecuted(command.id);
-          } catch {
-            // best-effort
-          }
-          markCommandExecuted(command.id);
-        }
-
-        updateDeviceStatus(thisDeviceId, { status: 'online' });
-        guardianService.updateDeviceStatus(thisDeviceId, { status: 'online' }).catch(() => {});
-      } catch {
-        // offline or backend unreachable — try again next tick
-      } finally {
-        inFlight.current = false;
-      }
-    };
-
-    poll();
-    const interval = setInterval(poll, POLL_INTERVAL_MS);
 
     // Best-effort push token registration via native FCM (same mechanism as
     // usePushRegistration.ts) — foreground polling above remains the
@@ -110,26 +113,12 @@ export function useGuardianCommandPolling() {
       }
     })();
 
-    // Forward any push notification received on this child device to the API
-    // so it appears in "Recent Notifications" on the parent's screen.
-    function forwardNotification(title: string, body: string, packageName: string) {
-      guardianService.postChildNotification(thisDeviceId, {
-        packageName: packageName || 'com.familycommandcenter.app',
-        title,
-        text: body,
-        receivedAt: Date.now(),
-      }).catch(() => {});
-    }
-
     // Firebase onMessage fires when app is foregrounded (Android)
     let unsubFirebase: (() => void) | null = null;
     try {
       unsubFirebase = onMessage(getMessaging(), (msg) => {
         const data = msg.data as Record<string, unknown> | undefined;
         if (data?.commandId || data?.type === 'command') poll();
-        const t = msg.notification?.title ?? '';
-        const b = msg.notification?.body ?? '';
-        if (t || b) forwardNotification(t, b, 'com.familycommandcenter.app');
       });
     } catch {}
 
@@ -137,15 +126,11 @@ export function useGuardianCommandPolling() {
     const subscription = Notifications.addNotificationReceivedListener((event) => {
       const data = event.request.content.data as Record<string, unknown> | undefined;
       if (data?.commandId || data?.type === 'command') poll();
-      const t = event.request.content.title ?? '';
-      const b = event.request.content.body ?? '';
-      if (t || b) forwardNotification(t, b, 'com.familycommandcenter.app');
     });
 
     return () => {
-      clearInterval(interval);
       unsubFirebase?.();
       subscription.remove();
     };
-  }, [thisDeviceId, setPendingCommands, markCommandExecuted, updateDeviceStatus]);
+  }, [thisDeviceId, poll]);
 }

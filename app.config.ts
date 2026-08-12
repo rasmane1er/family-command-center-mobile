@@ -101,7 +101,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
     [
-      '@react-native-voice/voice',
+      'expo-speech-recognition',
       {
         microphonePermission:
           'Allow Family Command Center to access the microphone for voice input to the AI Assistant.',
@@ -109,7 +109,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
           'Allow Family Command Center to recognize your speech for voice input to the AI Assistant.',
       },
     ],
-    './plugins/withAndroidSpeechQueries.js',
     './plugins/withAndroidManifestPlacementFix.js',
     './plugins/withAndroidExcludeLegacySupportLib.js',
     './plugins/withFmtConstevalFix.js',
@@ -117,7 +116,15 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       'expo-build-properties',
       {
         android: { usesCleartextTraffic: isDevBuild },
-        ios: { useFrameworks: 'static' },
+        // expo-speech-recognition's podspec requires iOS 16.4+ (on-device
+        // speech recognition APIs introduced that version) — CocoaPods
+        // silently drops any pod whose minimum iOS version exceeds the
+        // project's deployment target rather than erroring, which is why
+        // this pod was missing from Podfile.lock with no build failure to
+        // point at it. iOS 16.4 shipped March 2023; adoption has been
+        // well over 90% for years, so this doesn't meaningfully narrow
+        // device support.
+        ios: { useFrameworks: 'static', deploymentTarget: '16.4' },
       },
     ],
     'expo-localization',

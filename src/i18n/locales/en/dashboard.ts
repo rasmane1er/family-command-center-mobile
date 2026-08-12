@@ -83,6 +83,15 @@ export default {
           homework: 'Homework', myTasks: 'My Tasks', myCalendar: 'My Calendar',
           rewards: 'Rewards', pantry: 'Pantry', legacy: 'Legacy Vault',
         },
+        categories: {
+          member: 'Member', task: 'Task', event: 'Event', bill: 'Bill',
+          transaction: 'Transaction', pantry: 'Pantry', document: 'Document',
+          memory: 'Memory', legacy: 'Legacy',
+        },
+        recentSearchSuggestions: {
+          budget: 'Budget this month', homework: 'Aiden homework',
+          carInsurance: 'Car insurance', vacationFund: 'Hawaii vacation fund',
+        },
       },
       weeklyReport: {
         headerTitle: 'Weekly Report',

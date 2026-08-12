@@ -1046,13 +1046,23 @@ export interface AppSettings {
   biometricLock: boolean;
   hideBalances: boolean;
   autoLock: boolean;
-  cloudBackup: boolean;
   currency: string;
   language: string;
   militaryMode: boolean;
   weekStartsOn: 0 | 1 | 6;
   displayName?: string;
   subscriptionTier?: string;
+  // True when RevenueCat reports two paid entitlements active at once —
+  // shouldn't happen (Premium/Family Pro should be mutually exclusive) but
+  // the store products aren't grouped that way yet, so an "upgrade" adds a
+  // second subscription instead of replacing the first. See
+  // src/services/purchaseService.ts hasOverlappingEntitlements().
+  hasOverlappingSubscriptions?: boolean;
+  // Billing period backing the current paid tier ('free' has none). Lets the
+  // Settings tier cards offer "Switch to Yearly" on the customer's *own*
+  // current tier, not just tiers they don't have — see
+  // src/services/purchaseService.ts activePeriodForTier().
+  subscriptionPeriod?: 'monthly' | 'annual' | null;
   // Device-local only (never synced) — when set, this physical device is
   // pinned to a single family member's profile and the profile switcher is
   // hidden, so e.g. a child can't switch into a parent's profile on their

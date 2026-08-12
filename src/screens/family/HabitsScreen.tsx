@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, FlatList, Pressable, Alert, Modal, TextInput, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
@@ -14,9 +14,10 @@ import { shadows } from '../../theme/spacing';
 import { Card } from '../../components/common/Card';
 import { Avatar } from '../../components/common/Avatar';
 import { Button } from '../../components/common/Button';
-import { useHabitsStore } from '../../store/useHabitsStore';
+import { useHabitsStore, type Habit } from '../../store/useHabitsStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { useAuthStore } from '../../store/useAuthStore';
+import type { FamilyMember } from '../../types';
 
 const HABIT_ICONS = ['fitness-outline', 'book-outline', 'water-outline', 'bed-outline', 'restaurant-outline', 'walk-outline', 'heart-outline', 'star-outline', 'musical-notes-outline', 'bicycle-outline'];
 const HABIT_COLORS = ['#E74C3C', '#E67E22', '#F1C40F', '#27AE60', '#2980B9', '#9B59B6', '#E91E63', '#00BCD4'];
@@ -34,6 +35,85 @@ function getLastSevenDays(): string[] {
   }
   return days;
 }
+
+interface HabitCardProps {
+  habit: Habit;
+  done: boolean;
+  member: FamilyMember | null | undefined;
+  today: string;
+  lastSeven: string[];
+  onToggle: (id: string) => void;
+  onDelete: (id: string, title: string) => void;
+}
+
+// Memoized so unrelated screen state (typing in the add-habit modal, etc.)
+// doesn't re-render every habit card.
+const HabitCard = React.memo(function HabitCard({ habit, done, member, today, lastSeven, onToggle, onDelete }: HabitCardProps) {
+  return (
+    <Card style={{ ...styles.habitCard, ...(done ? styles.habitCardDone : {}) }} variant="elevated">
+      <View style={styles.habitTop}>
+        <Pressable onPress={() => onToggle(habit.id)} style={[styles.habitIcon, { backgroundColor: done ? habit.color : habit.color + '20' }]}>
+          <Ionicons name={habit.icon as any} size={22} color={done ? '#fff' : habit.color} />
+        </Pressable>
+        <View style={{ flex: 1, marginLeft: 12 }}>
+          <View style={styles.habitTitleRow}>
+            <Text style={styles.habitTitle}>{habit.title}</Text>
+            {habit.streak >= 7 && <Text style={styles.fireEmoji}>🔥</Text>}
+          </View>
+          <Text style={styles.habitDesc}>{habit.description}</Text>
+        </View>
+        <Pressable onPress={() => onDelete(habit.id, habit.title)} style={styles.deleteBtn}>
+          <Ionicons name="trash-outline" size={14} color={colors.textMuted} />
+        </Pressable>
+      </View>
+
+      {/* 7-day history */}
+      <View style={styles.historyRow}>
+        {lastSeven.map((dateStr, i) => {
+          const completed = habit.completedDates.includes(dateStr);
+          const isToday = dateStr === today;
+          return (
+            <View key={dateStr} style={styles.historyDay}>
+              <Text style={[styles.historyDayLabel, isToday && styles.historyDayLabelToday]}>
+                {DAYS[new Date(dateStr + 'T12:00:00').getDay()]}
+              </Text>
+              <Pressable
+                onPress={() => isToday ? onToggle(habit.id) : undefined}
+                style={[
+                  styles.historyDot,
+                  completed ? { backgroundColor: habit.color } : styles.historyDotEmpty,
+                  isToday && styles.historyDotToday,
+                ]}
+              >
+                {completed && <Ionicons name="checkmark" size={10} color="#fff" />}
+              </Pressable>
+            </View>
+          );
+        })}
+      </View>
+
+      <View style={styles.habitFooter}>
+        <View style={styles.streakBadge}>
+          <Ionicons name="flame" size={12} color={habit.streak >= 7 ? '#E67E22' : colors.textMuted} />
+          <Text style={[styles.streakText, { color: habit.streak >= 7 ? '#E67E22' : colors.textMuted }]}>
+            {habit.streak} day streak
+          </Text>
+        </View>
+        <View style={styles.habitRight}>
+          {member && (
+            <Text style={[styles.memberTag, { color: member.avatarColor, backgroundColor: member.avatarColor + '20' }]}>
+              {member.name.split(' ')[0]}
+            </Text>
+          )}
+          <View style={styles.pointsBadge}>
+            <Ionicons name="star" size={11} color={colors.secondary} />
+            <Text style={styles.pointsText}>{habit.points} pts</Text>
+          </View>
+        </View>
+      </View>
+    </Card>
+  );
+});
 
 export function HabitsScreen({ navigation }: any) {
   const { t } = useTranslation('family');
@@ -66,7 +146,7 @@ export function HabitsScreen({ navigation }: any) {
   const completedToday = habits.filter((h) => isCompletedToday(h.id)).length;
   const avgStreak = habits.length > 0 ? Math.round(habits.reduce((s, h) => s + h.streak, 0) / habits.length) : 0;
 
-  const handleToggle = (id: string) => {
+  const handleToggle = useCallback((id: string) => {
     const completed = isCompletedToday(id);
     if (completed) {
       uncompleteHabit(id, today);
@@ -75,14 +155,27 @@ export function HabitsScreen({ navigation }: any) {
       completeHabit(id, today);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
-  };
+  }, [isCompletedToday, uncompleteHabit, completeHabit, today]);
 
-  const handleDelete = (id: string, title: string) => {
+  const handleDelete = useCallback((id: string, title: string) => {
     Alert.alert(t('family.screens.habits.deleteHabitTitle'), t('family.screens.habits.deleteHabitMsg', { title }), [
       { text: t('family.screens.habits.cancelBtn'), style: 'cancel' },
       { text: t('family.screens.habits.deleteBtn'), style: 'destructive', onPress: () => { deleteHabit(id); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); } },
     ]);
-  };
+  }, [t, deleteHabit]);
+
+  const membersById = useMemo(() => new Map(members.map((m) => [m.id, m])), [members]);
+  const renderHabitItem = useCallback(({ item: habit }: { item: Habit }) => (
+    <HabitCard
+      habit={habit}
+      done={isCompletedToday(habit.id)}
+      member={habit.memberId ? membersById.get(habit.memberId) : null}
+      today={today}
+      lastSeven={lastSeven}
+      onToggle={handleToggle}
+      onDelete={handleDelete}
+    />
+  ), [isCompletedToday, membersById, today, lastSeven, handleToggle, handleDelete]);
 
   const handleAddHabit = () => {
     if (!newTitle.trim()) return;
@@ -200,75 +293,7 @@ export function HabitsScreen({ navigation }: any) {
             <Text style={styles.tipText}>• Habit streaks release dopamine — celebrate every milestone!</Text>
           </Card>
         }
-        renderItem={({ item: habit }) => {
-          const done = isCompletedToday(habit.id);
-          const member = habit.memberId ? members.find((m) => m.id === habit.memberId) : null;
-
-          return (
-            <Card style={{ ...styles.habitCard, ...(done ? styles.habitCardDone : {}) }} variant="elevated">
-              <View style={styles.habitTop}>
-                <Pressable onPress={() => handleToggle(habit.id)} style={[styles.habitIcon, { backgroundColor: done ? habit.color : habit.color + '20' }]}>
-                  <Ionicons name={habit.icon as any} size={22} color={done ? '#fff' : habit.color} />
-                </Pressable>
-                <View style={{ flex: 1, marginLeft: 12 }}>
-                  <View style={styles.habitTitleRow}>
-                    <Text style={styles.habitTitle}>{habit.title}</Text>
-                    {habit.streak >= 7 && <Text style={styles.fireEmoji}>🔥</Text>}
-                  </View>
-                  <Text style={styles.habitDesc}>{habit.description}</Text>
-                </View>
-                <Pressable onPress={() => handleDelete(habit.id, habit.title)} style={styles.deleteBtn}>
-                  <Ionicons name="trash-outline" size={14} color={colors.textMuted} />
-                </Pressable>
-              </View>
-
-              {/* 7-day history */}
-              <View style={styles.historyRow}>
-                {lastSeven.map((dateStr, i) => {
-                  const completed = habit.completedDates.includes(dateStr);
-                  const isToday = dateStr === today;
-                  return (
-                    <View key={dateStr} style={styles.historyDay}>
-                      <Text style={[styles.historyDayLabel, isToday && styles.historyDayLabelToday]}>
-                        {DAYS[new Date(dateStr + 'T12:00:00').getDay()]}
-                      </Text>
-                      <Pressable
-                        onPress={() => isToday ? handleToggle(habit.id) : undefined}
-                        style={[
-                          styles.historyDot,
-                          completed ? { backgroundColor: habit.color } : styles.historyDotEmpty,
-                          isToday && styles.historyDotToday,
-                        ]}
-                      >
-                        {completed && <Ionicons name="checkmark" size={10} color="#fff" />}
-                      </Pressable>
-                    </View>
-                  );
-                })}
-              </View>
-
-              <View style={styles.habitFooter}>
-                <View style={styles.streakBadge}>
-                  <Ionicons name="flame" size={12} color={habit.streak >= 7 ? '#E67E22' : colors.textMuted} />
-                  <Text style={[styles.streakText, { color: habit.streak >= 7 ? '#E67E22' : colors.textMuted }]}>
-                    {habit.streak} day streak
-                  </Text>
-                </View>
-                <View style={styles.habitRight}>
-                  {member && (
-                    <Text style={[styles.memberTag, { color: member.avatarColor, backgroundColor: member.avatarColor + '20' }]}>
-                      {member.name.split(' ')[0]}
-                    </Text>
-                  )}
-                  <View style={styles.pointsBadge}>
-                    <Ionicons name="star" size={11} color={colors.secondary} />
-                    <Text style={styles.pointsText}>{habit.points} pts</Text>
-                  </View>
-                </View>
-              </View>
-            </Card>
-          );
-        }}
+        renderItem={renderHabitItem}
       />
         )}
       </CollapsibleHeader>

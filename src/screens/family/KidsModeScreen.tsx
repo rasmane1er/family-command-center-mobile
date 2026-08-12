@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, Pressable, Animated,
+  View, Text, StyleSheet, ScrollView, Pressable, Animated, Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,12 +10,17 @@ import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import * as Haptics from 'expo-haptics';
 import { format } from 'date-fns';
 import { colors } from '../../theme/colors';
+import { shadows } from '../../theme/spacing';
 import { Card } from '../../components/common/Card';
 import { Avatar } from '../../components/common/Avatar';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { useMoodStore, MoodLevel } from '../../store/useMoodStore';
 import { useHabitsStore } from '../../store/useHabitsStore';
+import { useAuthStore } from '../../store/useAuthStore';
+import { useGuardianStore } from '../../store/useGuardianStore';
+import { useRealAchievements } from './AchievementsScreen';
 import { pickTaskCompletionPhoto } from '../../utils/pickTaskPhoto';
+import { generateId } from '../../utils/generateId';
 import type { Task } from '../../types';
 import { useTranslation } from 'react-i18next';
 
@@ -29,7 +34,6 @@ const MOOD_CONFIG: Record<MoodLevel, { emoji: string; label: string; color: stri
 
 const QUEST_COLORS = ['#E74C3C', '#E67E22', '#F5A623', '#27AE60', '#2980B9', '#8E44AD'];
 const XP_PER_TASK = 50;
-const XP_PER_HABIT = 30;
 
 function PointsBurst({ show, points }: { show: boolean; points: number }) {
   const anim = useRef(new Animated.Value(0)).current;
@@ -53,6 +57,17 @@ function PointsBurst({ show, points }: { show: boolean; points: number }) {
   );
 }
 
+// Small, deliberately unobtrusive — a single confirm tap away from firing a
+// real alert to every parent with a push token (see useGuardianStore.addSOSAlert
+// -> POST /guardian/sos), so it needs to be reachable but never accidental.
+function SOSButton({ onPress, sending }: { onPress: () => void; sending: boolean }) {
+  return (
+    <Pressable onPress={onPress} disabled={sending} style={styles.sosBtn} hitSlop={6}>
+      <Ionicons name={sending ? 'hourglass-outline' : 'alert-circle-outline'} size={20} color="#fff" />
+    </Pressable>
+  );
+}
+
 export function KidsModeScreen({ navigation }: any) {
   const { t } = useTranslation('family');
   const insets = useSafeAreaInsets();
@@ -68,14 +83,20 @@ export function KidsModeScreen({ navigation }: any) {
   const submitTaskForApproval = useFamilyStore((s) => s.submitTaskForApproval);
   const { getTodayMood, addMoodEntry } = useMoodStore();
   const { habits, isCompletedToday, completeHabit, uncompleteHabit } = useHabitsStore();
+  const familyId = useAuthStore((s) => s.familyId);
+  const thisDeviceId = useGuardianStore((s) => s.thisDeviceId);
+  const addSOSAlert = useGuardianStore((s) => s.addSOSAlert);
+  const achievements = useRealAchievements();
   const [selectedKid, setSelectedKid] = useState<string | null>(null);
   const [showBurst, setShowBurst] = useState(false);
   const [burstPoints, setBurstPoints] = useState(XP_PER_TASK);
+  const [sendingSOS, setSendingSOS] = useState(false);
   const today = new Date().toISOString().split('T')[0];
 
   const kids = members.filter((m) => m.role === 'child');
   const activeKid = selectedKid ? members.find((m) => m.id === selectedKid) : (kids[0] || members[0]);
 
+  const canGoBack = typeof navigation?.canGoBack === 'function' && navigation.canGoBack();
 
   const myTasks = tasks.filter(
     (t) => activeKid && t.assignedTo?.includes(activeKid.id) && t.status !== 'completed'
@@ -91,6 +112,13 @@ export function KidsModeScreen({ navigation }: any) {
   const xp = (activeKid?.points || 0);
   const level = Math.floor(xp / 500) + 1;
   const xpProgress = (xp % 500) / 500;
+
+  // Real trophies (same computation AchievementsScreen uses — unlocked ones
+  // first, capped to what fits a horizontal teaser row) instead of a
+  // hardcoded, always-the-same-4 placeholder list.
+  const trophies = [...achievements]
+    .sort((a, b) => Number(b.unlocked) - Number(a.unlocked))
+    .slice(0, 6);
 
   const handleQuestPress = async (task: Task) => {
     if (!activeKid || task.status === 'pending_approval') return;
@@ -124,18 +152,61 @@ export function KidsModeScreen({ navigation }: any) {
     addMoodEntry({ memberId: activeKid.id, level, date: today });
   };
 
+  const handleSOSPress = () => {
+    if (!activeKid || !familyId || sendingSOS) return;
+    Alert.alert(
+      'Send SOS?',
+      `This will immediately alert every parent that ${activeKid.name.split(' ')[0]} needs help.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Send SOS',
+          style: 'destructive',
+          onPress: () => {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+            setSendingSOS(true);
+            addSOSAlert({
+              id: generateId(),
+              familyId,
+              memberId: activeKid.id,
+              // Falls back to a placeholder when this device isn't the
+              // kid's own registered device (e.g. a shared family tablet) —
+              // the backend resolves who the alert is for from memberId,
+              // not deviceId, so this is safe (see POST /guardian/sos).
+              deviceId: thisDeviceId ?? `kidsmode-${activeKid.id}`,
+              isResolved: false,
+              createdAt: new Date().toISOString(),
+            });
+            setTimeout(() => {
+              setSendingSOS(false);
+              Alert.alert('Help is on the way', 'Your parents have been notified.');
+            }, 600);
+          },
+        },
+      ],
+    );
+  };
+
   const GRADIENT_COLORS: [string, string] = activeKid
     ? [activeKid.avatarColor, activeKid.avatarColor + 'CC']
     : ['#2980B9', '#8E44AD'];
 
+  const cornerButton = canGoBack ? (
+    <Pressable onPress={() => navigation.goBack()} style={styles.cornerBtn}>
+      <Ionicons name="arrow-back" size={24} color="#fff" />
+    </Pressable>
+  ) : (
+    <View style={styles.cornerBtn} />
+  );
+
   const screenHeader = (
     <LinearGradient colors={GRADIENT_COLORS} style={{ paddingTop: insets.top + 6, paddingHorizontal: 20, paddingBottom: 24 }}>
       <View style={styles.headerRow}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
-        </Pressable>
-        <Text style={styles.headerTitle}>Kids Mode 🎮</Text>
-        <View style={{ width: 38 }} />
+        {cornerButton}
+        <Text style={styles.headerTitle}>Kids Mode</Text>
+        <Text style={styles.headerEmoji}>🎮</Text>
+        <View style={{ flex: 1 }} />
+        <SOSButton onPress={handleSOSPress} sending={sendingSOS} />
       </View>
 
       {/* Kid selector */}
@@ -157,11 +228,14 @@ export function KidsModeScreen({ navigation }: any) {
       {/* Player card */}
       {activeKid && (
         <View style={styles.playerCard}>
-          <Avatar name={activeKid.name} color="#fff" size={64} />
+          <View style={styles.avatarRing}>
+            <Avatar name={activeKid.name} color="#fff" size={64} />
+          </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.playerName}>{activeKid.name.split(' ')[0]}</Text>
             <View style={styles.levelRow}>
               <View style={styles.levelBadge}>
+                <Ionicons name="star" size={11} color="#FFD166" />
                 <Text style={styles.levelText}>LVL {level}</Text>
               </View>
               <Text style={styles.xpText}>{xp.toLocaleString()} XP</Text>
@@ -182,12 +256,10 @@ export function KidsModeScreen({ navigation }: any) {
   );
 
   const screenCompact = (
-    <View style={{ backgroundColor: GRADIENT_COLORS[0], paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-        <Ionicons name="arrow-back" size={24} color="#fff" />
-      </Pressable>
-      <Text style={styles.headerTitle}>Kids Mode 🎮</Text>
-      <View style={{ width: 38 }} />
+    <View style={{ backgroundColor: GRADIENT_COLORS[0], paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center' }}>
+      {cornerButton}
+      <Text style={[styles.headerTitle, { flex: 1, textAlign: 'center' }]}>Kids Mode 🎮</Text>
+      <SOSButton onPress={handleSOSPress} sending={sendingSOS} />
     </View>
   );
 
@@ -239,7 +311,10 @@ export function KidsModeScreen({ navigation }: any) {
 
         {/* Daily Quests */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>⚔️ Daily Quests</Text>
+          <View style={styles.sectionTitleRow}>
+            <View style={[styles.sectionAccent, { backgroundColor: '#8E44AD' }]} />
+            <Text style={styles.sectionTitle}>⚔️ Daily Quests</Text>
+          </View>
           <Text style={styles.sectionSub}>{completedTasksToday}/{myTasks.length + completedTasksToday} done</Text>
         </View>
 
@@ -296,7 +371,10 @@ export function KidsModeScreen({ navigation }: any) {
         {myHabits.length > 0 && (
           <>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>🔥 Habit Challenges</Text>
+              <View style={styles.sectionTitleRow}>
+                <View style={[styles.sectionAccent, { backgroundColor: '#E67E22' }]} />
+                <Text style={styles.sectionTitle}>🔥 Habit Challenges</Text>
+              </View>
               <Text style={styles.sectionSub}>{myHabits.filter((h) => isCompletedToday(h.id)).length}/{myHabits.length} done</Text>
             </View>
             <View style={styles.habitsGrid}>
@@ -325,31 +403,30 @@ export function KidsModeScreen({ navigation }: any) {
           </>
         )}
 
-        {/* Achievement teaser */}
+        {/* Trophies */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>🏅 Trophies</Text>
+          <View style={styles.sectionTitleRow}>
+            <View style={[styles.sectionAccent, { backgroundColor: '#F5A623' }]} />
+            <Text style={styles.sectionTitle}>🏅 Trophies</Text>
+          </View>
           <Pressable onPress={() => navigation.navigate('Achievements')}>
             <Text style={styles.seeAll}>View All</Text>
           </Pressable>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
-          {[
-            { emoji: '⭐', title: 'Task Master', desc: 'Complete 10 tasks', unlocked: true },
-            { emoji: '🔥', title: 'Streak Legend', desc: '7-day habit streak', unlocked: true },
-            { emoji: '💪', title: 'Early Bird', desc: 'Check in by 8am', unlocked: false },
-            { emoji: '🎯', title: 'Perfect Week', desc: 'All tasks done in a week', unlocked: false },
-          ].map((ach) => (
-            <View key={ach.title} style={[styles.achCard, !ach.unlocked && styles.achCardLocked]}>
-              <Text style={[styles.achEmoji, !ach.unlocked && styles.achLocked]}>{ach.emoji}</Text>
-              <Text style={[styles.achTitle, !ach.unlocked && styles.achLockedText]}>{ach.title}</Text>
+          {trophies.map((ach) => (
+            <View key={ach.id} style={[styles.achCard, !ach.unlocked && styles.achCardLocked]}>
+              <View style={[styles.achIconWrap, { backgroundColor: ach.unlocked ? ach.bg : colors.border }]}>
+                <Ionicons name={ach.icon as any} size={24} color={ach.unlocked ? ach.color : colors.textMuted} />
+              </View>
+              <Text style={[styles.achTitle, !ach.unlocked && styles.achLockedText]} numberOfLines={1}>{ach.title}</Text>
               <Text style={styles.achDesc} numberOfLines={2}>{ach.desc}</Text>
-              {ach.unlocked && (
+              {ach.unlocked ? (
                 <View style={styles.achUnlocked}>
                   <Ionicons name="checkmark-circle" size={12} color="#27AE60" />
                   <Text style={styles.achUnlockedText}>Unlocked!</Text>
                 </View>
-              )}
-              {!ach.unlocked && (
+              ) : (
                 <View style={styles.achLockIcon}>
                   <Ionicons name="lock-closed" size={14} color={colors.textMuted} />
                 </View>
@@ -366,30 +443,32 @@ export function KidsModeScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { paddingHorizontal: 20, paddingBottom: 8 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  back: { width: 38, height: 38, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  headerTitle: { flex: 1, fontSize: 18, fontWeight: '800', color: '#fff' },
+  headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 8 },
+  cornerBtn: { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
+  sosBtn: { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(231,76,60,0.35)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' },
+  headerTitle: { fontSize: 18, fontWeight: '800', color: '#fff' },
+  headerEmoji: { fontSize: 18, marginLeft: 4 },
   kidChip: { alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
   kidChipActive: { backgroundColor: 'rgba(255,255,255,0.25)' },
   kidChipName: { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.9)' },
-  playerCard: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 18, padding: 14 },
+  playerCard: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: 'rgba(255,255,255,0.16)', borderRadius: 20, padding: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)' },
+  avatarRing: { borderRadius: 36, borderWidth: 2, borderColor: 'rgba(255,255,255,0.6)', padding: 2 },
   playerName: { fontSize: 18, fontWeight: '800', color: '#fff', marginBottom: 6 },
   levelRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
-  levelBadge: { backgroundColor: 'rgba(255,255,255,0.25)', borderRadius: 8, paddingVertical: 2, paddingHorizontal: 8 },
+  levelBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,255,255,0.25)', borderRadius: 8, paddingVertical: 2, paddingHorizontal: 8 },
   levelText: { fontSize: 12, fontWeight: '800', color: '#fff' },
   xpText: { fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: '600' },
-  xpBar: { height: 6, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 3, marginBottom: 4 },
+  xpBar: { height: 6, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 3, marginBottom: 4, overflow: 'hidden' },
   xpFill: { height: 6, backgroundColor: '#FFD166', borderRadius: 3 },
   xpNext: { fontSize: 10, color: 'rgba(255,255,255,0.6)' },
   streakBadge: { alignItems: 'center' },
   streakEmoji: { fontSize: 20 },
   streakCount: { fontSize: 18, fontWeight: '800', color: '#fff' },
   streakLabel: { fontSize: 10, color: 'rgba(255,255,255,0.7)' },
-  burst: { position: 'absolute', top: '40%', left: '30%', right: '30%', zIndex: 100, backgroundColor: '#FFD166', borderRadius: 16, padding: 12, alignItems: 'center' },
+  burst: { position: 'absolute', top: '40%', left: '30%', right: '30%', zIndex: 100, backgroundColor: '#FFD166', borderRadius: 16, padding: 12, alignItems: 'center', ...shadows.lg },
   burstText: { fontSize: 18, fontWeight: '800', color: '#333' },
   content: { padding: 16 },
-  moodCard: { borderRadius: 18, marginBottom: 16 },
+  moodCard: { borderRadius: 18, marginBottom: 16, ...shadows.card },
   moodQuestion: { fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 16, textAlign: 'center' },
   moodRow: { flexDirection: 'row', justifyContent: 'space-around' },
   moodBtn: { alignItems: 'center', gap: 4 },
@@ -399,14 +478,16 @@ const styles = StyleSheet.create({
   moodCheckedLabel: { fontSize: 14, fontWeight: '700', color: colors.text },
   moodCheckedValue: { fontSize: 16, fontWeight: '800', marginTop: 2 },
   moodXP: { marginLeft: 'auto', fontSize: 14, fontWeight: '800', color: '#27AE60', backgroundColor: '#D5F5E3', borderRadius: 10, paddingVertical: 4, paddingHorizontal: 10 },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, marginBottom: 6 },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, marginBottom: 8 },
+  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  sectionAccent: { width: 4, height: 18, borderRadius: 2 },
   sectionTitle: { fontSize: 17, fontWeight: '800', color: colors.text },
   sectionSub: { fontSize: 12, color: colors.textSecondary, fontWeight: '600' },
   seeAll: { fontSize: 13, color: colors.primary, fontWeight: '600' },
-  noQuestsCard: { borderRadius: 18, alignItems: 'center', paddingVertical: 32, marginBottom: 8 },
+  noQuestsCard: { borderRadius: 18, alignItems: 'center', paddingVertical: 32, marginBottom: 8, ...shadows.card },
   noQuestsTitle: { fontSize: 18, fontWeight: '800', color: colors.text, marginTop: 12, marginBottom: 4 },
   noQuestsSub: { fontSize: 14, color: colors.textSecondary },
-  questCard: { borderRadius: 16, marginBottom: 10, overflow: 'hidden', borderWidth: 1, borderColor: colors.border },
+  questCard: { borderRadius: 16, marginBottom: 10, overflow: 'hidden', backgroundColor: colors.card, ...shadows.card },
   questGrad: { flexDirection: 'row', alignItems: 'center', padding: 14 },
   questIcon: { width: 46, height: 46, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   questTitle: { fontSize: 15, fontWeight: '700', color: colors.text, marginBottom: 2 },
@@ -419,18 +500,17 @@ const styles = StyleSheet.create({
   completedBanner: { backgroundColor: '#D5F5E3', borderRadius: 12, paddingVertical: 10, paddingHorizontal: 16, marginBottom: 8, borderWidth: 1, borderColor: '#A9DFBF' },
   completedText: { fontSize: 13, fontWeight: '700', color: '#1A6B3C', textAlign: 'center' },
   habitsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  habitCard: { width: '47%', backgroundColor: colors.card, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: colors.border },
+  habitCard: { width: '47%', backgroundColor: colors.card, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: colors.border, ...shadows.card },
   habitCardDone: { borderWidth: 2 },
   habitIcon: { width: 46, height: 46, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
   habitTitle: { fontSize: 13, fontWeight: '700', color: colors.text, marginBottom: 8, lineHeight: 18 },
   habitFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   habitStreak: { fontSize: 12, fontWeight: '700' },
-  achCard: { width: 120, backgroundColor: colors.card, borderRadius: 16, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: colors.border },
+  achCard: { width: 128, backgroundColor: colors.card, borderRadius: 16, padding: 12, alignItems: 'center', ...shadows.card },
   achCardLocked: { opacity: 0.6 },
-  achEmoji: { fontSize: 30, marginBottom: 6 },
+  achIconWrap: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
   achTitle: { fontSize: 11, fontWeight: '800', color: colors.text, textAlign: 'center', marginBottom: 3 },
   achDesc: { fontSize: 9, color: colors.textSecondary, textAlign: 'center', lineHeight: 13 },
-  achLocked: { opacity: 0.4 },
   achLockedText: { color: colors.textMuted },
   achUnlocked: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 6 },
   achUnlockedText: { fontSize: 9, color: '#27AE60', fontWeight: '700' },

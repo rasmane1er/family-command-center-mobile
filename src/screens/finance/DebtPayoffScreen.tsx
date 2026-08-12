@@ -36,6 +36,7 @@ import type {
   PayoffSummary,
 } from '../../types';
 import { useTranslation } from 'react-i18next';
+import { usePlaidAutoData } from '../../hooks/usePlaidAutoData';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -326,19 +327,18 @@ export function DebtPayoffScreen({ navigation }: { navigation: { goBack: () => v
   const summary: PayoffSummary = calculatePayoffPlan(debts, extraBudget, strategy);
   const totalDebt = debts.reduce((s, d) => s + d.balance, 0);
 
-  // Fetch Plaid-detected debts
-  useEffect(() => {
-    let cancelled = false;
+  // Fetch Plaid-detected debts — re-fires whenever a bank gets connected or a
+  // sync completes (even from another screen), not just on first mount.
+  usePlaidAutoData(() => {
     setDetectedLoading(true);
     getDetectedDebtsFromPlaid()
-      .then(({ detected }) => { if (!cancelled) setDetectedDebts(detected); })
+      .then(({ detected }) => setDetectedDebts(detected))
       .catch(() => {})
-      .finally(() => { if (!cancelled) setDetectedLoading(false); });
+      .finally(() => setDetectedLoading(false));
     getPaymentDetections()
-      .then(({ detections }) => { if (!cancelled) setPaymentDetections(detections); })
+      .then(({ detections }) => setPaymentDetections(detections))
       .catch(() => {});
-    return () => { cancelled = true; };
-  }, []);
+  });
 
   const handleSyncBalances = useCallback(async () => {
     const pairs = debts

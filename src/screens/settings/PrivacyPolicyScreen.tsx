@@ -39,7 +39,7 @@ const SECTIONS: LegalSection[] = [
   {
     heading: 'Where Your Data Is Stored',
     body: [
-      'By default, your family\'s data is stored securely on your own device using encrypted local storage. If you enable Cloud Backup or use features that require our servers (bank linking, AI Assistant, notifications, support chat), that data is also stored on our backend servers so it can sync across your devices and power those features.',
+      'Your family\'s data is stored on our backend servers so it can sync in real time across your devices and power the app\'s features. Some data is also cached locally on your device for offline access and performance.',
     ],
   },
   {

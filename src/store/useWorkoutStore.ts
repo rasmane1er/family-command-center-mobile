@@ -4,6 +4,10 @@ import { mmkvStorage } from '../storage/mmkvStorage';
 
 import { generateId } from '../utils/generateId';
 
+// Same unbounded-append-log gap fixed elsewhere (useNotificationsStore,
+// useJournalStore, etc.) — workout entries accumulate indefinitely otherwise.
+const MAX_WORKOUTS = 2000;
+
 export type WorkoutType = 'cardio' | 'strength' | 'yoga' | 'sports' | 'walking' | 'cycling' | 'swimming' | 'other';
 
 export interface WorkoutLog {
@@ -36,7 +40,7 @@ export const useWorkoutStore = create<WorkoutState>()(
     (set, get) => ({
   workouts: [],
   isLoaded: false,
-  addWorkout: (w) => set((s) => ({ workouts: [{ ...w, id: generateId(), createdAt: new Date().toISOString() }, ...s.workouts] })),
+  addWorkout: (w) => set((s) => ({ workouts: [{ ...w, id: generateId(), createdAt: new Date().toISOString() }, ...s.workouts].slice(0, MAX_WORKOUTS) })),
   deleteWorkout: (id) => set((s) => ({ workouts: s.workouts.filter((w) => w.id !== id) })),
   getWeeklyCount: (memberId) => {
     const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];

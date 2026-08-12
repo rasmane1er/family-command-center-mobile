@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, FlatList, Pressable, Alert, Modal, TextInput, ActivityIndicator,
 } from 'react-native';
@@ -34,16 +34,104 @@ function isOverdue(chore: Chore): boolean {
   return false;
 }
 
+interface RotationMember {
+  id: string;
+  avatarColor: string;
+  initial: string;
+  isActive: boolean;
+}
+
+interface ChoreCardProps {
+  chore: Chore;
+  assignee: import('../../types').FamilyMember | undefined;
+  done: boolean;
+  overdue: boolean;
+  freqLabel: string;
+  rotation: RotationMember[];
+  onComplete: (chore: Chore) => void;
+  onDelete: (chore: Chore) => void;
+}
+
+// Memoized so unrelated screen state (typing in the add-chore modal, etc.)
+// doesn't re-render every chore card.
+const ChoreCard = React.memo(function ChoreCard({ chore, assignee, done, overdue, freqLabel, rotation, onComplete, onDelete }: ChoreCardProps) {
+  const { t } = useTranslation('family');
+  return (
+    <Pressable onLongPress={() => onDelete(chore)}>
+      <Card
+        style={{
+          ...styles.choreCard,
+          ...(done ? styles.choreCardDone : {}),
+          ...(overdue && !done ? styles.choreCardOverdue : {}),
+          borderLeftColor: chore.color,
+        }}
+        variant="elevated"
+      >
+        <View style={styles.choreTop}>
+          <Text style={styles.choreEmoji}>{chore.emoji}</Text>
+          <View style={{ flex: 1 }}>
+            <View style={styles.choreNameRow}>
+              <Text style={[styles.choreName, done && styles.choreNameDone]}>{chore.name}</Text>
+              {done && <Ionicons name="checkmark-circle" size={18} color={colors.success} />}
+              {overdue && !done && <View style={styles.overdueBadge}><Text style={styles.overdueText}>{t('family.screens.choreRotation.overdueBadge')}</Text></View>}
+            </View>
+            <View style={styles.choreMeta}>
+              <Text style={styles.choreFreq}>{freqLabel}</Text>
+              <Text style={styles.choreDot}>·</Text>
+              <Text style={styles.choreTime}>{t('family.screens.choreRotation.minutesAbbrev', { minutes: chore.estimatedMinutes })}</Text>
+              <Text style={styles.choreDot}>·</Text>
+              <Text style={styles.chorePoints}>{t('family.screens.choreRotation.pointsAbbrev', { points: chore.points })}</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.assigneeRow}>
+          <View style={styles.assigneeInfo}>
+            <View style={[styles.assigneeDot, { backgroundColor: assignee?.avatarColor ?? colors.primary }]} />
+            <Text style={styles.assigneeLabel}>{t('family.screens.choreRotation.upNow')}</Text>
+            <Text style={styles.assigneeName}>{assignee?.name ?? t('family.screens.choreRotation.unassigned')}</Text>
+          </View>
+
+          <View style={styles.rotationChips}>
+            {rotation.map((m) => (
+              <View
+                key={m.id}
+                style={[
+                  styles.rotationDot,
+                  { backgroundColor: m.avatarColor },
+                  m.isActive && styles.rotationDotActive,
+                ]}
+              >
+                <Text style={styles.rotationInitial}>{m.initial}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {!done && (
+          <Pressable
+            style={[styles.doneBtn, { backgroundColor: chore.color }]}
+            onPress={() => onComplete(chore)}
+          >
+            <Ionicons name="checkmark" size={16} color="#fff" />
+            <Text style={styles.doneBtnText}>{t('family.screens.choreRotation.markDone')}</Text>
+          </Pressable>
+        )}
+      </Card>
+    </Pressable>
+  );
+});
+
 export function ChoreRotationScreen({ navigation }: any) {
   const { t } = useTranslation('family');
   const insets = useSafeAreaInsets();
 
-  const FREQ_LABELS: Record<ChoreFrequency, string> = {
+  const FREQ_LABELS: Record<ChoreFrequency, string> = useMemo(() => ({
     daily: t('family.screens.choreRotation.freqDaily'),
     weekly: t('family.screens.choreRotation.freqWeekly'),
     biweekly: t('family.screens.choreRotation.freqBiweekly'),
     monthly: t('family.screens.choreRotation.freqMonthly'),
-  };
+  }), [t]);
 
   const FREQ_FILTERS: { key: ChoreFrequency | 'all'; label: string }[] = [
     { key: 'all', label: t('family.screens.choreRotation.filterAll') },
@@ -68,7 +156,7 @@ export function ChoreRotationScreen({ navigation }: any) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const getMember = (id?: string) => members.find((m) => m.id === id);
+  const membersById = useMemo(() => new Map(members.map((m) => [m.id, m])), [members]);
 
   const filtered = useMemo(() =>
     filter === 'all' ? chores : chores.filter((c) => c.frequency === filter),
@@ -78,10 +166,10 @@ export function ChoreRotationScreen({ navigation }: any) {
   const overdueCount = chores.filter(isOverdue).length;
   const doneToday = chores.filter(isDoneToday).length;
 
-  const handleComplete = (chore: Chore) => {
-    const assignee = getMember(chore.assignedMemberIds[chore.currentAssigneeIndex]);
+  const handleComplete = useCallback((chore: Chore) => {
+    const assignee = membersById.get(chore.assignedMemberIds[chore.currentAssigneeIndex]);
     const nextIndex = (chore.currentAssigneeIndex + 1) % chore.assignedMemberIds.length;
-    const nextAssignee = getMember(chore.assignedMemberIds[nextIndex]);
+    const nextAssignee = membersById.get(chore.assignedMemberIds[nextIndex]);
     Alert.alert(
       t('family.screens.choreRotation.markAsDoneTitle'),
       t('family.screens.choreRotation.markAsDoneMsg', {
@@ -101,14 +189,39 @@ export function ChoreRotationScreen({ navigation }: any) {
         },
       ]
     );
-  };
+  }, [membersById, t, completeChore]);
 
-  const handleDelete = (chore: Chore) => {
+  const handleDelete = useCallback((chore: Chore) => {
     Alert.alert(t('family.screens.choreRotation.deleteChoreTitle'), t('family.screens.choreRotation.deleteChoreMsg', { name: chore.name }), [
       { text: t('family.screens.choreRotation.cancel'), style: 'cancel' },
       { text: t('family.screens.choreRotation.delete'), style: 'destructive', onPress: () => deleteChore(chore.id) },
     ]);
-  };
+  }, [t, deleteChore]);
+
+  const renderChoreItem = useCallback(({ item: chore }: { item: Chore }) => {
+    const assignee = membersById.get(chore.assignedMemberIds[chore.currentAssigneeIndex]);
+    const rotation: RotationMember[] = chore.assignedMemberIds.map((mid, idx) => {
+      const m = membersById.get(mid);
+      return {
+        id: mid,
+        avatarColor: m?.avatarColor ?? colors.border,
+        initial: m?.name?.charAt(0) ?? '?',
+        isActive: idx === chore.currentAssigneeIndex,
+      };
+    });
+    return (
+      <ChoreCard
+        chore={chore}
+        assignee={assignee}
+        done={isDoneToday(chore)}
+        overdue={isOverdue(chore)}
+        freqLabel={FREQ_LABELS[chore.frequency]}
+        rotation={rotation}
+        onComplete={handleComplete}
+        onDelete={handleDelete}
+      />
+    );
+  }, [membersById, FREQ_LABELS, handleComplete, handleDelete]);
 
   const handleAdd = () => {
     if (!newName.trim()) return;
@@ -219,79 +332,7 @@ export function ChoreRotationScreen({ navigation }: any) {
             <Text style={styles.emptyDesc}>{t('family.screens.choreRotation.emptyDesc')}</Text>
           </View>
         }
-        renderItem={({ item: chore }) => {
-          const assignee = getMember(chore.assignedMemberIds[chore.currentAssigneeIndex]);
-          const done = isDoneToday(chore);
-          const overdue = isOverdue(chore);
-
-          return (
-            <Pressable onLongPress={() => handleDelete(chore)}>
-              <Card
-                style={{
-                  ...styles.choreCard,
-                  ...(done ? styles.choreCardDone : {}),
-                  ...(overdue && !done ? styles.choreCardOverdue : {}),
-                  borderLeftColor: chore.color,
-                }}
-                variant="elevated"
-              >
-                <View style={styles.choreTop}>
-                  <Text style={styles.choreEmoji}>{chore.emoji}</Text>
-                  <View style={{ flex: 1 }}>
-                    <View style={styles.choreNameRow}>
-                      <Text style={[styles.choreName, done && styles.choreNameDone]}>{chore.name}</Text>
-                      {done && <Ionicons name="checkmark-circle" size={18} color={colors.success} />}
-                      {overdue && !done && <View style={styles.overdueBadge}><Text style={styles.overdueText}>{t('family.screens.choreRotation.overdueBadge')}</Text></View>}
-                    </View>
-                    <View style={styles.choreMeta}>
-                      <Text style={styles.choreFreq}>{FREQ_LABELS[chore.frequency]}</Text>
-                      <Text style={styles.choreDot}>·</Text>
-                      <Text style={styles.choreTime}>{t('family.screens.choreRotation.minutesAbbrev', { minutes: chore.estimatedMinutes })}</Text>
-                      <Text style={styles.choreDot}>·</Text>
-                      <Text style={styles.chorePoints}>{t('family.screens.choreRotation.pointsAbbrev', { points: chore.points })}</Text>
-                    </View>
-                  </View>
-                </View>
-
-                <View style={styles.assigneeRow}>
-                  <View style={styles.assigneeInfo}>
-                    <View style={[styles.assigneeDot, { backgroundColor: assignee?.avatarColor ?? colors.primary }]} />
-                    <Text style={styles.assigneeLabel}>{t('family.screens.choreRotation.upNow')}</Text>
-                    <Text style={styles.assigneeName}>{assignee?.name ?? t('family.screens.choreRotation.unassigned')}</Text>
-                  </View>
-
-                  <View style={styles.rotationChips}>
-                    {chore.assignedMemberIds.map((mid, idx) => {
-                      const m = getMember(mid);
-                      return (
-                        <View
-                          key={mid}
-                          style={[
-                            styles.rotationDot,
-                            { backgroundColor: m?.avatarColor ?? colors.border },
-                            idx === chore.currentAssigneeIndex && styles.rotationDotActive,
-                          ]}
-                        >
-                          <Text style={styles.rotationInitial}>{m?.name?.charAt(0) ?? '?'}</Text>
-                        </View>
-                      );
-                    })}
-                  </View>
-                </View>
-
-                {!done && (
-                  <Pressable
-                    style={[styles.doneBtn, { backgroundColor: chore.color }]}
-                    onPress={() => handleComplete(chore)}
-                  >
-                    <Ionicons name="checkmark" size={16} color="#fff" />
-                    <Text style={styles.doneBtnText}>{t('family.screens.choreRotation.markDone')}</Text>
-                  </Pressable>
-                )}
-              </Card>
-            </Pressable>
-          );
-        }}
+        renderItem={renderChoreItem}
       />
 
         )}

@@ -6,6 +6,10 @@ import { pushSyncEvent } from '../api/syncQueue';
 
 import { generateId } from '../utils/generateId';
 
+// Same unbounded-append-log gap fixed elsewhere (useNotificationsStore,
+// useJournalStore, etc.) — per-dose entries accumulate indefinitely otherwise.
+const MAX_LOGS = 2000;
+
 export type MedFrequency = 'daily' | 'twice_daily' | 'weekly' | 'as_needed' | 'monthly';
 
 export interface Medication {
@@ -62,7 +66,7 @@ export const useMedicationStore = create<MedicationState>()(
         set((s) => ({ medications: s.medications.filter((m) => m.id !== id) }));
         pushSyncEvent('activities', 'delete', { type: 'medication', id });
       },
-      logDose: (medicationId, memberId, doseTaken) => set((s) => ({ logs: [{ id: generateId(), medicationId, memberId, takenAt: new Date().toISOString(), doseTaken }, ...s.logs] })),
+      logDose: (medicationId, memberId, doseTaken) => set((s) => ({ logs: [{ id: generateId(), medicationId, memberId, takenAt: new Date().toISOString(), doseTaken }, ...s.logs].slice(0, MAX_LOGS) })),
       fetchFromServer: async () => {
         set({ isLoaded: true });
       },

@@ -1,3 +1,5 @@
+import { Platform } from 'react-native';
+
 // Set EXPO_PUBLIC_REVENUECAT_IOS_KEY / EXPO_PUBLIC_REVENUECAT_ANDROID_KEY in your
 // .env with the public API keys from the RevenueCat dashboard (Project settings
 // → API keys) for production. These are safe to ship in the client bundle — they
@@ -41,13 +43,31 @@ export const REVENUECAT_ENTITLEMENTS = {
   familyPro: 'family command center Pro',
 } as const;
 
-// Product identifiers configured in the RevenueCat dashboard, all four
-// already created and attached to their entitlements above. Presented
-// automatically by the RevenueCat Paywall UI — these constants are for
-// reference/debugging, not manual lookup.
-export const REVENUECAT_PRODUCTS = {
-  premiumMonthly: 'premium_monthly',
-  premiumYearly: 'premium_yearly',
-  familyProMonthly: 'monthly',
-  familyProYearly: 'yearly',
-} as const;
+// Product identifiers actively used by purchaseService.findPackageForTier()/
+// activePeriodForTier() to pick the exact package for a tier + billing period.
+//
+// iOS: bare App Store product identifiers (Family Pro was originally a
+// single-tier product literally named "monthly"/"yearly"; Premium's products
+// were added later with more descriptive names).
+//
+// Android: Play Console Subscriptions v2 requires ONE product
+// ("command_center_pro") holding all 4 base plans, so RevenueCat's package
+// identifier comes back as "command_center_pro:<basePlanId>" — these must be
+// the exact Base Plan IDs created in Play Console (Monetize > Subscriptions >
+// command_center_pro), NOT the iOS product names. Using the iOS names here
+// means findPackageForTier() never matches anything on Android, and every
+// purchase fails with "This plan is not available right now."
+export const REVENUECAT_PRODUCTS = Platform.select({
+  android: {
+    premiumMonthly: 'premium-monthly',
+    premiumYearly: 'premium-yearly',
+    familyProMonthly: 'family-pro-monthly',
+    familyProYearly: 'family-pro-yearly',
+  },
+  default: {
+    premiumMonthly: 'premium_monthly',
+    premiumYearly: 'premium_yearly',
+    familyProMonthly: 'monthly',
+    familyProYearly: 'yearly',
+  },
+})!;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Modal, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,6 +20,7 @@ import { getDetectedSubscriptions, confirmSubscription } from '../../services/su
 import type { DetectedSubscription } from '../../services/subscriptionDetectionService';
 import type { Subscription } from '../../types';
 import { useTranslation } from 'react-i18next';
+import { usePlaidAutoData } from '../../hooks/usePlaidAutoData';
 
 const SUB_CATEGORIES = ['Entertainment', 'Music', 'Software', 'News', 'Fitness', 'Education', 'Gaming', 'Other'];
 const SUB_ICONS: Record<string, string> = {
@@ -55,12 +56,13 @@ export function SubscriptionsScreen({ navigation }: any) {
   const [loadingDetected, setLoadingDetected] = useState(true);
   const [dismissedMerchants, setDismissedMerchants] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    getDetectedSubscriptions()
+  usePlaidAutoData(() => {
+    setLoadingDetected(true);
+    return getDetectedSubscriptions()
       .then((res) => setDetected(res.subscriptions))
       .catch(() => setDetected([]))
       .finally(() => setLoadingDetected(false));
-  }, []);
+  });
 
   const visibleDetected = detected.filter((d) => !dismissedMerchants.has(d.merchantName));
 

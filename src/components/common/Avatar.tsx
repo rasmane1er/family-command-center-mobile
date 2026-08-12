@@ -4,10 +4,10 @@ import {
   Text,
   StyleSheet,
   ViewStyle,
-  Image,
   TouchableOpacity,
   Alert,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useTranslation } from 'react-i18next';
@@ -93,6 +93,7 @@ export function Avatar({
         <Image
           source={{ uri: resolvedImageUri }}
           style={{ width: size, height: size, borderRadius: size / 2 }}
+          cachePolicy="disk"
         />
       ) : (
         <Text style={[styles.initials, { fontSize, color: '#fff' }]}>{initials}</Text>

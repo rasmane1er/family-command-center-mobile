@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions, Modal, TextInput, FlatList, ActivityIndicator, RefreshControl, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -269,7 +269,17 @@ export function FinanceDashboardScreen({ navigation }: any) {
     }
   }, []);
 
-  const refreshAllPlaidData = useCallback(async () => {
+  // Guards the focus-triggered refetch below with a short TTL — switching
+  // tabs (Home -> Finance -> Tasks -> Finance) used to re-fire all 5 Plaid
+  // calls on every single focus with no staleness check. Pull-to-refresh and
+  // the reactive bank-connect/sync trigger both pass force=true and always
+  // hit the network regardless of this TTL.
+  const lastRefreshedAt = useRef(0);
+  const STALE_TTL_MS = 60_000;
+
+  const refreshAllPlaidData = useCallback(async (force = false) => {
+    if (!force && Date.now() - lastRefreshedAt.current < STALE_TTL_MS) return;
+    lastRefreshedAt.current = Date.now();
     await Promise.all([
       refreshPlaidAccounts(),
       refreshBudgetActuals(),
@@ -281,8 +291,9 @@ export function FinanceDashboardScreen({ navigation }: any) {
 
   // Refetches every time this screen gains focus — not just on first
   // mount — so reconnecting a bank, adding something via receipt scan or
-  // another screen, or simply switching back to the Finance tab always
-  // shows current data instead of a stale snapshot from app launch.
+  // another screen, or simply switching back to the Finance tab shows
+  // current data instead of a stale snapshot from app launch, as long as
+  // the last refresh wasn't within the TTL above.
   useFocusEffect(
     useCallback(() => {
       refreshAllPlaidData();
@@ -291,12 +302,13 @@ export function FinanceDashboardScreen({ navigation }: any) {
 
   // Also refetch reactively whenever a bank connects or finishes syncing —
   // covers connecting a bank from within this same screen session, where
-  // the focus effect above wouldn't otherwise re-fire.
-  usePlaidAutoData(refreshAllPlaidData);
+  // the focus effect above wouldn't otherwise re-fire. Forced — a real sync
+  // event just happened, so the TTL shouldn't suppress it.
+  usePlaidAutoData(useCallback(() => refreshAllPlaidData(true), [refreshAllPlaidData]));
 
   const handlePullRefresh = async () => {
     setIsRefreshing(true);
-    await refreshAllPlaidData();
+    await refreshAllPlaidData(true);
     setIsRefreshing(false);
   };
 

@@ -88,6 +88,10 @@ export const TIER_YEARLY_SAVINGS_PCT: Record<SubscriptionTier, number> = {
 
 export function useSubscription() {
   const tier = (useAppStore((s) => s.settings.subscriptionTier) ?? 'free') as SubscriptionTier;
+  // True once RevenueCat (or the /subscriptions/me fallback) has confirmed
+  // the account's real tier at least once this session — lets callers tell
+  // "confirmed free" apart from "haven't checked yet, defaulting to free".
+  const isChecked = useAppStore((s) => s.subscriptionChecked);
   const features = TIER_FEATURES[tier];
 
   const canAccess = (feature: keyof SubscriptionFeatures): boolean => {
@@ -100,5 +104,5 @@ export function useSubscription() {
     return order.indexOf(tier) >= order.indexOf(required);
   };
 
-  return { tier, features, canAccess, isAtLeast, TIER_FEATURES, TIER_LABELS, TIER_PRICES };
+  return { tier, isChecked, features, canAccess, isAtLeast, TIER_FEATURES, TIER_LABELS, TIER_PRICES };
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, FlatList, Pressable, Alert, Modal, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,7 +14,7 @@ import { Button } from '../../components/common/Button';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useLegacyStore } from '../../store/useLegacyStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
-import type { LegacyItemType } from '../../types';
+import type { LegacyItemType, LegacyItem } from '../../types';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/useAuthStore';
 
@@ -39,6 +39,57 @@ const FILTER_TYPES: { key: 'all' | LegacyItemType; label: string }[] = [
   { key: 'letter', label: 'Letters' },
   { key: 'recipe', label: 'Recipes' },
 ];
+
+interface LegacyItemCardProps {
+  item: LegacyItem;
+  authorName: string;
+  onToggleFeatured: (id: string) => void;
+  onDelete: (item: LegacyItem) => void;
+  onReact: (id: string) => void;
+}
+
+// Memoized so unrelated screen state (typing in the add-entry modal, etc.)
+// doesn't re-render every vault entry card.
+const LegacyItemCard = React.memo(function LegacyItemCard({ item, authorName, onToggleFeatured, onDelete, onReact }: LegacyItemCardProps) {
+  const cfg = TYPE_CONFIG[item.type];
+  return (
+    <Card style={styles.itemCard} variant="elevated">
+      <View style={styles.itemHeader}>
+        <View style={[styles.typeIcon, { backgroundColor: cfg.color + '15' }]}>
+          <Ionicons name={cfg.icon as any} size={18} color={cfg.color} />
+        </View>
+        <View style={{ flex: 1, marginLeft: 10 }}>
+          <Text style={styles.itemTitle}>{item.title}</Text>
+          <Text style={styles.itemMeta}>{authorName} {item.date ? `• ${new Date(item.date).getFullYear()}` : ''}</Text>
+        </View>
+        <Pressable onPress={() => onToggleFeatured(item.id)} style={{ marginRight: 12 }}>
+          <Ionicons name={item.isFeatured ? 'star' : 'star-outline'} size={20} color={item.isFeatured ? colors.secondary : colors.textMuted} />
+        </Pressable>
+        <Pressable onPress={() => onDelete(item)}>
+          <Ionicons name="trash-outline" size={20} color={colors.textMuted} />
+        </Pressable>
+      </View>
+      <Text style={styles.itemContent} numberOfLines={3}>{item.content}</Text>
+      <View style={styles.itemFooter}>
+        <View style={styles.reactionsRow}>
+          {item.reactions.slice(0, 4).map((r, i) => (
+            <Text key={i} style={styles.reactionEmoji}>{r.emoji}</Text>
+          ))}
+          {item.reactions.length > 0 && (
+            <Text style={styles.reactionCount}>{item.reactions.length}</Text>
+          )}
+          <Pressable
+            onPress={() => onReact(item.id)}
+            style={styles.addReactionBtn}
+          >
+            <Ionicons name="add-circle-outline" size={18} color={colors.textMuted} />
+          </Pressable>
+        </View>
+        <Badge label={cfg.label} variant="neutral" size="sm" />
+      </View>
+    </Card>
+  );
+});
 
 export function LegacyVaultScreen({ navigation }: any) {
   const { t } = useTranslation('family');
@@ -74,6 +125,26 @@ export function LegacyVaultScreen({ navigation }: any) {
 
   const filtered = filter === 'all' ? items : items.filter((i) => i.type === filter);
   const featured = items.filter((i) => i.isFeatured);
+
+  const handleDeleteItem = useCallback((item: LegacyItem) => {
+    Alert.alert('Delete Entry', `Remove "${item.title}" from the vault?`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => deleteItem(item.id) },
+    ]);
+  }, [deleteItem]);
+
+  const handleReact = useCallback((id: string) => addReaction(id, 'member-1', '❤️'), [addReaction]);
+
+  const renderVaultItem = useCallback(({ item }: { item: LegacyItem }) => (
+    <LegacyItemCard
+      item={item}
+      authorName={getMemberName(item.memberId)}
+      onToggleFeatured={toggleFeatured}
+      onDelete={handleDeleteItem}
+      onReact={handleReact}
+    />
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ), [members, toggleFeatured, handleDeleteItem, handleReact]);
 
   const screenHeader = (
     <LinearGradient colors={['#4A1942', '#7B2D8B']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
@@ -174,53 +245,7 @@ export function LegacyVaultScreen({ navigation }: any) {
               <Text style={styles.emptyDesc}>Start preserving your family's legacy by adding stories, traditions, and milestones.</Text>
             </View>
           }
-          renderItem={({ item }) => {
-            const cfg = TYPE_CONFIG[item.type];
-            return (
-              <Card style={styles.itemCard} variant="elevated">
-                <View style={styles.itemHeader}>
-                  <View style={[styles.typeIcon, { backgroundColor: cfg.color + '15' }]}>
-                    <Ionicons name={cfg.icon as any} size={18} color={cfg.color} />
-                  </View>
-                  <View style={{ flex: 1, marginLeft: 10 }}>
-                    <Text style={styles.itemTitle}>{item.title}</Text>
-                    <Text style={styles.itemMeta}>{getMemberName(item.memberId)} {item.date ? `• ${new Date(item.date).getFullYear()}` : ''}</Text>
-                  </View>
-                  <Pressable onPress={() => toggleFeatured(item.id)} style={{ marginRight: 12 }}>
-                    <Ionicons name={item.isFeatured ? 'star' : 'star-outline'} size={20} color={item.isFeatured ? colors.secondary : colors.textMuted} />
-                  </Pressable>
-                  <Pressable
-                    onPress={() => {
-                      Alert.alert('Delete Entry', `Remove "${item.title}" from the vault?`, [
-                        { text: 'Cancel', style: 'cancel' },
-                        { text: 'Delete', style: 'destructive', onPress: () => deleteItem(item.id) },
-                      ]);
-                    }}
-                  >
-                    <Ionicons name="trash-outline" size={20} color={colors.textMuted} />
-                  </Pressable>
-                </View>
-                <Text style={styles.itemContent} numberOfLines={3}>{item.content}</Text>
-                <View style={styles.itemFooter}>
-                  <View style={styles.reactionsRow}>
-                    {item.reactions.slice(0, 4).map((r, i) => (
-                      <Text key={i} style={styles.reactionEmoji}>{r.emoji}</Text>
-                    ))}
-                    {item.reactions.length > 0 && (
-                      <Text style={styles.reactionCount}>{item.reactions.length}</Text>
-                    )}
-                    <Pressable
-                      onPress={() => addReaction(item.id, 'member-1', '❤️')}
-                      style={styles.addReactionBtn}
-                    >
-                      <Ionicons name="add-circle-outline" size={18} color={colors.textMuted} />
-                    </Pressable>
-                  </View>
-                  <Badge label={cfg.label} variant="neutral" size="sm" />
-                </View>
-              </Card>
-            );
-          }}
+          renderItem={renderVaultItem}
         />
         )}
       </CollapsibleHeader>

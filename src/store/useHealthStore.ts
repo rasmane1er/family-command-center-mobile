@@ -7,6 +7,11 @@ import { pushSyncEvent } from '../api/syncQueue';
 
 import { generateId } from '../utils/generateId';
 
+// Same unbounded-append-log gap fixed elsewhere (useNotificationsStore,
+// useJournalStore, etc.) — health metrics accumulate indefinitely otherwise.
+const MAX_RECORDS = 2000;
+const MAX_APPOINTMENTS = 500;
+
 interface HealthState {
   records: HealthRecord[];
   goals: HealthGoal[];
@@ -32,7 +37,7 @@ export const useHealthStore = create<HealthState>()(
 
       addRecord: (r) => {
         const record = { ...r, id: generateId(), familyId: authBridge.getSnapshot().familyId ?? '' };
-        set((s) => ({ records: [record, ...s.records] }));
+        set((s) => ({ records: [record, ...s.records].slice(0, MAX_RECORDS) }));
         pushSyncEvent('activities', 'create', { type: 'health', ...record });
       },
 
@@ -49,7 +54,7 @@ export const useHealthStore = create<HealthState>()(
 
       addAppointment: (a) => {
         const appointment = { ...a, id: generateId() };
-        set((s) => ({ appointments: [appointment, ...s.appointments] }));
+        set((s) => ({ appointments: [appointment, ...s.appointments].slice(0, MAX_APPOINTMENTS) }));
         pushSyncEvent('activities', 'create', { ...appointment, type: 'health_appointment' });
       },
 

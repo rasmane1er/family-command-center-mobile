@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, FlatList, Pressable, TextInput, Modal,
   KeyboardAvoidingView, Platform, Alert,
@@ -42,13 +42,18 @@ function VoteBar({ option, total, myVote }: { option: PollOption; total: number;
   );
 }
 
-function PollCard({ poll, memberId, onVote, onClose, onDelete }: {
+interface PollCardProps {
   poll: Poll;
   memberId: string;
-  onVote: (optionId: string) => void;
-  onClose: () => void;
-  onDelete: () => void;
-}) {
+  onVote: (pollId: string, optionId: string) => void;
+  onClose: (poll: Poll) => void;
+  onDelete: (pollId: string, question: string) => void;
+}
+
+// Memoized so unrelated screen state (typing in the create-poll modal, etc.)
+// doesn't re-render every poll card — the parent passes stable useCallback
+// handlers so this actually skips re-renders instead of just looking like it does.
+const PollCard = React.memo(function PollCard({ poll, memberId, onVote, onClose, onDelete }: PollCardProps) {
   const { t } = useTranslation('family');
   const totalVotes = poll.options.reduce((s, o) => s + o.votes.length, 0);
   const myVotedOption = poll.options.find((o) => o.votes.includes(memberId));
@@ -69,7 +74,7 @@ function PollCard({ poll, memberId, onVote, onClose, onDelete }: {
             </Text>
           </View>
         </View>
-        <Pressable onPress={onDelete} style={styles.deleteBtn}>
+        <Pressable onPress={() => onDelete(poll.id, poll.question)} style={styles.deleteBtn}>
           <Ionicons name="trash-outline" size={16} color={colors.textMuted} />
         </Pressable>
       </View>
@@ -77,7 +82,7 @@ function PollCard({ poll, memberId, onVote, onClose, onDelete }: {
       {poll.isActive && !myVotedOption ? (
         <View style={styles.votingSection}>
           {poll.options.map((opt) => (
-            <Pressable key={opt.id} onPress={() => onVote(opt.id)} style={styles.voteBtn}>
+            <Pressable key={opt.id} onPress={() => onVote(poll.id, opt.id)} style={styles.voteBtn}>
               <Text style={styles.voteBtnEmoji}>{opt.emoji}</Text>
               <Text style={styles.voteBtnText}>{opt.text}</Text>
               <Text style={styles.voteBtnCount}>{opt.votes.length}</Text>
@@ -108,13 +113,13 @@ function PollCard({ poll, memberId, onVote, onClose, onDelete }: {
       )}
 
       {poll.isActive && (
-        <Pressable onPress={onClose} style={styles.closeVotingBtn}>
+        <Pressable onPress={() => onClose(poll)} style={styles.closeVotingBtn}>
           <Text style={styles.closeVotingText}>{t('family.screens.familyPolls.closeVotingBtn')}</Text>
         </Pressable>
       )}
     </Card>
   );
-}
+});
 
 export function FamilyPollsScreen({ navigation }: any) {
   const { t } = useTranslation('family');
@@ -139,17 +144,38 @@ export function FamilyPollsScreen({ navigation }: any) {
   const closedPolls = polls.filter((p) => !p.isActive);
   const displayed = activeTab === 'active' ? activePolls : closedPolls;
 
-  const handleVote = (pollId: string, optionId: string) => {
+  const handleVote = useCallback((pollId: string, optionId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     castVote(pollId, optionId, me?.id || 'member-1');
-  };
+  }, [castVote, me]);
 
-  const handleDelete = (pollId: string, question: string) => {
+  const handleDelete = useCallback((pollId: string, question: string) => {
     Alert.alert(t('family.screens.familyPolls.deletePollTitle'), t('family.screens.familyPolls.deletePollMsg', { question }), [
       { text: t('family.screens.familyPolls.cancel'), style: 'cancel' },
       { text: t('family.screens.familyPolls.delete'), style: 'destructive', onPress: () => { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning); deletePoll(pollId); } },
     ]);
-  };
+  }, [t, deletePoll]);
+
+  const handleClosePoll = useCallback((poll: Poll) => {
+    Alert.alert(
+      t('family.screens.familyPolls.closePollTitle'),
+      t('family.screens.familyPolls.closePollMsg'),
+      [
+        { text: t('family.screens.familyPolls.cancel'), style: 'cancel' },
+        { text: t('family.screens.familyPolls.close'), onPress: () => closePoll(poll.id) },
+      ]
+    );
+  }, [t, closePoll]);
+
+  const renderPollItem = useCallback(({ item: poll }: { item: Poll }) => (
+    <PollCard
+      poll={poll}
+      memberId={me?.id || 'member-1'}
+      onVote={handleVote}
+      onClose={handleClosePoll}
+      onDelete={handleDelete}
+    />
+  ), [me, handleVote, handleClosePoll, handleDelete]);
 
   const handleCreatePoll = () => {
     const validOptions = options.filter((o) => o.trim());
@@ -252,15 +278,7 @@ export function FamilyPollsScreen({ navigation }: any) {
             <Text style={styles.emptyDesc}>{activeTab === 'active' ? t('family.screens.familyPolls.emptyDescActive') : t('family.screens.familyPolls.emptyDescClosed')}</Text>
           </View>
         }
-        renderItem={({ item: poll }) => (
-          <PollCard
-            poll={poll}
-            memberId={me?.id || 'member-1'}
-            onVote={(optId) => handleVote(poll.id, optId)}
-            onClose={() => { Alert.alert(t('family.screens.familyPolls.closePollTitle'), t('family.screens.familyPolls.closePollMsg'), [{ text: t('family.screens.familyPolls.cancel'), style: 'cancel' }, { text: t('family.screens.familyPolls.close'), onPress: () => closePoll(poll.id) }]); }}
-            onDelete={() => handleDelete(poll.id, poll.question)}
-          />
-        )}
+        renderItem={renderPollItem}
       />
         )}
       </CollapsibleHeader>

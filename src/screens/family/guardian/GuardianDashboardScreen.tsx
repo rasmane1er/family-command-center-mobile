@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import * as Notifications from 'expo-notifications';
 import {
   Alert,
@@ -84,14 +84,14 @@ export function GuardianDashboardScreen({ navigation }: any) {
   const activeMember = members.find((m) => m.id === activeMemberId);
   const showChildRegistrationBanner = activeMember?.role === 'child' && !thisDeviceId;
 
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
+  // App.tsx runs an identical 10s hydrate() poll at the app root regardless of
+  // which screen is visible (added specifically so reconnects are caught even
+  // when this screen isn't mounted) — a second interval here just doubled the
+  // guardian API load (5+ requests per device) while this screen was focused.
+  // Still hydrate once on mount so opening this screen doesn't wait up to 10s
+  // for the next global tick.
   useEffect(() => {
     hydrate();
-    // Poll every 10s — fast enough to feel instant for reconnects without hammering the server.
-    // FCM push triggers immediate hydrate() when working, this is the reliable fallback.
-    pollRef.current = setInterval(() => { hydrate(); }, 10_000);
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [hydrate]);
 
   // Hydrate immediately when the guardian app comes back to the foreground —

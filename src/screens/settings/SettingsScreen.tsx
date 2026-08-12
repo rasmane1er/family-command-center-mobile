@@ -14,7 +14,6 @@ import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { i18n } from '../../i18n';
 
 import { Card } from '../../components/common/Card';
-import { clearLocalAppData } from '../../storage/resetLocalData';
 import { resetAllStores } from '../../storage/resetAllStores';
 import { useAppStore } from '../../store/useAppStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
@@ -23,6 +22,8 @@ import { useTheme } from '../../theme/ThemeContext';
 import { useSubscription, SubscriptionTier, TIER_LABELS, TIER_PRICES, TIER_FEATURES } from '../../hooks/useSubscription';
 import { usePurchases } from '../../hooks/usePurchases';
 import { PAYWALL_RESULT } from 'react-native-purchases-ui';
+
+const TIER_ORDER: SubscriptionTier[] = ['free', 'premium', 'family_pro'];
 
 const SUBSCRIPTION_TIERS = [
   {
@@ -67,15 +68,23 @@ export function SettingsScreen({ navigation }: any) {
   const { t } = useTranslation('settings');
   const { colors, isDark } = useTheme();
 
-  const { settings, updateSettings, setOnboarded, toggleMilitaryMode } = useAppStore();
+  const { settings, updateSettings, toggleMilitaryMode } = useAppStore();
   const { tier: currentTier, canAccess } = useSubscription();
   const { user, signOut, deleteAccount } = useAuthStore();
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const militaryMode = settings?.militaryMode || false;
 
-  const { restore, showPaywall, showCustomerCenter, error: purchasesError } = usePurchases();
+  const { restore, showPaywall, showCustomerCenter, currentPeriod, error: purchasesError } = usePurchases();
   const [purchasingTier, setPurchasingTier] = useState<SubscriptionTier | null>(null);
   const [isRestoring, setIsRestoring] = useState(false);
+  // Which billing period is highlighted per tier card before the user taps
+  // Upgrade/Downgrade — defaults to monthly. For the tier the user is
+  // currently on, currentPeriod (the real, server-confirmed period) is used
+  // instead of this local guess, so the toggle can't show a period they're
+  // not actually on.
+  const [selectedPeriods, setSelectedPeriods] = useState<Partial<Record<SubscriptionTier, 'monthly' | 'annual'>>>({});
+  const getSelectedPeriod = (tierKey: SubscriptionTier): 'monthly' | 'annual' =>
+    tierKey === currentTier ? (currentPeriod ?? 'monthly') : (selectedPeriods[tierKey] ?? 'monthly');
 
   const family        = useFamilyStore((s) => s.family);
   const members       = useFamilyStore((s) => s.members);
@@ -92,7 +101,6 @@ export function SettingsScreen({ navigation }: any) {
   const [biometricLabel,    setBiometricLabel]     = useState('Biometric');
   const hideBalances = settings.hideBalances ?? false;
   const autoLock     = settings.autoLock ?? true;
-  const cloudBackup  = settings.cloudBackup ?? true;
   const [notifState, setNotifState] = useState<Record<string, boolean>>({
     billReminders: true, taskReminders: true, lowStockAlerts: true,
     budgetAlerts: true, achievementAlerts: true, familyUpdates: true,
@@ -128,20 +136,6 @@ export function SettingsScreen({ navigation }: any) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleResetLocalData = () => {
-    Alert.alert(t('settings.resetConfirm'), t('settings.resetConfirmMsg'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      { text: t('common.delete'), style: 'destructive', onPress: () => { clearLocalAppData(); resetAllStores(); setOnboarded(false); Alert.alert(t('settings.resetDone'), t('settings.resetDoneMsg')); } },
-    ]);
-  };
-
-  const handleResetOnboarding = () => {
-    Alert.alert(t('settings.resetOnboardingConfirm'), t('settings.resetOnboardingConfirmMsg'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      { text: t('common.confirm'), style: 'destructive', onPress: () => setOnboarded(false) },
-    ]);
-  };
-
   const handleSignOut = () => {
     Alert.alert(t('settings.signOutTitle'), t('settings.signOutMsg'), [
       { text: t('common.cancel'), style: 'cancel' },
@@ -173,47 +167,114 @@ export function SettingsScreen({ navigation }: any) {
   // Manage/cancel/change-plan and restore all live in RevenueCat's Customer
   // Center now — it's the dashboard-configured, best-practice replacement for
   // a hand-rolled "open App Store subscription settings" deep link.
-  const handleManageSubscription = async () => {
-    try {
-      await showCustomerCenter();
-    } catch {
-      // Fallback if Customer Center isn't reachable (e.g. RevenueCat not yet
-      // configured for this account) — still gets the user to a working flow.
-      const url = Platform.OS === 'ios'
-        ? 'itms-apps://apps.apple.com/account/subscriptions'
-        : 'https://play.google.com/store/account/subscriptions';
-      Linking.openURL(url).catch(() =>
-        Alert.alert(t('common.error'), 'Unable to open subscription management.'),
-      );
-    }
+  // The store's own subscription page (Play Store / App Store) is the only
+  // guaranteed way to cancel — it works regardless of whether the RevenueCat
+  // dashboard's Customer Center has cancellation paths configured for this
+  // project. Always offering it alongside Customer Center (instead of only
+  // as a silent fallback on error) means "how do I cancel" always has a
+  // working answer, not one that depends on dashboard setup we can't verify
+  // from here.
+  const openStoreSubscriptions = () => {
+    const url = Platform.OS === 'ios'
+      ? 'itms-apps://apps.apple.com/account/subscriptions'
+      : 'https://play.google.com/store/account/subscriptions';
+    Linking.openURL(url).catch(() =>
+      Alert.alert(t('common.error'), 'Unable to open subscription management.'),
+    );
+  };
+
+  const handleManageSubscription = () => {
+    Alert.alert(t('settings.manageSubscription'), t('settings.manageSubscriptionChooseMsg'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('settings.manageSubscriptionOpenCenter'), onPress: () => { showCustomerCenter().catch(openStoreSubscriptions); } },
+      { text: t('settings.manageSubscriptionOpenStore'), onPress: openStoreSubscriptions },
+    ]);
   };
 
   // Each paid tier maps to its own RevenueCat entitlement (see
-  // src/config/revenuecat.ts) — RevenueCat's dashboard-configured Paywall UI
-  // handles tier + billing period (monthly/yearly) selection, pricing, and
-  // the purchase itself.
-  const handleUpgrade = async (tierKey: SubscriptionTier) => {
-    if (tierKey === currentTier) {
+  // src/config/revenuecat.ts). showPaywall() purchases the exact package for
+  // the tapped tier + period directly — see usePurchases.ts for why it no
+  // longer relies on RevenueCat's generic dashboard-configured Paywall UI.
+  const handleUpgrade = async (tierKey: SubscriptionTier, period: 'monthly' | 'annual' = 'monthly') => {
+    // Only a true no-op when it's the same tier AND the same billing period —
+    // tapping "Switch to Yearly" on the tier you already own (tierKey ===
+    // currentTier, period === 'annual' !== currentPeriod) must fall through
+    // to a real purchase, not this alert. Free has no period to compare.
+    if (tierKey === currentTier && (tierKey === 'free' || period === currentPeriod)) {
       Alert.alert(t('settings.currentPlanTitle'), t('settings.currentPlanMsg', { plan: TIER_LABELS[tierKey] }));
       return;
     }
-    if (tierKey === 'free') {
-      Alert.alert(
-        t('settings.signOutTitle'),
-        t('settings.purchaseFailedGeneric'),
-        [
-          { text: t('common.cancel'), style: 'cancel' },
-          { text: t('settings.subscription'), style: 'destructive', onPress: handleManageSubscription },
-        ],
-      );
+
+    // Android's in-place replace (STORE_REPLACEMENT_MODE) assumes exactly one
+    // currently-owned subscription to swap out. With two already active (the
+    // overlap state this card warns about), Play Billing rejects the
+    // replace call outright — it surfaces to JS as a bare "One or more of
+    // the arguments provided are invalid", which read like a fresh bug but
+    // is actually just this precondition never being checked. Block the
+    // attempt here and send the user to resolve the duplicate first instead
+    // of letting Play Billing throw the cryptic native error.
+    if (useAppStore.getState().settings.hasOverlappingSubscriptions) {
+      Alert.alert(t('settings.overlappingSubsBlockedTitle'), t('settings.overlappingSubsBlockedMsg'), [
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('settings.overlappingSubsAction'), onPress: handleManageSubscription },
+      ]);
+      return;
+    }
+
+    const isDowngrade = TIER_ORDER.indexOf(tierKey) < TIER_ORDER.indexOf(currentTier);
+    const isPeriodSwitch = tierKey === currentTier && period !== currentPeriod;
+    // Android can replace one paid tier — or the same tier on a different
+    // billing period — in-place via Play Billing (see usePurchases.showPaywall),
+    // so both a paid→paid downgrade and a same-tier period switch go through
+    // the same purchase path as an upgrade there. Downgrading to free isn't a
+    // purchase on any platform, and iOS has no in-place replacement without an
+    // App Store Connect Subscription Group for EITHER case — a plain purchase
+    // there would stack a second, overlapping subscription instead of
+    // replacing the first, so both still need native subscription management.
+    const needsManageSubscription =
+      (isDowngrade && (tierKey === 'free' || Platform.OS === 'ios')) ||
+      (isPeriodSwitch && Platform.OS === 'ios');
+
+    if (needsManageSubscription) {
+      if (isPeriodSwitch) {
+        Alert.alert(
+          t('settings.periodSwitchTitle'),
+          t('settings.periodSwitchMsg'),
+          [
+            { text: t('common.cancel'), style: 'cancel' },
+            { text: t('settings.downgradeConfirm'), onPress: handleManageSubscription },
+          ],
+        );
+      } else {
+        Alert.alert(
+          t('settings.downgradeTitle', { plan: TIER_LABELS[tierKey] }),
+          t('settings.downgradeMsg'),
+          [
+            { text: t('common.cancel'), style: 'cancel' },
+            { text: t('settings.downgradeConfirm'), onPress: handleManageSubscription },
+          ],
+        );
+      }
       return;
     }
 
     setPurchasingTier(tierKey);
     try {
-      const result = await showPaywall(tierKey as 'premium' | 'family_pro');
+      const result = await showPaywall(tierKey as 'premium' | 'family_pro', period);
       if (result === PAYWALL_RESULT.PURCHASED || result === PAYWALL_RESULT.RESTORED) {
-        Alert.alert(t('settings.upgradeSuccessTitle'), t('settings.upgradeSuccessMsg', { plan: TIER_LABELS[tierKey] }));
+        // Only reachable on iOS now (Android replaces in-place, see above) —
+        // still worth checking, since iOS can't avoid a brief overlap when
+        // switching between two paid tiers without store-side product
+        // grouping. Surface it immediately with a one-tap fix instead of
+        // leaving the customer silently paying for both.
+        if (useAppStore.getState().settings.hasOverlappingSubscriptions) {
+          Alert.alert(t('settings.overlappingSubsTitle'), t('settings.overlappingSubsDesc'), [
+            { text: t('common.cancel'), style: 'cancel' },
+            { text: t('settings.overlappingSubsAction'), onPress: handleManageSubscription },
+          ]);
+        } else {
+          Alert.alert(t('settings.upgradeSuccessTitle'), t('settings.upgradeSuccessMsg', { plan: TIER_LABELS[tierKey] }));
+        }
       } else if (result === PAYWALL_RESULT.ERROR) {
         Alert.alert(t('settings.purchaseFailedTitle'), purchasesError ?? t('settings.purchaseFailedMsg'));
       }
@@ -420,23 +481,64 @@ export function SettingsScreen({ navigation }: any) {
         {/* ── SUBSCRIPTION ── */}
         <>
             <Text style={s.sectionTitle}>{t('settings.subscription')}</Text>
+            {settings.hasOverlappingSubscriptions && (
+              <Card style={{ ...s.roleNoticeCard, borderColor: colors.warning, borderWidth: 1 }} variant="elevated">
+                <Ionicons name="warning-outline" size={20} color={colors.warning} />
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={s.roleNoticeTitle}>{t('settings.overlappingSubsTitle')}</Text>
+                  <Text style={s.roleNoticeText}>{t('settings.overlappingSubsDesc')}</Text>
+                  <Pressable onPress={handleManageSubscription} style={{ marginTop: 8 }}>
+                    <Text style={{ color: colors.primary, fontWeight: '600' }}>{t('settings.overlappingSubsAction')}</Text>
+                  </Pressable>
+                </View>
+              </Card>
+            )}
             {SUBSCRIPTION_TIERS.map((tier) => (
               <Card key={tier.key}
                 style={tier.key === 'family_pro' ? { ...s.tierCard, ...s.tierCardHighlight } : s.tierCard}
                 variant="elevated">
                 <View style={s.tierHeader}>
-                  <View>
+                  <View style={{ flex: 1 }}>
                     <Text style={[s.tierName, { color: colors[tier.colorKey] }]}>{tier.label}</Text>
-                    <Text style={s.tierPrice}>{tier.price}</Text>
-                    {tier.yearlyPrice && (
-                      <View style={s.yearlyRow}>
-                        <Text style={s.yearlyPriceText}>or {tier.yearlyPrice}</Text>
-                        <View style={[s.savingsBadge, { backgroundColor: colors[tier.colorKey] + '18' }]}>
-                          <Text style={[s.savingsBadgeText, { color: colors[tier.colorKey] }]}>
-                            Save {tier.yearlySavingsPct}%
-                          </Text>
-                        </View>
+                    {tier.key === currentTier && tier.yearlyPrice && (
+                      <Text style={s.billedCaption}>
+                        Current plan · Billed {currentPeriod === 'annual' ? 'yearly' : 'monthly'}
+                      </Text>
+                    )}
+                    {tier.yearlyPrice ? (
+                      <View style={s.periodToggle}>
+                        {(['monthly', 'annual'] as const).map((period) => {
+                          const isSelected = getSelectedPeriod(tier.key as SubscriptionTier) === period;
+                          const isNoOpTap = tier.key === currentTier && period === currentPeriod;
+                          return (
+                            <Pressable
+                              key={period}
+                              disabled={purchasingTier !== null || isNoOpTap}
+                              onPress={() => {
+                                if (tier.key === currentTier) {
+                                  handleUpgrade(tier.key as SubscriptionTier, period);
+                                } else {
+                                  setSelectedPeriods((p) => ({ ...p, [tier.key]: period }));
+                                }
+                              }}
+                              style={[
+                                s.periodChip,
+                                { borderColor: colors.border },
+                                isSelected && { borderColor: colors[tier.colorKey], backgroundColor: colors[tier.colorKey] + '14' },
+                              ]}
+                            >
+                              <Text style={[s.periodChipLabel, { color: isSelected ? colors[tier.colorKey] : colors.textMuted }]}>
+                                {period === 'monthly' ? 'Monthly' : 'Yearly'}
+                              </Text>
+                              <Text style={[s.periodChipPrice, { color: isSelected ? colors[tier.colorKey] : colors.textSecondary }]}>
+                                {period === 'monthly' ? tier.price : `${tier.yearlyPrice} · -${tier.yearlySavingsPct}%`}
+                              </Text>
+                            </Pressable>
+                          );
+                        })}
                       </View>
+                    ) : (
+                      <Text style={s.tierPrice}>{tier.price}</Text>
                     )}
                   </View>
                   {tier.key === currentTier ? (
@@ -444,15 +546,15 @@ export function SettingsScreen({ navigation }: any) {
                       <Ionicons name="checkmark-circle" size={14} color={colors.success} />
                       <Text style={[s.currentBadgeText, { color: colors.success }]}>Current Plan</Text>
                     </View>
-                  ) : tier.key === 'free' ? (
-                    <Pressable style={s.downgradeBtnSmall} onPress={() => handleUpgrade('free' as SubscriptionTier)}>
+                  ) : TIER_ORDER.indexOf(tier.key as SubscriptionTier) < TIER_ORDER.indexOf(currentTier) ? (
+                    <Pressable style={s.downgradeBtnSmall} onPress={() => handleUpgrade(tier.key as SubscriptionTier)}>
                       <Text style={[s.downgradeBtnText, { color: colors.textMuted }]}>Downgrade</Text>
                     </Pressable>
                   ) : (
                     <Pressable
                       style={[s.upgradeBtn, { backgroundColor: colors[tier.colorKey as keyof typeof colors] as string }, purchasingTier === tier.key && s.upgradeBtnDisabled]}
                       disabled={purchasingTier !== null}
-                      onPress={() => handleUpgrade(tier.key as SubscriptionTier)}
+                      onPress={() => handleUpgrade(tier.key as SubscriptionTier, getSelectedPeriod(tier.key as SubscriptionTier))}
                     >
                       {purchasingTier === tier.key ? (
                         <ActivityIndicator size="small" color="#fff" />
@@ -485,31 +587,6 @@ export function SettingsScreen({ navigation }: any) {
               <Text style={s.restoreBtnText}>{isRestoring ? 'Restoring…' : 'Restore Purchases'}</Text>
             </TouchableOpacity>
 
-            {/* ── DEV-ONLY TIER SWITCH ──
-                Real upgrades go through RevenueCat's paywall (handleUpgrade
-                above), which needs a signed build + sandbox purchase setup
-                to actually complete — that doesn't work from a bare dev
-                client on a simulator/emulator. This lets tier-gated features
-                (Military Hub, Digital Twin, etc.) be tested locally without
-                a real purchase. __DEV__ keeps it out of production builds. */}
-            {__DEV__ && (
-              <View style={s.devTierRow}>
-                <Text style={s.devTierLabel}>DEV: Set Tier (bypasses paywall)</Text>
-                <View style={s.devTierChips}>
-                  {(['free', 'premium', 'family_pro'] as SubscriptionTier[]).map((key) => (
-                    <Pressable
-                      key={key}
-                      onPress={() => updateSettings({ subscriptionTier: key })}
-                      style={[s.devTierChip, currentTier === key && s.devTierChipActive]}
-                    >
-                      <Text style={[s.devTierChipText, currentTier === key && s.devTierChipTextActive]}>
-                        {TIER_LABELS[key]}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </View>
-            )}
         </>
 
         {/* ── NOTIFICATIONS ── */}
@@ -627,18 +704,6 @@ export function SettingsScreen({ navigation }: any) {
             <Switch value={autoLock} onValueChange={(v) => updateSettings({ autoLock: v })}
               trackColor={{ false: colors.border, true: colors.primary + '60' }} thumbColor={colors.primary} />
           </View>
-
-          {!isChild && (
-            <View style={s.toggleRow}>
-              <Ionicons name="cloud-upload-outline" size={20} color={colors.primary} />
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={s.toggleLabel}>{t('settings.cloudBackup')}</Text>
-                <Text style={s.toggleDesc}>{t('settings.cloudBackupDesc')}</Text>
-              </View>
-              <Switch value={cloudBackup} onValueChange={(v) => updateSettings({ cloudBackup: v })}
-                trackColor={{ false: colors.border, true: colors.primary + '60' }} thumbColor={colors.primary} />
-            </View>
-          )}
         </Card>
 
         {/* ── REFER & EARN ── */}
@@ -677,33 +742,17 @@ export function SettingsScreen({ navigation }: any) {
           ))}
         </Card>
 
-        {/* ── DEVELOPER ── */}
-        {isParent && (
-          <>
-            <Text style={s.sectionTitle}>{t('settings.developer')}</Text>
-            <Card style={s.settingCard} variant="elevated">
-              <Pressable onPress={handleResetLocalData} style={[s.toggleRow, s.toggleRowBorder]}>
-                <Ionicons name="trash-outline" size={20} color={colors.danger} />
-                <View style={{ flex: 1, marginLeft: 12 }}>
-                  <Text style={[s.toggleLabel, { color: colors.danger }]}>{t('settings.resetData')}</Text>
-                  <Text style={s.toggleDesc}>{t('settings.resetDataDesc')}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-              </Pressable>
-              <Pressable onPress={handleResetOnboarding} style={s.toggleRow}>
-                <Ionicons name="refresh-outline" size={20} color={colors.danger} />
-                <View style={{ flex: 1, marginLeft: 12 }}>
-                  <Text style={[s.toggleLabel, { color: colors.danger }]}>{t('settings.resetOnboarding')}</Text>
-                  <Text style={s.toggleDesc}>{t('settings.resetOnboardingDesc')}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-              </Pressable>
-            </Card>
-          </>
-        )}
-
         {/* ── SIGN OUT / DELETE ACCOUNT ── */}
         <Text style={s.sectionTitle}>Account</Text>
+        {currentTier !== 'free' && (
+          <Card style={s.settingCard} variant="elevated">
+            <Pressable onPress={handleManageSubscription} style={s.toggleRow}>
+              <Ionicons name="card-outline" size={20} color={colors.primary} />
+              <Text style={[s.toggleLabel, { marginLeft: 12, flex: 1 }]}>{t('settings.manageSubscription')}</Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+            </Pressable>
+          </Card>
+        )}
         <Card style={s.settingCard} variant="elevated">
           <Pressable onPress={handleSignOut} style={s.toggleRow}>
             <Ionicons name="log-out-outline" size={20} color={colors.danger} />
@@ -785,10 +834,11 @@ function makeStyles(colors: ReturnType<typeof useTheme>['colors'], isDark: boole
     tierHeader:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 },
     tierName:        { fontSize: 16, fontWeight: '800' },
     tierPrice:       { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
-    yearlyRow:       { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 },
-    yearlyPriceText: { fontSize: 12, color: colors.textMuted },
-    savingsBadge:    { borderRadius: 6, paddingVertical: 2, paddingHorizontal: 6 },
-    savingsBadgeText:{ fontSize: 11, fontWeight: '700' },
+    billedCaption:   { fontSize: 12, color: colors.textMuted, marginTop: 2, fontWeight: '600' },
+    periodToggle:    { flexDirection: 'row', gap: 8, marginTop: 8 },
+    periodChip:      { flex: 1, borderWidth: 1.5, borderRadius: 10, paddingVertical: 6, paddingHorizontal: 10 },
+    periodChipLabel: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.3 },
+    periodChipPrice: { fontSize: 13, fontWeight: '700', marginTop: 1 },
     currentBadge:    { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.background, borderRadius: 8, paddingVertical: 4, paddingHorizontal: 10 },
     currentBadgeText:{ fontSize: 12, fontWeight: '700', color: colors.textSecondary },
     upgradeBtn:      { borderRadius: 10, paddingVertical: 7, paddingHorizontal: 16, minWidth: 64, alignItems: 'center', justifyContent: 'center' },
@@ -797,13 +847,6 @@ function makeStyles(colors: ReturnType<typeof useTheme>['colors'], isDark: boole
     downgradeBtnSmall: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: colors.border },
     restoreBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12, marginTop: 4, marginBottom: 4 },
     restoreBtnText: { fontSize: 14, fontWeight: '700', color: colors.primary },
-    devTierRow: { backgroundColor: colors.card, borderRadius: 12, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: colors.border, borderStyle: 'dashed' },
-    devTierLabel: { fontSize: 11, fontWeight: '700', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
-    devTierChips: { flexDirection: 'row', gap: 8 },
-    devTierChip: { flex: 1, paddingVertical: 8, borderRadius: 10, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.background, alignItems: 'center' },
-    devTierChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-    devTierChipText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
-    devTierChipTextActive: { color: '#fff' },
     downgradeBtnText: { fontSize: 12, fontWeight: '600' },
     featureRow:      { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
     featureText:     { fontSize: 13, color: colors.textSecondary },

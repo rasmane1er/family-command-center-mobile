@@ -49,7 +49,7 @@ function formatDate(iso: string): string {
 }
 
 interface Props {
-  navigation: { goBack: () => void };
+  navigation: { goBack: () => void; navigate: (screen: string, params?: Record<string, unknown>) => void };
   route: { params?: { accountId?: string } };
 }
 
@@ -285,7 +285,16 @@ export function AccountDetailScreen({ navigation, route }: Props) {
               </View>
             </>
           )}
-          <Button title="Confirm Balance" onPress={handleConfirmBalance} variant="outline" size="sm" style={{ marginTop: 12 }} />
+          <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+            <Button title="Confirm Balance" onPress={handleConfirmBalance} variant="outline" size="sm" style={{ flex: 1 }} />
+            <Button
+              title="Import Statement"
+              onPress={() => navigation.navigate('ImportStatement', { accountId })}
+              variant="outline"
+              size="sm"
+              style={{ flex: 1 }}
+            />
+          </View>
         </View>
 
         {/* Recurring transactions */}

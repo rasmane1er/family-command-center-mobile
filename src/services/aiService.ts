@@ -1,5 +1,6 @@
 import { API_BASE_URL } from '../config/api';
 import { secureStorage } from '../storage/secureStorage';
+import { refreshAccessToken } from '../api/client';
 
 const API_BASE = API_BASE_URL;
 
@@ -27,14 +28,31 @@ async function post<T>(
   // per-screen — new callers get it for free.
   const authToken = token ?? (await secureStorage.getToken('access_token'));
 
-  const res = await fetch(`${API_BASE}${path}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-    },
-    body: JSON.stringify(body),
-  });
+  const doFetch = (t?: string) =>
+    fetch(`${API_BASE}${path}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(t ? { Authorization: `Bearer ${t}` } : {}),
+      },
+      body: JSON.stringify(body),
+    });
+
+  let res = await doFetch(authToken ?? undefined);
+
+  // Access tokens are short-lived (15m, see api/src/utils/jwt.ts). Without
+  // this, every AI feature sharing this helper (Guardian Chat, Parenting
+  // Coach, Negotiator, Digital Twin, Memory Insights, dashboard insight
+  // cards) surfaced "AI is temporarily unavailable" the moment a session
+  // outlived the token, instead of transparently refreshing and retrying
+  // like apiRequest() does for every other authenticated call in the app.
+  // Only retried when we supplied the token ourselves (not an explicit
+  // caller-provided one) — a caller passing its own token owns that token's
+  // lifecycle.
+  if (res.status === 401 && !token) {
+    const newToken = await refreshAccessToken();
+    if (newToken) res = await doFetch(newToken);
+  }
 
   if (!res.ok) {
     const err = await res.text();

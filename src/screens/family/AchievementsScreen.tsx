@@ -20,7 +20,7 @@ import { Avatar } from '../../components/common/Avatar';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useTranslation } from 'react-i18next';
 
-interface Achievement {
+export interface Achievement {
   id: string;
   title: string;
   desc: string;
@@ -40,7 +40,7 @@ interface Achievement {
 // hardcoded fake VALUES (e.g. "member-3" hardcoded as Task Master with a
 // perfect 10/10, regardless of who's actually in this family or what they
 // actually did). Those are now computed from real store data below.
-function useRealAchievements(): Achievement[] {
+export function useRealAchievements(): Achievement[] {
   const tasks = useFamilyStore((s) => s.tasks);
   const members = useFamilyStore((s) => s.members);
   const budgets = useFinanceStore((s) => s.budgets);

@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { format, isToday, isYesterday, parseISO } from 'date-fns';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getTransactions } from '../../services/plaidService';
 import type { PlaidTransaction } from '../../types';
 import { useTranslation } from 'react-i18next';
@@ -65,6 +66,7 @@ const PAGE_SIZE = 30;
 
 export function TransactionsScreen({ navigation }: { navigation: any }) {
   const { t } = useTranslation('finance');
+  const insets = useSafeAreaInsets();
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [category, setCategory] = useState('All');
@@ -267,7 +269,11 @@ export function TransactionsScreen({ navigation }: { navigation: any }) {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           onEndReached={onEndReached}
           onEndReachedThreshold={0.3}
-          contentContainerStyle={transactions.length === 0 ? s.emptyContent : s.listContent}
+          contentContainerStyle={
+            transactions.length === 0
+              ? s.emptyContent
+              : [s.listContent, { paddingBottom: s.listContent.paddingBottom + insets.bottom }]
+          }
           ListEmptyComponent={
             <View style={s.emptyState}>
               <Ionicons name="receipt-outline" size={48} color="#9CA3AF" />

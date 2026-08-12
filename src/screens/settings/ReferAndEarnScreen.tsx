@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../theme/ThemeContext';
-import { getReferralInfo, ReferralStats } from '../../api/referrals';
+import { getReferralInfo, reportReferralShare, ReferralStats } from '../../api/referrals';
 
 const APP_STORE_LINK = 'https://myfamilycommandcenter.com';
 
@@ -46,11 +46,23 @@ export function ReferAndEarnScreen() {
     const code = data.referralCode;
     const link = `${APP_STORE_LINK}?ref=${code}`;
     try {
-      await Share.share({
+      const result = await Share.share({
         message: `Join me on Family Command Center — the all-in-one family management app!\n\nUse my invite code ${code} when signing up to get started:\n${link}`,
         url: link,
         title: 'Join Family Command Center',
       });
+      // iOS reliably resolves with dismissedAction when the user cancels the
+      // share sheet without picking an app; Android's share intent has no
+      // cancel signal and always resolves with sharedAction once dispatched.
+      // Either way, "not dismissed" is the closest available signal to "sent".
+      if (result.action !== Share.dismissedAction) {
+        setData((prev) => (prev ? { ...prev, stats: { ...prev.stats, sent: prev.stats.sent + 1 } } : prev));
+        reportReferralShare().catch(() => {
+          // Best-effort — the optimistic count above already reflects this
+          // share; a failed report just means the next load() falls back to
+          // the server's (one-lower) count instead.
+        });
+      }
     } catch {
       // User cancelled — no-op
     }

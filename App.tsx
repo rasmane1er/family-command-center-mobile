@@ -20,6 +20,7 @@ import { useGuardianCommandPolling } from './src/hooks/useGuardianCommandPolling
 import { useNotificationTriggers } from './src/hooks/useNotificationTriggers';
 import { usePushRegistration } from './src/hooks/usePushRegistration';
 import { useAutomationEngine } from './src/hooks/useAutomationEngine';
+import { useAppStateInterval } from './src/hooks/useAppStateInterval';
 import { useBiometricLock } from './src/hooks/useBiometricLock';
 import { usePlaidStore } from './src/store/usePlaidStore';
 import { BiometricLockScreen } from './src/components/common/BiometricLockScreen';
@@ -324,16 +325,12 @@ function AppInner() {
   usePushRegistration(!!familyId);
 
   // Global device-status poll — runs regardless of which screen is visible.
-  // GuardianDashboardScreen has its own 10s poll, but if the user is on another
-  // tab or screen the interval there is stopped. This ensures reconnects are
-  // detected within 10s everywhere in the app.
-  useEffect(() => {
-    if (!familyId) return;
-    const hydrate = useGuardianStore.getState().hydrate;
-    hydrate();
-    const id = setInterval(() => useGuardianStore.getState().hydrate(), 10_000);
-    return () => clearInterval(id);
-  }, [familyId]);
+  // This is the only guardian hydrate() interval (GuardianDashboardScreen used
+  // to run its own identical 10s poll, doubling API load while focused — it
+  // now just hydrates once on mount and relies on this). Paused entirely while
+  // backgrounded instead of continuing to hit the guardian API for a screen
+  // nobody can see.
+  useAppStateInterval(() => useGuardianStore.getState().hydrate(), 10_000, !!familyId);
 
   // On launch, verify the shared Plaid connection state and — if it's been
   // more than 6 hours since the last sync — run one in the background so
@@ -366,15 +363,7 @@ function AppInner() {
   // if it drifted. The primary sync path is usePurchases' CustomerInfo
   // listener — this is just a fallback in case a webhook landed while the
   // app was closed.
-  //
-  // Skipped entirely in __DEV__: a bare dev-client can't complete a real
-  // RevenueCat purchase, so Settings has a dev-only "Set Tier" override for
-  // testing premium features locally. Without this guard, this effect
-  // overwrote that override with the backend's real (always 'free', since
-  // there's no real purchase behind a test account) tier on every reload —
-  // "my subscription resets every time I reload" was this exact codepath.
   useEffect(() => {
-    if (__DEV__) return;
     if (!familyId) return;
     let cancelled = false;
 
@@ -386,6 +375,10 @@ function AppInner() {
         if (res.subscriptionTier !== localTier) {
           useAppStore.getState().updateSettings({ subscriptionTier: res.subscriptionTier });
         }
+        // This backend round-trip is usually faster than RevenueCat's own
+        // getCustomerInfo() (usePurchases.ts) — let it unblock SubscriptionGate
+        // as soon as either source confirms the real tier, whichever wins.
+        useAppStore.getState().setSubscriptionChecked(true);
       } catch {
         // Offline or backend unreachable — keep local state as-is.
       }

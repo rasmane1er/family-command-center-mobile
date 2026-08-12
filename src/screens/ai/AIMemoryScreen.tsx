@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Modal, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, FlatList, Pressable, TextInput, Modal, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { AIResetMenu } from '../../components/ai/AIResetMenu';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,7 +17,7 @@ import { useFamilyStore } from '../../store/useFamilyStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { chatWithMemoryAI, AIMessage } from '../../services/aiService';
-import type { MemoryType } from '../../types';
+import type { FamilyMemory, MemoryType } from '../../types';
 import { useTranslation } from 'react-i18next';
 import { SubscriptionGate } from '../../components/common/SubscriptionGate';
 
@@ -178,6 +178,51 @@ export function AIMemoryScreen({ navigation }: any) {
 
   const dynStyles = makeStyles(colors);
 
+  const renderMemoryCard = useCallback((mem: FamilyMemory, isPinnedSection: boolean) => {
+    const cfg = TYPE_CONFIG[mem.type];
+    return (
+      <Card key={mem.id} style={dynStyles.memoryCard} variant="elevated">
+        <View style={dynStyles.memoryHeader}>
+          <View style={[dynStyles.typeIcon, { backgroundColor: cfg.color + '20' }]}>
+            <Ionicons name={cfg.icon as any} size={16} color={cfg.color} />
+          </View>
+          <View style={{ flex: 1, marginLeft: 10 }}>
+            <Text style={dynStyles.memoryTitle}>{mem.title}</Text>
+            {getMemberName(mem.memberId) && (
+              <Text style={dynStyles.memoryMember}>{getMemberName(mem.memberId)}</Text>
+            )}
+          </View>
+          <Pressable onPress={() => pinMemory(mem.id)} style={{ marginRight: 12 }}>
+            <Ionicons name={isPinnedSection ? 'pin' : 'pin-outline'} size={18} color={isPinnedSection ? colors.secondary : colors.textMuted} />
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              Alert.alert('Delete Memory', `Remove "${mem.title}"?`, [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Delete', style: 'destructive', onPress: () => deleteMemory(mem.id) },
+              ]);
+            }}
+          >
+            <Ionicons name="trash-outline" size={18} color={colors.textMuted} />
+          </Pressable>
+        </View>
+        <Text style={dynStyles.memoryContent} numberOfLines={isPinnedSection ? 3 : 2}>{mem.content}</Text>
+        <View style={dynStyles.memoryFooter}>
+          <View style={dynStyles.tagsRow}>
+            {mem.tags.slice(0, isPinnedSection ? 3 : 2).map((tag) => (
+              <View key={tag} style={dynStyles.tag}><Text style={dynStyles.tagText}>#{tag}</Text></View>
+            ))}
+          </View>
+          <Badge
+            label={cfg.label}
+            variant={isPinnedSection ? (mem.sentiment === 'positive' ? 'success' : mem.sentiment === 'negative' ? 'danger' : 'neutral') : 'neutral'}
+            size="sm"
+          />
+        </View>
+      </Card>
+    );
+  }, [dynStyles, colors, getMemberName, pinMemory, deleteMemory]);
+
   const screenHeader = (
     <LinearGradient colors={['#2D1B69', '#6A1B9A']} style={[dynStyles.header, { paddingTop: insets.top + 6 }]}>
       <View style={dynStyles.headerTop}>
@@ -245,122 +290,43 @@ export function AIMemoryScreen({ navigation }: any) {
 
       <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
         {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
-      <ScrollView
+      <FlatList
         onScroll={onScroll}
         onScrollEndDrag={onScrollEndDrag}
         onMomentumScrollEnd={onMomentumScrollEnd}
         scrollEventThrottle={scrollEventThrottle}
-        contentContainerStyle={[dynStyles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}>
-        {pinned.length > 0 && (
+        contentContainerStyle={[dynStyles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+        data={unpinned}
+        keyExtractor={(mem) => mem.id}
+        renderItem={({ item }) => renderMemoryCard(item, false)}
+        ListHeaderComponent={pinned.length > 0 ? (
           <>
             <View style={dynStyles.sectionHeader}>
               <Ionicons name="pin" size={14} color={colors.secondary} />
               <Text style={dynStyles.sectionTitle}>Pinned</Text>
             </View>
-            {pinned.map((mem) => {
-              const cfg = TYPE_CONFIG[mem.type];
-              return (
-                <Card key={mem.id} style={dynStyles.memoryCard} variant="elevated">
-                  <View style={dynStyles.memoryHeader}>
-                    <View style={[dynStyles.typeIcon, { backgroundColor: cfg.color + '20' }]}>
-                      <Ionicons name={cfg.icon as any} size={16} color={cfg.color} />
-                    </View>
-                    <View style={{ flex: 1, marginLeft: 10 }}>
-                      <Text style={dynStyles.memoryTitle}>{mem.title}</Text>
-                      {getMemberName(mem.memberId) && (
-                        <Text style={dynStyles.memoryMember}>{getMemberName(mem.memberId)}</Text>
-                      )}
-                    </View>
-                    <Pressable onPress={() => pinMemory(mem.id)} style={{ marginRight: 12 }}>
-                      <Ionicons name="pin" size={18} color={colors.secondary} />
-                    </Pressable>
-                    <Pressable
-                      onPress={() => {
-                        Alert.alert('Delete Memory', `Remove "${mem.title}"?`, [
-                          { text: 'Cancel', style: 'cancel' },
-                          { text: 'Delete', style: 'destructive', onPress: () => deleteMemory(mem.id) },
-                        ]);
-                      }}
-                    >
-                      <Ionicons name="trash-outline" size={18} color={colors.textMuted} />
-                    </Pressable>
-                  </View>
-                  <Text style={dynStyles.memoryContent} numberOfLines={3}>{mem.content}</Text>
-                  <View style={dynStyles.memoryFooter}>
-                    <View style={dynStyles.tagsRow}>
-                      {mem.tags.slice(0, 3).map((tag) => (
-                        <View key={tag} style={dynStyles.tag}><Text style={dynStyles.tagText}>#{tag}</Text></View>
-                      ))}
-                    </View>
-                    <Badge
-                      label={cfg.label}
-                      variant={mem.sentiment === 'positive' ? 'success' : mem.sentiment === 'negative' ? 'danger' : 'neutral'}
-                      size="sm"
-                    />
-                  </View>
-                </Card>
-              );
-            })}
+            {pinned.map((mem) => renderMemoryCard(mem, true))}
+            {unpinned.length > 0 && (
+              <View style={dynStyles.sectionHeader}>
+                <Ionicons name="albums" size={14} color={colors.textSecondary} />
+                <Text style={dynStyles.sectionTitle}>All Memories</Text>
+              </View>
+            )}
           </>
-        )}
-
-        {unpinned.length > 0 && (
-          <>
-            <View style={dynStyles.sectionHeader}>
-              <Ionicons name="albums" size={14} color={colors.textSecondary} />
-              <Text style={dynStyles.sectionTitle}>All Memories</Text>
-            </View>
-            {unpinned.map((mem) => {
-              const cfg = TYPE_CONFIG[mem.type];
-              return (
-                <Card key={mem.id} style={dynStyles.memoryCard} variant="elevated">
-                  <View style={dynStyles.memoryHeader}>
-                    <View style={[dynStyles.typeIcon, { backgroundColor: cfg.color + '20' }]}>
-                      <Ionicons name={cfg.icon as any} size={16} color={cfg.color} />
-                    </View>
-                    <View style={{ flex: 1, marginLeft: 10 }}>
-                      <Text style={dynStyles.memoryTitle}>{mem.title}</Text>
-                      {getMemberName(mem.memberId) && (
-                        <Text style={dynStyles.memoryMember}>{getMemberName(mem.memberId)}</Text>
-                      )}
-                    </View>
-                    <Pressable onPress={() => pinMemory(mem.id)} style={{ marginRight: 12 }}>
-                      <Ionicons name="pin-outline" size={18} color={colors.textMuted} />
-                    </Pressable>
-                    <Pressable
-                      onPress={() => {
-                        Alert.alert('Delete Memory', `Remove "${mem.title}"?`, [
-                          { text: 'Cancel', style: 'cancel' },
-                          { text: 'Delete', style: 'destructive', onPress: () => deleteMemory(mem.id) },
-                        ]);
-                      }}
-                    >
-                      <Ionicons name="trash-outline" size={18} color={colors.textMuted} />
-                    </Pressable>
-                  </View>
-                  <Text style={dynStyles.memoryContent} numberOfLines={2}>{mem.content}</Text>
-                  <View style={dynStyles.memoryFooter}>
-                    <View style={dynStyles.tagsRow}>
-                      {mem.tags.slice(0, 2).map((tag) => (
-                        <View key={tag} style={dynStyles.tag}><Text style={dynStyles.tagText}>#{tag}</Text></View>
-                      ))}
-                    </View>
-                    <Badge label={cfg.label} variant="neutral" size="sm" />
-                  </View>
-                </Card>
-              );
-            })}
-          </>
-        )}
-
-        {filtered.length === 0 && (
+        ) : unpinned.length > 0 ? (
+          <View style={dynStyles.sectionHeader}>
+            <Ionicons name="albums" size={14} color={colors.textSecondary} />
+            <Text style={dynStyles.sectionTitle}>All Memories</Text>
+          </View>
+        ) : null}
+        ListEmptyComponent={filtered.length === 0 ? (
           <View style={dynStyles.emptyState}>
             <Ionicons name="albums-outline" size={60} color={colors.textMuted} />
             <Text style={dynStyles.emptyTitle}>No memories found</Text>
             <Text style={dynStyles.emptyDesc}>The AI Memory Engine learns from your family's conversations, habits, and milestones.</Text>
           </View>
-        )}
-      </ScrollView>
+        ) : null}
+      />
 
         )}
       </CollapsibleHeader>

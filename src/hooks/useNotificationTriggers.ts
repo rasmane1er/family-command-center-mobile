@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useAppStateInterval } from './useAppStateInterval';
 import { useNotificationsStore } from '../store/useNotificationsStore';
 import { useGuardianStore } from '../store/useGuardianStore';
 import { useFinanceStore } from '../store/useFinanceStore';
@@ -449,9 +449,5 @@ function scan() {
 }
 
 export function useNotificationTriggers() {
-  useEffect(() => {
-    scan();
-    const interval = setInterval(scan, SCAN_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, []);
+  useAppStateInterval(scan, SCAN_INTERVAL_MS);
 }

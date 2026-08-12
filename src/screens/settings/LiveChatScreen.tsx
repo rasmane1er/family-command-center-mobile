@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -21,15 +21,44 @@ import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { ChatInputBar } from '../../components/ai/ChatInputBar';
 import { useTheme } from '../../theme/ThemeContext';
 import { useAuthStore } from '../../store/useAuthStore';
-import { useChatStore, type ChatThread } from '../../store/useChatStore';
+import { useChatStore, type ChatThread, type ChatMessage } from '../../store/useChatStore';
 import { useVoiceInput } from '../../hooks/useVoiceInput';
 import { useTranslation } from 'react-i18next';
+
+interface MessageBubbleProps {
+  msg: ChatMessage;
+  colors: import('../../theme/ThemeContext').ThemeColors;
+  s: ReturnType<typeof makeStyles>;
+}
+
+// Memoized so typing in the input box or other unrelated screen state
+// doesn't re-render every message bubble in a thread (chat can grow to
+// 1000 messages, see useChatStore's cap).
+const MessageBubble = React.memo(function MessageBubble({ msg, colors, s }: MessageBubbleProps) {
+  const isMine = msg.senderType === 'user';
+  return (
+    <View style={[s.messageBubble, isMine ? s.userBubble : s.agentBubble]}>
+      {!isMine && (
+        <View style={s.agentAvatar}>
+          <Ionicons name="headset-outline" size={14} color={colors.secondary} />
+        </View>
+      )}
+      <View style={[s.bubbleContent, isMine ? s.userBubbleContent : s.agentBubbleContent]}>
+        {!isMine && msg.senderName && <Text style={s.agentName}>{msg.senderName}</Text>}
+        <Text style={[s.bubbleText, isMine ? s.userBubbleText : s.agentBubbleText]}>{msg.body}</Text>
+        <Text style={[s.bubbleTime, isMine ? s.userBubbleTime : s.agentBubbleTime]}>
+          {format(new Date(msg.createdAt), 'h:mm a')}
+        </Text>
+      </View>
+    </View>
+  );
+});
 
 export function LiveChatScreen({ navigation }: { navigation: { goBack: () => void } }) {
   const { t } = useTranslation('settings');
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
-  const s = makeStyles(colors);
+  const s = useMemo(() => makeStyles(colors), [colors]);
 
   const familyId = useAuthStore((state) => state.familyId);
 
@@ -140,6 +169,11 @@ export function LiveChatScreen({ navigation }: { navigation: { goBack: () => voi
     </View>
   );
 
+  const renderMessageItem = useCallback(
+    ({ item }: { item: ChatMessage }) => <MessageBubble msg={item} colors={colors} s={s} />,
+    [colors, s]
+  );
+
   // ── Not yet backend-linked ──────────────────────────────────────────────
   if (!familyId) {
     return (
@@ -191,25 +225,7 @@ export function LiveChatScreen({ navigation }: { navigation: { goBack: () => voi
               showsVerticalScrollIndicator={false}
               data={activeMessages}
               keyExtractor={(msg) => msg.id}
-              renderItem={({ item: msg }) => {
-                const isMine = msg.senderType === 'user';
-                return (
-                  <View style={[s.messageBubble, isMine ? s.userBubble : s.agentBubble]}>
-                    {!isMine && (
-                      <View style={s.agentAvatar}>
-                        <Ionicons name="headset-outline" size={14} color={colors.secondary} />
-                      </View>
-                    )}
-                    <View style={[s.bubbleContent, isMine ? s.userBubbleContent : s.agentBubbleContent]}>
-                      {!isMine && msg.senderName && <Text style={s.agentName}>{msg.senderName}</Text>}
-                      <Text style={[s.bubbleText, isMine ? s.userBubbleText : s.agentBubbleText]}>{msg.body}</Text>
-                      <Text style={[s.bubbleTime, isMine ? s.userBubbleTime : s.agentBubbleTime]}>
-                        {format(new Date(msg.createdAt), 'h:mm a')}
-                      </Text>
-                    </View>
-                  </View>
-                );
-              }}
+              renderItem={renderMessageItem}
               ListEmptyComponent={
                 isLoadingThreads && !activeThreadId ? (
                   <View style={s.loadingBlock}>

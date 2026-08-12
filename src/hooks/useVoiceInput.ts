@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, PermissionsAndroid, Platform } from 'react-native';
-import Voice, {
-  SpeechErrorEvent,
-  SpeechResultsEvent,
-} from '@react-native-voice/voice';
+import { Alert, Platform } from 'react-native';
+import {
+  ExpoSpeechRecognitionModule,
+  useSpeechRecognitionEvent,
+  type ExpoSpeechRecognitionErrorEvent,
+  type ExpoSpeechRecognitionResultEvent,
+} from 'expo-speech-recognition';
 
 // Restarting the recognizer mid-utterance has a tiny audio overlap at the boundary,
 // so the new segment's leading word(s) are often a re-hearing of the previous
@@ -28,19 +30,6 @@ function mergeSegments(acc: string, next: string): string {
   return [...accWords, ...nextWords].join(' ');
 }
 
-async function ensureMicPermission(): Promise<boolean> {
-  if (Platform.OS !== 'android') return true;
-  const already = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO);
-  if (already) return true;
-  const result = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO, {
-    title: 'Microphone Permission',
-    message: 'Allow access to your microphone to use voice input.',
-    buttonPositive: 'Allow',
-    buttonNegative: 'Deny',
-  });
-  return result === PermissionsAndroid.RESULTS.GRANTED;
-}
-
 interface UseVoiceInputOptions {
   onResult?: (text: string) => void;
 }
@@ -53,110 +42,78 @@ export function useVoiceInput({ onResult }: UseVoiceInputOptions = {}) {
 
   // activeRef: a logical recording session is in progress (start() called, not yet finalized)
   // heldRef: the mic button is currently pressed down — while true, the native
-  //   recognizer is auto-restarted on every pause so a full sentence can be spoken
-  //   across multiple silences without cutting off early.
+  //   recognizer keeps listening (continuous: true) so a full sentence can be
+  //   spoken across multiple pauses without cutting off early.
   const activeRef = useRef(false);
   const heldRef = useRef(false);
   const cancelledRef = useRef(false);
   const accumulatedRef = useRef('');
 
-  useEffect(() => {
-    Voice.onSpeechStart = () => {
-      if (!activeRef.current) return;
-      setIsListening(true);
-      setPartial('');
-    };
-
-    Voice.onSpeechEnd = () => {
-      // Native engine ended its segment — if still held, we restart in onSpeechResults.
-      if (!heldRef.current) setIsListening(false);
-    };
-
-    Voice.onSpeechPartialResults = (e: SpeechResultsEvent) => {
-      if (!activeRef.current) return;
-      const segment = e.value?.[0] ?? '';
-      setPartial(mergeSegments(accumulatedRef.current, segment));
-    };
-
-    Voice.onSpeechResults = async (e: SpeechResultsEvent) => {
-      if (!activeRef.current) return;
-      const segment = e.value?.[0] ?? '';
-      accumulatedRef.current = mergeSegments(accumulatedRef.current, segment);
-
-      if (heldRef.current) {
-        // Still holding the button — keep listening across the pause.
-        setPartial(accumulatedRef.current);
-        try {
-          // Android requires destroying the finished recognizer before starting
-          // a new one; skipping this causes a silent "recognizer already started"
-          // error that leaves the mic dead for the rest of the hold.
-          try { await Voice.destroy(); } catch {}
-          if (Platform.OS === 'android') await new Promise<void>((r) => setTimeout(r, 30));
-          await Voice.start('en-US');
-        } catch {
-          // If restart fails, fall through and finalize what we have.
-          finalize();
-        }
-        return;
-      }
-
-      finalize();
-    };
-
-    Voice.onSpeechError = async (e: SpeechErrorEvent) => {
-      if (!activeRef.current) return;
-      if (heldRef.current) {
-        // Likely a "no speech detected" timeout mid-hold — restart and keep waiting.
-        try {
-          try { await Voice.destroy(); } catch {}
-          if (Platform.OS === 'android') await new Promise<void>((r) => setTimeout(r, 30));
-          await Voice.start('en-US');
-          return;
-        } catch {
-          // fall through to finalize
-        }
-      }
-      finalize();
-    };
-
-    function finalize() {
-      activeRef.current = false;
-      heldRef.current = false;
-      const text = accumulatedRef.current.trim();
-      accumulatedRef.current = '';
-      setPartial('');
-      setIsListening(false);
-      if (text && !cancelledRef.current) {
-        onResultRef.current?.(text);
-      }
-      cancelledRef.current = false;
+  function finalize() {
+    activeRef.current = false;
+    heldRef.current = false;
+    const text = accumulatedRef.current.trim();
+    accumulatedRef.current = '';
+    setPartial('');
+    setIsListening(false);
+    if (text && !cancelledRef.current) {
+      onResultRef.current?.(text);
     }
+    cancelledRef.current = false;
+  }
 
+  useSpeechRecognitionEvent('start', () => {
+    if (!activeRef.current) return;
+    setIsListening(true);
+    setPartial('');
+  });
+
+  useSpeechRecognitionEvent('result', (e: ExpoSpeechRecognitionResultEvent) => {
+    if (!activeRef.current) return;
+    const segment = e.results[0]?.transcript ?? '';
+    if (e.isFinal) {
+      accumulatedRef.current = mergeSegments(accumulatedRef.current, segment);
+      setPartial(accumulatedRef.current);
+      if (!heldRef.current) finalize();
+    } else {
+      setPartial(mergeSegments(accumulatedRef.current, segment));
+    }
+  });
+
+  useSpeechRecognitionEvent('error', (e: ExpoSpeechRecognitionErrorEvent) => {
+    if (!activeRef.current) return;
+    // "no-speech"/"speech-timeout" mid-hold just means a pause — continuous
+    // mode keeps the recognizer running, so there's nothing to restart here.
+    if (e.error === 'no-speech' || e.error === 'speech-timeout') return;
+    finalize();
+  });
+
+  useSpeechRecognitionEvent('end', () => {
+    if (!activeRef.current) return;
+    finalize();
+  });
+
+  useEffect(() => {
     return () => {
       activeRef.current = false;
       heldRef.current = false;
-      Voice.destroy().then(Voice.removeAllListeners).catch(() => {});
+      ExpoSpeechRecognitionModule.abort();
     };
   }, []);
 
   async function start() {
     try {
-      // The native module is absent when running in Expo Go or before the first
-      // `expo run:android` / `expo run:ios` build that links native dependencies.
-      // Calling any Voice method in that state throws "Cannot read property ... of null".
-      let available: boolean | number = false;
+      let available = false;
       try {
-        const hasPermission = await ensureMicPermission();
-        if (!hasPermission) {
+        const { granted } = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+        if (!granted) {
           Alert.alert('Microphone access denied', 'Enable microphone access in Settings to use voice input.');
           return;
         }
-        available = await Voice.isAvailable();
-      } catch {
-        Alert.alert(
-          'Voice not available',
-          'Voice input requires a development build. Run `npx expo run:android` and relaunch the app.',
-        );
+        available = ExpoSpeechRecognitionModule.isRecognitionAvailable();
+      } catch (err: any) {
+        const msg: string = err?.message ?? String(err);
+        Alert.alert('Voice not available', `Could not start voice recognition: ${msg}`);
         return;
       }
       if (!available) {
@@ -173,45 +130,27 @@ export function useVoiceInput({ onResult }: UseVoiceInputOptions = {}) {
       activeRef.current = true;
       heldRef.current = true;
       setPartial('');
-      try {
-        await Voice.start('en-US');
-      } catch {
-        // Some Android builds reject 'en-US' (dash) and need 'en_US' (underscore)
-        // or an empty string to use the device locale. Try the fallback before giving up.
-        if (Platform.OS === 'android') {
-          await Voice.start('');
-        } else {
-          throw new Error('start failed');
-        }
-      }
+      ExpoSpeechRecognitionModule.start({
+        lang: 'en-US',
+        interimResults: true,
+        continuous: true,
+      });
     } catch (e: any) {
       activeRef.current = false;
       heldRef.current = false;
       const msg: string = e?.message ?? String(e);
-      if (
-        msg.includes('recognizer') ||
-        msg.includes('not available') ||
-        msg.includes('not supported') ||
-        msg.includes('Cannot find') ||
-        msg.includes('already') ||
-        msg.includes('busy')
-      ) {
-        Alert.alert('Voice not supported', 'Speech recognition is not available on this device. Try installing or updating Google app.');
-      } else {
-        // Show the raw error so it can be reported — a blank alert is worse than a technical one.
-        Alert.alert('Voice error', msg || 'Could not start voice recognition.');
-      }
+      Alert.alert('Voice error', msg || 'Could not start voice recognition.');
       setIsListening(false);
     }
   }
 
   async function stop() {
-    // Mark released — the in-flight (or next) onSpeechResults/onSpeechError will finalize.
+    // Mark released — continuous mode keeps listening until stop() finalizes.
     heldRef.current = false;
     try {
-      await Voice.stop();
+      ExpoSpeechRecognitionModule.stop();
     } catch {
-      // ignore — onSpeechResults/onSpeechError will still fire and finalize
+      // ignore — the 'end'/'error' event will still fire and finalize
     }
   }
 
@@ -221,7 +160,7 @@ export function useVoiceInput({ onResult }: UseVoiceInputOptions = {}) {
     heldRef.current = false;
     accumulatedRef.current = '';
     try {
-      await Voice.cancel();
+      ExpoSpeechRecognitionModule.abort();
     } catch {
       // ignore
     }

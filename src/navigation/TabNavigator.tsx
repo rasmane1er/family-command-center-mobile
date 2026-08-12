@@ -7,6 +7,7 @@ import { useFinanceStore } from '../store/useFinanceStore';
 import { getAllowedNotificationTypes } from '../utils/roleFilters';
 
 import { DashboardScreen } from '../screens/dashboard/DashboardScreen';
+import { KidsModeScreen } from '../screens/family/KidsModeScreen';
 import { FamilyNavigator } from './FamilyNavigator';
 import { FinanceNavigator } from './FinanceNavigator';
 import { OperationsNavigator } from './OperationsNavigator';
@@ -54,7 +55,7 @@ export function TabNavigator() {
     >
       <Tab.Screen
         name="Home"
-        component={withScreenErrorBoundary(DashboardScreen)}
+        component={withScreenErrorBoundary(isChild ? KidsModeScreen : DashboardScreen)}
         options={{ tabBarBadge: unreadNotifications > 0 ? unreadNotifications : undefined }}
       />
 

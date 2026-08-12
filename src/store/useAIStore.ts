@@ -2,8 +2,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { mmkvStorage } from '../storage/mmkvStorage';
 import type { ChatMessage, AIInsight } from '../types';
-import { API_BASE_URL } from '../config/api';
-import { secureStorage } from '../storage/secureStorage';
+import { apiRequest, ApiRequestError } from '../api/client';
 
 const AI_UNAVAILABLE_MESSAGE = "I'm having trouble reaching the AI service right now. Please try again in a moment.";
 
@@ -73,59 +72,31 @@ export const useAIStore = create<AIState>()(
         content: m.content,
       }));
 
-      // /ai/chat requires auth — this call was missing the Authorization
-      // header entirely, so every request 401'd and silently fell through
-      // to a canned fallback response with fabricated numbers (e.g. "Family
-      // Health Score: 78/100"), which is why this looked like it was
-      // "working" (plausible fake answers) while actually never reaching
-      // the real model. Auth is fixed now, but on any remaining failure
-      // (backend hiccup, model outage) this must show an honest
-      // unavailability message, not another fabricated answer that could
-      // be mistaken for real personalized advice.
-      const token = await secureStorage.getToken('access_token');
-      const response = await fetch(`${API_BASE_URL}/ai/chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      // Must go through apiRequest (not a raw fetch) — access tokens are
+      // short-lived (15m, see api/src/utils/jwt.ts). apiRequest transparently
+      // retries once with a refreshed token on a 401; a raw fetch here meant
+      // any chat sent after the token expired silently fell through to
+      // AI_UNAVAILABLE_MESSAGE instead of refreshing and retrying like every
+      // other authenticated call in the app already does.
+      const data = await apiRequest<{ reply: string; suggestions?: string[]; action?: { type: string; payload: Record<string, unknown> } }>(
+        '/ai/chat',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            message: content,
+            // On the first message history is empty and some backends choose a
+            // shorter "intro" response. Embedding the completion directive in
+            // context is the safest mobile-side nudge without touching the API.
+            context: history.length === 0
+              ? `${familyContext}\n\n[Assistant instruction: This is the start of the conversation. Always respond completely and thoroughly — never cut off mid-sentence or mid-thought. Include all relevant advice, steps, or details in a single response.]`
+              : familyContext,
+            history,
+          }),
         },
-        body: JSON.stringify({
-          message: content,
-          // On the first message history is empty and some backends choose a
-          // shorter "intro" response. Embedding the completion directive in
-          // context is the safest mobile-side nudge without touching the API.
-          context: history.length === 0
-            ? `${familyContext}\n\n[Assistant instruction: This is the start of the conversation. Always respond completely and thoroughly — never cut off mid-sentence or mid-thought. Include all relevant advice, steps, or details in a single response.]`
-            : familyContext,
-          history,
-        }),
-      });
+      );
 
-      let assistantContent = '';
-      let suggestions: string[] = [];
-      let pendingAction: { type: string; payload: Record<string, unknown> } | undefined = undefined;
-
-      if (response.ok) {
-        const data = (await response.json()) as { reply: string; suggestions?: string[]; action?: { type: string; payload: Record<string, unknown> } };
-        assistantContent = data.reply || AI_UNAVAILABLE_MESSAGE;
-        suggestions = data.reply ? (data.suggestions ?? []) : [];
-        if (data.action) {
-          pendingAction = data.action;
-        }
-      } else if (response.status === 429) {
-        const errorBody = await response.json().catch(() => undefined) as { error?: string } | undefined;
-        if (errorBody?.error === 'ai_quota_exceeded') {
-          // Same upgrade prompt as the client-side aiQueryCount check in
-          // AIAssistantScreen — this is the server-side rejection path (that
-          // check is only an approximation of the real monthly counter).
-          set({ isTyping: false, quotaExceeded: true });
-          set((s) => ({ messages: s.messages.filter((m) => m.id !== userMessage.id) }));
-          return;
-        }
-        assistantContent = AI_UNAVAILABLE_MESSAGE;
-      } else {
-        assistantContent = AI_UNAVAILABLE_MESSAGE;
-      }
+      const assistantContent = data.reply || AI_UNAVAILABLE_MESSAGE;
+      const suggestions = data.reply ? (data.suggestions ?? []) : [];
 
       const assistantMessage: ChatMessage = {
         id: generateId(),
@@ -133,11 +104,22 @@ export const useAIStore = create<AIState>()(
         content: assistantContent,
         timestamp: new Date().toISOString(),
         suggestions,
-        ...(pendingAction ? { pendingAction } : {}),
+        ...(data.action ? { pendingAction: data.action } : {}),
       };
 
       set((s) => ({ messages: [...s.messages, assistantMessage].slice(-MAX_MESSAGES), isTyping: false }));
-    } catch {
+    } catch (err) {
+      if (err instanceof ApiRequestError && err.status === 429) {
+        const body = err.body as { error?: string } | undefined;
+        if (body?.error === 'ai_quota_exceeded') {
+          // Same upgrade prompt as the client-side aiQueryCount check in
+          // AIAssistantScreen — this is the server-side rejection path (that
+          // check is only an approximation of the real monthly counter).
+          set({ isTyping: false, quotaExceeded: true });
+          set((s) => ({ messages: s.messages.filter((m) => m.id !== userMessage.id) }));
+          return;
+        }
+      }
       const assistantMessage: ChatMessage = {
         id: generateId(),
         role: 'assistant',

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
-import { apiRequest } from '../api/client';
+import { apiRequest, ApiRequestError } from '../api/client';
 import { useAuthStore } from '../store/useAuthStore';
 
 export interface BriefItem {
@@ -58,9 +58,13 @@ export function useDailyBrief(): BriefState {
         cachedAt    = Date.now();
         setBrief(res.brief);
       }
-    } catch {
+    } catch (err) {
       lastFetchFailed.current = true;
-      setError('Could not load your daily brief.');
+      setError(
+        err instanceof ApiRequestError && err.status === 429
+          ? 'Too many requests right now — try again in a few minutes.'
+          : 'Could not load your daily brief.',
+      );
     } finally {
       setLoading(false);
     }

@@ -1,3 +1,5 @@
+import { Image } from 'react-native';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { apiRequest } from '../api/client';
 
 export type UploadEntity = 'task-photo' | 'avatar' | 'receipt';
@@ -13,11 +15,33 @@ interface PresignDownloadResponse {
   expiresIn: number;
 }
 
-function contentTypeFromUri(uri: string): 'image/jpeg' | 'image/png' | 'image/webp' {
-  const lower = uri.toLowerCase();
-  if (lower.endsWith('.png')) return 'image/png';
-  if (lower.endsWith('.webp')) return 'image/webp';
-  return 'image/jpeg';
+const MAX_DIMENSION = 1600;
+const JPEG_QUALITY = 0.7;
+
+function getImageWidth(uri: string): Promise<number> {
+  return new Promise((resolve) => {
+    Image.getSize(
+      uri,
+      (width) => resolve(width),
+      () => resolve(0), // unknown — skip the resize step, still compress
+    );
+  });
+}
+
+// Downscales/recompresses a locally picked photo before it ever leaves the
+// device — receipts and task-completion photos come straight off the camera
+// at full sensor resolution otherwise, which is far more detail than the app
+// displays anywhere. Always re-encodes as JPEG (transparency isn't used for
+// photos/receipts/avatars in this app, all of which come from camera/gallery
+// picks, not generated icons).
+async function compressImage(localUri: string): Promise<{ uri: string; contentType: 'image/jpeg' }> {
+  const width = await getImageWidth(localUri);
+  const actions = width > MAX_DIMENSION ? [{ resize: { width: MAX_DIMENSION } }] : [];
+  const result = await manipulateAsync(localUri, actions, {
+    compress: JPEG_QUALITY,
+    format: SaveFormat.JPEG,
+  });
+  return { uri: result.uri, contentType: 'image/jpeg' };
 }
 
 // Uploads a local image (picked via expo-image-picker/camera) directly to R2
@@ -26,14 +50,16 @@ function contentTypeFromUri(uri: string): 'image/jpeg' | 'image/png' | 'image/we
 // relevant DB field (Task.completionPhotoUrl, FamilyMember.avatar, etc.)
 // instead of the local-only file:// URI that was stored before this existed.
 export async function uploadImageToR2(localUri: string, entity: UploadEntity): Promise<string> {
-  const contentType = contentTypeFromUri(localUri);
+  const { uri, contentType } = await compressImage(localUri);
+
+  const fileRes = await fetch(uri);
+  const blob = await fileRes.blob();
+
   const { key, uploadUrl } = await apiRequest<PresignUploadResponse>('/uploads/presign-upload', {
     method: 'POST',
-    body: JSON.stringify({ entity, contentType }),
+    body: JSON.stringify({ entity, contentType, contentLength: blob.size }),
   });
 
-  const fileRes = await fetch(localUri);
-  const blob = await fileRes.blob();
   const putRes = await fetch(uploadUrl, {
     method: 'PUT',
     headers: { 'Content-Type': contentType },

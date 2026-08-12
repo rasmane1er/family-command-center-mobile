@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useAppStateInterval } from './useAppStateInterval';
 import { useAutomationStore } from '../store/useAutomationStore';
 import { useFinanceStore } from '../store/useFinanceStore';
 import { useOperationsStore } from '../store/useOperationsStore';
@@ -164,14 +164,10 @@ function scan() {
 
 // Mirrors useNotificationTriggers.ts / useGuardianCommandPolling.ts: mount
 // once, re-scan on an interval via .getState() reads. Only fires while the
-// app is actually open (foreground or freshly backgrounded) — there's no
-// native background scheduler here, so a rule set for 7:30am won't fire if
-// the app is fully killed at 7:30am. That's the same honest limitation
+// app is actually open and foregrounded — there's no native background
+// scheduler here, so a rule set for 7:30am won't fire if the app is fully
+// killed (or just backgrounded) at 7:30am. That's the same honest limitation
 // useNotificationTriggers.ts already has; this doesn't make it worse.
 export function useAutomationEngine() {
-  useEffect(() => {
-    scan();
-    const interval = setInterval(scan, SCAN_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, []);
+  useAppStateInterval(scan, SCAN_INTERVAL_MS);
 }

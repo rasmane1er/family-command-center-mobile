@@ -1,16 +1,24 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { mmkvStorage } from '../storage/mmkvStorage';
-import { getConnectedItems, syncPlaid } from '../services/plaidService';
+import { getAccounts, getConnectedItems, syncPlaid } from '../services/plaidService';
+import type { PlaidAccount } from '../types';
 
 interface PlaidState {
   isConnected: boolean;
   itemCount: number;
   lastSyncedAt: string | null;
   isSyncing: boolean;
-  // Re-reads the connected-items list from the server and updates the
-  // summary fields above. Cheap and safe to call from anywhere (mount,
-  // app launch, after a Link success) — it never mutates bank data itself.
+  // Linked account balances, kept here (not per-screen useState) so
+  // useTotalNetWorth() can read them reactively from anywhere without every
+  // consumer screen having to fetch its own copy. Persisted so net worth
+  // shows the last-known balance immediately on cold start, before this
+  // session's refresh has had a chance to complete.
+  accounts: PlaidAccount[];
+  // Re-reads the connected-items list and linked account balances from the
+  // server and updates the summary fields above. Cheap and safe to call
+  // from anywhere (mount, app launch, after a Link success) — it never
+  // mutates bank data itself.
   checkConnection: () => Promise<void>;
   // Runs a real Plaid sync (imports new transactions/balances), then
   // refreshes the connection summary. `lastSyncedAt` changing is what
@@ -27,6 +35,7 @@ export const usePlaidStore = create<PlaidState>()(
       itemCount: 0,
       lastSyncedAt: null,
       isSyncing: false,
+      accounts: [],
 
       checkConnection: async () => {
         try {
@@ -39,6 +48,15 @@ export const usePlaidStore = create<PlaidState>()(
           set({ isConnected: items.length > 0, itemCount: items.length, lastSyncedAt: latestSync });
         } catch {
           // No backend reachable / not authenticated yet — leave state as-is.
+        }
+
+        // Separate try/catch so a balances-fetch failure never clobbers the
+        // connection status set above — worst case, accounts stays stale.
+        try {
+          const { accounts } = await getAccounts();
+          set({ accounts });
+        } catch {
+          // Not connected yet, or transiently unreachable — keep last-known balances.
         }
       },
 
@@ -66,6 +84,7 @@ export const usePlaidStore = create<PlaidState>()(
         isConnected: state.isConnected,
         itemCount: state.itemCount,
         lastSyncedAt: state.lastSyncedAt,
+        accounts: state.accounts,
       }),
     }
   )

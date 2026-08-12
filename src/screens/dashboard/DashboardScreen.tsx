@@ -351,7 +351,9 @@ export function DashboardScreen({ navigation }: any) {
             // doesn't, to stay consistent with Finance being paywalled.
             subtitle: !hasFinanceAccess
               ? t('dashboard.screens.main.upgradeToViewSubtitle')
-              : bill.amount ? t('dashboard.screens.main.paymentNeededWithAmount', { amount: `$${Number(bill.amount).toLocaleString()}` }) : t('dashboard.screens.main.paymentNeeded'),
+              : bill.amount
+                ? t('dashboard.screens.main.paymentNeededWithAmount', { amount: hideBalances ? '••••' : `$${Number(bill.amount).toLocaleString()}` })
+                : t('dashboard.screens.main.paymentNeeded'),
             icon: 'receipt-outline',
             tone: COMMAND_COLORS.red,
             route: 'Bills',
@@ -604,7 +606,9 @@ export function DashboardScreen({ navigation }: any) {
               </View>
               <View style={dynStyles.smartBarDivider} />
               <View style={dynStyles.smartBarItem}>
-                <Text style={[dynStyles.smartBarValue, { color: monthlySavings < 0 ? COMMAND_COLORS.red : COMMAND_COLORS.teal }]}>${Math.abs(monthlySavings).toLocaleString('en-US', { maximumFractionDigits: 0 })}</Text>
+                <Text style={[dynStyles.smartBarValue, { color: monthlySavings < 0 ? COMMAND_COLORS.red : COMMAND_COLORS.teal }]}>
+                  {hideBalances ? '••••' : `$${Math.abs(monthlySavings).toLocaleString('en-US', { maximumFractionDigits: 0 })}`}
+                </Text>
                 <Text style={dynStyles.smartBarLabel}>{monthlySavings < 0 ? t('dashboard.screens.main.deficitLabel') : t('dashboard.screens.main.savedLabel')}</Text>
               </View>
             </View>

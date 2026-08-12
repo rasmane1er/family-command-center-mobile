@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, FlatList, Pressable, Alert, TextInput, Modal } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,7 +13,7 @@ import { Avatar } from '../../components/common/Avatar';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useConnectStore } from '../../store/useConnectStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
-import type { ConnectionRelationshipType, HouseholdConnection, ConnectPost } from '../../types';
+import type { ConnectionRelationshipType, HouseholdConnection, ConnectPost, PostComment } from '../../types';
 
 function timeAgo(iso: string): string {
   const diffMs = Date.now() - new Date(iso).getTime();
@@ -46,6 +46,105 @@ const RELATIONSHIP_TYPES: { value: ConnectionRelationshipType; label: string; ic
   { value: 'SPORTS', label: 'Sports', icon: 'football' },
   { value: 'OTHER', label: 'Other', icon: 'ellipsis-horizontal' },
 ];
+
+interface FeedPostCardProps {
+  post: ConnectPost;
+  isOwn: boolean;
+  reactionCount: number;
+  commentCount: number;
+  hasMyReaction: boolean;
+  isExpanded: boolean;
+  comments: PostComment[];
+  commentDraft: string;
+  onDeletePost: (post: ConnectPost) => void;
+  onReportPost: (post: ConnectPost) => void;
+  onToggleReaction: (postId: string) => void;
+  onExpandPost: (post: ConnectPost) => void;
+  onCommentDraftChange: (text: string) => void;
+  onAddComment: (postId: string) => void;
+}
+
+// Memoized so typing a comment on one post (which changes commentDraft on
+// every keystroke) doesn't re-render every other post card in the feed —
+// only the currently-expanded post's props actually change.
+const FeedPostCard = React.memo(function FeedPostCard({
+  post, isOwn, reactionCount, commentCount, hasMyReaction, isExpanded, comments, commentDraft,
+  onDeletePost, onReportPost, onToggleReaction, onExpandPost, onCommentDraftChange, onAddComment,
+}: FeedPostCardProps) {
+  return (
+    <Card style={styles.rowCard} variant="elevated">
+      <View style={styles.rowTop}>
+        <View style={styles.familyIcon}>
+          <Ionicons name="home" size={20} color={colors.primary} />
+        </View>
+        <View style={{ flex: 1, marginLeft: 12 }}>
+          <Text style={styles.familyName}>{post.family?.name ?? 'Household'}</Text>
+          <Text style={styles.relationshipLabel}>{timeAgo(post.createdAt)}</Text>
+        </View>
+        {isOwn ? (
+          <Pressable onPress={() => onDeletePost(post)}>
+            <Ionicons name="trash-outline" size={18} color={colors.textMuted} />
+          </Pressable>
+        ) : (
+          <Pressable onPress={() => onReportPost(post)}>
+            <Ionicons name="flag-outline" size={18} color={colors.textMuted} />
+          </Pressable>
+        )}
+      </View>
+      {!!post.text && <Text style={styles.postText}>{post.text}</Text>}
+
+      <View style={styles.postActions}>
+        <Pressable onPress={() => onToggleReaction(post.id)} style={styles.postActionBtn}>
+          <Ionicons name={hasMyReaction ? 'heart' : 'heart-outline'} size={16} color={hasMyReaction ? colors.danger : colors.textSecondary} />
+          <Text style={styles.postActionText}>{reactionCount > 0 ? reactionCount : 'Like'}</Text>
+        </Pressable>
+        {post.commentsEnabled && (
+          <Pressable onPress={() => onExpandPost(post)} style={styles.postActionBtn}>
+            <Ionicons name="chatbubble-outline" size={15} color={colors.textSecondary} />
+            <Text style={styles.postActionText}>{commentCount > 0 ? commentCount : 'Comment'}</Text>
+          </Pressable>
+        )}
+      </View>
+
+      {isExpanded && (
+        <View style={styles.commentsSection}>
+          {comments.map((c) => {
+            const authorLabel = c.authorName ?? 'A family member';
+            return (
+              <View key={c.id} style={styles.commentRow}>
+                <Avatar name={authorLabel} color={avatarColorForId(c.authorMemberId)} size={30} />
+                <View style={styles.commentBody}>
+                  <View style={styles.commentBubble}>
+                    <Text style={styles.commentAuthorLine}>
+                      <Text style={styles.commentAuthor}>{authorLabel}</Text>
+                      {c.authorFamilyName && (
+                        <Text style={styles.commentFamily}> · {c.authorFamilyName}</Text>
+                      )}
+                    </Text>
+                    <Text style={styles.commentText}>{c.text}</Text>
+                  </View>
+                  <Text style={styles.commentTime}>{timeAgo(c.createdAt)}</Text>
+                </View>
+              </View>
+            );
+          })}
+          <View style={styles.commentInputRow}>
+            <TextInput
+              style={styles.commentInput}
+              placeholder="Write a comment…"
+              placeholderTextColor={colors.textMuted}
+              value={commentDraft}
+              onChangeText={onCommentDraftChange}
+            />
+            <Pressable onPress={() => onAddComment(post.id)} style={styles.commentSendBtn}>
+              <Ionicons name="send" size={16} color={colors.primary} />
+            </Pressable>
+          </View>
+        </View>
+      )}
+    </Card>
+  );
+});
 
 export function FamilyConnectScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
@@ -102,41 +201,66 @@ export function FamilyConnectScreen({ navigation }: any) {
     }
   };
 
-  const handleExpandPost = (post: ConnectPost) => {
-    if (expandedPostId === post.id) {
-      setExpandedPostId(null);
-      return;
-    }
-    setExpandedPostId(post.id);
+  const handleExpandPost = useCallback((post: ConnectPost) => {
+    setExpandedPostId((prev) => (prev === post.id ? null : post.id));
     if (!postComments[post.id]) loadPostComments(post.id);
-  };
+  }, [postComments, loadPostComments]);
 
-  const handleAddComment = (postId: string) => {
+  const handleAddComment = useCallback((postId: string) => {
     if (!commentDraft.trim() || !activeMemberId) return;
     addComment(postId, activeMemberId, commentDraft.trim());
     setCommentDraft('');
-  };
+  }, [commentDraft, activeMemberId, addComment]);
 
-  const handleToggleReaction = (postId: string) => {
+  const handleToggleReaction = useCallback((postId: string) => {
     if (!activeMemberId) return;
     toggleReaction(postId, activeMemberId);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  };
+  }, [activeMemberId, toggleReaction]);
 
-  const handleDeletePost = (post: ConnectPost) => {
+  const handleDeletePost = useCallback((post: ConnectPost) => {
     Alert.alert('Delete post?', undefined, [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: () => deletePost(post.id) },
     ]);
-  };
+  }, [deletePost]);
 
-  const handleReportPost = (post: ConnectPost) => {
+  const handleReportPost = useCallback((post: ConnectPost) => {
     if (!activeMemberId) return;
     Alert.alert('Report this post?', 'Our team will review it.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Report', style: 'destructive', onPress: () => { reportPost(post.id, activeMemberId, 'OTHER'); Alert.alert('Reported', 'Thanks — we\'ll take a look.'); } },
     ]);
-  };
+  }, [activeMemberId, reportPost]);
+
+  const renderFeedItem = useCallback(({ item: post }: { item: ConnectPost }) => {
+    const isOwn = post.familyId === familyId;
+    const reactionCount = post._count?.reactions ?? 0;
+    const commentCount = post._count?.comments ?? 0;
+    const hasMyReaction = !!(postReactions[post.id] ?? []).find((r) => r.authorMemberId === activeMemberId);
+    const isExpanded = expandedPostId === post.id;
+    return (
+      <FeedPostCard
+        post={post}
+        isOwn={isOwn}
+        reactionCount={reactionCount}
+        commentCount={commentCount}
+        hasMyReaction={hasMyReaction}
+        isExpanded={isExpanded}
+        comments={postComments[post.id] ?? []}
+        commentDraft={isExpanded ? commentDraft : ''}
+        onDeletePost={handleDeletePost}
+        onReportPost={handleReportPost}
+        onToggleReaction={handleToggleReaction}
+        onExpandPost={handleExpandPost}
+        onCommentDraftChange={setCommentDraft}
+        onAddComment={handleAddComment}
+      />
+    );
+  }, [
+    familyId, postReactions, activeMemberId, expandedPostId, postComments, commentDraft,
+    handleDeletePost, handleReportPost, handleToggleReaction, handleExpandPost, handleAddComment,
+  ]);
 
   const handleSendRequest = async () => {
     if (!email.trim()) return;
@@ -273,86 +397,7 @@ export function FamilyConnectScreen({ navigation }: any) {
                     <Text style={styles.emptyDesc}>Share an update — it'll only be visible to households you're connected with.</Text>
                   </View>
                 }
-                renderItem={({ item: post }) => {
-                  const isOwn = post.familyId === familyId;
-                  const reactionCount = post._count?.reactions ?? 0;
-                  const commentCount = post._count?.comments ?? 0;
-                  const myReaction = (postReactions[post.id] ?? []).find((r) => r.authorMemberId === activeMemberId);
-                  const isExpanded = expandedPostId === post.id;
-                  return (
-                    <Card style={styles.rowCard} variant="elevated">
-                      <View style={styles.rowTop}>
-                        <View style={styles.familyIcon}>
-                          <Ionicons name="home" size={20} color={colors.primary} />
-                        </View>
-                        <View style={{ flex: 1, marginLeft: 12 }}>
-                          <Text style={styles.familyName}>{post.family?.name ?? 'Household'}</Text>
-                          <Text style={styles.relationshipLabel}>{timeAgo(post.createdAt)}</Text>
-                        </View>
-                        {isOwn ? (
-                          <Pressable onPress={() => handleDeletePost(post)}>
-                            <Ionicons name="trash-outline" size={18} color={colors.textMuted} />
-                          </Pressable>
-                        ) : (
-                          <Pressable onPress={() => handleReportPost(post)}>
-                            <Ionicons name="flag-outline" size={18} color={colors.textMuted} />
-                          </Pressable>
-                        )}
-                      </View>
-                      {!!post.text && <Text style={styles.postText}>{post.text}</Text>}
-
-                      <View style={styles.postActions}>
-                        <Pressable onPress={() => handleToggleReaction(post.id)} style={styles.postActionBtn}>
-                          <Ionicons name={myReaction ? 'heart' : 'heart-outline'} size={16} color={myReaction ? colors.danger : colors.textSecondary} />
-                          <Text style={styles.postActionText}>{reactionCount > 0 ? reactionCount : 'Like'}</Text>
-                        </Pressable>
-                        {post.commentsEnabled && (
-                          <Pressable onPress={() => handleExpandPost(post)} style={styles.postActionBtn}>
-                            <Ionicons name="chatbubble-outline" size={15} color={colors.textSecondary} />
-                            <Text style={styles.postActionText}>{commentCount > 0 ? commentCount : 'Comment'}</Text>
-                          </Pressable>
-                        )}
-                      </View>
-
-                      {isExpanded && (
-                        <View style={styles.commentsSection}>
-                          {(postComments[post.id] ?? []).map((c) => {
-                            const authorLabel = c.authorName ?? 'A family member';
-                            return (
-                              <View key={c.id} style={styles.commentRow}>
-                                <Avatar name={authorLabel} color={avatarColorForId(c.authorMemberId)} size={30} />
-                                <View style={styles.commentBody}>
-                                  <View style={styles.commentBubble}>
-                                    <Text style={styles.commentAuthorLine}>
-                                      <Text style={styles.commentAuthor}>{authorLabel}</Text>
-                                      {c.authorFamilyName && (
-                                        <Text style={styles.commentFamily}> · {c.authorFamilyName}</Text>
-                                      )}
-                                    </Text>
-                                    <Text style={styles.commentText}>{c.text}</Text>
-                                  </View>
-                                  <Text style={styles.commentTime}>{timeAgo(c.createdAt)}</Text>
-                                </View>
-                              </View>
-                            );
-                          })}
-                          <View style={styles.commentInputRow}>
-                            <TextInput
-                              style={styles.commentInput}
-                              placeholder="Write a comment…"
-                              placeholderTextColor={colors.textMuted}
-                              value={commentDraft}
-                              onChangeText={setCommentDraft}
-                            />
-                            <Pressable onPress={() => handleAddComment(post.id)} style={styles.commentSendBtn}>
-                              <Ionicons name="send" size={16} color={colors.primary} />
-                            </Pressable>
-                          </View>
-                        </View>
-                      )}
-                    </Card>
-                  );
-                }}
+                renderItem={renderFeedItem}
               />
             );
           }

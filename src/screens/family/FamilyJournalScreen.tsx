@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, FlatList, Pressable, Alert, Modal, TextInput,
 } from 'react-native';
@@ -13,6 +13,7 @@ import { Card } from '../../components/common/Card';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useJournalStore, JournalEntry, MOOD_LABELS, MOOD_EMOJIS } from '../../store/useJournalStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import type { FamilyMember } from '../../types';
 import { useTranslation } from 'react-i18next';
 
 const MOOD_COLORS: Record<number, string> = {
@@ -119,6 +120,62 @@ function JournalDetailModal({ entry, onClose }: { entry: JournalEntry; onClose: 
   );
 }
 
+interface JournalEntryCardProps {
+  entry: JournalEntry;
+  author: FamilyMember | undefined;
+  onPress: (entry: JournalEntry) => void;
+  onLongPress: (entry: JournalEntry) => void;
+}
+
+// Memoized so unrelated screen state (typing in the add-entry modal, etc.)
+// doesn't re-render every entry card — only rows whose own props changed.
+const JournalEntryCard = React.memo(function JournalEntryCard({ entry, author, onPress, onLongPress }: JournalEntryCardProps) {
+  const reactionCount = entry.reactions.length;
+  return (
+    <Pressable onPress={() => onPress(entry)} onLongPress={() => onLongPress(entry)}>
+      <Card style={styles.entryCard} variant="elevated">
+        <View style={[styles.moodBar, { backgroundColor: MOOD_COLORS[entry.mood] }]} />
+        <View style={styles.entryTop}>
+          <Text style={styles.entryEmoji}>{entry.emoji}</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.entryTitle}>{entry.title}</Text>
+            <Text style={styles.entryDate}>
+              {formatDistanceToNow(new Date(entry.date), { addSuffix: true })}
+              {' · '}
+              {format(new Date(entry.date), 'MMM d')}
+            </Text>
+          </View>
+          <View style={styles.moodChip}>
+            <Text style={{ fontSize: 14 }}>{MOOD_EMOJIS[entry.mood]}</Text>
+          </View>
+        </View>
+
+        <Text style={styles.entryPreview} numberOfLines={3}>{entry.content}</Text>
+
+        <View style={styles.entryFooter}>
+          {author && (
+            <View style={styles.authorBadge}>
+              <View style={[styles.authorDot, { backgroundColor: author.avatarColor }]} />
+              <Text style={styles.authorBadgeName}>{author.name.split(' ')[0]}</Text>
+            </View>
+          )}
+          {reactionCount > 0 && (
+            <View style={styles.reactionSummary}>
+              <Text style={styles.reactionSummaryText}>{entry.reactions.slice(0, 3).map((r) => r.emoji).join('')}</Text>
+              <Text style={styles.reactionCount}>{reactionCount}</Text>
+            </View>
+          )}
+          {entry.tags.slice(0, 2).map((tag) => (
+            <View key={tag} style={styles.tagChipSm}>
+              <Text style={styles.tagTextSm}>#{tag}</Text>
+            </View>
+          ))}
+        </View>
+      </Card>
+    </Pressable>
+  );
+});
+
 export function FamilyJournalScreen({ navigation }: any) {
   const { t } = useTranslation('family');
   const insets = useSafeAreaInsets();
@@ -140,6 +197,27 @@ export function FamilyJournalScreen({ navigation }: any) {
 
   const getMember = (id: string) => members.find((m) => m.id === id);
   const currentMember = members[0];
+  const membersById = useMemo(() => new Map(members.map((m) => [m.id, m])), [members]);
+
+  const handleEntryPress = useCallback((entry: JournalEntry) => setSelectedEntry(entry), []);
+  const handleEntryLongPress = useCallback((entry: JournalEntry) => {
+    Alert.alert(
+      t('family.screens.familyJournal.deleteEntryTitle'),
+      t('family.screens.familyJournal.deleteEntryMessage', { title: entry.title }),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('common.delete'), style: 'destructive', onPress: () => deleteEntry(entry.id) },
+      ]
+    );
+  }, [t, deleteEntry]);
+  const renderEntryItem = useCallback(({ item: entry }: { item: JournalEntry }) => (
+    <JournalEntryCard
+      entry={entry}
+      author={membersById.get(entry.authorId)}
+      onPress={handleEntryPress}
+      onLongPress={handleEntryLongPress}
+    />
+  ), [membersById, handleEntryPress, handleEntryLongPress]);
 
   const filters = [
     { key: 'all', label: t('family.screens.familyJournal.filterAll') },
@@ -237,64 +315,7 @@ export function FamilyJournalScreen({ navigation }: any) {
             <Text style={styles.emptyDesc}>{t('family.screens.familyJournal.emptyDesc')}</Text>
           </View>
         }
-        renderItem={({ item: entry }) => {
-          const author = getMember(entry.authorId);
-          const reactionCount = entry.reactions.length;
-
-          return (
-            <Pressable
-              onPress={() => setSelectedEntry(entry)}
-              onLongPress={() => Alert.alert(
-                t('family.screens.familyJournal.deleteEntryTitle'),
-                t('family.screens.familyJournal.deleteEntryMessage', { title: entry.title }),
-                [
-                  { text: t('common.cancel'), style: 'cancel' },
-                  { text: t('common.delete'), style: 'destructive', onPress: () => deleteEntry(entry.id) },
-                ]
-              )}
-            >
-              <Card style={styles.entryCard} variant="elevated">
-                <View style={[styles.moodBar, { backgroundColor: MOOD_COLORS[entry.mood] }]} />
-                <View style={styles.entryTop}>
-                  <Text style={styles.entryEmoji}>{entry.emoji}</Text>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.entryTitle}>{entry.title}</Text>
-                    <Text style={styles.entryDate}>
-                      {formatDistanceToNow(new Date(entry.date), { addSuffix: true })}
-                      {' · '}
-                      {format(new Date(entry.date), 'MMM d')}
-                    </Text>
-                  </View>
-                  <View style={styles.moodChip}>
-                    <Text style={{ fontSize: 14 }}>{MOOD_EMOJIS[entry.mood]}</Text>
-                  </View>
-                </View>
-
-                <Text style={styles.entryPreview} numberOfLines={3}>{entry.content}</Text>
-
-                <View style={styles.entryFooter}>
-                  {author && (
-                    <View style={styles.authorBadge}>
-                      <View style={[styles.authorDot, { backgroundColor: author.avatarColor }]} />
-                      <Text style={styles.authorBadgeName}>{author.name.split(' ')[0]}</Text>
-                    </View>
-                  )}
-                  {reactionCount > 0 && (
-                    <View style={styles.reactionSummary}>
-                      <Text style={styles.reactionSummaryText}>{entry.reactions.slice(0, 3).map((r) => r.emoji).join('')}</Text>
-                      <Text style={styles.reactionCount}>{reactionCount}</Text>
-                    </View>
-                  )}
-                  {entry.tags.slice(0, 2).map((tag) => (
-                    <View key={tag} style={styles.tagChipSm}>
-                      <Text style={styles.tagTextSm}>#{tag}</Text>
-                    </View>
-                  ))}
-                </View>
-              </Card>
-            </Pressable>
-          );
-        }}
+        renderItem={renderEntryItem}
       />
         )}
       </CollapsibleHeader>

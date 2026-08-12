@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { colors } from '../../theme/colors';
@@ -22,11 +22,24 @@ interface SubscriptionGateProps {
 // gating on plan instead of family role.
 export function SubscriptionGate({ children, requiredTier, featureName, description }: SubscriptionGateProps) {
   const { t } = useTranslation();
-  const { isAtLeast } = useSubscription();
+  const { isAtLeast, isChecked } = useSubscription();
   const [showUpgrade, setShowUpgrade] = useState(false);
 
   if (isAtLeast(requiredTier)) {
     return <>{children}</>;
+  }
+
+  // Tier not (yet) sufficient — but if we haven't confirmed the real tier
+  // this session, that could just mean the RevenueCat/backend check is
+  // still in flight (settings.subscriptionTier defaults to 'free' until
+  // then). Show a brief loading state instead of flashing the upgrade
+  // paywall at a paid user on every cold launch.
+  if (!isChecked) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator color={colors.primary} />
+      </View>
+    );
   }
 
   return (
