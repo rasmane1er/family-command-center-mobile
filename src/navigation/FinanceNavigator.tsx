@@ -19,6 +19,7 @@ import { TransactionsScreen } from '../screens/finance/TransactionsScreen';
 import { SpendingInsightsScreen } from '../screens/finance/SpendingInsightsScreen';
 import { ReceiptScannerScreen } from '../screens/finance/ReceiptScannerScreen';
 import { TaxCenterScreen } from '../screens/finance/TaxCenterScreen';
+import { TaxOrganizerScreen } from '../screens/finance/TaxOrganizerScreen';
 import { withScreenErrorBoundary } from './withScreenErrorBoundary';
 
 const Stack = createNativeStackNavigator();
@@ -49,6 +50,7 @@ export function FinanceNavigator() {
         <Stack.Screen name="SpendingInsights" component={withScreenErrorBoundary(SpendingInsightsScreen)} options={{ title: t('spending.title') }} />
         <Stack.Screen name="ReceiptScanner" component={withScreenErrorBoundary(ReceiptScannerScreen)} options={{ headerShown: false }} />
         <Stack.Screen name="TaxCenter" component={withScreenErrorBoundary(TaxCenterScreen)} options={{ headerShown: false }} />
+        <Stack.Screen name="TaxOrganizer" component={withScreenErrorBoundary(TaxOrganizerScreen)} />
       </Stack.Navigator>
     </SubscriptionGate>
   );

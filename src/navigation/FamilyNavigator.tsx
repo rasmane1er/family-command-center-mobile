@@ -33,6 +33,8 @@ import { HomeworkTrackerScreen } from '../screens/family/HomeworkTrackerScreen';
 import { ActivitiesTrackerScreen } from '../screens/family/ActivitiesTrackerScreen';
 import { BirthdayTrackerScreen } from '../screens/family/BirthdayTrackerScreen';
 import { FamilyBoardScreen } from '../screens/family/FamilyBoardScreen';
+import { ReadingTrackerScreen } from '../screens/family/ReadingTrackerScreen';
+import { VolunteerTrackerScreen } from '../screens/family/VolunteerTrackerScreen';
 import { GuardianDashboardScreen } from '../screens/family/guardian/GuardianDashboardScreen';
 import { BlockedSitesScreen } from '../screens/family/guardian/BlockedSitesScreen';
 import { ChildDeviceDetailScreen } from '../screens/family/guardian/ChildDeviceDetailScreen';
@@ -47,7 +49,6 @@ import { RewardsScreen } from '../screens/operations/RewardsScreen';
 import { FamilyConnectScreen } from '../screens/family/FamilyConnectScreen';
 import { CoParentingScreen } from '../screens/family/CoParentingScreen';
 import { withScreenErrorBoundary } from './withScreenErrorBoundary';
-
 
 const Stack = createNativeStackNavigator();
 
@@ -396,6 +397,26 @@ export function FamilyNavigator() {
           <ErrorBoundary>
           <RoleGuard allowParent allowChild>
             <RewardsScreen {...props} />
+          </RoleGuard>
+          </ErrorBoundary>
+        )}
+      </Stack.Screen>
+
+      <Stack.Screen name="ReadingTracker">
+        {(props) => (
+          <ErrorBoundary>
+          <RoleGuard allowParent allowChild>
+            <ReadingTrackerScreen {...props} />
+          </RoleGuard>
+          </ErrorBoundary>
+        )}
+      </Stack.Screen>
+
+      <Stack.Screen name="VolunteerTracker">
+        {(props) => (
+          <ErrorBoundary>
+          <RoleGuard allowParent>
+            <VolunteerTrackerScreen {...props} />
           </RoleGuard>
           </ErrorBoundary>
         )}

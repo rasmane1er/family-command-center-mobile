@@ -20,6 +20,8 @@ import { CommandWallScreen } from '../screens/dashboard/CommandWallScreen';
 import { NotificationsScreen } from '../screens/dashboard/NotificationsScreen';
 import { SearchScreen } from '../screens/dashboard/SearchScreen';
 import { WeeklyReportScreen } from '../screens/dashboard/WeeklyReportScreen';
+import { NutritionTrackerScreen } from '../screens/health/NutritionTrackerScreen';
+import { MedicalRecordsScreen } from '../screens/health/MedicalRecordsScreen';
 import { GeofenceScreen } from '../screens/family/guardian/GeofenceScreen';
 import { MilitaryHubScreen } from '../screens/family/military/MilitaryHubScreen';
 import { DeploymentTrackerScreen } from '../screens/family/military/DeploymentTrackerScreen';
@@ -249,6 +251,17 @@ export function MainNavigator() {
         )}
       </Stack.Screen>
 
+      <Stack.Screen
+        name="NutritionTracker"
+        component={withScreenErrorBoundary(NutritionTrackerScreen)}
+        options={{ animation: 'slide_from_right' }}
+      />
+
+      <Stack.Screen
+        name="MedicalRecords"
+        component={withScreenErrorBoundary(MedicalRecordsScreen)}
+        options={{ animation: 'slide_from_right' }}
+      />
     </Stack.Navigator>
   );
 }

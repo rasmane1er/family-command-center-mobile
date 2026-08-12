@@ -65,6 +65,7 @@ const FINANCE_TOOLS = [
   { key: 'Assets',           icon: 'briefcase',        label: 'Assets',       color: '#D97706', bg: '#FFFBEB' },
   { key: 'DebtPayoff',       icon: 'trending-down',    label: 'Debt',         color: '#DC2626', bg: '#FEF2F2' },
   { key: 'UtilityTracker',   icon: 'flash',            label: 'Utilities',    color: '#0891B2', bg: '#ECFEFF' },
+  { key: 'TaxOrganizer',     icon: 'document-text',    label: 'Tax Organizer', color: '#1A237E', bg: '#E8EAF6' },
   { key: 'ConnectBank',      icon: 'link',             label: 'Connect Bank', color: '#10B981', bg: '#ECFDF5' },
   { key: 'Transactions',     icon: 'list-outline',     label: 'Transactions', color: '#6366F1', bg: '#EEF2FF' },
   { key: 'SpendingInsights', icon: 'pie-chart-outline', label: 'Insights',    color: '#F59E0B', bg: '#FFFBEB' },

@@ -38,6 +38,10 @@ const OPS_MODULES = [
   { key: 'HomeMaintenance', icon: 'construct', label: 'Maintenance', color: '#37474F', bg: '#ECEFF1', desc: 'Home repairs', group: 'Home' },
   { key: 'ChildcareManager', icon: 'heart', label: 'Childcare', color: '#EA580C', bg: '#FFF1E6', desc: 'Sitters & nannies', group: 'Family' },
   { key: 'HomeInventory', icon: 'albums', label: 'Inventory', color: '#222222', bg: '#ECEFF1', desc: 'Home belongings', group: 'Home' },
+  { key: 'GardenPlanner', icon: 'leaf', label: 'Garden', color: '#2E7D32', bg: '#E8F5E9', desc: 'Plants & tasks', group: 'Home' },
+  { key: 'HOAManager', icon: 'business', label: 'HOA', color: '#37474F', bg: '#ECEFF1', desc: 'Dues & rules', group: 'Admin' },
+  { key: 'EventPlanner', icon: 'balloon', label: 'Events', color: '#AD1457', bg: '#FCE4EC', desc: 'Parties & celebrations', group: 'Family' },
+  { key: 'MealPrep', icon: 'restaurant-outline', label: 'Meal Prep', color: '#00695C', bg: '#E0F2F1', desc: 'Batch cooking', group: 'Home' },
 ];
 
 const FILTERS = ['All', 'Home', 'Family', 'Mobility', 'Admin', 'Safety'];

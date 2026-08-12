@@ -237,6 +237,8 @@ export function HealthHubScreen({ navigation: navProp }: any) {
                 { key: 'MedicationManager', icon: 'medical', label: t('health.screens.healthHub.toolMedications'), color: '#AD1457', bg: '#FCE4EC' },
                 { key: 'SleepTracker', icon: 'moon', label: t('health.screens.healthHub.toolSleep'), color: '#4527A0', bg: '#EDE7F6' },
                 { key: 'WorkoutTracker', icon: 'flame', label: t('health.screens.healthHub.toolWorkouts'), color: '#BF360C', bg: '#FBE9E7' },
+                { key: 'NutritionTracker', icon: 'nutrition', label: 'Nutrition', color: '#1B5E20', bg: '#E8F5E9' },
+                { key: 'MedicalRecords', icon: 'folder-open', label: 'Records', color: '#1A237E', bg: '#E8EAF6' },
               ].map((tool) => (
                 <Pressable key={tool.key} onPress={() => navigation.navigate(tool.key)} style={[s.healthToolCard, { backgroundColor: tool.bg }]}>
                   <Ionicons name={tool.icon as any} size={24} color={tool.color} />

@@ -28,6 +28,10 @@ import { HomeMaintenanceScreen } from '../screens/operations/HomeMaintenanceScre
 import { ChildcareManagerScreen } from '../screens/operations/ChildcareManagerScreen';
 import { HomeInventoryScreen } from '../screens/operations/HomeInventoryScreen';
 import { CarpoolManagerScreen } from '../screens/operations/CarpoolManagerScreen';
+import { GardenPlannerScreen } from '../screens/operations/GardenPlannerScreen';
+import { HOAManagerScreen } from '../screens/operations/HOAManagerScreen';
+import { EventPlannerScreen } from '../screens/operations/EventPlannerScreen';
+import { MealPrepScreen } from '../screens/operations/MealPrepScreen';
 import { TasksScreen } from '../screens/family/TasksScreen';
 import { withScreenErrorBoundary } from './withScreenErrorBoundary';
 
@@ -147,6 +151,10 @@ export function OperationsNavigator() {
         </Stack.Screen>
 
         <Stack.Screen name="CarpoolManager" component={withScreenErrorBoundary(CarpoolManagerScreen)} />
+        <Stack.Screen name="GardenPlanner" component={withScreenErrorBoundary(GardenPlannerScreen)} />
+        <Stack.Screen name="HOAManager" component={withScreenErrorBoundary(HOAManagerScreen)} />
+        <Stack.Screen name="EventPlanner" component={withScreenErrorBoundary(EventPlannerScreen)} />
+        <Stack.Screen name="MealPrep" component={withScreenErrorBoundary(MealPrepScreen)} />
       </Stack.Navigator>
     </RoleGuard>
   );

@@ -148,6 +148,22 @@ const QUICK_NAV = [
     iconBg: '#F3E5F5',
     iconColor: '#6A1B9A',
   },
+  {
+    key: 'ReadingTracker',
+    icon: 'book',
+    label: 'Reading',
+    desc: 'Books & goals',
+    iconBg: '#EDE7F6',
+    iconColor: '#4A148C',
+  },
+  {
+    key: 'VolunteerTracker',
+    icon: 'heart-circle',
+    label: 'Volunteer',
+    desc: 'Service hours',
+    iconBg: '#FFF3E0',
+    iconColor: '#E65100',
+  },
 ];
 
 export function FamilyProfilesScreen({ navigation, route }: any) {
