@@ -25,6 +25,7 @@ async function authFetch<T>(path: string, options: RequestInit = {}): Promise<T>
 
 export interface DetectedBill {
   merchantName: string;
+  merchantKey: string;
   amount: number;
   category: string;
   lastDate: string;

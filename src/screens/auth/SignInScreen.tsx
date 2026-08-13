@@ -22,16 +22,6 @@ import * as SecureStore from 'expo-secure-store';
 import * as Crypto from 'expo-crypto';
 import { getAuth, GoogleAuthProvider, OAuthProvider, signInWithCredential, getIdToken } from '@react-native-firebase/auth';
 import { useAuthStore } from '../../store/useAuthStore';
-
-interface LocalAuthModule {
-  authenticateAsync(options: { promptMessage: string }): Promise<{ success: boolean }>;
-}
-let LocalAuthentication: LocalAuthModule | null = null;
-try {
-  LocalAuthentication = require('expo-local-authentication') as LocalAuthModule;
-} catch {
-  // Not linked yet
-}
 import { useTheme } from '../../theme/ThemeContext';
 import { useTranslation } from 'react-i18next';
 
@@ -91,7 +81,7 @@ export default function SignInScreen({ navigation }: Props) {
   const { t } = useTranslation('auth');
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
-  const { signIn, signInWithSocial } = useAuthStore();
+  const { signIn, signInWithSocial, unlockWithBiometric } = useAuthStore();
 
   // Google auth — only active when native modules are linked AND real client
   // IDs are supplied via env (see eas.json / .env). Without real IDs the
@@ -283,42 +273,27 @@ export default function SignInScreen({ navigation }: Props) {
   const passwordRef = useRef<TextInput>(null);
   const buttonScale = useRef(new Animated.Value(1)).current;
 
-  // Check biometric availability on mount
+  // Check biometric availability on mount — only offer it when the user
+  // opted in at signup AND there's still a persisted session on this device
+  // to unlock into (unlockWithBiometric never touches a password).
   useEffect(() => {
     (async () => {
       const biometricEnabled = await SecureStore.getItemAsync('biometric_enabled');
-      const storedCredentials = await SecureStore.getItemAsync('stored_credentials');
-      if (biometricEnabled === 'true' && storedCredentials) {
+      if (biometricEnabled === 'true' && useAuthStore.getState().user) {
         setShowBiometric(true);
       }
     })();
   }, []);
 
   const handleBiometricSignIn = async () => {
-    if (!LocalAuthentication) return;
-    try {
-      const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: t('auth.screens.signIn.biometricPrompt'),
-      });
-      if (result.success) {
-        const storedCredentials = await SecureStore.getItemAsync('stored_credentials');
-        if (storedCredentials) {
-          const { email: storedEmail, password: storedPassword } = JSON.parse(storedCredentials);
-          setEmail(storedEmail);
-          setPassword(storedPassword);
-          setLoading(true);
-          const signInResult = await signIn(storedEmail, storedPassword);
-          setLoading(false);
-          if (!signInResult.success) {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-            Alert.alert(t('auth.screens.signIn.signInFailedTitle'), signInResult.error ?? t('auth.screens.signIn.genericError'));
-          } else {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          }
-        }
-      }
-    } catch {
-      // biometric not available, ignore
+    setLoading(true);
+    const success = await unlockWithBiometric();
+    setLoading(false);
+    if (success) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } else {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert(t('auth.screens.signIn.signInFailedTitle'), t('auth.screens.signIn.genericError'));
     }
   };
 

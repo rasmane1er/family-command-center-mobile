@@ -1,12 +1,13 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { mmkvStorage } from '../storage/mmkvStorage';
-import * as SecureStore from 'expo-secure-store';
+import * as LocalAuthentication from 'expo-local-authentication';
 import { secureStorage } from '../storage/secureStorage';
 import { awsConfig } from '../config/aws';
 import { apiRequest } from '../api/client';
 import { resetAllStores } from '../storage/resetAllStores';
 import { registerAuthBridge } from './authBridge';
+import { validatePasswordStrength } from '../utils/passwordPolicy';
 // Only call after a backend session is confirmed (token in SecureStore).
 // Calling without a token causes a 401 which the fetchFromServer 401-handler
 // mistakes for a revoked session and signs the user back out.
@@ -87,11 +88,17 @@ interface AuthState {
   // still has to sign in with the new password afterward.
   confirmPasswordReset: (email: string, code: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
   updateProfile: (updates: Partial<AuthUser>) => void;
-  // Verifies a password against the currently signed-in account without
-  // touching auth state — used to gate device-lock changes (see
-  // ProfileSwitcherScreen) so a child can't bypass a locked device just by
-  // knowing the lightweight per-profile switch PIN.
+  // Verifies a password against the currently signed-in account via the
+  // real backend credential (POST /auth/verify-password) — used to gate
+  // device-lock changes (see ProfileSwitcherScreen) so a child can't bypass
+  // a locked device just by knowing the lightweight per-profile switch PIN.
+  // Requires network; resolves false if unreachable (deny by default).
   verifyPassword: (password: string) => Promise<boolean>;
+  // Re-enters an already-persisted session behind Face ID/Touch ID, without
+  // ever touching a password — see SignUpScreen's biometric toggle. Returns
+  // false (falling back to the normal sign-in screen) if there's no valid
+  // hardware/enrollment or no persisted session left to unlock into.
+  unlockWithBiometric: () => Promise<boolean>;
 }
 
 export interface SignUpData {
@@ -117,32 +124,10 @@ export interface SignUpData {
   zipCode?: string;
   emergencyContactName?: string;
   emergencyContactPhone?: string;
-}
-
-const CREDENTIALS_KEY = 'fcc_credentials';
-
-async function hashPassword(password: string): Promise<string> {
-  let hash = 0;
-  const str = password + 'fcc_salt_2024';
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash = hash & hash;
-  }
-  return Math.abs(hash).toString(36) + str.length.toString(36);
-}
-
-async function getStoredCredentials(): Promise<Record<string, { displayName: string; hash: string }> | null> {
-  try {
-    const raw = await SecureStore.getItemAsync(CREDENTIALS_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
-}
-
-async function saveCredentials(data: Record<string, { displayName: string; hash: string }>) {
-  await SecureStore.setItemAsync(CREDENTIALS_KEY, JSON.stringify(data));
+  // Cloudflare Turnstile response token — see SignUpScreen's widget. Omitted
+  // entirely when EXPO_PUBLIC_TURNSTILE_SITE_KEY isn't configured; the
+  // backend only enforces it once its own TURNSTILE_SECRET_KEY is set.
+  turnstileToken?: string;
 }
 
 interface BackendAuthResult {
@@ -163,88 +148,86 @@ async function persistBackendSession(result: BackendAuthResult): Promise<{ famil
   return { familyId: result.user.familyId, backendUserId: result.user.id };
 }
 
-// Best-effort link to the real backend so server-backed features (live chat,
-// subscriptions) work. Never throws — the app is local-first, so an
-// unreachable server or a pre-existing account must not block sign-up/sign-in.
-//
-// Always tries login first, then falls back to registering a new backend
-// account (using familyName/memberName if given) if login fails. This one
-// order correctly handles both:
-//  - brand-new sign-ups (login fails since no backend account exists yet →
-//    register creates it)
-//  - legacy local-only accounts signing in for the first time since backend
-//    auth was wired up (same thing — no backend account yet → register
-//    bootstraps one from their current session, backend-linking them)
-type BackendSyncResult = { familyId: string; backendUserId: string; emailVerified: boolean } | { needsVerification: true } | null;
+type LoginResult =
+  | ({ ok: true } & { familyId: string; backendUserId: string })
+  | { ok: false; needsVerification: true }
+  | { ok: false; error: string };
 
-async function syncWithBackend(params: {
-  email: string;
-  password: string;
-  familyName?: string;
-  memberName?: string;
-  memberRole?: string;
-}): Promise<BackendSyncResult> {
-  const { email, password, familyName, memberName, memberRole } = params;
-
+// The backend (real bcrypt-verified account) is now the sole source of
+// truth for sign-in — there's no local credential cache to fall back to
+// anymore, so this always requires network. Raw fetch (not apiRequest) to
+// match resetPassword/confirmPasswordReset below: a 401 here is an expected
+// "wrong password" outcome, not a revoked-session signal apiRequest's
+// automatic refresh handling is built around.
+async function loginWithBackend(email: string, password: string): Promise<LoginResult> {
   try {
-    console.log('[auth] syncWithBackend: trying login at', `${awsConfig.apiBaseUrl}/auth/login`);
-    const loginRes = await fetch(`${awsConfig.apiBaseUrl}/auth/login`, {
+    const res = await fetch(`${awsConfig.apiBaseUrl}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
-    if (loginRes.ok) {
-      console.log('[auth] syncWithBackend: login succeeded, familyId linked');
-      const data: BackendAuthResult = await loginRes.json();
-      const session = await persistBackendSession(data);
-      return { ...session, emailVerified: data.emailVerified ?? true };
-    }
 
-    // 403 email_not_verified — account exists but email not confirmed yet
-    if (loginRes.status === 403) {
-      const body = await loginRes.json().catch(() => ({}));
-      if (body?.error === 'email_not_verified') {
-        return { needsVerification: true };
+    const body = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      if (res.status === 403 && body?.error === 'email_not_verified') {
+        return { ok: false, needsVerification: true };
       }
+      if (res.status === 423) {
+        return { ok: false, error: body?.message ?? 'Too many failed attempts. Please try again in a few minutes.' };
+      }
+      if (res.status === 401) {
+        return { ok: false, error: 'Invalid email or password.' };
+      }
+      return { ok: false, error: typeof body?.message === 'string' ? body.message : 'Could not sign in. Please try again.' };
     }
 
-    console.warn('[auth] syncWithBackend: login failed', loginRes.status);
+    const data = body as BackendAuthResult;
+    const session = await persistBackendSession(data);
+    return { ok: true, ...session };
+  } catch {
+    return { ok: false, error: 'Could not reach the server. Check your connection and try again.' };
+  }
+}
 
-    if (loginRes.status >= 500) {
-      console.warn('[auth] syncWithBackend: server error during login, not attempting register to avoid duplicate family');
-      return null;
-    }
+type RegisterResult =
+  | ({ ok: true; emailVerified: boolean } & { familyId: string; backendUserId: string })
+  | { ok: false; needsVerification: true }
+  | { ok: false; error: string };
 
-    if (!familyName || !memberName) {
-      console.warn('[auth] syncWithBackend: no familyName/memberName to fall back to register with — giving up');
-      return null;
-    }
-
-    console.log('[auth] syncWithBackend: trying register at', `${awsConfig.apiBaseUrl}/auth/register`);
-    const registerRes = await fetch(`${awsConfig.apiBaseUrl}/auth/register`, {
+async function registerWithBackend(payload: Record<string, unknown>): Promise<RegisterResult> {
+  try {
+    const res = await fetch(`${awsConfig.apiBaseUrl}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, familyName, memberName, memberRole }),
+      body: JSON.stringify(payload),
     });
-    if (!registerRes.ok) {
-      console.warn('[auth] syncWithBackend: register failed', registerRes.status);
-      return null;
+
+    const body = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      if (res.status === 409) {
+        return { ok: false, error: 'An account with this email already exists. Try signing in instead.' };
+      }
+      if (typeof body?.error === 'object' && body.error?.fieldErrors) {
+        const firstError = Object.values(body.error.fieldErrors as Record<string, string[]>).flat()[0];
+        return { ok: false, error: firstError ?? 'Please check your details and try again.' };
+      }
+      return { ok: false, error: typeof body?.message === 'string' ? body.message : 'Could not create your account. Please try again.' };
     }
 
-    console.log('[auth] syncWithBackend: register succeeded');
-    const data: BackendAuthResult = await registerRes.json();
+    const data = body as BackendAuthResult;
     const session = await persistBackendSession(data);
-    return { ...session, emailVerified: data.emailVerified ?? true };
-  } catch (err) {
-    console.warn('[auth] syncWithBackend: network error', awsConfig.apiBaseUrl, err);
-    return null;
+    return { ok: true, emailVerified: data.emailVerified ?? true, ...session };
+  } catch {
+    return { ok: false, error: 'Could not reach the server. Check your connection and try again.' };
   }
 }
 
 // Find-or-create backend link for Google/Apple sign-in — there's no
-// password to check, so this can't reuse syncWithBackend's login-then-
-// register flow. Same never-throws contract: an unreachable/failing backend
-// must not block the local social sign-in from working.
+// password to check, so this can't reuse the login/register flow above.
+// Never throws — an unreachable/failing backend must not block the local
+// social sign-in from working.
 async function syncSocialWithBackend(params: {
   idToken: string;
   displayName: string;
@@ -281,19 +264,45 @@ export const useAuthStore = create<AuthState>()(
         const normalizedEmail = data.email.toLowerCase().trim();
         if (!data.displayName.trim()) return { success: false, error: 'Please enter your name.' };
         if (!normalizedEmail.includes('@')) return { success: false, error: 'Please enter a valid email.' };
-        if (data.password.length < 6) return { success: false, error: 'Password must be at least 6 characters.' };
+        const pw = validatePasswordStrength(data.password);
+        if (!pw.valid) return { success: false, error: pw.reason };
 
-        const credentials = (await getStoredCredentials()) ?? {};
-        if (credentials[normalizedEmail]) {
-          return { success: false, error: 'An account with this email already exists.' };
+        const result = await registerWithBackend({
+          email: normalizedEmail,
+          password: data.password,
+          familyName: data.familyName?.trim() || `${data.lastName.trim()} Family`,
+          memberName: data.displayName.trim(),
+          memberRole: data.familyRole,
+          // Immediately-usable fields only — avatarUri is typically a local
+          // file:// URI at this point (uploaded to R2 only after signup
+          // succeeds, see SignUpScreen), so it isn't sent here.
+          phone: data.phone,
+          dateOfBirth: data.dateOfBirth,
+          avatarColor: data.avatarColor,
+          gender: data.gender,
+          occupation: data.occupation,
+          bio: data.bio,
+          emergencyContactName: data.emergencyContactName,
+          emergencyContactPhone: data.emergencyContactPhone,
+          familyMotto: data.familyMotto,
+          numberOfChildren: data.numberOfChildren,
+          streetAddress: data.streetAddress,
+          city: data.city,
+          state: data.state,
+          zipCode: data.zipCode,
+          turnstileToken: data.turnstileToken,
+        });
+
+        if (!result.ok) {
+          if ('needsVerification' in result) {
+            set({ pendingVerificationEmail: normalizedEmail });
+            return { success: true, needsEmailVerification: true } as any;
+          }
+          return { success: false, error: result.error };
         }
 
-        const hash = await hashPassword(data.password);
-        credentials[normalizedEmail] = { displayName: data.displayName.trim(), hash };
-        await saveCredentials(credentials);
-
         const user: AuthUser = {
-          id: Math.random().toString(36).substring(2),
+          id: result.backendUserId,
           email: normalizedEmail,
           displayName: data.displayName.trim(),
           firstName: data.firstName.trim(),
@@ -319,39 +328,25 @@ export const useAuthStore = create<AuthState>()(
           createdAt: new Date().toISOString(),
         };
 
-        // Backend sync is awaited BEFORE isAuthenticated flips true — screens
-        // mount the instant isAuthenticated is true and immediately call
-        // fetchFromServer(), which reads the access token from SecureStore.
-        // Setting isAuthenticated first left a window where that token
-        // hadn't been persisted yet, so the resulting 401 was mistaken for
-        // "session revoked" and force-signed the user right back out (see
-        // fetchFromServer's 401 handler in useFamilyStore.ts). syncWithBackend
-        // never throws — an unreachable backend still resolves (to null), so
-        // this doesn't break the local-first "sign in even if offline" contract.
-        const backend = await syncWithBackend({
-          email: normalizedEmail,
-          password: data.password,
-          familyName: data.familyName?.trim() || `${data.lastName.trim()} Family`,
-          memberName: user.displayName,
-          memberRole: data.familyRole,
-        });
-
-        // If the backend created the account but email isn't verified yet,
-        // park in pending state — don't authenticate until verification is done.
-        if (backend && 'needsVerification' in backend) {
-          set({ pendingVerificationEmail: normalizedEmail });
-          return { success: true, needsEmailVerification: true } as any;
-        }
-        if (backend && 'emailVerified' in backend && !backend.emailVerified) {
+        if (!result.emailVerified) {
           set({ pendingVerificationEmail: normalizedEmail });
           return { success: true, needsEmailVerification: true } as any;
         }
 
+        // isAuthenticated is intentionally NOT set here — AppNavigator swaps
+        // to the main app the instant it goes true, which used to happen
+        // before SignUpScreen's populateFromSignUp() had hydrated
+        // useFamilyStore (worse, after its own resetAllStores() wiped it back
+        // to blank), so the dashboard/tab bar briefly rendered against empty
+        // state: no family name, and RoleGuard-gated tabs (Finance/
+        // Operations) denied access because activeMember hadn't resolved
+        // yet. SignUpScreen flips isAuthenticated itself once hydration
+        // actually completes — see its handleSubmit.
         set({
-          isAuthenticated: true,
           pendingVerificationEmail: null,
           user,
-          ...(backend && 'familyId' in backend && { familyId: backend.familyId, backendUserId: backend.backendUserId }),
+          familyId: result.familyId,
+          backendUserId: result.backendUserId,
         });
 
         return { success: true };
@@ -361,102 +356,39 @@ export const useAuthStore = create<AuthState>()(
         const normalizedEmail = email.toLowerCase().trim();
         if (!normalizedEmail || !password) return { success: false, error: 'Please fill in all fields.' };
 
-        const credentials = (await getStoredCredentials()) ?? {};
-        const stored = credentials[normalizedEmail];
+        const result = await loginWithBackend(normalizedEmail, password);
 
-        // No local record on this device — could be a fresh install, or an
-        // account created on a different device entirely (e.g. this exact
-        // account was signed up on an iOS simulator, then sign-in was tried
-        // from a separate Android emulator install, which has its own empty
-        // local credential cache). The backend is the real source of truth
-        // for whether this email/password pair is valid, not just this
-        // device's local cache — previously this returned "No account
-        // found" purely because the cache was empty, even when the backend
-        // had a perfectly valid account for it.
-        if (!stored) {
-          try {
-            const res = await fetch(`${awsConfig.apiBaseUrl}/auth/login`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ email: normalizedEmail, password }),
-            });
-            if (!res.ok) {
-              const body = await res.json().catch(() => ({}));
-              if (res.status === 403 && body?.error === 'email_not_verified') {
-                set({ pendingVerificationEmail: normalizedEmail });
-                return { success: false, error: 'email_not_verified' };
-              }
-              return { success: false, error: typeof body.message === 'string' ? body.message : 'No account found with this email.' };
-            }
-
-            const authResult: BackendAuthResult = await res.json();
-            const { familyId, backendUserId } = await persistBackendSession(authResult);
-
-            const displayName = normalizedEmail.split('@')[0];
-            const hash = await hashPassword(password);
-            await saveCredentials({ ...credentials, [normalizedEmail]: { displayName, hash } });
-
-            const user: AuthUser = {
-              id: backendUserId,
-              email: normalizedEmail,
-              displayName,
-              avatarColor: '#4A8FD9',
-              familyRole: 'parent',
-              provider: 'email',
-              createdAt: new Date().toISOString(),
-            };
-            set({ isAuthenticated: true, pendingVerificationEmail: null, user, familyId, backendUserId });
-            fetchFamilyAfterSignIn();
-            return { success: true };
-          } catch {
-            return { success: false, error: 'Could not reach the server. Check your connection and try again.' };
+        if (!result.ok) {
+          if ('needsVerification' in result) {
+            set({ pendingVerificationEmail: normalizedEmail });
+            return { success: false, error: 'email_not_verified' };
           }
+          return { success: false, error: result.error };
         }
-
-        const hash = await hashPassword(password);
-        if (hash !== stored.hash) return { success: false, error: 'Incorrect password.' };
 
         const existing = get().user;
         const user: AuthUser = {
-          id: existing?.id ?? Math.random().toString(36).substring(2),
+          id: result.backendUserId,
           email: normalizedEmail,
-          displayName: stored.displayName,
-          avatarColor: existing?.avatarColor ?? '#4A8FD9',
-          familyName: existing?.familyName,
-          familyRole: existing?.familyRole ?? 'parent',
+          // The real name lives on the FamilyMember row, hydrated into
+          // useFamilyStore right below via fetchFamilyAfterSignIn() — this
+          // is only a placeholder until that resolves (or the same value
+          // already persisted locally from a previous session on this device).
+          displayName: existing?.email === normalizedEmail && existing.displayName ? existing.displayName : normalizedEmail.split('@')[0],
+          avatarColor: existing?.email === normalizedEmail ? existing.avatarColor : '#4A8FD9',
+          familyRole: existing?.email === normalizedEmail ? existing.familyRole : 'parent',
           provider: 'email',
-          createdAt: existing?.createdAt ?? new Date().toISOString(),
-          phone: existing?.phone,
-          dateOfBirth: existing?.dateOfBirth,
-          city: existing?.city,
-          streetAddress: existing?.streetAddress,
-          state: existing?.state,
-          zipCode: existing?.zipCode,
+          createdAt: existing?.email === normalizedEmail ? existing.createdAt : new Date().toISOString(),
         };
 
-        // See the matching comment in signUp above — backend sync must be
-        // awaited before isAuthenticated flips true, or screens race ahead
-        // and call fetchFromServer() before any token is persisted.
-        const backend = await syncWithBackend({
-          email: normalizedEmail,
-          password,
-          // Fallback for legacy local-only accounts that never went through
-          // the backend — bootstraps a backend family/account from whatever
-          // profile info exists locally so this session becomes backend-linked.
-          familyName: existing?.familyName?.trim() || `${stored.displayName}'s Family`,
-          memberName: stored.displayName,
-        });
-        if (backend && 'needsVerification' in backend) {
-          set({ pendingVerificationEmail: normalizedEmail });
-          return { success: false, error: 'email_not_verified' };
-        }
         set({
           isAuthenticated: true,
           pendingVerificationEmail: null,
           user,
-          ...(backend && 'familyId' in backend && { familyId: backend.familyId, backendUserId: backend.backendUserId }),
+          familyId: result.familyId,
+          backendUserId: result.backendUserId,
         });
-        if (backend && 'familyId' in backend) fetchFamilyAfterSignIn();
+        fetchFamilyAfterSignIn();
         return { success: true };
       },
 
@@ -557,13 +489,45 @@ export const useAuthStore = create<AuthState>()(
       },
 
       verifyPassword: async (password) => {
-        const email = get().user?.email;
-        if (!email) return false;
-        const credentials = (await getStoredCredentials()) ?? {};
-        const stored = credentials[email];
-        if (!stored) return false;
-        const hash = await hashPassword(password);
-        return hash === stored.hash;
+        try {
+          const res = await apiRequest<{ valid: boolean }>('/auth/verify-password', {
+            method: 'POST',
+            body: JSON.stringify({ password }),
+          });
+          return res.valid;
+        } catch {
+          return false;
+        }
+      },
+
+      unlockWithBiometric: async () => {
+        try {
+          const [hasHardware, isEnrolled] = await Promise.all([
+            LocalAuthentication.hasHardwareAsync(),
+            LocalAuthentication.isEnrolledAsync(),
+          ]);
+          if (!hasHardware || !isEnrolled) return false;
+
+          const result = await LocalAuthentication.authenticateAsync({
+            promptMessage: 'Unlock Family Command Center',
+          });
+          if (!result.success) return false;
+
+          // Gates re-entry into an already-persisted session only — never
+          // touches a password. Nothing to unlock into if the session was
+          // cleared (signed out) since it was last used.
+          const [accessToken, refreshToken] = await Promise.all([
+            secureStorage.getToken('access_token'),
+            secureStorage.getToken('refresh_token'),
+          ]);
+          if (!accessToken || !refreshToken || !get().user) return false;
+
+          set({ isAuthenticated: true });
+          fetchFamilyAfterSignIn();
+          return true;
+        } catch {
+          return false;
+        }
       },
     }),
     {

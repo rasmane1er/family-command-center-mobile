@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Modal,
-  TextInput, Switch, Alert, ActivityIndicator,
+  TextInput, Switch, Alert, ActivityIndicator, RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { format, differenceInDays } from 'date-fns';
@@ -12,6 +12,7 @@ import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
 import { PremiumHeader } from '../../components/common/PremiumHeader';
 import { useFinanceStore } from '../../store/useFinanceStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { getDetectedBills } from '../../services/autoFillService';
 import type { DetectedBill } from '../../services/autoFillService';
 import type { Bill } from '../../types';
@@ -20,6 +21,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { usePlaidAutoData } from '../../hooks/usePlaidAutoData';
+import { useDetectionFilter } from '../../hooks/useDetectionFilter';
+import { normalizeMerchantKey } from '../../utils/merchantKey';
 
 const statusBadge = { upcoming: 'neutral', due_soon: 'warning', overdue: 'danger', paid: 'success' } as const;
 const statusLabels = { upcoming: 'Upcoming', due_soon: 'Due Soon', overdue: 'OVERDUE', paid: 'Paid' };
@@ -38,7 +41,12 @@ export function BillsScreen({ navigation, route }: any) {
   const { colors } = useTheme();
   const [filter, setFilter] = useState('All');
   const [showAddModal, setShowAddModal] = useState(false);
-  const { bills, markBillPaid, deleteBill, addBill, updateBill } = useFinanceStore();
+  const { bills, markBillPaid, deleteBill, addBill, updateBill, fetchBills } = useFinanceStore();
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchBills().finally(() => setRefreshing(false));
+  };
 
   // Detected bills state
   const [detectedBills, setDetectedBills] = useState<DetectedBill[]>([]);
@@ -66,6 +74,20 @@ export function BillsScreen({ navigation, route }: any) {
       .finally(() => setDetectedLoading(false));
   });
 
+  // Reactive against the live `bills` list, so confirming a suggestion
+  // (which creates a real Bill via addBill) hides it here on the very next
+  // render — no explicit dismiss needed. This screen previously had no
+  // dismiss/dedupe mechanism at all.
+  const existingBillKeys = bills.flatMap((b) =>
+    b.sourceMerchantKey ? [b.sourceMerchantKey, normalizeMerchantKey(b.name)] : [normalizeMerchantKey(b.name)]
+  );
+  const { visible: visibleDetectedBills, dismiss: dismissDetectedBill } = useDetectionFilter(
+    'bill',
+    detectedBills,
+    (d) => d.merchantKey,
+    existingBillKeys,
+  );
+
   const handleAddBill = () => {
     const amount = parseFloat(newAmount);
     if (!newName.trim() || isNaN(amount) || amount <= 0) {
@@ -86,7 +108,7 @@ export function BillsScreen({ navigation, route }: any) {
     const status: Bill['status'] = daysUntil < 0 ? 'overdue' : daysUntil <= 5 ? 'due_soon' : 'upcoming';
     const newBill: Bill = {
       id: generateId(),
-      familyId: 'family-1',
+      familyId: useAuthStore.getState().familyId ?? '',
       name: newName.trim(),
       amount,
       dueDate,
@@ -117,7 +139,7 @@ export function BillsScreen({ navigation, route }: any) {
     const status: Bill['status'] = daysUntil < 0 ? 'overdue' : daysUntil <= 5 ? 'due_soon' : 'upcoming';
     const newBill: Bill = {
       id: generateId(),
-      familyId: 'family-1',
+      familyId: useAuthStore.getState().familyId ?? '',
       name: detected.merchantName,
       amount: detected.amount,
       dueDate,
@@ -127,9 +149,10 @@ export function BillsScreen({ navigation, route }: any) {
       isRecurring: true,
       recurrence: 'monthly',
       icon: CATEGORY_ICONS[detected.category] ?? 'receipt',
+      source: 'plaid_detected',
+      sourceMerchantKey: detected.merchantKey,
     };
     addBill(newBill);
-    setDetectedBills((prev) => prev.filter((d) => d.merchantName !== detected.merchantName));
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
@@ -216,9 +239,12 @@ export function BillsScreen({ navigation, route }: any) {
 
       <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
         {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
-          <ScrollView contentContainerStyle={[s.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]} onScroll={onScroll} onScrollEndDrag={onScrollEndDrag} onMomentumScrollEnd={onMomentumScrollEnd} scrollEventThrottle={scrollEventThrottle}>
+          <ScrollView
+            contentContainerStyle={[s.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+            onScroll={onScroll} onScrollEndDrag={onScrollEndDrag} onMomentumScrollEnd={onMomentumScrollEnd} scrollEventThrottle={scrollEventThrottle}>
         {/* Smart Detection Banner */}
-        {(detectedLoading || detectedBills.length > 0) && (
+        {(detectedLoading || visibleDetectedBills.length > 0) && (
           <View style={s.smartBanner}>
             <Pressable style={s.smartBannerHeader} onPress={() => setDetectedExpanded((v) => !v)}>
               <View style={s.smartBannerLeft}>
@@ -226,7 +252,7 @@ export function BillsScreen({ navigation, route }: any) {
                 <Text style={s.smartBannerTitle}>Smart Detection</Text>
                 {!detectedLoading && (
                   <View style={s.countBadge}>
-                    <Text style={s.countBadgeText}>{detectedBills.length}</Text>
+                    <Text style={s.countBadgeText}>{visibleDetectedBills.length}</Text>
                   </View>
                 )}
               </View>
@@ -234,8 +260,8 @@ export function BillsScreen({ navigation, route }: any) {
                 ? <ActivityIndicator size="small" color="#4A90D9" />
                 : <Ionicons name={detectedExpanded ? 'chevron-up' : 'chevron-down'} size={16} color="#4A90D9" />}
             </Pressable>
-            {detectedExpanded && !detectedLoading && detectedBills.map((d) => (
-              <View key={d.merchantName} style={s.detectedRow}>
+            {detectedExpanded && !detectedLoading && visibleDetectedBills.map((d) => (
+              <View key={d.merchantKey} style={s.detectedRow}>
                 <View style={s.detectedIcon}>
                   <Ionicons name={(CATEGORY_ICONS[d.category] ?? 'receipt') as any} size={18} color="#4A90D9" />
                 </View>
@@ -246,6 +272,12 @@ export function BillsScreen({ navigation, route }: any) {
                   </Text>
                 </View>
                 <Text style={s.detectedAmount}>${d.amount.toFixed(2)}</Text>
+                <Pressable
+                  style={s.dismissDetectedBtn}
+                  onPress={() => { dismissDetectedBill(d.merchantKey); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                >
+                  <Ionicons name="close" size={16} color={colors.textMuted} />
+                </Pressable>
                 <Pressable style={s.addDetectedBtn} onPress={() => handleAddDetectedBill(d)}>
                   <Ionicons name="add" size={14} color="#fff" />
                   <Text style={s.addDetectedBtnText}>Add</Text>
@@ -335,14 +367,14 @@ export function BillsScreen({ navigation, route }: any) {
             </View>
 
             {/* Import from detected section */}
-            {detectedBills.length > 0 && (
+            {visibleDetectedBills.length > 0 && (
               <View style={s.importSection}>
                 <Text style={s.importSectionTitle}>
                   <Ionicons name="sparkles" size={13} color="#4A90D9" /> Import from detected
                 </Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }}>
-                  {detectedBills.map((d) => (
-                    <Pressable key={d.merchantName} style={s.importChip} onPress={() => prefillFromDetected(d)}>
+                  {visibleDetectedBills.map((d) => (
+                    <Pressable key={d.merchantKey} style={s.importChip} onPress={() => prefillFromDetected(d)}>
                       <Text style={s.importChipName}>{d.merchantName}</Text>
                       <Text style={s.importChipAmount}>${d.amount.toFixed(2)}</Text>
                     </Pressable>
@@ -450,6 +482,7 @@ function makeStyles(colors: any) {
     detectedAmount: { fontSize: 15, fontWeight: '800', color: colors.text, marginRight: 10, marginLeft: 8 },
     addDetectedBtn: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#4A90D9', borderRadius: 8, paddingVertical: 6, paddingHorizontal: 10 },
     addDetectedBtnText: { fontSize: 12, fontWeight: '700', color: '#fff' },
+    dismissDetectedBtn: { width: 28, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginRight: 6 },
     overdueAlert: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.dangerLight, borderRadius: 12, padding: 14, marginBottom: 16 },
     overdueAlertText: { flex: 1, fontSize: 13, color: colors.danger, fontWeight: '600' },
     billCard: { marginBottom: 12, borderRadius: 16 },

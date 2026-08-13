@@ -80,6 +80,8 @@ export const useInsuranceStore = create<InsuranceState>()(
     {
       name: 'family-command-center-insurance',
       storage: createJSONStorage(() => mmkvStorage),
+      // isLoaded intentionally excluded — see useWealthStore.ts for why.
+      partialize: (state) => ({ policies: state.policies }),
     }
   )
 );

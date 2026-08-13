@@ -1,5 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 import { useFinanceStore } from '../store/useFinanceStore';
+import { useAuthStore } from '../store/useAuthStore';
 import type { Subscription } from '../types';
 import { API_BASE_URL } from '../config/api';
 
@@ -22,6 +23,7 @@ async function authFetch<T>(path: string, options: RequestInit = {}): Promise<T>
 
 export interface DetectedSubscription {
   merchantName: string;
+  merchantKey: string;
   amount: number;
   frequency: 'monthly' | 'weekly' | 'quarterly';
   lastChargedDate: string;
@@ -50,7 +52,7 @@ export function confirmSubscription(detected: DetectedSubscription): void {
 
   const sub: Subscription = {
     id: generateId(),
-    familyId: 'demo-family',
+    familyId: useAuthStore.getState().familyId ?? '',
     name: detected.merchantName,
     amount: detected.amount,
     billingCycle: billingCycleMap[detected.frequency],
@@ -60,6 +62,8 @@ export function confirmSubscription(detected: DetectedSubscription): void {
     sharedMembers: [],
     icon: 'apps-outline',
     color: '#4A90D9',
+    source: 'plaid_detected',
+    sourceMerchantKey: detected.merchantKey,
   };
   addSubscription(sub);
 }

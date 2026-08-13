@@ -28,6 +28,8 @@ import { populateFromSignUp } from '../../utils/populateFromSignUp';
 import { resetAllStores } from '../../storage/resetAllStores';
 import { uploadImageToR2 } from '../../services/uploadService';
 import { useTranslation } from 'react-i18next';
+import { validatePasswordStrength } from '../../utils/passwordPolicy';
+import { TurnstileWidget } from '../../components/common/TurnstileWidget';
 
 // ─── constants ───────────────────────────────────────────────────────────────
 
@@ -85,10 +87,7 @@ const step2Schema = Yup.object({
 function makeStep3Schema(t: (key: string) => string) {
   return Yup.object({
     password: Yup.string()
-      .min(8, t('auth.screens.signUp.yupMinPassword'))
-      .test('strength', t('auth.screens.signUp.yupPasswordStrength'), (v) =>
-        !v || /[0-9]/.test(v) || /[^a-zA-Z0-9]/.test(v)
-      )
+      .test('strength', t('auth.screens.signUp.yupPasswordStrength'), (v) => !v || validatePasswordStrength(v).valid)
       .required(t('auth.screens.signUp.yupPasswordRequired')),
     confirmPw: Yup.string()
       .oneOf([Yup.ref('password')], t('auth.screens.signUp.yupPasswordsMustMatch'))
@@ -120,12 +119,10 @@ const INITIAL: FormValues = {
 
 function pwStrength(pw: string, t: (key: string) => string) {
   if (!pw) return { label: '', color: 'transparent', pct: 0 };
-  const hasNumber = /[0-9]/.test(pw);
+  if (!validatePasswordStrength(pw).valid) return { label: t('auth.screens.signUp.strengthWeak'), color: '#E74C3C', pct: 0.25 };
   const hasSpecial = /[^a-zA-Z0-9]/.test(pw);
-  const long = pw.length >= 10;
-  if (pw.length < 8 || (!hasNumber && !hasSpecial)) return { label: t('auth.screens.signUp.strengthWeak'), color: '#E74C3C', pct: 0.25 };
-  if (pw.length >= 8 && hasNumber && !long) return { label: t('auth.screens.signUp.strengthMedium'), color: '#F5A623', pct: 0.60 };
-  if (long && hasNumber && hasSpecial) return { label: t('auth.screens.signUp.strengthStrong'), color: '#27AE60', pct: 1.0 };
+  const long = pw.length >= 14;
+  if (long && hasSpecial) return { label: t('auth.screens.signUp.strengthStrong'), color: '#27AE60', pct: 1.0 };
   return { label: t('auth.screens.signUp.strengthMedium'), color: '#F5A623', pct: 0.60 };
 }
 
@@ -354,6 +351,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
   const [showPw, setShowPw]       = useState(false);
   const [showCpw, setShowCpw]     = useState(false);
   const [loading, setLoading]     = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | undefined>(undefined);
 
   const formikRef = useRef<FormikProps<FormValues>>(null);
   const step3Schema = React.useMemo(() => makeStep3Schema(t), [t]);
@@ -383,48 +381,28 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
     ]);
   };
 
-  // ── step advance (validates only the current step's fields) ───────────────
+  // ── step advance (validates only the current step's fields, via the
+  // per-step Yup schema Formik is already validating against — see the
+  // validationSchema prop below) ─────────────────────────────────────────
 
-  const advanceStep = (fk: FormikProps<FormValues>, to: 2 | 3) => {
-    if (to === 2) {
-      // touch required step-1 fields so errors show
-      fk.setFieldTouched('firstName', true);
-      fk.setFieldTouched('lastName', true);
-      fk.setFieldTouched('email', true);
+  const STEP_FIELDS: Record<1 | 2, (keyof FormValues)[]> = {
+    1: ['firstName', 'lastName', 'email', 'phone', 'dateOfBirth', 'occupation', 'bio'],
+    2: ['familyName', 'familyMotto', 'streetAddress', 'city', 'state', 'zipCode', 'ecName', 'ecPhone'],
+  };
 
-      const errors: string[] = [];
-      if (!fk.values.firstName.trim()) errors.push(t('auth.screens.signUp.firstNameRequired'));
-      if (!fk.values.lastName.trim())  errors.push(t('auth.screens.signUp.lastNameRequired'));
-      if (!fk.values.email.trim() || !fk.values.email.includes('@')) errors.push(t('auth.screens.signUp.validEmailRequired'));
-      if (fk.values.dateOfBirth && !/^(0[1-9]|1[0-2])\/(0[1-9]|[12]\d|3[01])\/\d{4}$/.test(fk.values.dateOfBirth)) {
-        errors.push(t('auth.screens.signUp.dobFormatError'));
-      }
+  const advanceStep = async (fk: FormikProps<FormValues>, to: 2 | 3) => {
+    const fields = STEP_FIELDS[to === 2 ? 1 : 2];
+    fields.forEach((f) => fk.setFieldTouched(f, true, false));
 
-      if (errors.length > 0) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        Alert.alert(t('auth.screens.signUp.fixFollowingTitle'), errors.join('\n'));
-        return;
-      }
-
-      // auto-fill family name
-      if (!fk.values.familyName) {
-        const last = fk.values.lastName.trim() || fk.values.firstName.trim();
-        fk.setFieldValue('familyName', `The ${last} Family`);
-      }
+    const errors = await fk.validateForm();
+    if (fields.some((f) => errors[f])) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
     }
 
-    if (to === 3) {
-      fk.setFieldTouched('familyName', true);
-
-      if (!fk.values.familyName.trim()) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        Alert.alert(t('auth.screens.signUp.requiredTitle'), t('auth.screens.signUp.familyNameRequiredMsg'));
-        return;
-      }
-      if (fk.values.zipCode && !/^\d{5}(-\d{4})?$/.test(fk.values.zipCode)) {
-        Alert.alert(t('auth.screens.signUp.invalidZipTitle'), t('auth.screens.signUp.invalidZipMsg'));
-        return;
-      }
+    if (to === 2 && !fk.values.familyName) {
+      const last = fk.values.lastName.trim() || fk.values.firstName.trim();
+      fk.setFieldValue('familyName', `The ${last} Family`);
     }
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -458,23 +436,23 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
       zipCode:       values.zipCode || undefined,
       emergencyContactName:  values.ecName || undefined,
       emergencyContactPhone: values.ecPhone || undefined,
+      turnstileToken,
     };
 
     const result = await signUp(data);
-    setLoading(false);
 
     if (!result.success) {
+      setLoading(false);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert(t('auth.screens.signUp.signUpFailedTitle'), result.error ?? t('auth.screens.signUp.genericError'));
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      // Store biometric preference and credentials if enabled
+      // Remember the opt-in only — never the password itself. Biometric
+      // sign-in re-enters the session SecureStore already holds the tokens
+      // for (see useAuthStore.unlockWithBiometric), it doesn't re-derive
+      // credentials from anything stored here.
       if (biometric) {
         await SecureStore.setItemAsync('biometric_enabled', 'true');
-        await SecureStore.setItemAsync(
-          'stored_credentials',
-          JSON.stringify({ email: values.email.trim().toLowerCase(), password: values.password })
-        );
       }
       // wipe all previous data before populating fresh family data
       resetAllStores();
@@ -497,7 +475,21 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
           }
         }
         await populateFromSignUp(finalUser);
+
+        // Only now does the app switch away from the auth flow —
+        // isAuthenticated is withheld by useAuthStore.signUp() specifically
+        // so this doesn't happen until family/member data has actually been
+        // hydrated above. Flipping it earlier (it used to be set inside
+        // signUp() itself) let the dashboard and RoleGuard-gated tabs
+        // (Finance/Operations) render one frame against resetAllStores()'s
+        // blank slate — no family name, and "Operations Restricted" even for
+        // a freshly-registered parent, until something else happened to
+        // trigger a second, successful fetch. Scoped inside `if (user)` —
+        // the pending-email-verification path (no `user` yet) must NOT
+        // become authenticated here.
+        useAuthStore.setState({ isAuthenticated: true });
       }
+      setLoading(false);
     }
   };
 
@@ -859,6 +851,8 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
             thumbColor={biometric ? colors.primary : colors.textMuted} />
         </View>
 
+        <TurnstileWidget onToken={setTurnstileToken} onExpire={() => setTurnstileToken(undefined)} />
+
         <Text style={[s.secTitle, { marginTop: 16 }]}>{t('auth.screens.signUp.sectionTerms')}</Text>
         <Pressable style={s.termsRow} onPress={() => fk.setFieldValue('agreed', !fk.values.agreed)}>
           <View style={[s.checkbox, fk.values.agreed && s.checkboxOn]}>
@@ -907,7 +901,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
           <Formik
             innerRef={formikRef}
             initialValues={INITIAL}
-            validationSchema={step === 3 ? step3Schema : undefined}
+            validationSchema={step === 1 ? step1Schema : step === 2 ? step2Schema : step3Schema}
             validateOnBlur
             validateOnChange={false}
             onSubmit={handleSubmit}

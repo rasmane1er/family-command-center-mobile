@@ -40,7 +40,7 @@ export function GuardianChatScreen({ navigation, route }: any) {
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const flatListRef = useRef<FlatList<GuardianMessage>>(null);
+  const flatListRef = useRef<FlatList<Row>>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const poll = useCallback(async () => {

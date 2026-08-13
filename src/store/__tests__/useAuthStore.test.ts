@@ -81,13 +81,8 @@ describe('useAuthStore.signIn', () => {
 });
 
 describe('useAuthStore.signUp', () => {
-  it('falls back to POST /auth/register (after login 404s for a brand-new email) with the signup form fields', async () => {
-    // signUp's backend sync tries login first (in case this device is
-    // registering for an account that already exists server-side from
-    // another device) and only registers on a non-5xx login failure — see
-    // syncWithBackend in useAuthStore.ts.
-    mockFetchOnce(404, { message: 'No account found' });
-    mockFetchOnce(200, {
+  it('hits POST /auth/register directly (no login-first probe) and forwards every signup field', async () => {
+    mockFetchOnce(201, {
       accessToken: 'access-token',
       refreshToken: 'refresh-token',
       user: { id: 'user-2', familyId: 'family-2' },
@@ -101,28 +96,83 @@ describe('useAuthStore.signUp', () => {
       email: 'newuser@example.com',
       password: 'newpassword123',
       familyName: 'The Test Family',
+      phone: '555-1234',
+      dateOfBirth: '01/01/1990',
+      gender: 'female',
+      occupation: 'Engineer',
+      bio: 'Hello',
+      familyMotto: 'Stick together',
+      numberOfChildren: 2,
+      streetAddress: '123 Main St',
+      city: 'Springfield',
+      state: 'IL',
+      zipCode: '62704',
+      emergencyContactName: 'Bob',
+      emergencyContactPhone: '555-9999',
     });
 
     expect(result.success).toBe(true);
     const calls = (global.fetch as jest.Mock).mock.calls;
-    expect(calls[0][0]).toMatch(/\/auth\/login$/);
-    expect(calls[1][0]).toMatch(/\/auth\/register$/);
-    const registerBody = JSON.parse(calls[1][1].body);
+    expect(calls).toHaveLength(1);
+    expect(calls[0][0]).toMatch(/\/auth\/register$/);
+    const registerBody = JSON.parse(calls[0][1].body);
     expect(registerBody.email).toBe('newuser@example.com');
     expect(registerBody.familyName).toBe('The Test Family');
     expect(registerBody.memberName).toBe('Parent One');
+    expect(registerBody.phone).toBe('555-1234');
+    expect(registerBody.gender).toBe('female');
+    expect(registerBody.occupation).toBe('Engineer');
+    expect(registerBody.familyMotto).toBe('Stick together');
+    expect(registerBody.numberOfChildren).toBe(2);
+    expect(registerBody.zipCode).toBe('62704');
+    expect(registerBody.emergencyContactName).toBe('Bob');
 
-    expect(useAuthStore.getState().isAuthenticated).toBe(true);
+    // isAuthenticated is intentionally NOT flipped by signUp() itself — the
+    // caller (SignUpScreen) hydrates useFamilyStore first and sets it once
+    // that completes, so the dashboard never renders against blank state.
+    // See the comment on this in useAuthStore.ts's signUp().
+    expect(useAuthStore.getState().isAuthenticated).toBe(false);
+    expect(useAuthStore.getState().user).not.toBeNull();
     expect(useAuthStore.getState().familyId).toBe('family-2');
   });
 
-  it('rejects a password under 6 characters before ever hitting the network', async () => {
+  it('surfaces a 409 as an "already exists" error instead of authenticating', async () => {
+    mockFetchOnce(409, { error: 'Email already in use' });
+
+    const result = await useAuthStore.getState().signUp({
+      displayName: 'Parent One',
+      firstName: 'Parent',
+      lastName: 'One',
+      email: 'dupe@example.com',
+      password: 'newpassword123',
+      familyName: 'The Test Family',
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/already exists/i);
+    expect(useAuthStore.getState().isAuthenticated).toBe(false);
+  });
+
+  it('rejects a password shorter than the minimum before ever hitting the network', async () => {
     const result = await useAuthStore.getState().signUp({
       displayName: 'Parent One',
       firstName: 'Parent',
       lastName: 'One',
       email: 'newuser@example.com',
-      password: 'short',
+      password: 'short1',
+    });
+
+    expect(result.success).toBe(false);
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it('rejects a password with no digit before ever hitting the network', async () => {
+    const result = await useAuthStore.getState().signUp({
+      displayName: 'Parent One',
+      firstName: 'Parent',
+      lastName: 'One',
+      email: 'newuser@example.com',
+      password: 'nodigitsatall',
     });
 
     expect(result.success).toBe(false);

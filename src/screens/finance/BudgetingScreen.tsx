@@ -9,23 +9,17 @@ import { Card } from '../../components/common/Card';
 import { ProgressBar } from '../../components/common/ProgressBar';
 import { PremiumHeader } from '../../components/common/PremiumHeader';
 import { useFinanceStore } from '../../store/useFinanceStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { useAIStore } from '../../store/useAIStore';
-import { getSpendingByCategory } from '../../services/plaidService';
 import { getBudgetSuggestions } from '../../services/autoFillService';
 import type { BudgetSuggestion } from '../../services/autoFillService';
 import type { Budget } from '../../types';
 import { usePlaidAutoData } from '../../hooks/usePlaidAutoData';
+import { useDetectionFilter } from '../../hooks/useDetectionFilter';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
-
-const PLAID_TO_BUDGET: Record<string, string> = {
-  FOOD_AND_DRINK: 'Food',
-  SHOPPING: 'Shopping',
-  TRANSPORTATION: 'Transport',
-  BILLS: 'Bills & Utilities',
-};
 
 // Map Plaid category to display name
 function plaidCatToDisplay(cat: string): string {
@@ -64,10 +58,9 @@ export function BudgetingScreen({ navigation, route }: any) {
   const { t } = useTranslation('finance');
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
-  const { budgets, monthlyIncome, monthlyExpenses, addBudget, deleteBudget, updateBudget } = useFinanceStore();
+  const { budgets, monthlyIncome, monthlyExpenses, addBudget, deleteBudget, updateBudget, fetchBudgets } = useFinanceStore();
   const { insights } = useAIStore();
 
-  const [plaidActuals, setPlaidActuals] = useState<Record<string, number>>({});
   const [refreshing, setRefreshing] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingBudget, setEditingBudget] = useState<Budget | null>(null);
@@ -75,22 +68,19 @@ export function BudgetingScreen({ navigation, route }: any) {
   const [newLimit, setNewLimit] = useState('');
   const [newColor, setNewColor] = useState(PRESET_COLORS[0]);
   const [newIcon, setNewIcon] = useState('wallet');
+  // Set by applySuggestion so a confirmed suggestion carries its Plaid
+  // category link through to the create call — this is what makes `spent`
+  // (computed server-side from real transactions) show a nonzero figure
+  // instead of every budget outside the old 4-entry PLAID_TO_BUDGET map
+  // silently reading $0 forever.
+  const [newSourcePlaidCategory, setNewSourcePlaidCategory] = useState<string | undefined>(undefined);
 
-  const [suggestions, setSuggestions] = useState<BudgetSuggestion[]>([]);
+  const [suggestionsRaw, setSuggestionsRaw] = useState<BudgetSuggestion[]>([]);
 
-  const loadActuals = async () => {
+  const refreshBudgets = async () => {
+    setRefreshing(true);
     try {
-      const now = new Date();
-      const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-      const res = await getSpendingByCategory(month);
-      const map: Record<string, number> = {};
-      for (const item of res.categories) {
-        const budgetCat = PLAID_TO_BUDGET[item.category];
-        if (budgetCat) map[budgetCat] = (map[budgetCat] ?? 0) + item.total;
-      }
-      setPlaidActuals(map);
-    } catch {
-      // ignore
+      await fetchBudgets();
     } finally {
       setRefreshing(false);
     }
@@ -99,16 +89,26 @@ export function BudgetingScreen({ navigation, route }: any) {
   const loadSuggestions = async () => {
     try {
       const res = await getBudgetSuggestions();
-      setSuggestions(res.suggestions);
+      setSuggestionsRaw(res.suggestions);
     } catch {
       // ignore
     }
   };
 
   usePlaidAutoData(() => {
-    loadActuals();
+    fetchBudgets().catch(() => {});
     loadSuggestions();
   });
+
+  // Reactive against the live `budgets` list, keyed on the raw Plaid
+  // category (not a merchant name — a budget suggestion isn't merchant-scoped).
+  const existingBudgetCategoryKeys = budgets.flatMap((b) => b.plaidCategories ?? []);
+  const { visible: suggestions, dismiss: dismissSuggestion } = useDetectionFilter(
+    'budget',
+    suggestionsRaw,
+    (sg) => sg.category,
+    existingBudgetCategoryKeys,
+  );
 
   const totalBudgeted = budgets.reduce((sum, b) => sum + b.monthlyLimit, 0);
   const totalSpent = budgets.reduce((sum, b) => sum + b.spent, 0);
@@ -157,18 +157,22 @@ export function BudgetingScreen({ navigation, route }: any) {
     const today = new Date();
     addBudget({
       id: generateId(),
-      familyId: 'family-1',
+      familyId: useAuthStore.getState().familyId ?? '',
       category: newCategory.trim(),
       monthlyLimit: limit,
+      // `spent` is server-computed on every GET /finance/budgets — never
+      // written here; the value doesn't matter, it's discarded on create.
       spent: 0,
       month: `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`,
       color: newColor,
       icon: newIcon,
+      ...(newSourcePlaidCategory ? { source: 'plaid_detected', sourcePlaidCategory: newSourcePlaidCategory, plaidCategories: [newSourcePlaidCategory] } : {}),
     });
     setNewCategory('');
     setNewLimit('');
     setNewColor(PRESET_COLORS[0]);
     setNewIcon('wallet');
+    setNewSourcePlaidCategory(undefined);
     setShowAddModal(false);
   };
 
@@ -190,12 +194,14 @@ export function BudgetingScreen({ navigation, route }: any) {
     setNewLimit(String(budget.monthlyLimit));
     setNewColor(budget.color ?? PRESET_COLORS[0]);
     setNewIcon(budget.icon ?? 'wallet');
+    setNewSourcePlaidCategory(undefined);
     setShowAddModal(true);
   };
 
   const applySuggestion = (s: BudgetSuggestion) => {
     setNewCategory(plaidCatToDisplay(s.category));
     setNewLimit(String(roundUpTo50(s.monthlyAverage)));
+    setNewSourcePlaidCategory(s.category);
   };
 
   const s = makeStyles(colors);
@@ -253,7 +259,7 @@ export function BudgetingScreen({ navigation, route }: any) {
         {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
           <ScrollView
             contentContainerStyle={[s.content, { paddingTop: contentPaddingTop, paddingBottom: 100 }]}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={loadActuals} />}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refreshBudgets} />}
             onScroll={onScroll}
             onScrollEndDrag={onScrollEndDrag}
             onMomentumScrollEnd={onMomentumScrollEnd}
@@ -264,9 +270,8 @@ export function BudgetingScreen({ navigation, route }: any) {
         </View>
 
         {budgets.map((budget) => {
-          const actual = plaidActuals[budget.category];
-          const effectiveSpent = actual !== undefined ? actual : budget.spent;
-          const pct = effectiveSpent / budget.monthlyLimit;
+          const effectiveSpent = budget.spent;
+          const pct = budget.monthlyLimit > 0 ? effectiveSpent / budget.monthlyLimit : 0;
           const overBudget = effectiveSpent > budget.monthlyLimit;
           const barColor = pct > 1 ? colors.danger : pct > 0.8 ? colors.warning : colors.success;
           return (
@@ -294,9 +299,6 @@ export function BudgetingScreen({ navigation, route }: any) {
                     </Text>
                     <Text style={s.budgetLimit}>of ${budget.monthlyLimit}/mo</Text>
                   </View>
-                  {actual !== undefined && (
-                    <Text style={[s.actualLabel, { color: barColor }]}>Actual: ${actual.toFixed(2)}</Text>
-                  )}
                 </View>
                 <Pressable onPress={() => handleEditBudget(budget)} style={s.editBtn}>
                   <Ionicons name="create-outline" size={16} color={colors.primary} />
@@ -372,21 +374,26 @@ export function BudgetingScreen({ navigation, route }: any) {
                     );
                     const isOverBudget = existingBudget && sg.monthlyAverage > existingBudget.monthlyLimit;
                     return (
-                      <Pressable
-                        key={sg.category}
-                        style={[s.suggestionChip, isOverBudget && s.suggestionChipOver]}
-                        onPress={() => applySuggestion(sg)}
-                      >
-                        <Text style={[s.suggestionChipName, isOverBudget && s.suggestionChipNameOver]}>
-                          {plaidCatToDisplay(sg.category)}
-                        </Text>
-                        <Text style={[s.suggestionChipAmount, isOverBudget && s.suggestionChipAmountOver]}>
-                          avg ${sg.monthlyAverage.toFixed(0)}/mo
-                        </Text>
-                        <Text style={s.suggestionChipRange}>
-                          ${sg.monthlyMin.toFixed(0)}–${sg.monthlyMax.toFixed(0)}
-                        </Text>
-                      </Pressable>
+                      <View key={sg.category} style={[s.suggestionChip, isOverBudget && s.suggestionChipOver]}>
+                        <Pressable
+                          style={s.suggestionChipDismiss}
+                          onPress={() => dismissSuggestion(sg.category)}
+                          hitSlop={8}
+                        >
+                          <Ionicons name="close" size={12} color={colors.textMuted} />
+                        </Pressable>
+                        <Pressable onPress={() => applySuggestion(sg)}>
+                          <Text style={[s.suggestionChipName, isOverBudget && s.suggestionChipNameOver]}>
+                            {plaidCatToDisplay(sg.category)}
+                          </Text>
+                          <Text style={[s.suggestionChipAmount, isOverBudget && s.suggestionChipAmountOver]}>
+                            avg ${sg.monthlyAverage.toFixed(0)}/mo
+                          </Text>
+                          <Text style={s.suggestionChipRange}>
+                            ${sg.monthlyMin.toFixed(0)}–${sg.monthlyMax.toFixed(0)}
+                          </Text>
+                        </Pressable>
+                      </View>
                     );
                   })}
                 </ScrollView>
@@ -496,7 +503,8 @@ function makeStyles(colors: any) {
     // Suggestions
     suggestionsContainer: { backgroundColor: '#EDF7EF', borderRadius: 12, padding: 12, marginBottom: 16, borderLeftWidth: 3, borderLeftColor: '#27AE60' },
     suggestionsLabel: { fontSize: 12, fontWeight: '700', color: '#27AE60' },
-    suggestionChip: { borderRadius: 10, borderWidth: 1.5, borderColor: '#27AE60', paddingVertical: 8, paddingHorizontal: 12, marginRight: 8, backgroundColor: '#fff', minWidth: 100 },
+    suggestionChip: { borderRadius: 10, borderWidth: 1.5, borderColor: '#27AE60', paddingVertical: 8, paddingHorizontal: 12, marginRight: 8, backgroundColor: '#fff', minWidth: 100, position: 'relative' },
+    suggestionChipDismiss: { position: 'absolute', top: 4, right: 4, zIndex: 1 },
     suggestionChipOver: { borderColor: colors.danger, backgroundColor: colors.dangerLight },
     suggestionChipName: { fontSize: 12, fontWeight: '700', color: colors.text },
     suggestionChipNameOver: { color: colors.danger },

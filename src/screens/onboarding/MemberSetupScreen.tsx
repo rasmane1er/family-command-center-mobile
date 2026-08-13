@@ -91,7 +91,11 @@ export function MemberSetupScreen({ navigation }: any) {
   const roleLabelKeyByValue = Object.fromEntries(roles.map((r) => [r.value, r.labelKey])) as Record<MemberRole, string>;
 
   const handleNext = () => {
-    allMembers.forEach(addMember);
+    // Self is excluded — that FamilyMember row was already created (fully
+    // populated, with linkedUserId set) inside /auth/register's transaction
+    // at signup. Submitting it again here used to create a second, duplicate
+    // member row for the account holder.
+    additionalMembers.forEach(addMember);
     navigation.navigate('HomeSetup');
   };
 

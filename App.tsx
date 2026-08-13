@@ -348,6 +348,18 @@ function AppInner() {
       }
     })();
   }, [familyId]);
+
+  // Keeps finance data fresh across a long foreground session, not just at
+  // launch — previously the only Plaid sync trigger besides this cold-start
+  // check was a manual "Sync" button on ConnectBankScreen, so numbers could
+  // go hours stale while the app stayed open. 15 min is frequent enough that
+  // a linked bank's real activity shows up without the user doing anything,
+  // while staying well under Plaid's rate limits; paused entirely while
+  // backgrounded, same as the guardian poll above.
+  useAppStateInterval(() => {
+    if (!usePlaidStore.getState().isConnected) return;
+    void usePlaidStore.getState().triggerSync();
+  }, 15 * 60_000, !!familyId);
   const { isLocked, authenticate } = useBiometricLock();
 
   // Configure RevenueCat as soon as (and whenever) the account becomes

@@ -25,7 +25,28 @@ async function authFetch<T>(path: string, options: RequestInit = {}): Promise<T>
     const err = body as Record<string, unknown>;
     throw new Error((err['error'] as string) || (err['message'] as string) || `HTTP ${response.status}`);
   }
+  if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
+}
+
+// ─── CRUD ─────────────────────────────────────────────────────────────────
+// Previously the store called these paths directly with a bare .catch(() =>
+// {}), which 404'd silently since no backend model/routes existed at all.
+
+export async function fetchDebts(): Promise<{ debts: Debt[] }> {
+  return authFetch('/debts');
+}
+
+export async function createDebt(debt: Omit<Debt, 'createdAt' | 'updatedAt'>): Promise<{ debt: Debt }> {
+  return authFetch('/debts', { method: 'POST', body: JSON.stringify(debt) });
+}
+
+export async function updateDebtRemote(id: string, updates: Partial<Debt>): Promise<{ debt: Debt }> {
+  return authFetch(`/debts/${id}`, { method: 'PATCH', body: JSON.stringify(updates) });
+}
+
+export async function deleteDebtRemote(id: string): Promise<void> {
+  return authFetch(`/debts/${id}`, { method: 'DELETE' });
 }
 
 export async function getDetectedDebtsFromPlaid(): Promise<{ detected: DetectedDebt[] }> {

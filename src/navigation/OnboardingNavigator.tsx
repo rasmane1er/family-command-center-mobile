@@ -2,7 +2,6 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SplashScreen } from '../screens/onboarding/SplashScreen';
 import { WelcomeScreen } from '../screens/onboarding/WelcomeScreen';
-import { FamilySetupScreen } from '../screens/onboarding/FamilySetupScreen';
 import { MemberSetupScreen } from '../screens/onboarding/MemberSetupScreen';
 import { HomeSetupScreen } from '../screens/onboarding/HomeSetupScreen';
 import { VehicleSetupScreen } from '../screens/onboarding/VehicleSetupScreen';
@@ -18,7 +17,6 @@ export function OnboardingNavigator() {
     <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', gestureEnabled: false }}>
       <Stack.Screen name="Splash" component={withScreenErrorBoundary(SplashScreen)} />
       <Stack.Screen name="Welcome" component={withScreenErrorBoundary(WelcomeScreen)} />
-      <Stack.Screen name="FamilySetup" component={withScreenErrorBoundary(FamilySetupScreen)} />
       <Stack.Screen name="MemberSetup" component={withScreenErrorBoundary(MemberSetupScreen)} />
       <Stack.Screen name="HomeSetup" component={withScreenErrorBoundary(HomeSetupScreen)} />
       <Stack.Screen name="VehicleSetup" component={withScreenErrorBoundary(VehicleSetupScreen)} />

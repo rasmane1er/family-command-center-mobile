@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Modal, TextInput, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Modal, TextInput, Alert, ActivityIndicator, RefreshControl } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -21,6 +21,8 @@ import type { DetectedSubscription } from '../../services/subscriptionDetectionS
 import type { Subscription } from '../../types';
 import { useTranslation } from 'react-i18next';
 import { usePlaidAutoData } from '../../hooks/usePlaidAutoData';
+import { useDetectionFilter } from '../../hooks/useDetectionFilter';
+import { normalizeMerchantKey } from '../../utils/merchantKey';
 
 const SUB_CATEGORIES = ['Entertainment', 'Music', 'Software', 'News', 'Fitness', 'Education', 'Gaming', 'Other'];
 const SUB_ICONS: Record<string, string> = {
@@ -49,12 +51,16 @@ import { generateId } from '../../utils/generateId';
 export function SubscriptionsScreen({ navigation }: any) {
   const { t } = useTranslation('finance');
   const insets = useSafeAreaInsets();
-  const { subscriptions, addSubscription, deleteSubscription, updateSubscription } = useFinanceStore();
+  const { subscriptions, addSubscription, deleteSubscription, updateSubscription, fetchSubscriptions } = useFinanceStore();
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchSubscriptions().finally(() => setRefreshing(false));
+  };
   const members = useFamilyStore((s) => s.members);
 
   const [detected, setDetected] = useState<DetectedSubscription[]>([]);
   const [loadingDetected, setLoadingDetected] = useState(true);
-  const [dismissedMerchants, setDismissedMerchants] = useState<Set<string>>(new Set());
 
   usePlaidAutoData(() => {
     setLoadingDetected(true);
@@ -64,16 +70,26 @@ export function SubscriptionsScreen({ navigation }: any) {
       .finally(() => setLoadingDetected(false));
   });
 
-  const visibleDetected = detected.filter((d) => !dismissedMerchants.has(d.merchantName));
+  // Reactive against the live `subscriptions` list, so confirming a
+  // suggestion (which creates a real Subscription via addSubscription)
+  // hides it here on the very next render — no explicit dismiss needed.
+  const existingSubscriptionKeys = subscriptions.flatMap((s) =>
+    s.sourceMerchantKey ? [s.sourceMerchantKey, normalizeMerchantKey(s.name)] : [normalizeMerchantKey(s.name)]
+  );
+  const { visible: visibleDetected, dismiss: dismissDetected } = useDetectionFilter(
+    'subscription',
+    detected,
+    (d) => d.merchantKey,
+    existingSubscriptionKeys,
+  );
 
   const handleConfirmDetected = (d: DetectedSubscription) => {
     confirmSubscription(d);
-    setDismissedMerchants((prev) => new Set([...prev, d.merchantName]));
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
-  const handleDismissDetected = (merchantName: string) => {
-    setDismissedMerchants((prev) => new Set([...prev, merchantName]));
+  const handleDismissDetected = (merchantKey: string) => {
+    dismissDetected(merchantKey);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
@@ -182,6 +198,7 @@ export function SubscriptionsScreen({ navigation }: any) {
       >
         {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
           <ScrollView
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
             onScroll={onScroll}
             onScrollEndDrag={onScrollEndDrag}
             onMomentumScrollEnd={onMomentumScrollEnd}
@@ -216,7 +233,7 @@ export function SubscriptionsScreen({ navigation }: any) {
               </View>
             ) : (
               visibleDetected.map((d) => (
-                <View key={d.merchantName} style={styles.detectedCard}>
+                <View key={d.merchantKey} style={styles.detectedCard}>
                   <View style={styles.detectedCardLeft}>
                     <View style={styles.detectedIconWrap}>
                       <Ionicons name="repeat" size={20} color="#8B5CF6" />
@@ -237,7 +254,7 @@ export function SubscriptionsScreen({ navigation }: any) {
                     </View>
                   </View>
                   <View style={styles.detectedActions}>
-                    <Pressable onPress={() => handleDismissDetected(d.merchantName)} style={styles.detectedDismiss}>
+                    <Pressable onPress={() => handleDismissDetected(d.merchantKey)} style={styles.detectedDismiss}>
                       <Ionicons name="close" size={18} color={colors.textMuted} />
                     </Pressable>
                     <Pressable onPress={() => handleConfirmDetected(d)} style={styles.detectedAddBtn}>

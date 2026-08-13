@@ -96,6 +96,7 @@ interface GuardianStore {
 
   // Pairing
   registerThisDevice: (input: { deviceName: string; platform: 'ios' | 'android'; memberId: string }) => Promise<string>;
+  generateChildPairingCode: (input: { deviceName: string; platform: 'ios' | 'android'; memberId: string }) => Promise<string>;
   pairWithCode: (pairingCode: string) => Promise<string>;
 
   // Geofence CRUD
@@ -239,6 +240,20 @@ export const useGuardianStore = create<GuardianStore>()(
           thisDeviceId: device.id,
           myPairingCode: pairingCode,
         }));
+        return pairingCode;
+      },
+
+      // Called from a PARENT's device (PairChildDeviceScreen) to generate a
+      // code for a child's separate Family Guardian device (family-guardian-
+      // child) to redeem. Deliberately does NOT set thisDeviceId/myPairingCode
+      // — unlike registerThisDevice, the parent's own phone is never becoming
+      // the child device being created here. Setting those would make
+      // useGuardianCommandPolling (gated only on thisDeviceId being non-null)
+      // start heartbeating the parent's phone as if it WERE the new child
+      // device, flipping it to "online" before the child ever enters the code.
+      generateChildPairingCode: async ({ deviceName, platform, memberId }) => {
+        const { device, pairingCode } = await guardianService.registerDevice({ deviceName, platform, memberId });
+        set((s) => ({ devices: [...s.devices, device] }));
         return pairingCode;
       },
 

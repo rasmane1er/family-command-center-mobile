@@ -84,6 +84,13 @@ export function GuardianDashboardScreen({ navigation }: any) {
   const activeMember = members.find((m) => m.id === activeMemberId);
   const showChildRegistrationBanner = activeMember?.role === 'child' && !thisDeviceId;
 
+  // GET /guardian/devices returns every ChildDevice row for the family,
+  // including ones a code was generated for but never actually redeemed by
+  // a parent (isPaired: false) — those shouldn't show up as a "paired
+  // device" the guardian can manage/lock/track, so the dashboard list is
+  // scoped to isPaired ones only.
+  const pairedDevices = devices.filter((d) => d.isPaired);
+
   // App.tsx runs an identical 10s hydrate() poll at the app root regardless of
   // which screen is visible (added specifically so reconnects are caught even
   // when this screen isn't mounted) — a second interval here just doubled the
@@ -121,8 +128,8 @@ export function GuardianDashboardScreen({ navigation }: any) {
 
   const unresolved = sosAlerts.filter((a) => !a.isResolved);
   const pendingApprovals = approvalRequests.filter((r) => r.status === 'pending');
-  const onlineDevices = devices.filter((d) => d.status === 'online').length;
-  const restrictedDevices = devices.filter(
+  const onlineDevices = pairedDevices.filter((d) => d.status === 'online').length;
+  const restrictedDevices = pairedDevices.filter(
     (d) => d.status === 'restricted' || d.status === 'school_mode' || d.status === 'bedtime'
   ).length;
 
@@ -226,7 +233,7 @@ export function GuardianDashboardScreen({ navigation }: any) {
 
         <View style={styles.heroStatsRow}>
           <View style={styles.heroStat}>
-            <Text style={styles.heroStatValue}>{devices.length}</Text>
+            <Text style={styles.heroStatValue}>{pairedDevices.length}</Text>
             <Text style={styles.heroStatLabel}>Devices</Text>
           </View>
 
@@ -269,7 +276,7 @@ export function GuardianDashboardScreen({ navigation }: any) {
       <View style={styles.compactTitleBlock}>
         <Text style={styles.compactTitle}>Family Guardian</Text>
         <Text style={styles.compactSubtitle}>
-          {devices.length} device{devices.length === 1 ? '' : 's'} · {pendingApprovals.length} approval
+          {pairedDevices.length} device{pairedDevices.length === 1 ? '' : 's'} · {pendingApprovals.length} approval
           {pendingApprovals.length === 1 ? '' : 's'}
         </Text>
       </View>
@@ -368,7 +375,7 @@ export function GuardianDashboardScreen({ navigation }: any) {
 
             <Text style={styles.sectionTitle}>Paired Devices</Text>
 
-            {devices.length === 0 && (
+            {pairedDevices.length === 0 && (
               <View style={styles.emptyState}>
                 <Ionicons name="phone-portrait-outline" size={64} color={colors.textMuted} />
                 <Text style={styles.emptyTitle}>No paired devices yet</Text>
@@ -376,7 +383,7 @@ export function GuardianDashboardScreen({ navigation }: any) {
               </View>
             )}
 
-            {devices.map((device) => (
+            {pairedDevices.map((device) => (
               <Pressable
                 key={device.id}
                 style={[styles.deviceCard, shadows.card]}

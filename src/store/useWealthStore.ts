@@ -64,6 +64,15 @@ export const useWealthStore = create<WealthState>()(
     {
       name: 'family-command-center-wealth',
       storage: createJSONStorage(() => mmkvStorage),
+      // isLoaded intentionally excluded — it's set true even on fetch
+      // failure and, without this, persists forever, so on any existing
+      // install fetchFromServer() would never be called again (screens gate
+      // their mount-fetch on `if (!isLoaded)`).
+      partialize: (state) => ({
+        entries: state.entries,
+        projections: state.projections,
+        reputationScores: state.reputationScores,
+      }),
     }
   )
 );

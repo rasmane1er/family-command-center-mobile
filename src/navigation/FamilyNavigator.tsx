@@ -361,6 +361,7 @@ export function FamilyNavigator() {
           </ErrorBoundary>
         )}
       </Stack.Screen>
+
       <Stack.Screen name="GuardianChat">
         {(props) => (
           <ErrorBoundary>

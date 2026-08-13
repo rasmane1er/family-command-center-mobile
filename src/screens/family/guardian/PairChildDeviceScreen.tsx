@@ -24,8 +24,7 @@ export function PairChildDeviceScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const members = useFamilyStore((s) => s.members);
   const family = useFamilyStore((s) => s.family);
-  const registerThisDevice = useGuardianStore((s) => s.registerThisDevice);
-  const myPairingCode = useGuardianStore((s) => s.myPairingCode);
+  const generateChildPairingCode = useGuardianStore((s) => s.generateChildPairingCode);
 
   const children = members.filter((m) => m.role === 'child');
 
@@ -44,7 +43,7 @@ export function PairChildDeviceScreen({ navigation }: any) {
     setError(null);
     try {
       const deviceName = `${selectedChild.name}'s Phone`;
-      const generated = await registerThisDevice({
+      const generated = await generateChildPairingCode({
         deviceName,
         platform: 'ios',
         memberId: selectedId,

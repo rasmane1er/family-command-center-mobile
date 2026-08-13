@@ -35,7 +35,11 @@ export function WelcomeScreen({ navigation }: any) {
     ]).start();
   }, []);
 
-  const handleStartSetup = () => navigation.navigate('FamilySetup');
+  // Family name/motto/address/etc. are now captured at Sign-Up Step 2 and
+  // persisted directly in /auth/register's transaction — FamilySetupScreen
+  // used to re-ask for the same family name a second time and only ever
+  // wrote it to a local, never-synced Family object.
+  const handleStartSetup = () => navigation.navigate('MemberSetup');
 
   const handleJoinFamily = () => navigation.navigate('ChildConnect');
 

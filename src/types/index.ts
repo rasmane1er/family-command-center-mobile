@@ -279,10 +279,19 @@ export interface Budget {
   familyId: string;
   category: string;
   monthlyLimit: number;
+  // Server-computed for the requested month from real Plaid + ledger
+  // activity (see GET /finance/budgets) — never client-written, never
+  // persisted as a stored field on the backend.
   spent: number;
   month: string;
   color: string;
   icon: string;
+  // Plaid personal_finance_category.primary values rolling into this budget.
+  plaidCategories?: string[];
+  source?: 'manual' | 'plaid_detected';
+  sourcePlaidCategory?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Bill {
@@ -297,8 +306,14 @@ export interface Bill {
   isRecurring: boolean;
   recurrence: RecurrenceType;
   accountId?: string;
+  plaidAccountId?: string;
   notes?: string;
   icon?: string;
+  source?: 'manual' | 'plaid_detected';
+  sourceMerchantKey?: string;
+  lastPaidAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Subscription {
@@ -314,6 +329,11 @@ export interface Subscription {
   notes?: string;
   icon?: string;
   color?: string;
+  source?: 'manual' | 'plaid_detected';
+  sourceMerchantKey?: string;
+  plaidAccountId?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface FinancialAccount {
@@ -392,7 +412,9 @@ export interface FinancialGoal {
   icon: string;
   notes?: string;
   isCompleted: boolean;
+  linkedAccountId?: string;
   createdAt: string;
+  updatedAt?: string;
 }
 
 // ===================== ASSETS & VEHICLES =====================

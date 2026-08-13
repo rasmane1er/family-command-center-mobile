@@ -98,6 +98,8 @@ export const useUtilityStore = create<UtilityState>()(
     {
       name: 'family-command-center-utility',
       storage: createJSONStorage(() => mmkvStorage),
+      // isLoaded intentionally excluded — see useWealthStore.ts for why.
+      partialize: (state) => ({ bills: state.bills }),
     }
   )
 );
