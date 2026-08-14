@@ -166,7 +166,7 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
           showsVerticalScrollIndicator={false}
         >
           {/* Back button */}
-          <Pressable
+          <Pressable accessibilityRole="button"
             style={styles.backButton}
             onPress={() => navigation.goBack()}
             hitSlop={12}
@@ -208,7 +208,7 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
                   color={emailFocused ? colors.primary : colors.textSecondary}
                   style={styles.inputIcon}
                 />
-                <TextInput
+                <TextInput accessibilityLabel={t('auth.screens.forgotPassword.emailPlaceholder')}
                   style={[styles.textInput, { color: colors.text }]}
                   placeholder={t('auth.screens.forgotPassword.emailPlaceholder')}
                   placeholderTextColor={colors.textSecondary}
@@ -244,7 +244,7 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
                     {t('auth.screens.forgotPassword.resendIn', { countdown: countdownLabel })}
                   </Text>
                 ) : (
-                  <Pressable onPress={handleResend}>
+                  <Pressable accessibilityRole="button" onPress={handleResend}>
                     <Text style={[styles.resendLink, { color: colors.primary }]}>{t('auth.screens.forgotPassword.resendLink')}</Text>
                   </Pressable>
                 )}
@@ -253,7 +253,7 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
 
             {/* Send Reset Link button */}
             <Animated.View style={{ transform: [{ scale: buttonScale }], marginTop: 4 }}>
-              <Pressable
+              <Pressable accessibilityRole="button"
                 style={[
                   styles.primaryButton,
                   (loading || sent) && styles.primaryButtonDisabled,
@@ -300,7 +300,7 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
                       color={codeFocused ? colors.primary : colors.textSecondary}
                       style={styles.inputIcon}
                     />
-                    <TextInput
+                    <TextInput accessibilityLabel={t('auth.screens.forgotPassword.codePlaceholder')}
                       style={[styles.textInput, { color: colors.text, letterSpacing: 4 }]}
                       placeholder={t('auth.screens.forgotPassword.codePlaceholder')}
                       placeholderTextColor={colors.textSecondary}
@@ -329,7 +329,7 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
                       color={newPasswordFocused ? colors.primary : colors.textSecondary}
                       style={styles.inputIcon}
                     />
-                    <TextInput
+                    <TextInput accessibilityLabel={t('auth.screens.forgotPassword.newPasswordPlaceholder')}
                       style={[styles.textInput, { color: colors.text }]}
                       placeholder={t('auth.screens.forgotPassword.newPasswordPlaceholder')}
                       placeholderTextColor={colors.textSecondary}
@@ -342,7 +342,7 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
                       onBlur={() => setNewPasswordFocused(false)}
                       returnKeyType="next"
                     />
-                    <Pressable onPress={() => setShowNewPassword(!showNewPassword)} hitSlop={8}>
+                    <Pressable accessibilityRole="button" onPress={() => setShowNewPassword(!showNewPassword)} hitSlop={8}>
                       <Ionicons
                         name={showNewPassword ? 'eye-off-outline' : 'eye-outline'}
                         size={18}
@@ -366,7 +366,7 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
                       color={confirmPasswordFocused ? colors.primary : colors.textSecondary}
                       style={styles.inputIcon}
                     />
-                    <TextInput
+                    <TextInput accessibilityLabel={t('auth.screens.forgotPassword.confirmPasswordPlaceholder')}
                       style={[styles.textInput, { color: colors.text }]}
                       placeholder={t('auth.screens.forgotPassword.confirmPasswordPlaceholder')}
                       placeholderTextColor={colors.textSecondary}
@@ -383,7 +383,7 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
                   </View>
                 </View>
 
-                <Pressable
+                <Pressable accessibilityRole="button"
                   style={[styles.primaryButton, resetLoading && styles.primaryButtonDisabled]}
                   onPress={handleConfirmReset}
                   disabled={resetLoading}
@@ -411,7 +411,7 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
             {/* Back to Sign In */}
-            <Pressable
+            <Pressable accessibilityRole="button"
               style={styles.backToSignIn}
               onPress={() => navigation.navigate('SignIn')}
             >

@@ -121,14 +121,14 @@ const GiftCard = React.memo(function GiftCard({
 
       <View style={styles.giftActions}>
         {nextStatus && (
-          <Pressable onPress={() => onStatusAdvance(gift)} style={[styles.statusBtn, { backgroundColor: STATUS_COLORS[nextStatus] + '20' }]}>
+          <Pressable accessibilityRole="button" onPress={() => onStatusAdvance(gift)} style={[styles.statusBtn, { backgroundColor: STATUS_COLORS[nextStatus] + '20' }]}>
             <Text style={[styles.statusBtnText, { color: STATUS_COLORS[nextStatus] }]}>
               Mark as {STATUS_LABELS[nextStatus]}
             </Text>
             <Ionicons name="chevron-forward" size={14} color={STATUS_COLORS[nextStatus]} />
           </Pressable>
         )}
-        <Pressable onPress={() => onDelete(gift.id, gift.title)} style={styles.deleteBtn}>
+        <Pressable accessibilityRole="button" onPress={() => onDelete(gift.id, gift.title)} style={styles.deleteBtn}>
           <Ionicons name="trash-outline" size={15} color={colors.danger} />
         </Pressable>
       </View>
@@ -245,11 +245,11 @@ export function GiftPlannerScreen({ navigation }: any) {
   const screenHeader = (
     <LinearGradient colors={['#880E4F', '#C2185B']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
       <View style={styles.headerTop}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <Text style={styles.headerTitle}>Gift Planner</Text>
-        <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
+        <Pressable accessibilityRole="button" onPress={() => setShowAddModal(true)} style={styles.addBtn}>
           <Ionicons name="add" size={26} color="#fff" />
         </Pressable>
       </View>
@@ -271,7 +271,7 @@ export function GiftPlannerScreen({ navigation }: any) {
 
       <View style={styles.tabRow}>
         {tabs.map((tab) => (
-          <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
+          <Pressable accessibilityRole="button" key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
             <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>{tab}</Text>
           </Pressable>
         ))}
@@ -281,11 +281,11 @@ export function GiftPlannerScreen({ navigation }: any) {
 
   const screenCompact = (
     <LinearGradient colors={['#880E4F', '#C2185B']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={styles.headerTitle}>Gift Planner</Text>
-      <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
+      <Pressable accessibilityRole="button" onPress={() => setShowAddModal(true)} style={styles.addBtn}>
         <Ionicons name="add" size={26} color="#fff" />
       </Pressable>
     </LinearGradient>
@@ -310,7 +310,7 @@ export function GiftPlannerScreen({ navigation }: any) {
           <>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.memberTabScroll}>
               {members.map((m) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={m.id}
                   onPress={() => setSelectedMemberId(m.id)}
                   style={[styles.memberTab, selectedMemberId === m.id && styles.memberTabActive]}
@@ -429,7 +429,7 @@ export function GiftPlannerScreen({ navigation }: any) {
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Add Gift Idea</Text>
-            <Pressable onPress={() => { resetModal(); setShowAddModal(false); }}>
+            <Pressable accessibilityRole="button" onPress={() => { resetModal(); setShowAddModal(false); }}>
               <Ionicons name="close" size={24} color={colors.text} />
             </Pressable>
           </View>
@@ -438,7 +438,7 @@ export function GiftPlannerScreen({ navigation }: any) {
             <Text style={styles.modalLabel}>For</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
               {members.map((m) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={m.id}
                   onPress={() => setNewForMemberId(m.id)}
                   style={[styles.modalMemberChip, newForMemberId === m.id && styles.modalMemberChipActive]}
@@ -454,7 +454,7 @@ export function GiftPlannerScreen({ navigation }: any) {
             <Text style={styles.modalLabel}>Occasion</Text>
             <View style={styles.occasionGrid}>
               {OCCASIONS.map((occ) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={occ}
                   onPress={() => setNewOccasion(occ)}
                   style={[styles.occasionGridItem, newOccasion === occ && styles.occasionGridItemActive]}
@@ -468,7 +468,7 @@ export function GiftPlannerScreen({ navigation }: any) {
             </View>
 
             <Text style={styles.modalLabel}>Gift Title *</Text>
-            <TextInput
+            <TextInput accessibilityLabel="e.g. Wireless headphones"
               style={styles.modalInput}
               value={newTitle}
               onChangeText={setNewTitle}
@@ -477,7 +477,7 @@ export function GiftPlannerScreen({ navigation }: any) {
             />
 
             <Text style={styles.modalLabel}>Description</Text>
-            <TextInput
+            <TextInput accessibilityLabel="Optional note about this gift"
               style={[styles.modalInput, { height: 70 }]}
               value={newDescription}
               onChangeText={setNewDescription}
@@ -487,7 +487,7 @@ export function GiftPlannerScreen({ navigation }: any) {
             />
 
             <Text style={styles.modalLabel}>Estimated Price ($)</Text>
-            <TextInput
+            <TextInput accessibilityLabel="0.00"
               style={styles.modalInput}
               value={newPrice}
               onChangeText={setNewPrice}
@@ -499,7 +499,7 @@ export function GiftPlannerScreen({ navigation }: any) {
             <Text style={styles.modalLabel}>Priority</Text>
             <View style={styles.chipRow}>
               {PRIORITIES.map((p) => (
-                <Pressable key={p} onPress={() => setNewPriority(p)} style={[styles.chip, newPriority === p && { backgroundColor: PRIORITY_COLORS[p], borderColor: PRIORITY_COLORS[p] }]}>
+                <Pressable accessibilityRole="button" key={p} onPress={() => setNewPriority(p)} style={[styles.chip, newPriority === p && { backgroundColor: PRIORITY_COLORS[p], borderColor: PRIORITY_COLORS[p] }]}>
                   <Text style={[styles.chipText, newPriority === p && { color: '#fff' }]}>
                     {p.charAt(0).toUpperCase() + p.slice(1)}
                   </Text>
@@ -509,14 +509,14 @@ export function GiftPlannerScreen({ navigation }: any) {
 
             <Text style={styles.modalLabel}>Purchased By</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
-              <Pressable
+              <Pressable accessibilityRole="button"
                 onPress={() => setNewPurchasedBy('')}
                 style={[styles.chip, !newPurchasedBy && styles.chipActive]}
               >
                 <Text style={[styles.chipText, !newPurchasedBy && styles.chipTextActive]}>None</Text>
               </Pressable>
               {members.map((m) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={m.id}
                   onPress={() => setNewPurchasedBy(m.id)}
                   style={[styles.chip, { marginLeft: 8 }, newPurchasedBy === m.id && styles.chipActive]}
@@ -540,7 +540,7 @@ export function GiftPlannerScreen({ navigation }: any) {
             </View>
 
             <Text style={styles.modalLabel}>Notes</Text>
-            <TextInput
+            <TextInput accessibilityLabel="Optional notes"
               style={[styles.modalInput, { height: 60 }]}
               value={newNotes}
               onChangeText={setNewNotes}
@@ -549,7 +549,7 @@ export function GiftPlannerScreen({ navigation }: any) {
               multiline
             />
 
-            <Pressable
+            <Pressable accessibilityRole="button"
               onPress={handleAdd}
               style={[styles.submitBtn, !newTitle.trim() && styles.submitBtnDisabled]}
             >

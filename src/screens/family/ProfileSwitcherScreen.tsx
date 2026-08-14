@@ -172,7 +172,7 @@ export function ProfileSwitcherScreen({ navigation, route }: any) {
       colors={['#0F2952', '#1E4A8A']}
       style={[styles.header, { paddingTop: insets.top + 6 }]}
     >
-      <Pressable onPress={goBackOrHome} style={styles.backBtn}>
+      <Pressable accessibilityRole="button" onPress={goBackOrHome} style={styles.backBtn}>
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </Pressable>
       <Text style={styles.headerTitle}>{t('profileSwitcher.title')}</Text>
@@ -182,7 +182,7 @@ export function ProfileSwitcherScreen({ navigation, route }: any) {
 
   const screenCompact = (
     <View style={{ backgroundColor: '#0F2952', paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={goBackOrHome} style={styles.backBtn}>
+      <Pressable accessibilityRole="button" onPress={goBackOrHome} style={styles.backBtn}>
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </Pressable>
       <Text style={styles.headerTitle}>{t('profileSwitcher.title')}</Text>
@@ -229,7 +229,7 @@ export function ProfileSwitcherScreen({ navigation, route }: any) {
                   </Card>
                 )}
 
-                <Pressable style={styles.unlockLink} onPress={() => setShowUnlockModal(true)}>
+                <Pressable accessibilityRole="button" style={styles.unlockLink} onPress={() => setShowUnlockModal(true)}>
                   <Ionicons name="key-outline" size={16} color={colors.textSecondary} />
                   <Text style={styles.unlockLinkText}>Unlock (parent password required)</Text>
                 </Pressable>
@@ -239,7 +239,7 @@ export function ProfileSwitcherScreen({ navigation, route }: any) {
                 <Text style={styles.subtitle}>Select who is using the app right now</Text>
 
                 {deviceLockedMemberId && (
-                  <Pressable style={styles.removeLockBanner} onPress={handleRemoveLock}>
+                  <Pressable accessibilityRole="button" style={styles.removeLockBanner} onPress={handleRemoveLock}>
                     <Ionicons name="lock-open-outline" size={16} color={colors.danger} />
                     <Text style={styles.removeLockBannerText}>
                       Unlocked for this visit — tap to remove the device lock entirely
@@ -278,7 +278,7 @@ export function ProfileSwitcherScreen({ navigation, route }: any) {
                       ) : (
                         <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
                       )}
-                      <Pressable
+                      <Pressable accessibilityRole="button"
                         style={styles.lockDeviceBtn}
                         hitSlop={8}
                         onPress={(e) => {
@@ -303,7 +303,7 @@ export function ProfileSwitcherScreen({ navigation, route }: any) {
           <View style={styles.unlockModal}>
             <Text style={styles.pinTitle}>Enter Your Password</Text>
             <Text style={styles.pinSubtitle}>Unlocking this device for this visit only</Text>
-            <TextInput
+            <TextInput accessibilityLabel="Password"
               style={styles.unlockInput}
               placeholder="Password"
               placeholderTextColor={colors.textMuted}
@@ -314,10 +314,10 @@ export function ProfileSwitcherScreen({ navigation, route }: any) {
               onSubmitEditing={handleUnlockSubmit}
             />
             {unlockError ? <Text style={styles.pinErrorText}>{unlockError}</Text> : null}
-            <Pressable style={styles.unlockSubmitBtn} onPress={handleUnlockSubmit} disabled={isVerifying}>
+            <Pressable accessibilityRole="button" style={styles.unlockSubmitBtn} onPress={handleUnlockSubmit} disabled={isVerifying}>
               <Text style={styles.unlockSubmitBtnText}>{isVerifying ? 'Checking…' : 'Unlock'}</Text>
             </Pressable>
-            <Pressable style={styles.cancelBtn} onPress={() => { setShowUnlockModal(false); setUnlockPassword(''); setUnlockError(''); }}>
+            <Pressable accessibilityRole="button" style={styles.cancelBtn} onPress={() => { setShowUnlockModal(false); setUnlockPassword(''); setUnlockError(''); }}>
               <Text style={styles.cancelBtnText}>Cancel</Text>
             </Pressable>
           </View>
@@ -366,7 +366,7 @@ export function ProfileSwitcherScreen({ navigation, route }: any) {
                 }
                 if (key === 'del') {
                   return (
-                    <Pressable
+                    <Pressable accessibilityRole="button"
                       key={idx}
                       style={styles.numKey}
                       onPress={handlePinDelete}
@@ -376,7 +376,7 @@ export function ProfileSwitcherScreen({ navigation, route }: any) {
                   );
                 }
                 return (
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     key={idx}
                     style={({ pressed }) => [
                       styles.numKey,
@@ -391,7 +391,7 @@ export function ProfileSwitcherScreen({ navigation, route }: any) {
               })}
             </View>
 
-            <Pressable style={styles.cancelBtn} onPress={handlePinCancel}>
+            <Pressable accessibilityRole="button" style={styles.cancelBtn} onPress={handlePinCancel}>
               <Text style={styles.cancelBtnText}>Cancel</Text>
             </Pressable>
           </View>

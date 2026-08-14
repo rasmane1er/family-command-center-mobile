@@ -211,7 +211,7 @@ export function TransactionsScreen({ navigation }: { navigation: any }) {
 
       <View style={s.searchRow}>
         <Ionicons name="search" size={16} color="#6B7280" style={s.searchIcon} />
-        <TextInput
+        <TextInput accessibilityLabel="Search transactions..."
           style={s.searchInput}
           value={search}
           onChangeText={setSearch}
@@ -219,18 +219,18 @@ export function TransactionsScreen({ navigation }: { navigation: any }) {
           placeholderTextColor="#9CA3AF"
         />
         {search.length > 0 && (
-          <Pressable onPress={() => setSearch('')}>
+          <Pressable accessibilityRole="button" onPress={() => setSearch('')}>
             <Ionicons name="close-circle" size={18} color="#9CA3AF" />
           </Pressable>
         )}
       </View>
 
       <View style={s.monthRow}>
-        <Pressable onPress={() => shiftMonth(-1)} style={s.monthArrow}>
+        <Pressable accessibilityRole="button" onPress={() => shiftMonth(-1)} style={s.monthArrow}>
           <Ionicons name="chevron-back" size={18} color="#1E3A5F" />
         </Pressable>
         <Text style={s.monthLabel}>{monthLabel}</Text>
-        <Pressable onPress={() => shiftMonth(1)} style={s.monthArrow}>
+        <Pressable accessibilityRole="button" onPress={() => shiftMonth(1)} style={s.monthArrow}>
           <Ionicons name="chevron-forward" size={18} color="#1E3A5F" />
         </Pressable>
       </View>
@@ -245,7 +245,7 @@ export function TransactionsScreen({ navigation }: { navigation: any }) {
         renderItem={() => (
           <>
             {CATEGORIES.map((cat) => (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={cat}
                 onPress={() => setCategory(cat)}
                 style={[s.pill, category === cat && s.pillActive]}

@@ -52,7 +52,7 @@ const TaskListItem = React.memo(function TaskListItem({
   return (
     <Card style={styles.taskCard} variant="elevated">
       <View style={styles.taskRow}>
-        <Pressable
+        <Pressable accessibilityRole="button"
           onPress={() => onPress(task, assigneeId)}
           disabled={isPendingApproval}
           style={[
@@ -98,18 +98,18 @@ const TaskListItem = React.memo(function TaskListItem({
                 <Ionicons name="hourglass-outline" size={13} color="#B85C00" />
                 <Text style={styles.reviewText}>Waiting for approval</Text>
                 {task.completionPhotoUrl && (
-                  <Pressable onPress={() => onPreviewPhoto(task.completionPhotoUrl!)}>
+                  <Pressable accessibilityRole="button" onPress={() => onPreviewPhoto(task.completionPhotoUrl!)}>
                     <SignedImage uri={task.completionPhotoUrl} style={styles.reviewThumb} />
                   </Pressable>
                 )}
               </View>
               {role !== 'child' && (
                 <View style={styles.reviewActions}>
-                  <Pressable onPress={() => onApprove(task.id)} style={styles.approveBtn}>
+                  <Pressable accessibilityRole="button" onPress={() => onApprove(task.id)} style={styles.approveBtn}>
                     <Ionicons name="checkmark" size={14} color="#fff" />
                     <Text style={styles.approveBtnText}>Approve</Text>
                   </Pressable>
-                  <Pressable onPress={() => onReject(task)} style={styles.rejectBtn}>
+                  <Pressable accessibilityRole="button" onPress={() => onReject(task)} style={styles.rejectBtn}>
                     <Text style={styles.rejectBtnText}>Send Back</Text>
                   </Pressable>
                 </View>
@@ -126,7 +126,7 @@ const TaskListItem = React.memo(function TaskListItem({
               ))}
             </View>
           )}
-          <Pressable onPress={() => onDelete(task.id)} style={styles.deleteBtn}>
+          <Pressable accessibilityRole="button" onPress={() => onDelete(task.id)} style={styles.deleteBtn}>
             <Ionicons name="trash-outline" size={16} color={colors.danger} />
           </Pressable>
         </View>
@@ -257,7 +257,7 @@ const filteredTasks = visibleTasks
             if (navigation.canGoBack()) { navigation.goBack(); } else { navigation.getParent()?.navigate('Home'); }
           }}
           rightAction={
-            <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
+            <Pressable accessibilityRole="button" onPress={() => setShowAddModal(true)} style={styles.addBtn}>
               <Ionicons name="add" size={26} color="#fff" />
             </Pressable>
           }
@@ -278,7 +278,7 @@ const filteredTasks = visibleTasks
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
             {FILTERS.map((f) => (
-              <Pressable key={f} onPress={() => setFilter(f)} style={[styles.filterChip, filter === f && styles.filterChipActive]}>
+              <Pressable accessibilityRole="button" key={f} onPress={() => setFilter(f)} style={[styles.filterChip, filter === f && styles.filterChipActive]}>
                 <Text style={[styles.filterText, filter === f && styles.filterTextActive]}>{f}</Text>
               </Pressable>
             ))}
@@ -291,7 +291,7 @@ const filteredTasks = visibleTasks
       start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
       style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
     >
-      <Pressable onPress={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
+      <Pressable accessibilityRole="button" onPress={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </Pressable>
       <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>Tasks</Text>
@@ -334,7 +334,7 @@ const filteredTasks = visibleTasks
           <View style={styles.modalHandle} />
           <Text style={styles.modalTitle}>Add New Task</Text>
 
-          <TextInput
+          <TextInput accessibilityLabel="Task title..."
             style={styles.taskInput}
             placeholder="Task title..."
             value={newTaskTitle}
@@ -346,7 +346,7 @@ const filteredTasks = visibleTasks
           <Text style={styles.modalLabel}>Priority</Text>
           <View style={styles.priorityRow}>
             {PRIORITIES.map((p) => (
-              <Pressable key={p} onPress={() => setNewTaskPriority(p)} style={[styles.priorityChip, newTaskPriority === p && { backgroundColor: priorityColors[p], borderColor: priorityColors[p] }]}>
+              <Pressable accessibilityRole="button" key={p} onPress={() => setNewTaskPriority(p)} style={[styles.priorityChip, newTaskPriority === p && { backgroundColor: priorityColors[p], borderColor: priorityColors[p] }]}>
                 <Text style={[styles.priorityText, newTaskPriority === p && { color: '#fff' }]}>{p}</Text>
               </Pressable>
             ))}
@@ -355,14 +355,14 @@ const filteredTasks = visibleTasks
           <Text style={styles.modalLabel}>Assign To</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.assignScroll} contentContainerStyle={styles.assignScrollContent}>
             {members.map((m) => (
-              <Pressable key={m.id} onPress={() => setSelectedMember(selectedMember === m.id ? null : m.id)} style={[styles.assignChip, selectedMember === m.id && styles.assignChipActive]}>
+              <Pressable accessibilityRole="button" key={m.id} onPress={() => setSelectedMember(selectedMember === m.id ? null : m.id)} style={[styles.assignChip, selectedMember === m.id && styles.assignChipActive]}>
                 <Avatar name={m.name} color={m.avatarColor} size={32} />
                 <Text style={styles.assignName}>{m.name.split(' ')[0]}</Text>
               </Pressable>
             ))}
           </ScrollView>
 
-          <Pressable onPress={() => setNewTaskRequiresApproval((v) => !v)} style={styles.approveToggleRow}>
+          <Pressable accessibilityRole="button" onPress={() => setNewTaskRequiresApproval((v) => !v)} style={styles.approveToggleRow}>
             <Ionicons name={newTaskRequiresApproval ? 'checkbox' : 'square-outline'} size={22} color={newTaskRequiresApproval ? colors.primary : colors.textMuted} />
             <View style={{ flex: 1, marginLeft: 10 }}>
               <Text style={styles.approveToggleTitle}>Require approval before points</Text>
@@ -376,9 +376,9 @@ const filteredTasks = visibleTasks
       </Modal>
 
       <Modal visible={!!previewPhotoUrl} transparent animationType="fade" onRequestClose={() => setPreviewPhotoUrl(null)}>
-        <Pressable style={styles.photoPreviewBackdrop} onPress={() => setPreviewPhotoUrl(null)}>
+        <Pressable accessibilityRole="button" style={styles.photoPreviewBackdrop} onPress={() => setPreviewPhotoUrl(null)}>
           {previewPhotoUrl && <SignedImage uri={previewPhotoUrl} style={styles.photoPreviewImage} resizeMode="contain" />}
-          <Pressable onPress={() => setPreviewPhotoUrl(null)} style={styles.photoPreviewClose}>
+          <Pressable accessibilityRole="button" onPress={() => setPreviewPhotoUrl(null)} style={styles.photoPreviewClose}>
             <Ionicons name="close" size={24} color="#fff" />
           </Pressable>
         </Pressable>

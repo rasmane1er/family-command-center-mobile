@@ -420,7 +420,7 @@ export default function SignInScreen({ navigation }: Props) {
 
             {/* Biometric sign in button */}
             {showBiometric && (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 style={[styles.biometricButton, { borderColor: colors.primary }]}
                 onPress={handleBiometricSignIn}
               >
@@ -449,7 +449,7 @@ export default function SignInScreen({ navigation }: Props) {
                   color={emailFocused ? colors.primary : colors.textSecondary}
                   style={styles.inputIcon}
                 />
-                <TextInput
+                <TextInput accessibilityLabel={t('auth.screens.signIn.emailPlaceholder')}
                   style={[styles.textInput, { color: colors.text }]}
                   placeholder={t('auth.screens.signIn.emailPlaceholder')}
                   placeholderTextColor={colors.textSecondary}
@@ -474,7 +474,7 @@ export default function SignInScreen({ navigation }: Props) {
             <View style={styles.fieldGroup}>
               <View style={styles.labelRow}>
                 <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>{t('auth.password')}</Text>
-                <Pressable onPress={() => navigation.navigate('ForgotPassword')}>
+                <Pressable accessibilityRole="button" onPress={() => navigation.navigate('ForgotPassword')}>
                   <Text style={[styles.forgotLink, { color: colors.primary }]}>{t('auth.forgotPassword')}</Text>
                 </Pressable>
               </View>
@@ -493,7 +493,7 @@ export default function SignInScreen({ navigation }: Props) {
                   color={passwordFocused ? colors.primary : colors.textSecondary}
                   style={styles.inputIcon}
                 />
-                <TextInput
+                <TextInput accessibilityLabel={t('auth.screens.signIn.passwordPlaceholder')}
                   ref={passwordRef}
                   style={[styles.textInput, { color: colors.text }]}
                   placeholder={t('auth.screens.signIn.passwordPlaceholder')}
@@ -510,7 +510,7 @@ export default function SignInScreen({ navigation }: Props) {
                   returnKeyType="done"
                   onSubmitEditing={handleSignIn}
                 />
-                <Pressable onPress={() => setShowPassword(!showPassword)} hitSlop={8}>
+                <Pressable accessibilityRole="button" onPress={() => setShowPassword(!showPassword)} hitSlop={8}>
                   <Ionicons
                     name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                     size={18}
@@ -524,7 +524,7 @@ export default function SignInScreen({ navigation }: Props) {
 
             {/* Sign In button */}
             <Animated.View style={{ transform: [{ scale: buttonScale }], marginTop: 8 }}>
-              <Pressable
+              <Pressable accessibilityRole="button"
                 style={[styles.primaryButton, loading && styles.primaryButtonDisabled]}
                 onPress={handleSignIn}
                 onPressIn={handlePressIn}
@@ -563,7 +563,7 @@ export default function SignInScreen({ navigation }: Props) {
                 onPress={handleAppleSignIn}
               />
             ) : (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 style={[styles.outlineButton, { borderColor: colors.border, backgroundColor: '#000' }]}
                 onPress={handleAppleSignIn}
               >
@@ -573,7 +573,7 @@ export default function SignInScreen({ navigation }: Props) {
             )}
 
             {/* Google Sign In */}
-            <Pressable
+            <Pressable accessibilityRole="button"
               style={[styles.outlineButton, { borderColor: colors.border, backgroundColor: inputBg, marginTop: 10 }]}
               onPress={handleGoogleSignIn}
             >
@@ -585,7 +585,7 @@ export default function SignInScreen({ navigation }: Props) {
           {/* Bottom link */}
           <View style={styles.bottomRow}>
             <Text style={styles.bottomText}>{t('auth.screens.signIn.newToApp')}</Text>
-            <Pressable onPress={() => navigation.navigate('SignUp')}>
+            <Pressable accessibilityRole="button" onPress={() => navigation.navigate('SignUp')}>
               <Text style={[styles.bottomLink, { color: '#7EB8F7' }]}>{t('auth.createAccount')}</Text>
             </Pressable>
           </View>

@@ -411,7 +411,7 @@ function AccordionItem({
 
   return (
     <View style={s.faqCard}>
-      <TouchableOpacity activeOpacity={0.7} onPress={toggle} style={s.faqRow}>
+      <TouchableOpacity accessibilityRole="button" activeOpacity={0.7} onPress={toggle} style={s.faqRow}>
         <Text style={s.faqQuestion}>{question}</Text>
         <Ionicons
           name={open ? 'chevron-up' : 'chevron-down'}
@@ -531,7 +531,7 @@ export default function HelpSupportScreen({ navigation }: { navigation: any }) {
   const screenHeader = (
     <LinearGradient colors={['#0F2952', '#1E4A8A']} style={[s.header, { paddingTop: insets.top + 16 }]}>
       <View style={s.headerTopRow}>
-        <TouchableOpacity activeOpacity={0.7} style={s.backButton} onPress={() => navigation.goBack()}>
+        <TouchableOpacity accessibilityRole="button" activeOpacity={0.7} style={s.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
         <View style={s.headerTitleBlock}>
@@ -543,7 +543,7 @@ export default function HelpSupportScreen({ navigation }: { navigation: any }) {
       {/* Search bar */}
       <View style={s.searchBar}>
         <Ionicons name="search" size={18} color="#94A3B8" />
-        <TextInput
+        <TextInput accessibilityLabel={t('helpSupport.searchPlaceholder')}
           style={s.searchInput}
           placeholder={t('helpSupport.searchPlaceholder')}
           placeholderTextColor="#94A3B8"
@@ -553,7 +553,7 @@ export default function HelpSupportScreen({ navigation }: { navigation: any }) {
           clearButtonMode="never"
         />
         {searchText.length > 0 && (
-          <TouchableOpacity style={s.clearBtn} onPress={() => setSearchText('')}>
+          <TouchableOpacity accessibilityRole="button" style={s.clearBtn} onPress={() => setSearchText('')}>
             <Ionicons name="close-circle" size={18} color="#94A3B8" />
           </TouchableOpacity>
         )}
@@ -563,7 +563,7 @@ export default function HelpSupportScreen({ navigation }: { navigation: any }) {
 
   const screenCompact = (
     <View style={{ backgroundColor: '#0F2952', paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <TouchableOpacity activeOpacity={0.7} style={s.backButton} onPress={() => navigation.goBack()}>
+      <TouchableOpacity accessibilityRole="button" activeOpacity={0.7} style={s.backButton} onPress={() => navigation.goBack()}>
         <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
       </TouchableOpacity>
       <Text style={[s.headerTitle, { flex: 1, marginLeft: 8 }]}>{t('helpSupport.title')}</Text>
@@ -590,14 +590,14 @@ export default function HelpSupportScreen({ navigation }: { navigation: any }) {
         <View style={s.section}>
           <Text style={s.sectionLabel}>{t('helpSupport.contactUs')}</Text>
           <View style={s.contactRow}>
-            <TouchableOpacity activeOpacity={0.75} style={s.contactCard} onPress={openEmail}>
+            <TouchableOpacity accessibilityRole="button" activeOpacity={0.75} style={s.contactCard} onPress={openEmail}>
               <View style={s.contactIconCircle}>
                 <Ionicons name="mail-outline" size={24} color={colors.primary} />
               </View>
               <Text style={s.contactLabel}>{t('helpSupport.emailUs')}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity activeOpacity={0.75} style={s.contactCard} onPress={openLiveChat}>
+            <TouchableOpacity accessibilityRole="button" activeOpacity={0.75} style={s.contactCard} onPress={openLiveChat}>
               <View style={s.contactIconCircle}>
                 <Ionicons name="chatbubble-ellipses-outline" size={24} color={colors.primary} />
               </View>
@@ -642,7 +642,7 @@ export default function HelpSupportScreen({ navigation }: { navigation: any }) {
           <Text style={s.sectionLabel}>{t('helpSupport.submitTicket')}</Text>
           <View style={s.ticketCard}>
             <Text style={[s.ticketFieldLabel, { marginTop: 0 }]}>Subject</Text>
-            <TextInput
+            <TextInput accessibilityLabel="Brief description of your issue"
               style={s.ticketInput}
               placeholder="Brief description of your issue"
               placeholderTextColor={colors.textMuted}
@@ -656,7 +656,7 @@ export default function HelpSupportScreen({ navigation }: { navigation: any }) {
               {TICKET_CATEGORIES.map((cat) => {
                 const active = selectedCategory === cat;
                 return (
-                  <TouchableOpacity
+                  <TouchableOpacity accessibilityRole="button"
                     key={cat}
                     activeOpacity={0.7}
                     style={[s.categoryChip, active && s.categoryChipActive]}
@@ -671,7 +671,7 @@ export default function HelpSupportScreen({ navigation }: { navigation: any }) {
             </View>
 
             <Text style={s.ticketFieldLabel}>Message</Text>
-            <TextInput
+            <TextInput accessibilityLabel="Describe your issue in detail…"
               style={[s.ticketInput, s.ticketTextArea]}
               placeholder="Describe your issue in detail…"
               placeholderTextColor={colors.textMuted}
@@ -682,7 +682,7 @@ export default function HelpSupportScreen({ navigation }: { navigation: any }) {
               returnKeyType="default"
             />
 
-            <TouchableOpacity activeOpacity={0.85} style={s.sendBtn} onPress={handleSendMessage} disabled={isSending}>
+            <TouchableOpacity accessibilityRole="button" activeOpacity={0.85} style={s.sendBtn} onPress={handleSendMessage} disabled={isSending}>
               <LinearGradient colors={['#0F2952', '#1E4A8A']} style={[s.sendBtnGradient, isSending && { opacity: 0.6 }]}>
                 {isSending ? (
                   <ActivityIndicator color="#fff" size="small" />

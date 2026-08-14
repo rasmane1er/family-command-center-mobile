@@ -162,7 +162,7 @@ export function ChatInputBar({
       <View style={styles.row}>
         {/* Input pill */}
         <View style={styles.pill}>
-          <TextInput
+          <TextInput accessibilityLabel={resolvedPlaceholder}
             style={styles.textInput}
             value={value}
             onChangeText={onChangeText}
@@ -177,7 +177,7 @@ export function ChatInputBar({
 
         {/* Mic or Send button */}
         {hasText ? (
-          <Pressable
+          <Pressable accessibilityRole="button"
             style={[styles.sendBtn, { backgroundColor: accentColor }]}
             onPress={() => { onChangeText(''); onSend(); }}
             disabled={disabled}
@@ -185,7 +185,7 @@ export function ChatInputBar({
             <Ionicons name="send" size={19} color="#fff" style={{ marginLeft: 2 }} />
           </Pressable>
         ) : (
-          <Pressable
+          <Pressable accessibilityRole="button"
             style={[styles.sendBtn, { backgroundColor: accentColor }]}
             onPressIn={handleMicPressIn}
             onPressOut={handleMicPressOut}

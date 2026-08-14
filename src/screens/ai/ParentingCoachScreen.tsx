@@ -247,7 +247,7 @@ export function ParentingCoachScreen({ navigation }: any) {
   const screenHeader = (
       <LinearGradient colors={['#1A6B3C', '#27AE60']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
         <View style={styles.headerTop}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+          <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </Pressable>
           <Text style={styles.headerTitle}>{t('ai.parentingCoach')}</Text>
@@ -274,7 +274,7 @@ export function ParentingCoachScreen({ navigation }: any) {
 
     <View style={styles.tabs}>
             {(['modules', 'tips', 'advice', 'chat'] as const).map((tab) => (
-              <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
+              <Pressable accessibilityRole="button" key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
                 <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
                   {tab === 'modules' ? t(`${NS}.tabModules`) : tab === 'tips' ? t(`${NS}.tabTips`) : tab === 'advice' ? t(`${NS}.tabAges`) : t(`${NS}.tabChat`)}
                 </Text>
@@ -290,7 +290,7 @@ export function ParentingCoachScreen({ navigation }: any) {
       start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
       style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
     >
-      <Pressable onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </Pressable>
       <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>{t(`${NS}.compactTitle`)}</Text>
@@ -339,7 +339,7 @@ export function ParentingCoachScreen({ navigation }: any) {
                   const completed = moduleCompletedCounts[module.id] ?? 0;
                   const total = module.sessionTopics.length;
                   return (
-                    <Pressable key={module.id} onPress={() => setSelectedModuleId(module.id)}>
+                    <Pressable accessibilityRole="button" key={module.id} onPress={() => setSelectedModuleId(module.id)}>
                       <Card
                         style={{ ...styles.moduleCard, backgroundColor: module.bg }}
                         variant="default"
@@ -407,7 +407,7 @@ export function ParentingCoachScreen({ navigation }: any) {
                   </View>
                   <Text style={styles.tipText}>"{t(`${NS}.${DAILY_TIPS[tipIndex].textKey}`)}"</Text>
                   <View style={styles.tipNav}>
-                    <Pressable
+                    <Pressable accessibilityRole="button"
                       onPress={() => setTipIndex(Math.max(0, tipIndex - 1))}
                       style={styles.tipNavBtn}
                     >
@@ -416,7 +416,7 @@ export function ParentingCoachScreen({ navigation }: any) {
                     <Text style={styles.tipCounter}>
                       {tipIndex + 1} / {DAILY_TIPS.length}
                     </Text>
-                    <Pressable
+                    <Pressable accessibilityRole="button"
                       onPress={() =>
                         setTipIndex(Math.min(DAILY_TIPS.length - 1, tipIndex + 1))
                       }
@@ -479,7 +479,7 @@ export function ParentingCoachScreen({ navigation }: any) {
                         t(`${NS}.chatStarter2`),
                         t(`${NS}.chatStarter3`),
                       ].map((q) => (
-                        <Pressable
+                        <Pressable accessibilityRole="button"
                           key={q}
                           style={styles.chatStarter}
                           onPress={() => handleChatSend(q)}
@@ -520,7 +520,7 @@ export function ParentingCoachScreen({ navigation }: any) {
                   {suggestions.length > 0 &&
                     !chatLoading &&
                     suggestions.map((s) => (
-                      <Pressable
+                      <Pressable accessibilityRole="button"
                         key={s}
                         style={styles.chatSuggestion}
                         onPress={() => handleChatSend(s)}
@@ -579,7 +579,7 @@ export function ParentingCoachScreen({ navigation }: any) {
           <View style={styles.moduleModal}>
             <View style={styles.moduleModalHeader}>
               {selectedSessionId ? (
-                <Pressable onPress={() => setSelectedSessionId(null)} style={styles.moduleModalClose}>
+                <Pressable accessibilityRole="button" onPress={() => setSelectedSessionId(null)} style={styles.moduleModalClose}>
                   <Ionicons name="arrow-back" size={22} color={colors.text} />
                 </Pressable>
               ) : null}
@@ -591,7 +591,7 @@ export function ParentingCoachScreen({ navigation }: any) {
                   {selectedSessionId ? t(`${NS}.${selectedModule.titleKey}`) : t(`${NS}.${selectedModule.descKey}`)}
                 </Text>
               </View>
-              <Pressable
+              <Pressable accessibilityRole="button"
                 onPress={() => {
                   setSelectedSessionId(null);
                   setSelectedModuleId(null);
@@ -604,7 +604,7 @@ export function ParentingCoachScreen({ navigation }: any) {
 
             {!selectedSessionId ? (
               <>
-                <Pressable
+                <Pressable accessibilityRole="button"
                   style={styles.askCoachBtn}
                   onPress={() => {
                     setSelectedModuleId(null);
@@ -623,7 +623,7 @@ export function ParentingCoachScreen({ navigation }: any) {
                       : undefined;
                     const isComplete = !!progress?.completedAt;
                     return (
-                      <Pressable
+                      <Pressable accessibilityRole="button"
                         key={topic.id}
                         style={styles.sessionRow}
                         onPress={() => openSession(selectedModule.id, topic.id)}
@@ -665,7 +665,7 @@ export function ParentingCoachScreen({ navigation }: any) {
 
                 {selectedSessionId && !sessionGenerating && selectedSessionProgress?.content && activeMemberId && (
                   <View style={styles.sessionCompleteBar}>
-                    <Pressable
+                    <Pressable accessibilityRole="button"
                       style={[
                         styles.sessionCompleteBtn,
                         selectedSessionProgress?.completedAt && styles.sessionCompleteBtnDone,

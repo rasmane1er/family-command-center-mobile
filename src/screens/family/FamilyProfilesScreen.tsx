@@ -357,7 +357,7 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
       {/* Top row */}
       <View style={dynStyles.headerTop}>
         {route?.params?.source === 'dashboard' && (
-          <Pressable onPress={() => navigation.getParent()?.navigate('Home')} style={dynStyles.backBtn}>
+          <Pressable accessibilityRole="button" onPress={() => navigation.getParent()?.navigate('Home')} style={dynStyles.backBtn}>
             <Ionicons name="arrow-back" size={22} color="#fff" />
           </Pressable>
         )}
@@ -377,13 +377,13 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
         </View>
         <View style={dynStyles.headerActions}>
           {activeMember && (
-            <Pressable style={dynStyles.activeProfilePill} onPress={() => navigation.navigate('ProfileSwitcher')}>
+            <Pressable accessibilityRole="button" style={dynStyles.activeProfilePill} onPress={() => navigation.navigate('ProfileSwitcher')}>
               <Avatar name={activeMember.name} color={activeMember.avatarColor} size={26} />
               <Ionicons name="chevron-down" size={13} color="rgba(255,255,255,0.8)" style={{ marginLeft: 6 }} />
             </Pressable>
           )}
           {canManageMembers && (
-            <Pressable onPress={openAddMemberModal} style={dynStyles.addBtn}>
+            <Pressable accessibilityRole="button" onPress={openAddMemberModal} style={dynStyles.addBtn}>
               <Ionicons name="person-add-outline" size={20} color="#fff" />
             </Pressable>
           )}
@@ -420,7 +420,7 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         {route?.params?.source === 'dashboard' && (
-          <Pressable onPress={() => navigation.getParent()?.navigate('Home')} style={dynStyles.backBtn}>
+          <Pressable accessibilityRole="button" onPress={() => navigation.getParent()?.navigate('Home')} style={dynStyles.backBtn}>
             <Ionicons name="arrow-back" size={22} color="#fff" />
           </Pressable>
         )}
@@ -430,7 +430,7 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
         <Text style={[dynStyles.headerTitle, { fontSize: 17 }]}>{t('family.title')}</Text>
       </View>
       {canManageMembers && (
-        <Pressable onPress={openAddMemberModal} style={dynStyles.addBtn}>
+        <Pressable accessibilityRole="button" onPress={openAddMemberModal} style={dynStyles.addBtn}>
           <Ionicons name="person-add-outline" size={20} color="#fff" />
         </Pressable>
       )}
@@ -466,7 +466,7 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
             const progress = getLevelProgress(member.points, member.level);
 
             return (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={member.id}
                 onPress={() => openMemberDetails(member.id)}
                 style={[dynStyles.memberAvatarCard, isActive && dynStyles.memberAvatarCardActive]}
@@ -540,7 +540,7 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
 
           {/* Add member card — only visible to parents/guardians */}
           {canManageMembers && (
-            <Pressable onPress={openAddMemberModal} style={dynStyles.addMemberCard}>
+            <Pressable accessibilityRole="button" onPress={openAddMemberModal} style={dynStyles.addMemberCard}>
               <View style={dynStyles.addMemberIcon}>
                 <Ionicons name="person-add-outline" size={24} color="#1E4A8A" />
               </View>
@@ -598,7 +598,7 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
         {(activeMember?.role === 'parent' ||
           activeMember?.role === 'guardian' ||
           activeMember?.isAdmin) && (
-          <Pressable
+          <Pressable accessibilityRole="button"
             onPress={() => navigation.navigate('GuardianDashboard')}
             style={dynStyles.guardianCard}
           >
@@ -626,7 +626,7 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
 
         <View style={dynStyles.quickNavGrid}>
           {QUICK_NAV.map((item) => (
-            <Pressable
+            <Pressable accessibilityRole="button"
               key={item.key}
               onPress={() => navigation.navigate(item.key)}
               style={dynStyles.quickNavTile}
@@ -752,7 +752,7 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
           )}
 
           <Text style={dynStyles.modalLabel}>{t('family.screens.familyProfiles.fullNameLabel')}</Text>
-          <TextInput
+          <TextInput accessibilityLabel={t('family.screens.familyProfiles.fullNamePlaceholder')}
             style={dynStyles.modalInput}
             placeholder={t('family.screens.familyProfiles.fullNamePlaceholder')}
             value={newName}
@@ -764,7 +764,7 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
           <Text style={dynStyles.modalLabel}>{t('family.screens.familyProfiles.roleLabel')}</Text>
           <View style={dynStyles.roleGrid}>
             {MEMBER_ROLES.map((role) => (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={role}
                 onPress={() => setNewRole(role)}
                 style={[dynStyles.roleChip, newRole === role && dynStyles.roleChipActive]}
@@ -779,7 +779,7 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
           <Text style={dynStyles.modalLabel}>{t('family.screens.familyProfiles.avatarColorLabel')}</Text>
           <View style={dynStyles.colorRow}>
             {AVATAR_COLORS.map((color) => (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={color}
                 onPress={() => setNewColor(color)}
                 style={[

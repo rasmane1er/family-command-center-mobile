@@ -149,7 +149,7 @@ export function HealthHubScreen({ navigation: navProp }: any) {
       onBack={() => navigation.goBack()}
       colors={['#1A3C34', '#27AE60']}
       rightAction={
-        <Pressable onPress={() => setShowAptModal(true)} style={s.addBtn}>
+        <Pressable accessibilityRole="button" onPress={() => setShowAptModal(true)} style={s.addBtn}>
           <Ionicons name="add" size={22} color="#fff" />
         </Pressable>
       }
@@ -165,7 +165,7 @@ export function HealthHubScreen({ navigation: navProp }: any) {
             const stepGoal = goals.find((g) => g.memberId === m.id && g.metric === 'steps');
             const progress = memberSteps && stepGoal ? Math.min(1, memberSteps.value / stepGoal.target) : 0.5;
             return (
-              <Pressable key={m.id} onPress={() => setSelectedMember(m.id)} style={s.memberMiniCard}>
+              <Pressable accessibilityRole="button" key={m.id} onPress={() => setSelectedMember(m.id)} style={s.memberMiniCard}>
                 <View style={[s.memberDot, { backgroundColor: m.avatarColor }]} />
                 <Text style={s.memberMiniName}>{m.name.split(' ')[0]}</Text>
                 <ProgressBar progress={progress} color={m.avatarColor} height={4} />
@@ -179,11 +179,11 @@ export function HealthHubScreen({ navigation: navProp }: any) {
 
   const screenCompact = (
     <View style={{ backgroundColor: '#1A3C34', paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => navigation.goBack()} style={s.addBtn}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={s.addBtn}>
         <Ionicons name="arrow-back" size={20} color="#fff" />
       </Pressable>
       <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700', flex: 1, marginLeft: 8 }}>{t('health.screens.healthHub.headerTitle')}</Text>
-      <Pressable onPress={() => setShowAptModal(true)} style={s.addBtn}>
+      <Pressable accessibilityRole="button" onPress={() => setShowAptModal(true)} style={s.addBtn}>
         <Ionicons name="add" size={22} color="#fff" />
       </Pressable>
     </View>
@@ -194,7 +194,7 @@ export function HealthHubScreen({ navigation: navProp }: any) {
 
       <View style={s.tabs}>
         {(['overview', 'metrics', 'appointments'] as const).map((tab) => (
-          <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[s.tab, activeTab === tab && s.tabActive]}>
+          <Pressable accessibilityRole="button" key={tab} onPress={() => setActiveTab(tab)} style={[s.tab, activeTab === tab && s.tabActive]}>
             <Text style={[s.tabText, activeTab === tab && s.tabTextActive]}>
               {tab === 'overview' ? t('health.screens.healthHub.tabOverview') : tab === 'metrics' ? t('health.screens.healthHub.tabMetrics') : t('health.screens.healthHub.tabAppointments')}
             </Text>
@@ -240,7 +240,7 @@ export function HealthHubScreen({ navigation: navProp }: any) {
                 { key: 'NutritionTracker', icon: 'nutrition', label: 'Nutrition', color: '#1B5E20', bg: '#E8F5E9' },
                 { key: 'MedicalRecords', icon: 'folder-open', label: 'Records', color: '#1A237E', bg: '#E8EAF6' },
               ].map((tool) => (
-                <Pressable key={tool.key} onPress={() => navigation.navigate(tool.key)} style={[s.healthToolCard, { backgroundColor: tool.bg }]}>
+                <Pressable accessibilityRole="button" key={tool.key} onPress={() => navigation.navigate(tool.key)} style={[s.healthToolCard, { backgroundColor: tool.bg }]}>
                   <Ionicons name={tool.icon as any} size={24} color={tool.color} />
                   <Text style={[s.healthToolLabel, { color: tool.color }]}>{tool.label}</Text>
                 </Pressable>
@@ -293,7 +293,7 @@ export function HealthHubScreen({ navigation: navProp }: any) {
           <>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.memberScroll}>
               {members.map((m) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={m.id}
                   onPress={() => setSelectedMember(m.id)}
                   style={[s.memberTab, activeMemberId === m.id && { borderBottomColor: m.avatarColor, borderBottomWidth: 2.5 }]}
@@ -356,7 +356,7 @@ export function HealthHubScreen({ navigation: navProp }: any) {
                     <Text style={s.aptMember}>{memberName}{apt.doctor ? ` • ${apt.doctor}` : ''}</Text>
                     <Text style={s.aptDate}>{dateLabel}</Text>
                   </View>
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     onPress={() => Alert.alert(apt.type, `${memberName}\n${apt.doctor ?? ''}\n${dateLabel}`, [
                       { text: t('health.screens.healthHub.dismiss'), style: 'cancel' },
                       { text: t('health.screens.healthHub.addToCalendar'), onPress: () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light) },
@@ -381,7 +381,7 @@ export function HealthHubScreen({ navigation: navProp }: any) {
           <Text style={s.modalLabel}>{t('health.screens.healthHub.familyMemberLabel')}</Text>
           <View style={s.memberChipRow}>
             {members.map((m) => (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={m.id}
                 onPress={() => setNewAptMemberId(m.id)}
                 style={[s.memberChip, newAptMemberId === m.id && { backgroundColor: m.avatarColor + '20', borderColor: m.avatarColor }]}
@@ -392,13 +392,13 @@ export function HealthHubScreen({ navigation: navProp }: any) {
           </View>
 
           <Text style={s.modalLabel}>{t('health.screens.healthHub.appointmentTypeLabel')}</Text>
-          <TextInput style={s.modalInput} placeholder={t('health.screens.healthHub.appointmentTypePlaceholder')} value={newAptType} onChangeText={setNewAptType} placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel={t('health.screens.healthHub.appointmentTypePlaceholder')} style={s.modalInput} placeholder={t('health.screens.healthHub.appointmentTypePlaceholder')} value={newAptType} onChangeText={setNewAptType} placeholderTextColor={colors.textMuted} />
 
           <Text style={s.modalLabel}>{t('health.screens.healthHub.doctorProviderLabel')}</Text>
-          <TextInput style={s.modalInput} placeholder={t('health.screens.healthHub.doctorPlaceholder')} value={newAptDoctor} onChangeText={setNewAptDoctor} placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel={t('health.screens.healthHub.doctorPlaceholder')} style={s.modalInput} placeholder={t('health.screens.healthHub.doctorPlaceholder')} value={newAptDoctor} onChangeText={setNewAptDoctor} placeholderTextColor={colors.textMuted} />
 
           <Text style={s.modalLabel}>{t('health.screens.healthHub.dateLabel')}</Text>
-          <TextInput style={[s.modalInput, { marginBottom: 24 }]} placeholder={t('health.screens.healthHub.datePlaceholder')} value={newAptDate} onChangeText={setNewAptDate} placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel={t('health.screens.healthHub.datePlaceholder')} style={[s.modalInput, { marginBottom: 24 }]} placeholder={t('health.screens.healthHub.datePlaceholder')} value={newAptDate} onChangeText={setNewAptDate} placeholderTextColor={colors.textMuted} />
 
           <Button title={t('health.screens.healthHub.addAppointmentButton')} onPress={handleAddAppointment} fullWidth size="lg" disabled={!newAptType.trim() || !newAptMemberId} />
           <Button title={t('health.screens.healthHub.cancelButton')} onPress={() => setShowAptModal(false)} variant="ghost" fullWidth style={{ marginTop: 8 }} />

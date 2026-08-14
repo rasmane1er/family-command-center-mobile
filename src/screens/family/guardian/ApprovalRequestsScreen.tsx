@@ -128,7 +128,7 @@ export function ApprovalRequestsScreen({ navigation }: any) {
       <View style={styles.headerGlow} />
 
       <View style={styles.headerRow}>
-        <Pressable
+        <Pressable accessibilityRole="button"
           onPress={() => navigation.goBack()}
           style={styles.backBtn}
         >
@@ -154,7 +154,7 @@ export function ApprovalRequestsScreen({ navigation }: any) {
 
       <View style={styles.filterRow}>
         {filterTabs.map((tab) => (
-          <Pressable
+          <Pressable accessibilityRole="button"
             key={tab.key}
             onPress={() => setFilter(tab.key)}
             style={[
@@ -181,7 +181,7 @@ export function ApprovalRequestsScreen({ navigation }: any) {
       colors={['#081B33', '#0F2952']}
       style={[styles.compactHeader, { paddingTop: insets.top }]}
     >
-      <Pressable
+      <Pressable accessibilityRole="button"
         onPress={() => navigation.goBack()}
         style={styles.backBtn}
       >
@@ -318,7 +318,7 @@ export function ApprovalRequestsScreen({ navigation }: any) {
 
                   {req.status === 'pending' && (
                     <View style={styles.actionRow}>
-                      <Pressable
+                      <Pressable accessibilityRole="button"
                         style={styles.denyBtn}
                         onPress={() =>
                           respondToApproval(
@@ -336,7 +336,7 @@ export function ApprovalRequestsScreen({ navigation }: any) {
                         <Text style={styles.denyBtnText}>{t('family.screens.approvalRequests.deny')}</Text>
                       </Pressable>
 
-                      <Pressable
+                      <Pressable accessibilityRole="button"
                         style={styles.approveBtn}
                         onPress={() =>
                           respondToApproval(

@@ -124,7 +124,7 @@ export function AchievementsScreen({ navigation }: any) {
   const screenHeader = (
     <LinearGradient colors={['#1A1A2E', '#16213E', '#0F3460']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
       <View style={styles.headerTop}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <Text style={styles.headerTitle}>{t('achievements.title')}</Text>
@@ -152,7 +152,7 @@ export function AchievementsScreen({ navigation }: any) {
 
   const screenCompact = (
     <LinearGradient colors={['#1A1A2E', '#16213E', '#0F3460']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>{t('achievements.title')}</Text>
@@ -187,7 +187,7 @@ export function AchievementsScreen({ navigation }: any) {
 
             <View style={styles.tabs}>
               {(['all', 'unlocked', 'progress'] as const).map((t) => (
-                <Pressable key={t} onPress={() => setActiveTab(t)} style={[styles.tab, activeTab === t && styles.tabActive]}>
+                <Pressable accessibilityRole="button" key={t} onPress={() => setActiveTab(t)} style={[styles.tab, activeTab === t && styles.tabActive]}>
                   <Text style={[styles.tabText, activeTab === t && styles.tabTextActive]}>
                     {t === 'all' ? 'All' : t === 'unlocked' ? '🏆 Unlocked' : '🔄 In Progress'}
                   </Text>
@@ -197,7 +197,7 @@ export function AchievementsScreen({ navigation }: any) {
 
             <View style={styles.categoryBar}>
               {CATEGORIES.map((c) => (
-                <Pressable key={c} onPress={() => setCategory(c)} style={[styles.catChip, category === c && styles.catChipActive]}>
+                <Pressable accessibilityRole="button" key={c} onPress={() => setCategory(c)} style={[styles.catChip, category === c && styles.catChipActive]}>
                   <Text style={[styles.catChipText, category === c && styles.catChipTextActive]}>{c}</Text>
                 </Pressable>
               ))}

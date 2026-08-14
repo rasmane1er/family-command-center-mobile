@@ -195,14 +195,14 @@ export function HOAManagerScreen({ navigation }: any) {
       <LinearGradient colors={GRADIENT_COLORS} style={{ paddingTop: insets.top + 8, paddingBottom: 0 }}>
         {/* Header top row */}
         <View style={styles.headerTop}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </Pressable>
           <View style={styles.headerCenter}>
             <Text style={styles.headerTitle}>HOA Manager</Text>
             <Text style={styles.headerSub}>{hoaName}</Text>
           </View>
-          <Pressable
+          <Pressable accessibilityRole="button"
             onPress={() => activeTab === 'Dues' ? setShowAddDuesModal(true) : activeTab === 'Community' ? setShowAddMeetingModal(true) : null}
             style={styles.addBtn}
           >
@@ -233,7 +233,7 @@ export function HOAManagerScreen({ navigation }: any) {
         {/* Tabs */}
         <View style={styles.tabRow}>
           {tabs.map((tab) => (
-            <Pressable
+            <Pressable accessibilityRole="button"
               key={tab}
               onPress={() => setActiveTab(tab)}
               style={activeTab === tab ? styles.tabActive : styles.tabInactive}
@@ -288,7 +288,7 @@ export function HOAManagerScreen({ navigation }: any) {
                       <View style={styles.duesRight}>
                         <Text style={[styles.duesAmount, { color: statusColor }]}>{formatCurrency(record.amount)}</Text>
                         {canPay && (
-                          <Pressable
+                          <Pressable accessibilityRole="button"
                             onPress={() => handleMarkPaid(record.id, record.period)}
                             style={styles.payBtn}
                           >
@@ -320,7 +320,7 @@ export function HOAManagerScreen({ navigation }: any) {
                     const isExpanded = expandedRuleId === rule.id;
                     const sevColor = getSeverityColor(rule.severity);
                     return (
-                      <Pressable
+                      <Pressable accessibilityRole="button"
                         key={rule.id}
                         onPress={() => setExpandedRuleId(isExpanded ? null : rule.id)}
                         onLongPress={() => handleDeleteRule(rule.id, rule.title)}
@@ -384,7 +384,7 @@ export function HOAManagerScreen({ navigation }: any) {
             {/* Upcoming Meetings */}
             <View style={styles.sectionHeaderRow}>
               <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Upcoming Meetings</Text>
-              <Pressable onPress={() => setShowAddMeetingModal(true)}>
+              <Pressable accessibilityRole="button" onPress={() => setShowAddMeetingModal(true)}>
                 <Ionicons name="add-circle-outline" size={22} color='#455A64' />
               </Pressable>
             </View>
@@ -448,7 +448,7 @@ export function HOAManagerScreen({ navigation }: any) {
 
       {/* FAB */}
       {(activeTab === 'Dues' || activeTab === 'Community') && (
-        <Pressable
+        <Pressable accessibilityRole="button"
           style={styles.fab}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -469,7 +469,7 @@ export function HOAManagerScreen({ navigation }: any) {
           <Text style={styles.modalTitle}>Add Dues Record</Text>
           <ScrollView showsVerticalScrollIndicator={false}>
             <Text style={styles.fieldLabel}>Period *</Text>
-            <TextInput
+            <TextInput accessibilityLabel="e.g. August 2026, Q3 2026"
               style={styles.input}
               value={dPeriod}
               onChangeText={setDPeriod}
@@ -477,7 +477,7 @@ export function HOAManagerScreen({ navigation }: any) {
             />
 
             <Text style={styles.fieldLabel}>Amount *</Text>
-            <TextInput
+            <TextInput accessibilityLabel="250"
               style={styles.input}
               value={dAmount}
               onChangeText={setDAmount}
@@ -486,7 +486,7 @@ export function HOAManagerScreen({ navigation }: any) {
             />
 
             <Text style={styles.fieldLabel}>Due Date *</Text>
-            <TextInput
+            <TextInput accessibilityLabel="YYYY-MM-DD"
               style={styles.input}
               value={dDueDate}
               onChangeText={setDDueDate}
@@ -494,7 +494,7 @@ export function HOAManagerScreen({ navigation }: any) {
             />
 
             <Text style={styles.fieldLabel}>Notes</Text>
-            <TextInput
+            <TextInput accessibilityLabel="Optional notes..."
               style={[styles.input, { height: 80 }]}
               value={dNotes}
               onChangeText={setDNotes}
@@ -502,10 +502,10 @@ export function HOAManagerScreen({ navigation }: any) {
               multiline
             />
 
-            <Pressable style={styles.saveBtn} onPress={handleAddDues}>
+            <Pressable accessibilityRole="button" style={styles.saveBtn} onPress={handleAddDues}>
               <Text style={styles.saveBtnText}>Add Dues Record</Text>
             </Pressable>
-            <Pressable style={styles.cancelBtn} onPress={() => { resetDuesForm(); setShowAddDuesModal(false); }}>
+            <Pressable accessibilityRole="button" style={styles.cancelBtn} onPress={() => { resetDuesForm(); setShowAddDuesModal(false); }}>
               <Text style={styles.cancelBtnText}>Cancel</Text>
             </Pressable>
           </ScrollView>
@@ -519,7 +519,7 @@ export function HOAManagerScreen({ navigation }: any) {
           <Text style={styles.modalTitle}>Add Meeting</Text>
           <ScrollView showsVerticalScrollIndicator={false}>
             <Text style={styles.fieldLabel}>Title *</Text>
-            <TextInput
+            <TextInput accessibilityLabel="e.g. Annual Board Meeting"
               style={styles.input}
               value={mTitle}
               onChangeText={setMTitle}
@@ -527,7 +527,7 @@ export function HOAManagerScreen({ navigation }: any) {
             />
 
             <Text style={styles.fieldLabel}>Date *</Text>
-            <TextInput
+            <TextInput accessibilityLabel="YYYY-MM-DD"
               style={styles.input}
               value={mDate}
               onChangeText={setMDate}
@@ -535,7 +535,7 @@ export function HOAManagerScreen({ navigation }: any) {
             />
 
             <Text style={styles.fieldLabel}>Location</Text>
-            <TextInput
+            <TextInput accessibilityLabel="e.g. Clubhouse, Main Hall"
               style={styles.input}
               value={mLocation}
               onChangeText={setMLocation}
@@ -543,7 +543,7 @@ export function HOAManagerScreen({ navigation }: any) {
             />
 
             <Text style={styles.fieldLabel}>Notes</Text>
-            <TextInput
+            <TextInput accessibilityLabel="Agenda, topics..."
               style={[styles.input, { height: 80 }]}
               value={mNotes}
               onChangeText={setMNotes}
@@ -560,10 +560,10 @@ export function HOAManagerScreen({ navigation }: any) {
               />
             </View>
 
-            <Pressable style={styles.saveBtn} onPress={handleAddMeeting}>
+            <Pressable accessibilityRole="button" style={styles.saveBtn} onPress={handleAddMeeting}>
               <Text style={styles.saveBtnText}>Add Meeting</Text>
             </Pressable>
-            <Pressable style={styles.cancelBtn} onPress={() => { resetMeetingForm(); setShowAddMeetingModal(false); }}>
+            <Pressable accessibilityRole="button" style={styles.cancelBtn} onPress={() => { resetMeetingForm(); setShowAddMeetingModal(false); }}>
               <Text style={styles.cancelBtnText}>Cancel</Text>
             </Pressable>
           </ScrollView>

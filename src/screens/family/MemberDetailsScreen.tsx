@@ -191,7 +191,7 @@ export function MemberDetailsScreen({ route, navigation: navProp }: any) {
     return (
       <View style={styles.center}>
         <StatusBar style="dark" />
-        <Pressable onPress={() => navigation.goBack()} style={styles.backBtnLight}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtnLight}>
           <Ionicons name="arrow-back" size={22} color={colors.text} />
         </Pressable>
         <Text style={styles.notFound}>Member not found</Text>
@@ -222,7 +222,7 @@ export function MemberDetailsScreen({ route, navigation: navProp }: any) {
       <View style={styles.swoosh} pointerEvents="none" />
       <DotGrid />
 
-      <Pressable onPress={goBackToList} style={styles.backBtn} hitSlop={8}>
+      <Pressable accessibilityRole="button" onPress={goBackToList} style={styles.backBtn} hitSlop={8}>
         <Ionicons name="arrow-back" size={20} color="#fff" />
       </Pressable>
 
@@ -231,7 +231,7 @@ export function MemberDetailsScreen({ route, navigation: navProp }: any) {
           <Avatar name={member.name} color={member.avatarColor} size={104} />
         </View>
         <Text style={styles.name}>{titleCase(member.name)}</Text>
-        <Pressable
+        <Pressable accessibilityRole="button"
           style={styles.rolePill}
           onPress={canManageFamily && member.id !== activeMemberId ? handleChangeRole : undefined}
           hitSlop={6}
@@ -278,7 +278,7 @@ export function MemberDetailsScreen({ route, navigation: navProp }: any) {
 
   const screenCompact = (
     <View style={[styles.compactBar, { backgroundColor: HEADER_BG_BOTTOM, paddingTop: insets.top }]}>
-      <Pressable onPress={goBackToList} style={styles.backBtn} hitSlop={8}>
+      <Pressable accessibilityRole="button" onPress={goBackToList} style={styles.backBtn} hitSlop={8}>
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </Pressable>
       <Text style={[styles.name, styles.compactName]} numberOfLines={1}>{titleCase(member.name)}</Text>
@@ -332,7 +332,7 @@ export function MemberDetailsScreen({ route, navigation: navProp }: any) {
             {LOVE_LANGUAGES.map((ll) => {
               const selected = member.loveLanguage === ll;
               return (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={ll}
                   onPress={() => updateMember(member.id, { loveLanguage: ll })}
                   style={[styles.llChip, selected && { backgroundColor: member.avatarColor + '16', borderColor: member.avatarColor }]}
@@ -403,7 +403,7 @@ export function MemberDetailsScreen({ route, navigation: navProp }: any) {
         {canManageFamily && member.id !== activeMemberId && (
           <Card style={styles.card} variant="outlined">
             <SectionTitle icon="warning-outline" color={colors.danger}>{t('memberDetails.dangerZone')}</SectionTitle>
-            <Pressable onPress={handleDeleteMember} style={styles.deleteRow} disabled={isDeleting}>
+            <Pressable accessibilityRole="button" onPress={handleDeleteMember} style={styles.deleteRow} disabled={isDeleting}>
               {isDeleting ? (
                 <ActivityIndicator size="small" color={colors.danger} />
               ) : (

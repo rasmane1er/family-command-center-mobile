@@ -53,7 +53,7 @@ function JournalDetailModal({ entry, onClose }: { entry: JournalEntry; onClose: 
 
       <ScrollView contentContainerStyle={[styles.detailContent, { paddingBottom: 100 }]}>
         <LinearGradient colors={['#B7410E', MOOD_COLORS[entry.mood]]} style={[styles.detailHeader, { paddingTop: insets.top + 6 }]}>
-          <Pressable onPress={onClose} style={styles.back}>
+          <Pressable accessibilityRole="button" onPress={onClose} style={styles.back}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </Pressable>
           <Text style={styles.detailEmoji}>{entry.emoji}</Text>
@@ -93,7 +93,7 @@ function JournalDetailModal({ entry, onClose }: { entry: JournalEntry; onClose: 
             const count = reactionCounts[emoji] ?? 0;
             const isMine = myReaction?.emoji === emoji;
             return (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={emoji}
                 onPress={() => handleReaction(emoji)}
                 style={[styles.reactBtn, isMine && styles.reactBtnActive]}
@@ -132,7 +132,7 @@ interface JournalEntryCardProps {
 const JournalEntryCard = React.memo(function JournalEntryCard({ entry, author, onPress, onLongPress }: JournalEntryCardProps) {
   const reactionCount = entry.reactions.length;
   return (
-    <Pressable onPress={() => onPress(entry)} onLongPress={() => onLongPress(entry)}>
+    <Pressable accessibilityRole="button" onPress={() => onPress(entry)} onLongPress={() => onLongPress(entry)}>
       <Card style={styles.entryCard} variant="elevated">
         <View style={[styles.moodBar, { backgroundColor: MOOD_COLORS[entry.mood] }]} />
         <View style={styles.entryTop}>
@@ -259,21 +259,21 @@ export function FamilyJournalScreen({ navigation }: any) {
   const screenHeader = (
     <LinearGradient colors={['#7D3C98', '#B7410E']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
       <View style={styles.headerRow}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <View style={{ flex: 1 }}>
           <Text style={styles.headerTitle}>{t('journal.title')}</Text>
           <Text style={styles.headerSub}>{t('family.screens.familyJournal.headerSub', { count: entries.length })}</Text>
         </View>
-        <Pressable onPress={() => setShowAdd(true)} style={styles.addBtn}>
+        <Pressable accessibilityRole="button" onPress={() => setShowAdd(true)} style={styles.addBtn}>
           <Ionicons name="create" size={20} color="#fff" />
         </Pressable>
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
         {filters.map((f) => (
-          <Pressable key={f.key} onPress={() => setFilter(f.key)} style={[styles.filterChip, filter === f.key && styles.filterChipActive]}>
+          <Pressable accessibilityRole="button" key={f.key} onPress={() => setFilter(f.key)} style={[styles.filterChip, filter === f.key && styles.filterChipActive]}>
             <Text style={[styles.filterText, filter === f.key && styles.filterTextActive]}>{f.label}</Text>
           </Pressable>
         ))}
@@ -283,11 +283,11 @@ export function FamilyJournalScreen({ navigation }: any) {
 
   const screenCompact = (
     <LinearGradient colors={['#7D3C98', '#B7410E']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={styles.headerTitle}>{t('journal.title')}</Text>
-      <Pressable onPress={() => setShowAdd(true)} style={styles.addBtn}>
+      <Pressable accessibilityRole="button" onPress={() => setShowAdd(true)} style={styles.addBtn}>
         <Ionicons name="create" size={20} color="#fff" />
       </Pressable>
     </LinearGradient>
@@ -324,7 +324,7 @@ export function FamilyJournalScreen({ navigation }: any) {
         <View style={styles.modal}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{t('journal.addEntry')}</Text>
-            <Pressable onPress={() => setShowAdd(false)}>
+            <Pressable accessibilityRole="button" onPress={() => setShowAdd(false)}>
               <Ionicons name="close" size={24} color={colors.text} />
             </Pressable>
           </View>
@@ -332,7 +332,7 @@ export function FamilyJournalScreen({ navigation }: any) {
             <Text style={styles.modalLabel}>{t('family.screens.familyJournal.howAreYouFeeling')}</Text>
             <View style={styles.moodRow}>
               {([1, 2, 3, 4, 5] as const).map((m) => (
-                <Pressable key={m} onPress={() => setNewMood(m)} style={[styles.moodBtn, newMood === m && { borderColor: MOOD_COLORS[m], backgroundColor: MOOD_COLORS[m] + '15' }]}>
+                <Pressable accessibilityRole="button" key={m} onPress={() => setNewMood(m)} style={[styles.moodBtn, newMood === m && { borderColor: MOOD_COLORS[m], backgroundColor: MOOD_COLORS[m] + '15' }]}>
                   <Text style={{ fontSize: 18 }}>{MOOD_EMOJIS[m]}</Text>
                   <Text style={[styles.moodLabel, newMood === m && { color: MOOD_COLORS[m] }]}>{MOOD_LABELS[m]}</Text>
                 </Pressable>
@@ -342,14 +342,14 @@ export function FamilyJournalScreen({ navigation }: any) {
             <Text style={styles.modalLabel}>{t('family.screens.familyJournal.pickEmoji')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, marginBottom: 20 }}>
               {['✨', '🎉', '❤️', '😊', '💪', '🌟', '🏆', '🌺', '⚽', '🍿', '🌱', '📚', '🎹', '✈️', '🎂'].map((e) => (
-                <Pressable key={e} onPress={() => setNewEmoji(e)} style={[styles.emojiBtn, newEmoji === e && styles.emojiBtnActive]}>
+                <Pressable accessibilityRole="button" key={e} onPress={() => setNewEmoji(e)} style={[styles.emojiBtn, newEmoji === e && styles.emojiBtnActive]}>
                   <Text style={{ fontSize: 18 }}>{e}</Text>
                 </Pressable>
               ))}
             </ScrollView>
 
             <Text style={styles.modalLabel}>{t('family.screens.familyJournal.titleLabel')}</Text>
-            <TextInput
+            <TextInput accessibilityLabel={t('family.screens.familyJournal.titlePlaceholder')}
               style={styles.modalInput}
               value={newTitle}
               onChangeText={setNewTitle}
@@ -358,7 +358,7 @@ export function FamilyJournalScreen({ navigation }: any) {
             />
 
             <Text style={styles.modalLabel}>{t('family.screens.familyJournal.writeItDown')}</Text>
-            <TextInput
+            <TextInput accessibilityLabel={t('family.screens.familyJournal.contentPlaceholder')}
               style={[styles.modalInput, { height: 160, textAlignVertical: 'top' }]}
               value={newContent}
               onChangeText={setNewContent}
@@ -367,7 +367,7 @@ export function FamilyJournalScreen({ navigation }: any) {
               multiline
             />
 
-            <Pressable style={styles.saveBtn} onPress={handleAdd}>
+            <Pressable accessibilityRole="button" style={styles.saveBtn} onPress={handleAdd}>
               <Ionicons name="create" size={18} color="#fff" />
               <Text style={styles.saveBtnText}>{t('family.screens.familyJournal.saveEntry')}</Text>
             </Pressable>

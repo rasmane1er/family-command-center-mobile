@@ -191,13 +191,13 @@ export function ActivitiesTrackerScreen({ navigation }: any) {
               />
             </View>
             <View style={styles.activityActions}>
-              <Pressable
+              <Pressable accessibilityRole="button"
                 onPress={() => { toggleActive(a.id); Haptics.selectionAsync(); }}
                 style={[styles.toggleBtn, a.isActive ? styles.toggleBtnActive : styles.toggleBtnInactive]}
               >
                 <Ionicons name={a.isActive ? 'checkmark' : 'close'} size={14} color={a.isActive ? colors.success : colors.textMuted} />
               </Pressable>
-              <Pressable onPress={() => handleDelete(a)} style={styles.deleteBtn}>
+              <Pressable accessibilityRole="button" onPress={() => handleDelete(a)} style={styles.deleteBtn}>
                 <Ionicons name="trash-outline" size={14} color={colors.textMuted} />
               </Pressable>
             </View>
@@ -275,11 +275,11 @@ export function ActivitiesTrackerScreen({ navigation }: any) {
       style={[styles.header, { paddingTop: insets.top + 6 }]}
     >
       <View style={styles.headerRow}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <Text style={styles.headerTitle}>{t('activities.title')}</Text>
-        <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
+        <Pressable accessibilityRole="button" onPress={() => setShowAddModal(true)} style={styles.addBtn}>
           <Ionicons name="add" size={22} color="#fff" />
         </Pressable>
       </View>
@@ -303,7 +303,7 @@ export function ActivitiesTrackerScreen({ navigation }: any) {
 
   const screenCompact = (
     <LinearGradient colors={['#00695C', '#00897B', '#26A69A']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>{t('activities.title')}</Text>
@@ -331,7 +331,7 @@ export function ActivitiesTrackerScreen({ navigation }: any) {
               style={styles.memberScroll}
               contentContainerStyle={styles.memberScrollContent}
             >
-              <Pressable
+              <Pressable accessibilityRole="button"
                 onPress={() => { setSelectedMemberId('all'); Haptics.selectionAsync(); }}
                 style={[styles.memberTab, selectedMemberId === 'all' && styles.memberTabActive]}
               >
@@ -340,7 +340,7 @@ export function ActivitiesTrackerScreen({ navigation }: any) {
                 </Text>
               </Pressable>
               {members.map((m) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={m.id}
                   onPress={() => { setSelectedMemberId(m.id); Haptics.selectionAsync(); }}
                   style={[styles.memberTab, selectedMemberId === m.id && styles.memberTabActive]}
@@ -356,7 +356,7 @@ export function ActivitiesTrackerScreen({ navigation }: any) {
             {/* Tabs */}
             <View style={styles.tabs}>
               {(['schedule', 'activities', 'costs'] as const).map((t) => (
-                <Pressable key={t} onPress={() => setActiveTab(t)} style={[styles.tab, activeTab === t && styles.tabActive]}>
+                <Pressable accessibilityRole="button" key={t} onPress={() => setActiveTab(t)} style={[styles.tab, activeTab === t && styles.tabActive]}>
                   <Text style={[styles.tabText, activeTab === t && styles.tabTextActive]}>
                     {t.charAt(0).toUpperCase() + t.slice(1)}
                   </Text>
@@ -378,7 +378,7 @@ export function ActivitiesTrackerScreen({ navigation }: any) {
                 const count = filteredActivities.filter((a) => a.scheduleDays.includes(day)).length;
                 const isSelected = day === selectedScheduleDay;
                 return (
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     key={day}
                     onPress={() => { setSelectedScheduleDay(day); Haptics.selectionAsync(); }}
                     style={[styles.weekDayBtn, isSelected && styles.weekDayBtnActive]}
@@ -471,7 +471,7 @@ export function ActivitiesTrackerScreen({ navigation }: any) {
           <Text style={styles.modalLabel}>Member</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
             {members.map((m) => (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={m.id}
                 onPress={() => setModalMemberId(m.id)}
                 style={[styles.memberChip, modalMemberId === m.id && styles.memberChipActive]}
@@ -483,7 +483,7 @@ export function ActivitiesTrackerScreen({ navigation }: any) {
           </ScrollView>
 
           <Text style={styles.modalLabel}>Activity Name</Text>
-          <TextInput
+          <TextInput accessibilityLabel="e.g. Soccer, Piano Lessons..."
             style={styles.modalInput}
             placeholder="e.g. Soccer, Piano Lessons..."
             value={modalName}
@@ -494,7 +494,7 @@ export function ActivitiesTrackerScreen({ navigation }: any) {
           <Text style={styles.modalLabel}>Type</Text>
           <View style={styles.typeGrid}>
             {ACTIVITY_TYPES.map((t) => (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={t.type}
                 onPress={() => { setModalType(t.type); setModalIcon(t.icon); }}
                 style={[styles.typeChip, modalType === t.type && styles.typeChipActive]}
@@ -510,7 +510,7 @@ export function ActivitiesTrackerScreen({ navigation }: any) {
           <Text style={styles.modalLabel}>Color</Text>
           <View style={styles.colorRow}>
             {ACTIVITY_COLORS.map((c) => (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={c}
                 onPress={() => setModalColor(c)}
                 style={[styles.colorSwatch, { backgroundColor: c }, modalColor === c && styles.colorSwatchSelected]}
@@ -521,7 +521,7 @@ export function ActivitiesTrackerScreen({ navigation }: any) {
           <Text style={styles.modalLabel}>Schedule Days</Text>
           <View style={styles.daysRow}>
             {ALL_DAYS.map((day) => (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={day}
                 onPress={() => toggleDay(day)}
                 style={[styles.dayToggle, modalDays.includes(day) && styles.dayToggleActive]}
@@ -534,7 +534,7 @@ export function ActivitiesTrackerScreen({ navigation }: any) {
           </View>
 
           <Text style={styles.modalLabel}>Time (optional)</Text>
-          <TextInput
+          <TextInput accessibilityLabel="Time (optional)"
             style={styles.modalInput}
             placeholder='e.g. "3:30 PM"'
             value={modalTime}
@@ -543,7 +543,7 @@ export function ActivitiesTrackerScreen({ navigation }: any) {
           />
 
           <Text style={styles.modalLabel}>Monthly Cost ($)</Text>
-          <TextInput
+          <TextInput accessibilityLabel="0 for free"
             style={styles.modalInput}
             placeholder="0 for free"
             value={modalCost}
@@ -553,7 +553,7 @@ export function ActivitiesTrackerScreen({ navigation }: any) {
           />
 
           <Text style={styles.modalLabel}>Location (optional)</Text>
-          <TextInput
+          <TextInput accessibilityLabel="Location..."
             style={styles.modalInput}
             placeholder="Location..."
             value={modalLocation}
@@ -562,7 +562,7 @@ export function ActivitiesTrackerScreen({ navigation }: any) {
           />
 
           <Text style={styles.modalLabel}>Coach/Instructor (optional)</Text>
-          <TextInput
+          <TextInput accessibilityLabel="Coach name..."
             style={styles.modalInput}
             placeholder="Coach name..."
             value={modalCoach}
@@ -571,7 +571,7 @@ export function ActivitiesTrackerScreen({ navigation }: any) {
           />
 
           <Text style={styles.modalLabel}>Equipment (comma-separated)</Text>
-          <TextInput
+          <TextInput accessibilityLabel="e.g. Cleats, Shin Guards, Jersey"
             style={styles.modalInput}
             placeholder="e.g. Cleats, Shin Guards, Jersey"
             value={modalEquipment}
@@ -580,7 +580,7 @@ export function ActivitiesTrackerScreen({ navigation }: any) {
           />
 
           <Text style={styles.modalLabel}>Notes (optional)</Text>
-          <TextInput
+          <TextInput accessibilityLabel="Additional notes..."
             style={[styles.modalInput, { height: 80, textAlignVertical: 'top' }]}
             placeholder="Additional notes..."
             value={modalNotes}

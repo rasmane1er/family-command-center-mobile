@@ -279,11 +279,11 @@ const visibleChildren =
       style={[styles.header, { paddingTop: insets.top + 6 }]}
     >
       <View style={styles.headerRow}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <Text style={styles.headerTitle}>{t('homework.title')}</Text>
-        <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
+        <Pressable accessibilityRole="button" onPress={() => setShowAddModal(true)} style={styles.addBtn}>
           <Ionicons name="add" size={22} color="#fff" />
         </Pressable>
       </View>
@@ -308,7 +308,7 @@ const visibleChildren =
       {role !== 'child' && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.memberScroll} contentContainerStyle={styles.memberScrollContent}>
           {visibleChildren.map((m) => (
-            <Pressable
+            <Pressable accessibilityRole="button"
               key={m.id}
               onPress={() => { setSelectedMemberId(m.id); Haptics.selectionAsync(); }}
               style={[styles.memberTab, selectedMemberId === m.id && { borderBottomColor: '#3949AB', borderBottomWidth: 2.5 }]}
@@ -324,7 +324,7 @@ const visibleChildren =
     
     <View style={styles.tabs}>
             {(['due_soon', 'all', 'grades'] as const).map((t) => (
-              <Pressable key={t} onPress={() => setActiveTab(t)} style={[styles.tab, activeTab === t && styles.tabActive]}>
+              <Pressable accessibilityRole="button" key={t} onPress={() => setActiveTab(t)} style={[styles.tab, activeTab === t && styles.tabActive]}>
                 <Text style={[styles.tabText, activeTab === t && styles.tabTextActive]}>
                   {t === 'due_soon' ? 'Due Soon' : t === 'all' ? 'All' : 'Grades'}
                 </Text>
@@ -336,11 +336,11 @@ const visibleChildren =
 
   const screenCompact = (
     <LinearGradient colors={['#1A237E', '#283593']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={styles.headerTitle}>{t('homework.title')}</Text>
-      <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
+      <Pressable accessibilityRole="button" onPress={() => setShowAddModal(true)} style={styles.addBtn}>
         <Ionicons name="add" size={22} color="#fff" />
       </Pressable>
     </LinearGradient>
@@ -450,7 +450,7 @@ const visibleChildren =
           <Text style={styles.modalLabel}>Member</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
            {visibleChildren.map((m) => (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={m.id}
                 onPress={() => setModalMemberId(m.id)}
                 style={[styles.memberChip, modalMemberId === m.id && styles.memberChipActive]}
@@ -462,7 +462,7 @@ const visibleChildren =
           </ScrollView>
 
           <Text style={styles.modalLabel}>Subject</Text>
-          <TextInput
+          <TextInput accessibilityLabel="e.g. Math, Science, English..."
             style={styles.modalInput}
             placeholder="e.g. Math, Science, English..."
             value={modalSubject}
@@ -473,7 +473,7 @@ const visibleChildren =
           <Text style={styles.modalLabel}>Subject Color</Text>
           <View style={styles.colorRow}>
             {SUBJECT_COLORS.map((c) => (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={c}
                 onPress={() => setModalSubjectColor(c)}
                 style={[styles.colorSwatch, { backgroundColor: c }, modalSubjectColor === c && styles.colorSwatchSelected]}
@@ -482,7 +482,7 @@ const visibleChildren =
           </View>
 
           <Text style={styles.modalLabel}>Assignment Title</Text>
-          <TextInput
+          <TextInput accessibilityLabel="Assignment title..."
             style={styles.modalInput}
             placeholder="Assignment title..."
             value={modalTitle}
@@ -491,7 +491,7 @@ const visibleChildren =
           />
 
           <Text style={styles.modalLabel}>Description (optional)</Text>
-          <TextInput
+          <TextInput accessibilityLabel="Additional details..."
             style={[styles.modalInput, { height: 80, textAlignVertical: 'top' }]}
             placeholder="Additional details..."
             value={modalDescription}
@@ -501,7 +501,7 @@ const visibleChildren =
           />
 
           <Text style={styles.modalLabel}>Due Date (YYYY-MM-DD)</Text>
-          <TextInput
+          <TextInput accessibilityLabel="2026-07-01"
             style={styles.modalInput}
             placeholder="2026-07-01"
             value={modalDueDate}
@@ -512,7 +512,7 @@ const visibleChildren =
           <Text style={styles.modalLabel}>Priority</Text>
           <View style={styles.chipRow}>
             {(['low', 'medium', 'high'] as AssignmentPriority[]).map((p) => (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={p}
                 onPress={() => setModalPriority(p)}
                 style={[styles.priorityChip, modalPriority === p && styles.priorityChipActive]}
@@ -525,7 +525,7 @@ const visibleChildren =
           </View>
 
           <Text style={styles.modalLabel}>Estimated Minutes (optional)</Text>
-          <TextInput
+          <TextInput accessibilityLabel="e.g. 45"
             style={styles.modalInput}
             placeholder="e.g. 45"
             value={modalMinutes}

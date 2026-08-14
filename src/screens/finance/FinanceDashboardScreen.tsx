@@ -662,7 +662,7 @@ export function FinanceDashboardScreen({ navigation }: any) {
           </View>
         </View>
         {overdueBills.length > 0 && (
-          <Pressable onPress={() => handleTabPress('bills')} style={s.urgentPill}>
+          <Pressable accessibilityRole="button" onPress={() => handleTabPress('bills')} style={s.urgentPill}>
             <Ionicons name="warning" size={12} color="#fff" />
             <Text style={s.urgentPillText}>{overdueBills.length} overdue</Text>
           </Pressable>
@@ -702,7 +702,7 @@ export function FinanceDashboardScreen({ navigation }: any) {
         {NAV_TABS.map((tab) => {
           const active = activeTab === tab.key;
           return (
-            <Pressable key={tab.key} onPress={() => handleTabPress(tab.key)}
+            <Pressable accessibilityRole="button" key={tab.key} onPress={() => handleTabPress(tab.key)}
               style={[s.tabPill, active && s.tabPillActive]}>
               <Ionicons name={tab.icon as any} size={13}
                 color={active ? colors.primary : 'rgba(255,255,255,0.5)'} />
@@ -800,7 +800,7 @@ export function FinanceDashboardScreen({ navigation }: any) {
           </>
         )}
         {plaidAccounts.length === 0 && (
-          <Pressable onPress={() => navigation.navigate('ConnectBank')} style={s.connectPrompt}>
+          <Pressable accessibilityRole="button" onPress={() => navigation.navigate('ConnectBank')} style={s.connectPrompt}>
             <Ionicons name="link" size={20} color="#10B981" />
             <Text style={s.connectPromptText}>Connect your bank to see live balances</Text>
             <Ionicons name="chevron-forward" size={16} color="#10B981" />
@@ -813,7 +813,7 @@ export function FinanceDashboardScreen({ navigation }: any) {
             <View style={s.sectionDot} />
             <Text style={s.sectionTitle}>Accounts</Text>
           </View>
-          <Pressable onPress={() => setShowAccountModal(true)} style={s.addBtn}>
+          <Pressable accessibilityRole="button" onPress={() => setShowAccountModal(true)} style={s.addBtn}>
             <Ionicons name="add" size={14} color={colors.primary} />
             <Text style={s.addBtnText}>Add</Text>
           </Pressable>
@@ -826,7 +826,7 @@ export function FinanceDashboardScreen({ navigation }: any) {
             const hasPendingLedgerActivity = false; // per-account pending state loads on AccountDetail; dashboard uses date-only freshness
             const freshness = balanceFreshness(acc.type, acc.lastVerifiedAt ?? acc.openingBalanceDate, hasPendingLedgerActivity);
             return (
-              <Pressable key={acc.id} onPress={() => navigation.navigate('AccountDetail', { accountId: acc.id })}>
+              <Pressable accessibilityRole="button" key={acc.id} onPress={() => navigation.navigate('AccountDetail', { accountId: acc.id })}>
               <LinearGradient colors={grad}
                 start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.accountCard}>
                 {/* Shimmer stripe */}
@@ -837,10 +837,10 @@ export function FinanceDashboardScreen({ navigation }: any) {
                     <Text style={s.cardChipText}>{acc.type.toUpperCase()}</Text>
                   </View>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Pressable onPress={() => openEditAccount(acc)} style={s.cardActionBtn} hitSlop={8}>
+                    <Pressable accessibilityRole="button" onPress={() => openEditAccount(acc)} style={s.cardActionBtn} hitSlop={8}>
                       <Ionicons name="pencil" size={14} color="rgba(255,255,255,0.9)" />
                     </Pressable>
-                    <Pressable onPress={() => handleDeleteAccount(acc)} style={s.cardActionBtn} hitSlop={8}>
+                    <Pressable accessibilityRole="button" onPress={() => handleDeleteAccount(acc)} style={s.cardActionBtn} hitSlop={8}>
                       <Ionicons name="trash" size={14} color="rgba(255,255,255,0.9)" />
                     </Pressable>
                     <View style={s.cardIconWrap}>
@@ -883,7 +883,7 @@ export function FinanceDashboardScreen({ navigation }: any) {
           })}
 
           {/* Add card */}
-          <Pressable onPress={() => setShowAccountModal(true)} style={s.addCard}>
+          <Pressable accessibilityRole="button" onPress={() => setShowAccountModal(true)} style={s.addCard}>
             <LinearGradient colors={['#F0F3F9', '#E4EAF2']} style={s.addCardInner}>
               <View style={s.addCardIcon}>
                 <Ionicons name="add" size={28} color={colors.primary} />
@@ -899,7 +899,7 @@ export function FinanceDashboardScreen({ navigation }: any) {
             <View style={s.sectionDot} />
             <Text style={s.sectionTitle}>Budget Status</Text>
           </View>
-          <Pressable onPress={() => handleTabPress('budget')}>
+          <Pressable accessibilityRole="button" onPress={() => handleTabPress('budget')}>
             <Text style={s.seeAll}>View All →</Text>
           </Pressable>
         </View>
@@ -1023,7 +1023,7 @@ export function FinanceDashboardScreen({ navigation }: any) {
             <View style={s.sectionDot} />
             <Text style={s.sectionTitle}>Financial Goals</Text>
           </View>
-          <Pressable onPress={() => setShowGoalModal(true)}>
+          <Pressable accessibilityRole="button" onPress={() => setShowGoalModal(true)}>
             <Text style={s.seeAll}>+ Goal</Text>
           </Pressable>
         </View>
@@ -1060,7 +1060,7 @@ export function FinanceDashboardScreen({ navigation }: any) {
             <View style={s.sectionDot} />
             <Text style={s.sectionTitle}>Recent Transactions</Text>
           </View>
-          <Pressable onPress={() => setShowAllTransactions(true)}><Text style={s.seeAll}>See All →</Text></Pressable>
+          <Pressable accessibilityRole="button" onPress={() => setShowAllTransactions(true)}><Text style={s.seeAll}>See All →</Text></Pressable>
         </View>
         <View style={s.txContainer}>
           {transactions.slice(0, 6).map((tx, idx) => {
@@ -1096,7 +1096,7 @@ export function FinanceDashboardScreen({ navigation }: any) {
         </View>
         <View style={s.toolsGrid}>
           {FINANCE_TOOLS.map((tool) => (
-            <Pressable key={tool.key} onPress={() => navigation.navigate(tool.key)}
+            <Pressable accessibilityRole="button" key={tool.key} onPress={() => navigation.navigate(tool.key)}
               style={({ pressed }) => [s.toolCard, pressed && { opacity: 0.85, transform: [{ scale: 0.96 }] }]}>
               <View style={[s.toolIconWrap, { backgroundColor: tool.bg }]}>
                 <Ionicons name={tool.icon as any} size={24} color={tool.color} />
@@ -1116,7 +1116,7 @@ export function FinanceDashboardScreen({ navigation }: any) {
                 <View style={s.sectionDot} />
                 <Text style={s.sectionTitle}>All Budgets</Text>
               </View>
-              <Pressable onPress={() => setShowBudgetModal(true)} style={s.addBtn}>
+              <Pressable accessibilityRole="button" onPress={() => setShowBudgetModal(true)} style={s.addBtn}>
                 <Ionicons name="add" size={14} color={colors.primary} />
                 <Text style={s.addBtnText}>Add</Text>
               </Pressable>
@@ -1182,7 +1182,7 @@ export function FinanceDashboardScreen({ navigation }: any) {
                       <Text style={s.detectedName}>{d.merchantName}</Text>
                       <Text style={s.detectedMeta}>Due {d.nextDueDate} · ${d.amount.toFixed(2)}</Text>
                     </View>
-                    <Pressable style={s.detectedAddBtn} onPress={() => handleAddDetectedBill(d)}>
+                    <Pressable accessibilityRole="button" style={s.detectedAddBtn} onPress={() => handleAddDetectedBill(d)}>
                       <Ionicons name="add" size={14} color="#fff" />
                       <Text style={s.detectedAddBtnText}>Add</Text>
                     </Pressable>
@@ -1196,7 +1196,7 @@ export function FinanceDashboardScreen({ navigation }: any) {
                 <View style={s.sectionDot} />
                 <Text style={s.sectionTitle}>All Bills</Text>
               </View>
-              <Pressable onPress={() => setShowBillModal(true)} style={s.addBtn}>
+              <Pressable accessibilityRole="button" onPress={() => setShowBillModal(true)} style={s.addBtn}>
                 <Ionicons name="add" size={14} color={colors.primary} />
                 <Text style={s.addBtnText}>Add</Text>
               </Pressable>
@@ -1217,7 +1217,7 @@ export function FinanceDashboardScreen({ navigation }: any) {
                     </Text>
                   </View>
                   {bill.status !== 'paid' && (
-                    <Pressable onPress={() => handleMarkBillPaid(bill.id)} style={s.finActionBtn}>
+                    <Pressable accessibilityRole="button" onPress={() => handleMarkBillPaid(bill.id)} style={s.finActionBtn}>
                       <Text style={s.finActionBtnText}>Mark paid</Text>
                     </Pressable>
                   )}
@@ -1245,10 +1245,10 @@ export function FinanceDashboardScreen({ navigation }: any) {
                       <Text style={s.detectedName}>{d.merchantName}</Text>
                       <Text style={s.detectedMeta}>${d.amount.toFixed(2)} / {d.frequency}</Text>
                     </View>
-                    <Pressable onPress={() => handleDismissDetectedSub(d.merchantName)} style={s.detectedDismissBtn}>
+                    <Pressable accessibilityRole="button" onPress={() => handleDismissDetectedSub(d.merchantName)} style={s.detectedDismissBtn}>
                       <Ionicons name="close" size={14} color={colors.textMuted} />
                     </Pressable>
-                    <Pressable style={s.detectedAddBtn} onPress={() => handleConfirmDetectedSub(d)}>
+                    <Pressable accessibilityRole="button" style={s.detectedAddBtn} onPress={() => handleConfirmDetectedSub(d)}>
                       <Ionicons name="add" size={14} color="#fff" />
                       <Text style={s.detectedAddBtnText}>Add</Text>
                     </Pressable>
@@ -1262,7 +1262,7 @@ export function FinanceDashboardScreen({ navigation }: any) {
                 <View style={s.sectionDot} />
                 <Text style={s.sectionTitle}>Subscriptions</Text>
               </View>
-              <Pressable onPress={() => setShowSubModal(true)} style={s.addBtn}>
+              <Pressable accessibilityRole="button" onPress={() => setShowSubModal(true)} style={s.addBtn}>
                 <Ionicons name="add" size={14} color={colors.primary} />
                 <Text style={s.addBtnText}>Add</Text>
               </Pressable>
@@ -1279,7 +1279,7 @@ export function FinanceDashboardScreen({ navigation }: any) {
                     ${sub.amount.toLocaleString()} / {sub.billingCycle} · Renews {format(new Date(sub.nextBillingDate), 'MMM d')}
                   </Text>
                 </View>
-                <Pressable onPress={() => handleCancelSubscription(sub.id)} style={s.finCancelBtn}>
+                <Pressable accessibilityRole="button" onPress={() => handleCancelSubscription(sub.id)} style={s.finCancelBtn}>
                   <Text style={s.finCancelBtnText}>Cancel</Text>
                 </Pressable>
               </View>
@@ -1308,7 +1308,7 @@ export function FinanceDashboardScreen({ navigation }: any) {
                     <Text style={[s.finValueText, { marginRight: 10 }]}>
                       ${acct.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                     </Text>
-                    <Pressable style={s.detectedAddBtn} onPress={() => handlePrefillAssetFromPlaid(acct)}>
+                    <Pressable accessibilityRole="button" style={s.detectedAddBtn} onPress={() => handlePrefillAssetFromPlaid(acct)}>
                       <Ionicons name="add" size={14} color="#fff" />
                       <Text style={s.detectedAddBtnText}>Import</Text>
                     </Pressable>
@@ -1322,7 +1322,7 @@ export function FinanceDashboardScreen({ navigation }: any) {
                 <View style={s.sectionDot} />
                 <Text style={s.sectionTitle}>Assets</Text>
               </View>
-              <Pressable onPress={() => setShowAssetModal(true)} style={s.addBtn}>
+              <Pressable accessibilityRole="button" onPress={() => setShowAssetModal(true)} style={s.addBtn}>
                 <Ionicons name="add" size={14} color={colors.primary} />
                 <Text style={s.addBtnText}>Add</Text>
               </Pressable>
@@ -1338,10 +1338,10 @@ export function FinanceDashboardScreen({ navigation }: any) {
                   <Text style={s.finMeta}>{asset.category}</Text>
                 </View>
                 <Text style={s.finValueText}>${asset.value.toLocaleString()}</Text>
-                <Pressable hitSlop={8} style={{ marginLeft: 10 }} onPress={() => openEditAsset(asset)}>
+                <Pressable accessibilityRole="button" hitSlop={8} style={{ marginLeft: 10 }} onPress={() => openEditAsset(asset)}>
                   <Ionicons name="pencil-outline" size={18} color={colors.textMuted} />
                 </Pressable>
-                <Pressable
+                <Pressable accessibilityRole="button"
                   hitSlop={8}
                   style={{ marginLeft: 10 }}
                   onPress={() => {
@@ -1363,7 +1363,7 @@ export function FinanceDashboardScreen({ navigation }: any) {
       </CollapsibleHeader>
 
       {/* ── RECEIPT SCANNER FAB ── */}
-      <Pressable
+      <Pressable accessibilityRole="button"
         onPress={() => navigation.navigate('ReceiptScanner')}
         style={({ pressed }) => [s.fab, pressed && { opacity: 0.85, transform: [{ scale: 0.94 }] }]}
       >
@@ -1376,19 +1376,19 @@ export function FinanceDashboardScreen({ navigation }: any) {
           <View style={s.modalHandle} />
           <Text style={s.modalTitle}>{editingAccountId ? 'Edit Account' : 'Add Account'}</Text>
           <Text style={s.modalLabel}>Account Name *</Text>
-          <TextInput style={s.modalInput} placeholder="e.g. Chase Checking" value={newAccName} onChangeText={setNewAccName} placeholderTextColor={colors.textMuted} autoFocus />
+          <TextInput accessibilityLabel="e.g. Chase Checking" style={s.modalInput} placeholder="e.g. Chase Checking" value={newAccName} onChangeText={setNewAccName} placeholderTextColor={colors.textMuted} autoFocus />
           <Text style={s.modalLabel}>Account Type</Text>
           <View style={s.typeGrid}>
             {ACCOUNT_TYPES.map((t) => (
-              <Pressable key={t} onPress={() => setNewAccType(t)} style={[s.typeChip, newAccType === t && s.typeChipActive]}>
+              <Pressable accessibilityRole="button" key={t} onPress={() => setNewAccType(t)} style={[s.typeChip, newAccType === t && s.typeChipActive]}>
                 <Text style={[s.typeChipText, newAccType === t && s.typeChipTextActive]}>{t.charAt(0).toUpperCase() + t.slice(1)}</Text>
               </Pressable>
             ))}
           </View>
           <Text style={s.modalLabel}>Current Balance ($)</Text>
-          <TextInput style={s.modalInput} placeholder="0.00" value={newAccBalance} onChangeText={setNewAccBalance} keyboardType="decimal-pad" placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="0.00" style={s.modalInput} placeholder="0.00" value={newAccBalance} onChangeText={setNewAccBalance} keyboardType="decimal-pad" placeholderTextColor={colors.textMuted} />
           <Text style={s.modalLabel}>Institution (optional)</Text>
-          <TextInput style={[s.modalInput, { marginBottom: 24 }]} placeholder="e.g. Chase, Fidelity" value={newAccInstitution} onChangeText={setNewAccInstitution} placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="e.g. Chase, Fidelity" style={[s.modalInput, { marginBottom: 24 }]} placeholder="e.g. Chase, Fidelity" value={newAccInstitution} onChangeText={setNewAccInstitution} placeholderTextColor={colors.textMuted} />
           <Button title={editingAccountId ? 'Save Changes' : 'Add Account'} onPress={handleSaveAccount} fullWidth size="lg" disabled={!newAccName.trim()} />
           <Button title="Cancel" onPress={closeAccountModal} variant="ghost" fullWidth style={{ marginTop: 8 }} />
         </ScrollView>
@@ -1423,7 +1423,7 @@ export function FinanceDashboardScreen({ navigation }: any) {
                   <Text style={[s.txAmount, { color: dotColor, marginRight: 10 }]}>
                     {isIncome ? '+' : isExpense ? '-' : ''}${tx.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                   </Text>
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     hitSlop={8}
                     onPress={() => {
                       Alert.alert('Delete Transaction?', 'This cannot be undone.', [
@@ -1448,13 +1448,13 @@ export function FinanceDashboardScreen({ navigation }: any) {
           <View style={s.modalHandle} />
           <Text style={s.modalTitle}>Add Financial Goal</Text>
           <Text style={s.modalLabel}>Goal Name *</Text>
-          <TextInput style={s.modalInput} placeholder="e.g. Emergency Fund" value={newGoalName} onChangeText={setNewGoalName} placeholderTextColor={colors.textMuted} autoFocus />
+          <TextInput accessibilityLabel="e.g. Emergency Fund" style={s.modalInput} placeholder="e.g. Emergency Fund" value={newGoalName} onChangeText={setNewGoalName} placeholderTextColor={colors.textMuted} autoFocus />
           <Text style={s.modalLabel}>Target Amount ($) *</Text>
-          <TextInput style={s.modalInput} placeholder="10000" value={newGoalTarget} onChangeText={setNewGoalTarget} keyboardType="decimal-pad" placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="10000" style={s.modalInput} placeholder="10000" value={newGoalTarget} onChangeText={setNewGoalTarget} keyboardType="decimal-pad" placeholderTextColor={colors.textMuted} />
           <Text style={s.modalLabel}>Icon</Text>
           <View style={s.iconGrid}>
             {GOAL_ICONS.map((icon) => (
-              <Pressable key={icon} onPress={() => setNewGoalIcon(icon)}
+              <Pressable accessibilityRole="button" key={icon} onPress={() => setNewGoalIcon(icon)}
                 style={[s.iconBtn, newGoalIcon === icon && { backgroundColor: newGoalColor, borderColor: 'transparent' }]}>
                 <Ionicons name={icon as any} size={22} color={newGoalIcon === icon ? '#fff' : colors.textSecondary} />
               </Pressable>
@@ -1463,7 +1463,7 @@ export function FinanceDashboardScreen({ navigation }: any) {
           <Text style={s.modalLabel}>Color</Text>
           <View style={[s.colorRow, { marginBottom: 24 }]}>
             {GOAL_COLORS.map((c) => (
-              <Pressable key={c} onPress={() => setNewGoalColor(c)}
+              <Pressable accessibilityRole="button" key={c} onPress={() => setNewGoalColor(c)}
                 style={[s.colorSwatch, { backgroundColor: c }, newGoalColor === c && s.colorSwatchSelected]} />
             ))}
           </View>
@@ -1478,13 +1478,13 @@ export function FinanceDashboardScreen({ navigation }: any) {
           <View style={s.modalHandle} />
           <Text style={s.modalTitle}>Add Budget Category</Text>
           <Text style={s.modalLabel}>Category Name *</Text>
-          <TextInput style={s.modalInput} placeholder="e.g. Groceries" value={newBudgetCategory} onChangeText={setNewBudgetCategory} placeholderTextColor={colors.textMuted} autoFocus />
+          <TextInput accessibilityLabel="e.g. Groceries" style={s.modalInput} placeholder="e.g. Groceries" value={newBudgetCategory} onChangeText={setNewBudgetCategory} placeholderTextColor={colors.textMuted} autoFocus />
           <Text style={s.modalLabel}>Monthly Limit ($) *</Text>
-          <TextInput style={s.modalInput} placeholder="500" value={newBudgetLimit} onChangeText={setNewBudgetLimit} keyboardType="decimal-pad" placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="500" style={s.modalInput} placeholder="500" value={newBudgetLimit} onChangeText={setNewBudgetLimit} keyboardType="decimal-pad" placeholderTextColor={colors.textMuted} />
           <Text style={s.modalLabel}>Icon</Text>
           <View style={s.iconGrid}>
             {BUDGET_ICONS.map((icon) => (
-              <Pressable key={icon} onPress={() => setNewBudgetIcon(icon)}
+              <Pressable accessibilityRole="button" key={icon} onPress={() => setNewBudgetIcon(icon)}
                 style={[s.iconBtn, newBudgetIcon === icon && { backgroundColor: newBudgetColor, borderColor: 'transparent' }]}>
                 <Ionicons name={icon as any} size={22} color={newBudgetIcon === icon ? '#fff' : colors.textSecondary} />
               </Pressable>
@@ -1493,7 +1493,7 @@ export function FinanceDashboardScreen({ navigation }: any) {
           <Text style={s.modalLabel}>Color</Text>
           <View style={[s.colorRow, { marginBottom: 24 }]}>
             {BUDGET_COLORS.map((c) => (
-              <Pressable key={c} onPress={() => setNewBudgetColor(c)}
+              <Pressable accessibilityRole="button" key={c} onPress={() => setNewBudgetColor(c)}
                 style={[s.colorSwatch, { backgroundColor: c }, newBudgetColor === c && s.colorSwatchSelected]} />
             ))}
           </View>
@@ -1508,20 +1508,20 @@ export function FinanceDashboardScreen({ navigation }: any) {
           <View style={s.modalHandle} />
           <Text style={s.modalTitle}>Add Bill</Text>
           <Text style={s.modalLabel}>Bill Name *</Text>
-          <TextInput style={s.modalInput} placeholder="e.g. Electric Bill" value={newBillName} onChangeText={setNewBillName} placeholderTextColor={colors.textMuted} autoFocus />
+          <TextInput accessibilityLabel="e.g. Electric Bill" style={s.modalInput} placeholder="e.g. Electric Bill" value={newBillName} onChangeText={setNewBillName} placeholderTextColor={colors.textMuted} autoFocus />
           <Text style={s.modalLabel}>Amount ($) *</Text>
-          <TextInput style={s.modalInput} placeholder="145.00" value={newBillAmount} onChangeText={setNewBillAmount} keyboardType="decimal-pad" placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="145.00" style={s.modalInput} placeholder="145.00" value={newBillAmount} onChangeText={setNewBillAmount} keyboardType="decimal-pad" placeholderTextColor={colors.textMuted} />
           <Text style={s.modalLabel}>Category</Text>
           <View style={s.typeGrid}>
             {BILL_CATEGORIES.map((c) => (
-              <Pressable key={c} onPress={() => setNewBillCategory(c)} style={[s.typeChip, newBillCategory === c && s.typeChipActive]}>
+              <Pressable accessibilityRole="button" key={c} onPress={() => setNewBillCategory(c)} style={[s.typeChip, newBillCategory === c && s.typeChipActive]}>
                 <Text style={[s.typeChipText, newBillCategory === c && s.typeChipTextActive]}>{c}</Text>
               </Pressable>
             ))}
           </View>
           <Text style={s.modalLabel}>Due In (days)</Text>
-          <TextInput style={s.modalInput} placeholder="14" value={newBillDueDays} onChangeText={setNewBillDueDays} keyboardType="number-pad" placeholderTextColor={colors.textMuted} />
-          <Pressable onPress={() => setNewBillAutoPay(!newBillAutoPay)} style={s.autoPayRow}>
+          <TextInput accessibilityLabel="14" style={s.modalInput} placeholder="14" value={newBillDueDays} onChangeText={setNewBillDueDays} keyboardType="number-pad" placeholderTextColor={colors.textMuted} />
+          <Pressable accessibilityRole="button" onPress={() => setNewBillAutoPay(!newBillAutoPay)} style={s.autoPayRow}>
             <Ionicons name={newBillAutoPay ? 'checkbox' : 'square-outline'} size={22} color={newBillAutoPay ? colors.primary : colors.textMuted} />
             <Text style={s.autoPayText}>Auto-pay enabled</Text>
           </Pressable>
@@ -1536,13 +1536,13 @@ export function FinanceDashboardScreen({ navigation }: any) {
           <View style={s.modalHandle} />
           <Text style={s.modalTitle}>Add Subscription</Text>
           <Text style={s.modalLabel}>Name *</Text>
-          <TextInput style={s.modalInput} placeholder="e.g. Netflix" value={newSubName} onChangeText={setNewSubName} placeholderTextColor={colors.textMuted} autoFocus />
+          <TextInput accessibilityLabel="e.g. Netflix" style={s.modalInput} placeholder="e.g. Netflix" value={newSubName} onChangeText={setNewSubName} placeholderTextColor={colors.textMuted} autoFocus />
           <Text style={s.modalLabel}>Amount ($) *</Text>
-          <TextInput style={s.modalInput} placeholder="15.99" value={newSubAmount} onChangeText={setNewSubAmount} keyboardType="decimal-pad" placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="15.99" style={s.modalInput} placeholder="15.99" value={newSubAmount} onChangeText={setNewSubAmount} keyboardType="decimal-pad" placeholderTextColor={colors.textMuted} />
           <Text style={s.modalLabel}>Billing Cycle</Text>
           <View style={s.typeGrid}>
             {BILLING_CYCLES.map((c) => (
-              <Pressable key={c} onPress={() => setNewSubCycle(c)} style={[s.typeChip, newSubCycle === c && s.typeChipActive]}>
+              <Pressable accessibilityRole="button" key={c} onPress={() => setNewSubCycle(c)} style={[s.typeChip, newSubCycle === c && s.typeChipActive]}>
                 <Text style={[s.typeChipText, newSubCycle === c && s.typeChipTextActive]}>{c.charAt(0).toUpperCase() + c.slice(1)}</Text>
               </Pressable>
             ))}
@@ -1550,7 +1550,7 @@ export function FinanceDashboardScreen({ navigation }: any) {
           <Text style={s.modalLabel}>Category</Text>
           <View style={[s.typeGrid, { marginBottom: 24 }]}>
             {SUB_CATEGORIES.map((c) => (
-              <Pressable key={c} onPress={() => setNewSubCategory(c)} style={[s.typeChip, newSubCategory === c && s.typeChipActive]}>
+              <Pressable accessibilityRole="button" key={c} onPress={() => setNewSubCategory(c)} style={[s.typeChip, newSubCategory === c && s.typeChipActive]}>
                 <Text style={[s.typeChipText, newSubCategory === c && s.typeChipTextActive]}>{c}</Text>
               </Pressable>
             ))}
@@ -1566,13 +1566,13 @@ export function FinanceDashboardScreen({ navigation }: any) {
           <View style={s.modalHandle} />
           <Text style={s.modalTitle}>{editingAssetId ? 'Edit Asset' : 'Add Asset'}</Text>
           <Text style={s.modalLabel}>Asset Name *</Text>
-          <TextInput style={s.modalInput} placeholder="e.g. 2019 Honda Accord" value={newAssetName} onChangeText={setNewAssetName} placeholderTextColor={colors.textMuted} autoFocus />
+          <TextInput accessibilityLabel="e.g. 2019 Honda Accord" style={s.modalInput} placeholder="e.g. 2019 Honda Accord" value={newAssetName} onChangeText={setNewAssetName} placeholderTextColor={colors.textMuted} autoFocus />
           <Text style={s.modalLabel}>Value ($) *</Text>
-          <TextInput style={s.modalInput} placeholder="18000" value={newAssetValue} onChangeText={setNewAssetValue} keyboardType="decimal-pad" placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="18000" style={s.modalInput} placeholder="18000" value={newAssetValue} onChangeText={setNewAssetValue} keyboardType="decimal-pad" placeholderTextColor={colors.textMuted} />
           <Text style={s.modalLabel}>Category</Text>
           <View style={[s.typeGrid, { marginBottom: 24 }]}>
             {ASSET_CATEGORIES.map((c) => (
-              <Pressable key={c} onPress={() => setNewAssetCategory(c)} style={[s.typeChip, newAssetCategory === c && s.typeChipActive]}>
+              <Pressable accessibilityRole="button" key={c} onPress={() => setNewAssetCategory(c)} style={[s.typeChip, newAssetCategory === c && s.typeChipActive]}>
                 <Text style={[s.typeChipText, newAssetCategory === c && s.typeChipTextActive]}>{c}</Text>
               </Pressable>
             ))}

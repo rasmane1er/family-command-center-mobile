@@ -123,18 +123,18 @@ export function AllowanceScreen({ navigation }: any) {
   const screenHeader = (
     <LinearGradient colors={['#1A5276', '#2980B9']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
       <View style={styles.headerRow}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <View style={{ flex: 1 }}>
           <Text style={styles.headerTitle}>{t('allowance.title')}</Text>
           <Text style={styles.headerSub}>${totalWeekly.toFixed(2)}/week budget</Text>
         </View>
-        <Pressable onPress={handlePayAll} style={styles.payBtn}>
+        <Pressable accessibilityRole="button" onPress={handlePayAll} style={styles.payBtn}>
           <Ionicons name="cash" size={16} color="#fff" />
           <Text style={styles.payBtnText}>{t('allowance.payAll')}</Text>
         </Pressable>
-        <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
+        <Pressable accessibilityRole="button" onPress={() => setShowAddModal(true)} style={styles.addBtn}>
           <Ionicons name="add" size={22} color="#fff" />
         </Pressable>
       </View>
@@ -160,7 +160,7 @@ export function AllowanceScreen({ navigation }: any) {
 
   const screenCompact = (
     <LinearGradient colors={['#1A5276', '#2980B9']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>{t('allowance.title')}</Text>
@@ -190,7 +190,7 @@ export function AllowanceScreen({ navigation }: any) {
           const weeklyGoal = config.weeklyAmount * 4;
 
           return (
-            <Pressable key={config.id} onPress={() => setSelectedMemberId(isSelected ? null : config.memberId)} onLongPress={() => handleDeleteConfig(config)}>
+            <Pressable accessibilityRole="button" key={config.id} onPress={() => setSelectedMemberId(isSelected ? null : config.memberId)} onLongPress={() => handleDeleteConfig(config)}>
               <Card
                 style={{ ...styles.memberCard, ...(isSelected ? styles.memberCardSelected : {}) }}
                 variant="elevated"
@@ -220,15 +220,15 @@ export function AllowanceScreen({ navigation }: any) {
 
                 {isSelected && (
                   <View style={styles.actionRow}>
-                    <Pressable style={styles.actionBtn} onPress={() => payWeeklyAllowance(config.memberId)}>
+                    <Pressable accessibilityRole="button" style={styles.actionBtn} onPress={() => payWeeklyAllowance(config.memberId)}>
                       <Ionicons name="calendar" size={14} color="#2980B9" />
                       <Text style={[styles.actionBtnText, { color: '#2980B9' }]}>{t('allowance.payWeekly')}</Text>
                     </Pressable>
-                    <Pressable style={[styles.actionBtn, { backgroundColor: '#D5F5E3' }]} onPress={() => setShowBonusModal(true)}>
+                    <Pressable accessibilityRole="button" style={[styles.actionBtn, { backgroundColor: '#D5F5E3' }]} onPress={() => setShowBonusModal(true)}>
                       <Ionicons name="trophy" size={14} color={colors.success} />
                       <Text style={[styles.actionBtnText, { color: colors.success }]}>{t('allowance.addBonus')}</Text>
                     </Pressable>
-                    <Pressable style={[styles.actionBtn, { backgroundColor: colors.dangerLight }]} onPress={() => setShowDeductModal(true)}>
+                    <Pressable accessibilityRole="button" style={[styles.actionBtn, { backgroundColor: colors.dangerLight }]} onPress={() => setShowDeductModal(true)}>
                       <Ionicons name="remove-circle" size={14} color={colors.danger} />
                       <Text style={[styles.actionBtnText, { color: colors.danger }]}>{t('allowance.deduct')}</Text>
                     </Pressable>
@@ -278,7 +278,7 @@ export function AllowanceScreen({ navigation }: any) {
             <Text style={[styles.sectionTitle, { marginTop: configs.length > 0 ? 20 : 0 }]}>{t('allowance.notSetUpYet')}</Text>
             <View style={styles.unconfiguredRow}>
               {unconfiguredMembers.map((m) => (
-                <Pressable key={m.id} style={styles.unconfiguredChip} onPress={() => { setNewMemberId(m.id); setShowAddModal(true); }}>
+                <Pressable accessibilityRole="button" key={m.id} style={styles.unconfiguredChip} onPress={() => { setNewMemberId(m.id); setShowAddModal(true); }}>
                   <View style={[styles.memberAvatar, { width: 32, height: 32, borderRadius: 16, backgroundColor: m.avatarColor + '20' }]}>
                     <Text style={[styles.memberInitial, { fontSize: 14, color: m.avatarColor }]}>{m.name.charAt(0)}</Text>
                   </View>
@@ -297,13 +297,13 @@ export function AllowanceScreen({ navigation }: any) {
         <View style={styles.modal}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{t('allowance.bonusTitle')}</Text>
-            <Pressable onPress={() => setShowBonusModal(false)}>
+            <Pressable accessibilityRole="button" onPress={() => setShowBonusModal(false)}>
               <Ionicons name="close" size={24} color={colors.text} />
             </Pressable>
           </View>
           <View style={styles.modalContent}>
             <Text style={styles.modalLabel}>{t('allowance.bonusAmount')}</Text>
-            <TextInput
+            <TextInput accessibilityLabel="5.00"
               style={styles.modalInput}
               value={bonusAmount}
               onChangeText={setBonusAmount}
@@ -312,7 +312,7 @@ export function AllowanceScreen({ navigation }: any) {
               placeholderTextColor={colors.textMuted}
             />
             <Text style={styles.modalLabel}>{t('allowance.bonusReason')}</Text>
-            <TextInput
+            <TextInput accessibilityLabel="e.g. Helped clean the garage"
               style={[styles.modalInput, { height: 80, textAlignVertical: 'top' }]}
               value={bonusReason}
               onChangeText={setBonusReason}
@@ -320,7 +320,7 @@ export function AllowanceScreen({ navigation }: any) {
               placeholderTextColor={colors.textMuted}
               multiline
             />
-            <Pressable style={[styles.saveBtn, { backgroundColor: colors.success }]} onPress={handleAddBonus}>
+            <Pressable accessibilityRole="button" style={[styles.saveBtn, { backgroundColor: colors.success }]} onPress={handleAddBonus}>
               <Text style={styles.saveBtnText}>{t('allowance.bonusButton')}</Text>
             </Pressable>
           </View>
@@ -331,13 +331,13 @@ export function AllowanceScreen({ navigation }: any) {
         <View style={styles.modal}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{t('allowance.deductTitle')}</Text>
-            <Pressable onPress={() => setShowDeductModal(false)}>
+            <Pressable accessibilityRole="button" onPress={() => setShowDeductModal(false)}>
               <Ionicons name="close" size={24} color={colors.text} />
             </Pressable>
           </View>
           <View style={styles.modalContent}>
             <Text style={styles.modalLabel}>{t('allowance.deductAmount')}</Text>
-            <TextInput
+            <TextInput accessibilityLabel="2.00"
               style={styles.modalInput}
               value={deductAmount}
               onChangeText={setDeductAmount}
@@ -346,7 +346,7 @@ export function AllowanceScreen({ navigation }: any) {
               placeholderTextColor={colors.textMuted}
             />
             <Text style={styles.modalLabel}>{t('allowance.deductReason')}</Text>
-            <TextInput
+            <TextInput accessibilityLabel="e.g. Missed trash duty"
               style={[styles.modalInput, { height: 80, textAlignVertical: 'top' }]}
               value={deductReason}
               onChangeText={setDeductReason}
@@ -354,7 +354,7 @@ export function AllowanceScreen({ navigation }: any) {
               placeholderTextColor={colors.textMuted}
               multiline
             />
-            <Pressable style={[styles.saveBtn, { backgroundColor: colors.danger }]} onPress={handleAddDeduction}>
+            <Pressable accessibilityRole="button" style={[styles.saveBtn, { backgroundColor: colors.danger }]} onPress={handleAddDeduction}>
               <Text style={styles.saveBtnText}>{t('allowance.deductButton')}</Text>
             </Pressable>
           </View>
@@ -365,7 +365,7 @@ export function AllowanceScreen({ navigation }: any) {
         <View style={styles.modal}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{t('allowance.setupTitle')}</Text>
-            <Pressable onPress={() => setShowAddModal(false)}>
+            <Pressable accessibilityRole="button" onPress={() => setShowAddModal(false)}>
               <Ionicons name="close" size={24} color={colors.text} />
             </Pressable>
           </View>
@@ -373,7 +373,7 @@ export function AllowanceScreen({ navigation }: any) {
             <Text style={styles.modalLabel}>{t('allowance.setupMember')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }}>
               {members.filter((m) => !configs.some((c) => c.memberId === m.id) || m.id === newMemberId).map((m) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={m.id}
                   onPress={() => setNewMemberId(m.id)}
                   style={[styles.memberPickChip, newMemberId === m.id && { borderColor: m.avatarColor, backgroundColor: m.avatarColor + '15' }]}
@@ -390,7 +390,7 @@ export function AllowanceScreen({ navigation }: any) {
             )}
 
             <Text style={styles.modalLabel}>{t('allowance.setupWeeklyAmount')}</Text>
-            <TextInput
+            <TextInput accessibilityLabel="10.00"
               style={styles.modalInput}
               value={newWeeklyAmount}
               onChangeText={setNewWeeklyAmount}
@@ -398,7 +398,7 @@ export function AllowanceScreen({ navigation }: any) {
               placeholder="10.00"
               placeholderTextColor={colors.textMuted}
             />
-            <Pressable
+            <Pressable accessibilityRole="button"
               style={[styles.saveBtn, { backgroundColor: colors.primary }, (!newMemberId || !newWeeklyAmount) && { opacity: 0.4 }]}
               onPress={handleAddConfig}
               disabled={!newMemberId || !newWeeklyAmount}

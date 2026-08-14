@@ -33,7 +33,7 @@ export function WeatherWidget() {
   if (!weather) return null;
 
   return (
-    <Pressable style={styles.container} onPress={() => refresh(fallbackCity)}>
+    <Pressable accessibilityRole="button" style={styles.container} onPress={() => refresh(fallbackCity)}>
       <View style={styles.left}>
         <Text style={styles.icon}>{weatherIcon(weather.description)}</Text>
         <View>

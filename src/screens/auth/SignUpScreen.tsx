@@ -289,7 +289,7 @@ function FormField({ label, icon, placeholder, value, onChangeText, onBlur,
     return (
       <View style={s.fieldWrap}>
         {lbl}
-        <TextInput
+        <TextInput accessibilityLabel={placeholder}
           style={[s.multiInput, focused && s.multiInputFocus, showError && s.multiInputError]}
           placeholder={placeholder}
           placeholderTextColor={colors.textMuted}
@@ -312,7 +312,7 @@ function FormField({ label, icon, placeholder, value, onChangeText, onBlur,
       {lbl}
       <View style={[s.inputRow, focused && s.inputRowFocus, showError && s.inputRowError]}>
         <Ionicons name={icon as any} size={18} color={focused ? colors.primary : showError ? '#E74C3C' : colors.textMuted} />
-        <TextInput
+        <TextInput accessibilityLabel={placeholder}
           style={s.textInput}
           placeholder={placeholder}
           placeholderTextColor={colors.textMuted}
@@ -534,7 +534,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
       <>
         <Text style={s.secTitle}>{t('auth.screens.signUp.sectionProfilePhoto')}</Text>
         <View style={s.avatarWrap}>
-          <Pressable onPress={pickPhoto} style={{ position: 'relative' }}>
+          <Pressable accessibilityRole="button" onPress={pickPhoto} style={{ position: 'relative' }}>
             <View style={[s.avatarCircle, { backgroundColor: avatarUri ? 'transparent' : avatarColor }]}>
               {avatarUri
                 ? <Image source={{ uri: avatarUri }} style={s.avatarImg} />
@@ -553,7 +553,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
             <Text style={s.colorLabel}>{t('auth.screens.signUp.orChooseColor')}</Text>
             <View style={s.colorRow}>
               {AVATAR_COLORS.map(c => (
-                <Pressable key={c}
+                <Pressable accessibilityRole="button" key={c}
                   style={[s.colorDot, { backgroundColor: c },
                     avatarColor === c && { borderWidth: 3, borderColor: '#fff', shadowColor: c, shadowOpacity: 0.6, shadowRadius: 4, elevation: 4 },
                   ]}
@@ -620,7 +620,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
         <Text style={s.secTitle}>{t('auth.screens.signUp.sectionGender')}</Text>
         <View style={[s.chipRow, { marginBottom: 16 }]}>
           {GENDER_OPTIONS.map(g => (
-            <Pressable key={g.key}
+            <Pressable accessibilityRole="button" key={g.key}
               style={[s.chip, gender === g.key && s.chipOn]}
               onPress={() => setGender(prev => prev === g.key ? undefined : g.key)}>
               <Text style={[s.chipText, gender === g.key && s.chipTextOn]}>{t(g.labelKey)}</Text>
@@ -644,7 +644,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
           error={fk.errors.bio} touched={fk.touched.bio}
           multiline maxLength={300} optional colors={colors} s={s} />
 
-        <Pressable style={s.fullBtn} onPress={() => advanceStep(fk, 2)}>
+        <Pressable accessibilityRole="button" style={s.fullBtn} onPress={() => advanceStep(fk, 2)}>
           <LinearGradient colors={['#1E4A8A', '#0F2952']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.fullBtnGrad}>
             <Text style={s.fullBtnText}>{t('auth.screens.signUp.nextFamilySetup')}</Text>
             <Ionicons name="arrow-forward" size={18} color="#fff" />
@@ -683,7 +683,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
       <Text style={s.secTitle}>{t('auth.screens.signUp.sectionYourRole')}</Text>
       <View style={s.roleGrid}>
         {ROLE_OPTIONS.map(opt => (
-          <Pressable key={opt.key}
+          <Pressable accessibilityRole="button" key={opt.key}
             style={[s.roleChip, familyRole === opt.key && s.roleChipOn]}
             onPress={() => setFamilyRole(opt.key)}>
             <Ionicons name={opt.icon as any} size={16} color={familyRole === opt.key ? '#fff' : colors.textSecondary} />
@@ -700,11 +700,11 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
             {numChildren === 0 ? t('auth.screens.signUp.none') : t('auth.screens.signUp.child', { count: numChildren })}
           </Text>
           <View style={s.stepperControls}>
-            <Pressable style={s.stepperBtn} onPress={() => setNumChildren(n => Math.max(0, n - 1))}>
+            <Pressable accessibilityRole="button" style={s.stepperBtn} onPress={() => setNumChildren(n => Math.max(0, n - 1))}>
               <Ionicons name="remove" size={18} color={colors.text} />
             </Pressable>
             <Text style={s.stepperVal}>{numChildren}</Text>
-            <Pressable style={s.stepperBtn} onPress={() => setNumChildren(n => n + 1)}>
+            <Pressable accessibilityRole="button" style={s.stepperBtn} onPress={() => setNumChildren(n => n + 1)}>
               <Ionicons name="add" size={18} color={colors.text} />
             </Pressable>
           </View>
@@ -763,10 +763,10 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
         colors={colors} s={s} />
 
       <View style={s.navRow}>
-        <Pressable style={s.backBtn} onPress={() => setStep(1)}>
+        <Pressable accessibilityRole="button" style={s.backBtn} onPress={() => setStep(1)}>
           <Text style={s.backBtnText}>{t('auth.screens.signUp.backButton')}</Text>
         </Pressable>
-        <Pressable style={s.nextBtn} onPress={() => advanceStep(fk, 3)}>
+        <Pressable accessibilityRole="button" style={s.nextBtn} onPress={() => advanceStep(fk, 3)}>
           <LinearGradient colors={['#1E4A8A', '#0F2952']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.nextBtnGrad}>
             <Text style={s.nextBtnText}>{t('auth.screens.signUp.nextSecurity')}</Text>
           </LinearGradient>
@@ -790,7 +790,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
           <Text style={s.fieldLabel}>{t('auth.password')}</Text>
           <View style={[s.inputRow, fk.touched.password && fk.errors.password ? s.inputRowError : null]}>
             <Ionicons name="lock-closed-outline" size={18} color={colors.textMuted} />
-            <TextInput
+            <TextInput accessibilityLabel={t('auth.screens.signUp.passwordPlaceholder')}
               style={s.textInput}
               placeholder={t('auth.screens.signUp.passwordPlaceholder')}
               placeholderTextColor={colors.textMuted}
@@ -801,7 +801,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
               autoCapitalize="none"
               autoCorrect={false}
             />
-            <Pressable style={s.eyeBtn} onPress={() => setShowPw(v => !v)}>
+            <Pressable accessibilityRole="button" style={s.eyeBtn} onPress={() => setShowPw(v => !v)}>
               <Ionicons name={showPw ? 'eye-off-outline' : 'eye-outline'} size={18} color={colors.textMuted} />
             </Pressable>
           </View>
@@ -820,7 +820,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
           <Text style={s.fieldLabel}>{t('auth.screens.signUp.confirmPasswordLabel')}</Text>
           <View style={[s.inputRow, fk.touched.confirmPw && fk.errors.confirmPw ? s.inputRowError : null]}>
             <Ionicons name="lock-closed-outline" size={18} color={colors.textMuted} />
-            <TextInput
+            <TextInput accessibilityLabel={t('auth.screens.signUp.confirmPasswordPlaceholder')}
               style={s.textInput}
               placeholder={t('auth.screens.signUp.confirmPasswordPlaceholder')}
               placeholderTextColor={colors.textMuted}
@@ -831,7 +831,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
               autoCapitalize="none"
               autoCorrect={false}
             />
-            <Pressable style={s.eyeBtn} onPress={() => setShowCpw(v => !v)}>
+            <Pressable accessibilityRole="button" style={s.eyeBtn} onPress={() => setShowCpw(v => !v)}>
               <Ionicons name={showCpw ? 'eye-off-outline' : 'eye-outline'} size={18} color={colors.textMuted} />
             </Pressable>
           </View>
@@ -854,7 +854,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
         <TurnstileWidget onToken={setTurnstileToken} onExpire={() => setTurnstileToken(undefined)} />
 
         <Text style={[s.secTitle, { marginTop: 16 }]}>{t('auth.screens.signUp.sectionTerms')}</Text>
-        <Pressable style={s.termsRow} onPress={() => fk.setFieldValue('agreed', !fk.values.agreed)}>
+        <Pressable accessibilityRole="button" style={s.termsRow} onPress={() => fk.setFieldValue('agreed', !fk.values.agreed)}>
           <View style={[s.checkbox, fk.values.agreed && s.checkboxOn]}>
             {fk.values.agreed && <Ionicons name="checkmark" size={14} color="#fff" />}
           </View>
@@ -868,10 +868,10 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
         {fk.touched.agreed && fk.errors.agreed && <Text style={s.errorText}>{String(fk.errors.agreed)}</Text>}
 
         <View style={s.navRow}>
-          <Pressable style={s.backBtn} onPress={() => setStep(2)}>
+          <Pressable accessibilityRole="button" style={s.backBtn} onPress={() => setStep(2)}>
             <Text style={s.backBtnText}>{t('auth.screens.signUp.backButton')}</Text>
           </Pressable>
-          <Pressable style={s.nextBtn} disabled={loading} onPress={() => fk.handleSubmit()}>
+          <Pressable accessibilityRole="button" style={s.nextBtn} disabled={loading} onPress={() => fk.handleSubmit()}>
             <LinearGradient colors={['#F5A623', '#FF8C42']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.nextBtnGrad}>
               {loading
                 ? <ActivityIndicator color="#fff" size="small" />

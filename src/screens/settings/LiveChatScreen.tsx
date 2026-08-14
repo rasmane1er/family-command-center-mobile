@@ -132,7 +132,7 @@ export function LiveChatScreen({ navigation }: { navigation: { goBack: () => voi
   const screenHeader = (
     <LinearGradient colors={['#0F2952', '#1E4A8A']} style={[s.header, { paddingTop: insets.top + 16 }]}>
       <View style={s.headerTopRow}>
-        <TouchableOpacity activeOpacity={0.7} style={s.iconButton} onPress={() => navigation.goBack()}>
+        <TouchableOpacity accessibilityRole="button" activeOpacity={0.7} style={s.iconButton} onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
         <View style={s.headerTitleBlock}>
@@ -146,10 +146,10 @@ export function LiveChatScreen({ navigation }: { navigation: { goBack: () => voi
         </View>
         {familyId && (
           <>
-            <TouchableOpacity activeOpacity={0.7} style={s.iconButton} onPress={() => setShowHistory(true)}>
+            <TouchableOpacity accessibilityRole="button" activeOpacity={0.7} style={s.iconButton} onPress={() => setShowHistory(true)}>
               <Ionicons name="time-outline" size={20} color="#FFFFFF" />
             </TouchableOpacity>
-            <TouchableOpacity activeOpacity={0.7} style={s.iconButton} onPress={handleNewConversation}>
+            <TouchableOpacity accessibilityRole="button" activeOpacity={0.7} style={s.iconButton} onPress={handleNewConversation}>
               <Ionicons name="add" size={22} color="#FFFFFF" />
             </TouchableOpacity>
           </>
@@ -160,7 +160,7 @@ export function LiveChatScreen({ navigation }: { navigation: { goBack: () => voi
 
   const screenCompact = (
     <View style={s.compactHeader}>
-      <TouchableOpacity activeOpacity={0.7} style={s.iconButton} onPress={() => navigation.goBack()}>
+      <TouchableOpacity accessibilityRole="button" activeOpacity={0.7} style={s.iconButton} onPress={() => navigation.goBack()}>
         <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
       </TouchableOpacity>
       <Text style={[s.headerTitle, { flex: 1, marginLeft: 8 }]} numberOfLines={1}>
@@ -181,7 +181,7 @@ export function LiveChatScreen({ navigation }: { navigation: { goBack: () => voi
         <StatusBar style="light" />
         <LinearGradient colors={['#0F2952', '#1E4A8A']} style={[s.header, { paddingTop: insets.top + 16 }]}>
           <View style={s.headerTopRow}>
-            <TouchableOpacity activeOpacity={0.7} style={s.iconButton} onPress={() => navigation.goBack()}>
+            <TouchableOpacity accessibilityRole="button" activeOpacity={0.7} style={s.iconButton} onPress={() => navigation.goBack()}>
               <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
             </TouchableOpacity>
             <View style={s.headerTitleBlock}>
@@ -279,7 +279,7 @@ export function LiveChatScreen({ navigation }: { navigation: { goBack: () => voi
         <View style={s.modalContainer}>
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>{t('settings.screens.liveChat.conversationsTitle')}</Text>
-            <Pressable onPress={() => setShowHistory(false)} style={s.modalClose}>
+            <Pressable accessibilityRole="button" onPress={() => setShowHistory(false)} style={s.modalClose}>
               <Ionicons name="close" size={24} color={colors.text} />
             </Pressable>
           </View>
@@ -288,7 +288,7 @@ export function LiveChatScreen({ navigation }: { navigation: { goBack: () => voi
               <Text style={s.notLinkedText}>{t('settings.screens.liveChat.noConversations')}</Text>
             ) : (
               threads.map((thread) => (
-                <TouchableOpacity
+                <TouchableOpacity accessibilityRole="button"
                   key={thread.id}
                   activeOpacity={0.7}
                   style={[s.threadRow, thread.id === activeThreadId && s.threadRowActive]}

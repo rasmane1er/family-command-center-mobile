@@ -121,7 +121,7 @@ export function ConnectHueBridgeScreen({ navigation }: any) {
 
   const header = (
     <LinearGradient colors={['#1A1A2E', '#0F3460']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
-      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </Pressable>
       <Text style={styles.headerTitle}>Connect Hue Bridge</Text>
@@ -164,7 +164,7 @@ export function ConnectHueBridgeScreen({ navigation }: any) {
             <Text style={styles.subtitle}>
               Find it in your router's device list, or the official Hue app under Settings → My Bridge.
             </Text>
-            <TextInput
+            <TextInput accessibilityLabel="192.168.1.50"
               style={styles.input}
               placeholder="192.168.1.50"
               placeholderTextColor={colors.textMuted}

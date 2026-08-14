@@ -171,7 +171,7 @@ export function NutritionTrackerScreen({ navigation }: any) {
 
       {/* Header */}
       <LinearGradient colors={['#1B5E20', '#2E7D32']} style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name={'arrow-back' as any} size={24} color="#fff" />
         </Pressable>
         <View style={styles.headerText}>
@@ -184,7 +184,7 @@ export function NutritionTrackerScreen({ navigation }: any) {
       {/* Tabs */}
       <View style={styles.tabRow}>
         {(['today', 'members', 'goals'] as const).map((tab) => (
-          <Pressable
+          <Pressable accessibilityRole="button"
             key={tab}
             style={[styles.tabBtn, activeTab === tab && styles.tabBtnActive]}
             onPress={() => setActiveTab(tab)}
@@ -203,11 +203,11 @@ export function NutritionTrackerScreen({ navigation }: any) {
           <>
             {/* Date selector */}
             <View style={styles.dateSelectorRow}>
-              <Pressable onPress={() => shiftDate(-1)} style={styles.dateArrow}>
+              <Pressable accessibilityRole="button" onPress={() => shiftDate(-1)} style={styles.dateArrow}>
                 <Ionicons name={'chevron-back' as any} size={22} color={colors.text} />
               </Pressable>
               <Text style={styles.dateLabel}>{formatDate(selectedDate)}</Text>
-              <Pressable onPress={() => shiftDate(1)} style={styles.dateArrow}>
+              <Pressable accessibilityRole="button" onPress={() => shiftDate(1)} style={styles.dateArrow}>
                 <Ionicons name={'chevron-forward' as any} size={22} color={colors.text} />
               </Pressable>
             </View>
@@ -215,7 +215,7 @@ export function NutritionTrackerScreen({ navigation }: any) {
             {/* Member picker */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.memberScroll} contentContainerStyle={styles.memberScrollContent}>
               {MEMBERS.map((m) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={m.id}
                   style={[styles.memberChip, selectedMemberId === m.id && { backgroundColor: m.color, borderColor: m.color }]}
                   onPress={() => setSelectedMemberId(m.id)}
@@ -282,7 +282,7 @@ export function NutritionTrackerScreen({ navigation }: any) {
                               P:{entry.protein}g C:{entry.carbs}g F:{entry.fat}g
                             </Text>
                           </View>
-                          <Pressable onPress={() => removeEntry(entry.id)} style={styles.deleteBtn}>
+                          <Pressable accessibilityRole="button" onPress={() => removeEntry(entry.id)} style={styles.deleteBtn}>
                             <Ionicons name={'trash-outline' as any} size={18} color={colors.textMuted} />
                           </Pressable>
                         </View>
@@ -348,7 +348,7 @@ export function NutritionTrackerScreen({ navigation }: any) {
                       <Text style={styles.memberAvatarText}>{m.name[0]}</Text>
                     </View>
                     <Text style={styles.goalCardName}>{m.name}</Text>
-                    <Pressable
+                    <Pressable accessibilityRole="button"
                       style={[styles.editGoalBtn, { backgroundColor: m.color }]}
                       onPress={() => openGoalModal(m.id)}
                     >
@@ -388,7 +388,7 @@ export function NutritionTrackerScreen({ navigation }: any) {
 
       {/* FAB */}
       {activeTab === 'today' && (
-        <Pressable style={styles.fab} onPress={openAddModal}>
+        <Pressable accessibilityRole="button" style={styles.fab} onPress={openAddModal}>
           <LinearGradient colors={['#2E7D32', '#1B5E20']} style={styles.fabGradient}>
             <Ionicons name={'add' as any} size={32} color="#fff" />
           </LinearGradient>
@@ -402,7 +402,7 @@ export function NutritionTrackerScreen({ navigation }: any) {
             <View style={{ width: 40, height: 4, backgroundColor: '#ccc', borderRadius: 2, alignSelf: 'center', marginBottom: 16 }} />
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Add Food</Text>
-              <Pressable onPress={() => setShowAddModal(false)}>
+              <Pressable accessibilityRole="button" onPress={() => setShowAddModal(false)}>
                 <Ionicons name={'close' as any} size={24} color={colors.text} />
               </Pressable>
             </View>
@@ -411,7 +411,7 @@ export function NutritionTrackerScreen({ navigation }: any) {
               <Text style={styles.fieldLabel}>Member</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 {MEMBERS.map((m) => (
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     key={m.id}
                     style={[styles.chipBtn, mMemberId === m.id && { backgroundColor: m.color, borderColor: m.color }]}
                     onPress={() => setMMemberId(m.id)}
@@ -426,7 +426,7 @@ export function NutritionTrackerScreen({ navigation }: any) {
                 {MEAL_TYPES.map((meal) => {
                   const cfg = MEAL_CONFIG[meal];
                   return (
-                    <Pressable
+                    <Pressable accessibilityRole="button"
                       key={meal}
                       style={[styles.chipBtn, mMeal === meal && { backgroundColor: cfg.color, borderColor: cfg.color }]}
                       onPress={() => setMMeal(meal)}
@@ -438,7 +438,7 @@ export function NutritionTrackerScreen({ navigation }: any) {
               </View>
 
               <Text style={styles.fieldLabel}>Food Name *</Text>
-              <TextInput
+              <TextInput accessibilityLabel="e.g. Grilled chicken breast"
                 style={styles.textInput}
                 value={mFoodName}
                 onChangeText={setMFoodName}
@@ -447,7 +447,7 @@ export function NutritionTrackerScreen({ navigation }: any) {
               />
 
               <Text style={styles.fieldLabel}>Serving Size</Text>
-              <TextInput
+              <TextInput accessibilityLabel="e.g. 1 cup, 200g"
                 style={styles.textInput}
                 value={mServing}
                 onChangeText={setMServing}
@@ -456,7 +456,7 @@ export function NutritionTrackerScreen({ navigation }: any) {
               />
 
               <Text style={styles.fieldLabel}>Calories *</Text>
-              <TextInput
+              <TextInput accessibilityLabel="kcal"
                 style={styles.textInput}
                 value={mCalories}
                 onChangeText={setMCalories}
@@ -468,20 +468,20 @@ export function NutritionTrackerScreen({ navigation }: any) {
               <View style={styles.macroInputRow}>
                 <View style={styles.macroInputItem}>
                   <Text style={[styles.fieldLabel, { color: MACRO_COLORS.protein }]}>Protein (g)</Text>
-                  <TextInput style={styles.textInput} value={mProtein} onChangeText={setMProtein} placeholder="0" placeholderTextColor={colors.textMuted} keyboardType="numeric" />
+                  <TextInput accessibilityLabel="0" style={styles.textInput} value={mProtein} onChangeText={setMProtein} placeholder="0" placeholderTextColor={colors.textMuted} keyboardType="numeric" />
                 </View>
                 <View style={styles.macroInputItem}>
                   <Text style={[styles.fieldLabel, { color: MACRO_COLORS.carbs }]}>Carbs (g)</Text>
-                  <TextInput style={styles.textInput} value={mCarbs} onChangeText={setMCarbs} placeholder="0" placeholderTextColor={colors.textMuted} keyboardType="numeric" />
+                  <TextInput accessibilityLabel="0" style={styles.textInput} value={mCarbs} onChangeText={setMCarbs} placeholder="0" placeholderTextColor={colors.textMuted} keyboardType="numeric" />
                 </View>
                 <View style={styles.macroInputItem}>
                   <Text style={[styles.fieldLabel, { color: MACRO_COLORS.fat }]}>Fat (g)</Text>
-                  <TextInput style={styles.textInput} value={mFat} onChangeText={setMFat} placeholder="0" placeholderTextColor={colors.textMuted} keyboardType="numeric" />
+                  <TextInput accessibilityLabel="0" style={styles.textInput} value={mFat} onChangeText={setMFat} placeholder="0" placeholderTextColor={colors.textMuted} keyboardType="numeric" />
                 </View>
               </View>
 
               <Text style={styles.fieldLabel}>Notes</Text>
-              <TextInput
+              <TextInput accessibilityLabel="Optional notes..."
                 style={[styles.textInput, styles.textInputMultiline]}
                 value={mNotes}
                 onChangeText={setMNotes}
@@ -490,7 +490,7 @@ export function NutritionTrackerScreen({ navigation }: any) {
                 multiline
               />
 
-              <Pressable style={styles.saveBtn} onPress={handleAddEntry}>
+              <Pressable accessibilityRole="button" style={styles.saveBtn} onPress={handleAddEntry}>
                 <LinearGradient colors={['#2E7D32', '#1B5E20']} style={styles.saveBtnGradient}>
                   <Ionicons name={'checkmark-circle' as any} size={20} color="#fff" />
                   <Text style={styles.saveBtnText}>Add Food Entry</Text>
@@ -507,7 +507,7 @@ export function NutritionTrackerScreen({ navigation }: any) {
           <View style={{ width: 40, height: 4, backgroundColor: '#ccc', borderRadius: 2, alignSelf: 'center', marginBottom: 16 }} />
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Set Daily Goals</Text>
-            <Pressable onPress={() => setShowGoalModal(false)}>
+            <Pressable accessibilityRole="button" onPress={() => setShowGoalModal(false)}>
               <Ionicons name={'close' as any} size={24} color={colors.text} />
             </Pressable>
           </View>
@@ -515,7 +515,7 @@ export function NutritionTrackerScreen({ navigation }: any) {
             <Text style={styles.fieldLabel}>Member</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               {MEMBERS.map((m) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={m.id}
                   style={[styles.chipBtn, gMemberId === m.id && { backgroundColor: m.color, borderColor: m.color }]}
                   onPress={() => setGMemberId(m.id)}
@@ -525,14 +525,14 @@ export function NutritionTrackerScreen({ navigation }: any) {
               ))}
             </ScrollView>
             <Text style={[styles.fieldLabel, { color: MACRO_COLORS.calories }]}>Daily Calories (kcal)</Text>
-            <TextInput style={styles.textInput} value={gCalories} onChangeText={setGCalories} placeholder="2000" placeholderTextColor={colors.textMuted} keyboardType="numeric" />
+            <TextInput accessibilityLabel="2000" style={styles.textInput} value={gCalories} onChangeText={setGCalories} placeholder="2000" placeholderTextColor={colors.textMuted} keyboardType="numeric" />
             <Text style={[styles.fieldLabel, { color: MACRO_COLORS.protein }]}>Daily Protein (g)</Text>
-            <TextInput style={styles.textInput} value={gProtein} onChangeText={setGProtein} placeholder="150" placeholderTextColor={colors.textMuted} keyboardType="numeric" />
+            <TextInput accessibilityLabel="150" style={styles.textInput} value={gProtein} onChangeText={setGProtein} placeholder="150" placeholderTextColor={colors.textMuted} keyboardType="numeric" />
             <Text style={[styles.fieldLabel, { color: MACRO_COLORS.carbs }]}>Daily Carbs (g)</Text>
-            <TextInput style={styles.textInput} value={gCarbs} onChangeText={setGCarbs} placeholder="200" placeholderTextColor={colors.textMuted} keyboardType="numeric" />
+            <TextInput accessibilityLabel="200" style={styles.textInput} value={gCarbs} onChangeText={setGCarbs} placeholder="200" placeholderTextColor={colors.textMuted} keyboardType="numeric" />
             <Text style={[styles.fieldLabel, { color: MACRO_COLORS.fat }]}>Daily Fat (g)</Text>
-            <TextInput style={styles.textInput} value={gFat} onChangeText={setGFat} placeholder="65" placeholderTextColor={colors.textMuted} keyboardType="numeric" />
-            <Pressable style={styles.saveBtn} onPress={handleSaveGoal}>
+            <TextInput accessibilityLabel="65" style={styles.textInput} value={gFat} onChangeText={setGFat} placeholder="65" placeholderTextColor={colors.textMuted} keyboardType="numeric" />
+            <Pressable accessibilityRole="button" style={styles.saveBtn} onPress={handleSaveGoal}>
               <LinearGradient colors={['#2E7D32', '#1B5E20']} style={styles.saveBtnGradient}>
                 <Ionicons name={'checkmark-circle' as any} size={20} color="#fff" />
                 <Text style={styles.saveBtnText}>Save Goals</Text>

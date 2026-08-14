@@ -196,18 +196,18 @@ export function CalendarScreen({ navigation, route }: any) {
       title={t('calendar.title')}
       onBack={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()}
       rightAction={
-        <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
+        <Pressable accessibilityRole="button" onPress={() => setShowModal(true)} style={styles.addBtn}>
           <Ionicons name="add" size={26} color="#fff" />
         </Pressable>
       }
     >
       {/* Month navigator */}
       <View style={styles.monthNav}>
-        <Pressable onPress={prevMonth} style={styles.monthBtn}>
+        <Pressable accessibilityRole="button" onPress={prevMonth} style={styles.monthBtn}>
           <Ionicons name="chevron-back" size={22} color="rgba(255,255,255,0.8)" />
         </Pressable>
         <Text style={styles.monthTitle}>{format(currentMonth, 'MMMM yyyy')}</Text>
-        <Pressable onPress={nextMonth} style={styles.monthBtn}>
+        <Pressable accessibilityRole="button" onPress={nextMonth} style={styles.monthBtn}>
           <Ionicons name="chevron-forward" size={22} color="rgba(255,255,255,0.8)" />
         </Pressable>
       </View>
@@ -227,7 +227,7 @@ export function CalendarScreen({ navigation, route }: any) {
           const selected = isSameDay(day, selectedDate);
           const today = isToday(day);
           return (
-            <Pressable key={day.toISOString()} onPress={() => setSelectedDate(day)} style={[styles.dayCell, selected && styles.dayCellSelected, today && !selected && styles.dayCellToday]}>
+            <Pressable accessibilityRole="button" key={day.toISOString()} onPress={() => setSelectedDate(day)} style={[styles.dayCell, selected && styles.dayCellSelected, today && !selected && styles.dayCellToday]}>
               <Text style={[styles.dayNum, selected && styles.dayNumSelected, today && !selected && styles.dayNumToday]}>
                 {format(day, 'd')}
               </Text>
@@ -247,14 +247,14 @@ export function CalendarScreen({ navigation, route }: any) {
 
   const screenCompact = (
     <LinearGradient colors={['#0F2952', '#1E4A8A']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable
+      <Pressable accessibilityRole="button"
         onPress={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()}
         style={styles.addBtn}
       >
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </Pressable>
       <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>Family Calendar</Text>
-      <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
+      <Pressable accessibilityRole="button" onPress={() => setShowModal(true)} style={styles.addBtn}>
         <Ionicons name="add" size={26} color="#fff" />
       </Pressable>
     </LinearGradient>
@@ -295,7 +295,7 @@ export function CalendarScreen({ navigation, route }: any) {
                         {event.isVirtual ? (
                           <Ionicons name="link-outline" size={14} color={colors.textMuted} />
                         ) : (
-                          <Pressable onPress={() => handleDeleteEvent(event.id, event.title)} style={styles.eventDeleteBtn}>
+                          <Pressable accessibilityRole="button" onPress={() => handleDeleteEvent(event.id, event.title)} style={styles.eventDeleteBtn}>
                             <Ionicons name="trash-outline" size={14} color={colors.danger} />
                           </Pressable>
                         )}
@@ -331,7 +331,7 @@ export function CalendarScreen({ navigation, route }: any) {
               </Card>
             );
             return event.isVirtual ? (
-              <Pressable key={event.id} onPress={() => handleVirtualEventPress(event)}>{card}</Pressable>
+              <Pressable accessibilityRole="button" key={event.id} onPress={() => handleVirtualEventPress(event)}>{card}</Pressable>
             ) : (
               <View key={event.id}>{card}</View>
             );
@@ -353,7 +353,7 @@ export function CalendarScreen({ navigation, route }: any) {
           <Text style={styles.modalTitle}>Add Event</Text>
           <Text style={styles.modalDate}>{format(selectedDate, 'EEEE, MMMM d')}</Text>
 
-          <TextInput
+          <TextInput accessibilityLabel="Event title..."
             style={styles.modalInput}
             placeholder="Event title..."
             value={newTitle}
@@ -361,7 +361,7 @@ export function CalendarScreen({ navigation, route }: any) {
             placeholderTextColor={colors.textMuted}
             autoFocus
           />
-          <TextInput
+          <TextInput accessibilityLabel="Location (optional)"
             style={styles.modalInput}
             placeholder="Location (optional)"
             value={newLocation}
@@ -377,7 +377,7 @@ export function CalendarScreen({ navigation, route }: any) {
           <Text style={styles.modalLabel}>Category</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
             {EVENT_CATEGORIES.map((cat) => (
-              <Pressable key={cat} onPress={() => setNewCategory(cat)} style={[styles.catChip, newCategory === cat && styles.catChipActive]}>
+              <Pressable accessibilityRole="button" key={cat} onPress={() => setNewCategory(cat)} style={[styles.catChip, newCategory === cat && styles.catChipActive]}>
                 <Text style={[styles.catChipText, newCategory === cat && styles.catChipTextActive]}>{cat}</Text>
               </Pressable>
             ))}
@@ -386,14 +386,14 @@ export function CalendarScreen({ navigation, route }: any) {
           <Text style={styles.modalLabel}>Color</Text>
           <View style={styles.colorRow}>
             {EVENT_COLORS.map((c) => (
-              <Pressable key={c} onPress={() => setNewColor(c)} style={[styles.colorSwatch, { backgroundColor: c }, newColor === c && styles.colorSwatchSelected]} />
+              <Pressable accessibilityRole="button" key={c} onPress={() => setNewColor(c)} style={[styles.colorSwatch, { backgroundColor: c }, newColor === c && styles.colorSwatchSelected]} />
             ))}
           </View>
 
           <Text style={styles.modalLabel}>Attendees</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 24 }}>
             {members.map((m) => (
-              <Pressable key={m.id} onPress={() => toggleAttendee(m.id)} style={[styles.attendeePickChip, newAttendees.includes(m.id) && styles.attendeePickChipActive]}>
+              <Pressable accessibilityRole="button" key={m.id} onPress={() => toggleAttendee(m.id)} style={[styles.attendeePickChip, newAttendees.includes(m.id) && styles.attendeePickChipActive]}>
                 <Avatar name={m.name} color={m.avatarColor} size={32} />
                 <Text style={styles.attendeePickName}>{m.name.split(' ')[0]}</Text>
               </Pressable>

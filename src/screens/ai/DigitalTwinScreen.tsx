@@ -493,7 +493,7 @@ export function DigitalTwinScreen({ navigation }: { navigation: { goBack: () => 
   const screenHeader = (
     <LinearGradient colors={['#0D0D2B', '#1A1A4E', '#2D2D8F']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
       <View style={styles.headerRow}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <View style={{ flex: 1 }}>
@@ -535,7 +535,7 @@ export function DigitalTwinScreen({ navigation }: { navigation: { goBack: () => 
 
       <View style={styles.tabs}>
         {(['twin', 'predict', 'whatif', 'chat'] as const).map((tabKey) => (
-          <Pressable key={tabKey} onPress={() => setTab(tabKey)} style={[styles.tab, tab === tabKey && styles.tabActive]}>
+          <Pressable accessibilityRole="button" key={tabKey} onPress={() => setTab(tabKey)} style={[styles.tab, tab === tabKey && styles.tabActive]}>
             <Text style={[styles.tabText, tab === tabKey && styles.tabTextActive]}>
               {tabKey === 'twin' ? t('ai.screens.digitalTwin.tabDna') : tabKey === 'predict' ? t('ai.screens.digitalTwin.tabPredict') : tabKey === 'whatif' ? t('ai.screens.digitalTwin.tabWhatif') : t('ai.screens.digitalTwin.tabChat')}
             </Text>
@@ -551,7 +551,7 @@ export function DigitalTwinScreen({ navigation }: { navigation: { goBack: () => 
       start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
       style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
     >
-      <Pressable onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </Pressable>
       <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>{t('ai.screens.digitalTwin.compactTitle')}</Text>
@@ -591,7 +591,7 @@ export function DigitalTwinScreen({ navigation }: { navigation: { goBack: () => 
                     <View style={styles.quickAskRow}>
                       <Text style={styles.quickAskLabel}>Ask AI:</Text>
                       {["What's my biggest risk?", 'How do I improve?', 'Predict next month'].map((q) => (
-                        <Pressable key={q} onPress={() => { setTab('chat'); handleChatSend(q); }} style={styles.quickAskChip}>
+                        <Pressable accessibilityRole="button" key={q} onPress={() => { setTab('chat'); handleChatSend(q); }} style={styles.quickAskChip}>
                           <Text style={styles.quickAskChipText}>{q}</Text>
                         </Pressable>
                       ))}
@@ -637,7 +637,7 @@ export function DigitalTwinScreen({ navigation }: { navigation: { goBack: () => 
 
                     <Text style={styles.sectionTitle}>{t('ai.screens.digitalTwin.sectionDimensionBreakdown')}</Text>
                     {DIMENSIONS_CONFIG.map((d) => (
-                      <Pressable key={d.label} onPress={() => navigation.navigate(DIMENSION_ROUTES[d.label] ?? 'Home')}>
+                      <Pressable accessibilityRole="button" key={d.label} onPress={() => navigation.navigate(DIMENSION_ROUTES[d.label] ?? 'Home')}>
                         <Card variant="elevated" style={styles.dimCard}>
                           <View style={styles.dimRow}>
                             <View style={[styles.dimIcon, { backgroundColor: d.color + '20' }]}>
@@ -761,7 +761,7 @@ export function DigitalTwinScreen({ navigation }: { navigation: { goBack: () => 
                           </View>
                           <Text style={styles.whatIfEffect}>{s.effect}</Text>
                         </View>
-                        <Pressable
+                        <Pressable accessibilityRole="button"
                           onPress={() => Alert.alert(t('ai.screens.digitalTwin.applyChangeBtn'), t('ai.screens.digitalTwin.applyChangeAlertMsg', { scenario: s.scenario, effect: s.effect }), [
                             { text: t('common.cancel'), style: 'cancel' },
                             { text: t('ai.screens.digitalTwin.addToGoalsBtn'), onPress: () => navigation.navigate('Finance') },
@@ -776,7 +776,7 @@ export function DigitalTwinScreen({ navigation }: { navigation: { goBack: () => 
                     <Card variant="elevated" style={styles.customCard}>
                       <Text style={styles.customTitle}>{t('ai.screens.digitalTwin.customTitle')}</Text>
                       <Text style={styles.customDesc}>{t('ai.screens.digitalTwin.customDesc')}</Text>
-                      <Pressable
+                      <Pressable accessibilityRole="button"
                         onPress={() => Alert.alert(t('ai.screens.digitalTwin.customBtnText'), t('ai.screens.digitalTwin.askAiAnalyzeMsg'), [
                           { text: t('ai.screens.digitalTwin.laterBtn'), style: 'cancel' },
                           { text: t('ai.screens.digitalTwin.openAiAssistantBtn'), onPress: () => navigation.navigate('AIAssistant') },
@@ -803,7 +803,7 @@ export function DigitalTwinScreen({ navigation }: { navigation: { goBack: () => 
                           t('ai.screens.digitalTwin.chatStarter2'),
                           t('ai.screens.digitalTwin.chatStarter3'),
                         ].map((q) => (
-                          <Pressable key={q} style={styles.chatStarter} onPress={() => handleChatSend(q)}>
+                          <Pressable accessibilityRole="button" key={q} style={styles.chatStarter} onPress={() => handleChatSend(q)}>
                             <Text style={styles.chatStarterText}>{q}</Text>
                             <Ionicons name="arrow-forward" size={14} color="#2D2D8F" />
                           </Pressable>
@@ -834,7 +834,7 @@ export function DigitalTwinScreen({ navigation }: { navigation: { goBack: () => 
                     {chatSuggestions.length > 0 &&
                       !chatLoading &&
                       chatSuggestions.map((s) => (
-                        <Pressable key={s} style={styles.chatSuggestion} onPress={() => handleChatSend(s)}>
+                        <Pressable accessibilityRole="button" key={s} style={styles.chatSuggestion} onPress={() => handleChatSend(s)}>
                           <Text style={styles.chatSuggestionText}>{s}</Text>
                         </Pressable>
                       ))}

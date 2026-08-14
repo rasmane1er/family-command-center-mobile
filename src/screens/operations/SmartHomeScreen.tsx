@@ -84,11 +84,11 @@ export function SmartHomeScreen({ navigation }: any) {
   const screenHeader = (
     <LinearGradient colors={['#1A1A2E', '#0F3460']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
       <View style={styles.headerTop}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <Text style={styles.headerTitle}>{t('smartHome.title')}</Text>
-        <Pressable onPress={() => navigation.navigate('ConnectHueBridge')} style={styles.addBtn}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.navigate('ConnectHueBridge')} style={styles.addBtn}>
           <Ionicons name="add" size={24} color="#fff" />
         </Pressable>
       </View>
@@ -116,7 +116,7 @@ export function SmartHomeScreen({ navigation }: any) {
       {devices.length > 0 && (
         <View style={styles.tabs}>
           {(['devices', 'scenes'] as const).map((tab) => (
-            <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
+            <Pressable accessibilityRole="button" key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
               <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
               </Text>
@@ -129,7 +129,7 @@ export function SmartHomeScreen({ navigation }: any) {
 
   const screenCompact = (
     <LinearGradient colors={['#1A1A2E', '#0F3460']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={styles.headerTitle}>{t('smartHome.title')}</Text>
@@ -175,7 +175,7 @@ export function SmartHomeScreen({ navigation }: any) {
                   contentContainerStyle={{ alignItems: 'center' }}
                 >
                   {rooms.map((room) => (
-                    <Pressable
+                    <Pressable accessibilityRole="button"
                       key={room}
                       onPress={() => setSelectedRoom(room)}
                       style={[styles.roomChip, selectedRoom === room && styles.roomChipActive]}
@@ -211,7 +211,7 @@ export function SmartHomeScreen({ navigation }: any) {
                             </View>
                           )}
                         </View>
-                        <Pressable
+                        <Pressable accessibilityRole="button"
                           onPress={() => toggleDevice(device.id)}
                           disabled={!device.isOnline}
                           style={[
@@ -260,7 +260,7 @@ export function SmartHomeScreen({ navigation }: any) {
                 {hueConnected && hueScenes.length > 0 && (
                   <View style={styles.scenesGrid}>
                     {hueScenes.map((scene) => (
-                      <Pressable
+                      <Pressable accessibilityRole="button"
                         key={scene.id}
                         onPress={() => recallHueScene(scene.id)}
                         style={[styles.sceneCard, { backgroundColor: colors.primary + '15', borderColor: colors.primary + '30' }]}

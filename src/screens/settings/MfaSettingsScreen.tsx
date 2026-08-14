@@ -87,7 +87,7 @@ export function MfaSettingsScreen({ navigation }: any) {
   return (
     <View style={[s.root, { paddingTop: insets.top }]}>
       <View style={s.header}>
-        <Pressable onPress={() => (step === 'status' ? navigation.goBack() : setStep('status'))} hitSlop={10}>
+        <Pressable accessibilityRole="button" onPress={() => (step === 'status' ? navigation.goBack() : setStep('status'))} hitSlop={10}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
         <Text style={s.headerTitle}>Two-Factor Authentication</Text>
@@ -112,11 +112,11 @@ export function MfaSettingsScreen({ navigation }: any) {
             </View>
 
             {mfaEnabled ? (
-              <Pressable style={s.dangerButton} onPress={() => setStep('disable')}>
+              <Pressable accessibilityRole="button" style={s.dangerButton} onPress={() => setStep('disable')}>
                 <Text style={s.dangerButtonText}>Turn Off Two-Factor Authentication</Text>
               </Pressable>
             ) : (
-              <Pressable style={s.primaryButton} onPress={startSetup} disabled={loading}>
+              <Pressable accessibilityRole="button" style={s.primaryButton} onPress={startSetup} disabled={loading}>
                 {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.primaryButtonText}>Set Up Two-Factor Authentication</Text>}
               </Pressable>
             )}
@@ -130,7 +130,7 @@ export function MfaSettingsScreen({ navigation }: any) {
             </Text>
             {qrCodeDataUrl && <Image source={{ uri: qrCodeDataUrl }} style={s.qrImage} resizeMode="contain" />}
             {secret && (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 style={s.secretRow}
                 onPress={() => { Clipboard.setStringAsync(secret); Alert.alert('Copied', 'Manual entry key copied to clipboard.'); }}
               >
@@ -139,7 +139,7 @@ export function MfaSettingsScreen({ navigation }: any) {
               </Pressable>
             )}
             <Text style={s.stepInstructions}>2. Enter the 6-digit code your app generates</Text>
-            <TextInput
+            <TextInput accessibilityLabel="000000"
               style={s.codeInput}
               placeholder="000000"
               placeholderTextColor={colors.textMuted}
@@ -149,7 +149,7 @@ export function MfaSettingsScreen({ navigation }: any) {
               maxLength={6}
             />
             {error && <Text style={s.errorText}>{error}</Text>}
-            <Pressable style={s.primaryButton} onPress={confirmEnable} disabled={loading || code.trim().length !== 6}>
+            <Pressable accessibilityRole="button" style={s.primaryButton} onPress={confirmEnable} disabled={loading || code.trim().length !== 6}>
               {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.primaryButtonText}>Verify & Turn On</Text>}
             </Pressable>
           </>
@@ -167,13 +167,13 @@ export function MfaSettingsScreen({ navigation }: any) {
                 <Text key={c} style={s.backupCode}>{c}</Text>
               ))}
             </View>
-            <Pressable
+            <Pressable accessibilityRole="button"
               style={s.secondaryButton}
               onPress={() => { Clipboard.setStringAsync(backupCodes.join('\n')); Alert.alert('Copied', 'Backup codes copied to clipboard.'); }}
             >
               <Text style={s.secondaryButtonText}>Copy Codes</Text>
             </Pressable>
-            <Pressable style={s.primaryButton} onPress={() => { setStep('status'); setQrCodeDataUrl(null); setSecret(null); }}>
+            <Pressable accessibilityRole="button" style={s.primaryButton} onPress={() => { setStep('status'); setQrCodeDataUrl(null); setSecret(null); }}>
               <Text style={s.primaryButtonText}>Done</Text>
             </Pressable>
           </>
@@ -182,7 +182,7 @@ export function MfaSettingsScreen({ navigation }: any) {
         {step === 'disable' && (
           <>
             <Text style={s.stepInstructions}>Confirm your password and a current code to turn off two-factor authentication.</Text>
-            <TextInput
+            <TextInput accessibilityLabel="Password"
               style={s.textInput}
               placeholder="Password"
               placeholderTextColor={colors.textMuted}
@@ -190,7 +190,7 @@ export function MfaSettingsScreen({ navigation }: any) {
               onChangeText={(v) => { setPassword(v); setError(null); }}
               secureTextEntry
             />
-            <TextInput
+            <TextInput accessibilityLabel="6-digit code or backup code"
               style={s.textInput}
               placeholder="6-digit code or backup code"
               placeholderTextColor={colors.textMuted}
@@ -199,7 +199,7 @@ export function MfaSettingsScreen({ navigation }: any) {
               autoCapitalize="characters"
             />
             {error && <Text style={s.errorText}>{error}</Text>}
-            <Pressable style={s.dangerButton} onPress={confirmDisable} disabled={loading}>
+            <Pressable accessibilityRole="button" style={s.dangerButton} onPress={confirmDisable} disabled={loading}>
               {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.dangerButtonText}>Confirm: Turn Off</Text>}
             </Pressable>
           </>

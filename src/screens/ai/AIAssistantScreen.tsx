@@ -254,7 +254,7 @@ export function AIAssistantScreen({ navigation }: any) {
             </View>
           </View>
         </View>
-        <Pressable onPress={clearMessages} style={({ pressed }) => [dynStyles.clearBtn, pressed && dynStyles.clearBtnPressed]}>
+        <Pressable accessibilityRole="button" onPress={clearMessages} style={({ pressed }) => [dynStyles.clearBtn, pressed && dynStyles.clearBtnPressed]}>
           <Ionicons name="refresh-outline" size={18} color="rgba(255,255,255,0.75)" />
         </Pressable>
       </View>
@@ -264,15 +264,15 @@ export function AIAssistantScreen({ navigation }: any) {
 
       {/* Context chips */}
       <View style={dynStyles.contextRow}>
-        <Pressable onPress={goToMembers} style={({ pressed }) => [dynStyles.contextChip, pressed && dynStyles.contextChipPressed]}>
+        <Pressable accessibilityRole="button" onPress={goToMembers} style={({ pressed }) => [dynStyles.contextChip, pressed && dynStyles.contextChipPressed]}>
           <Ionicons name="people-outline" size={11} color="rgba(255,255,255,0.7)" />
           <Text style={dynStyles.contextChipText}>{members.length} members</Text>
         </Pressable>
-        <Pressable onPress={goToNetWorth} style={({ pressed }) => [dynStyles.contextChip, pressed && dynStyles.contextChipPressed]}>
+        <Pressable accessibilityRole="button" onPress={goToNetWorth} style={({ pressed }) => [dynStyles.contextChip, pressed && dynStyles.contextChipPressed]}>
           <Ionicons name="wallet-outline" size={11} color="rgba(255,255,255,0.7)" />
           <Text style={dynStyles.contextChipText}>${(netWorth / 1000).toFixed(0)}k net worth</Text>
         </Pressable>
-        <Pressable onPress={goToPantry} style={({ pressed }) => [dynStyles.contextChip, pressed && dynStyles.contextChipPressed]}>
+        <Pressable accessibilityRole="button" onPress={goToPantry} style={({ pressed }) => [dynStyles.contextChip, pressed && dynStyles.contextChipPressed]}>
           <Ionicons name="nutrition-outline" size={11} color="rgba(255,255,255,0.7)" />
           <Text style={dynStyles.contextChipText}>{pantryItems.length} pantry</Text>
         </Pressable>
@@ -285,7 +285,7 @@ export function AIAssistantScreen({ navigation }: any) {
         contentContainerStyle={dynStyles.featuresRowContent}
       >
         {AI_FEATURES.map((f) => (
-          <Pressable
+          <Pressable accessibilityRole="button"
             key={f.screen}
             onPress={() => navigation.navigate(f.screen)}
             style={({ pressed }) => [dynStyles.featureBtn, pressed && dynStyles.featureBtnPressed]}
@@ -328,7 +328,7 @@ export function AIAssistantScreen({ navigation }: any) {
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <View style={dynStyles.statusDot} />
         <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, fontWeight: '600' }}>Online</Text>
-        <Pressable onPress={clearMessages} style={dynStyles.clearBtn}>
+        <Pressable accessibilityRole="button" onPress={clearMessages} style={dynStyles.clearBtn}>
           <Ionicons name="refresh-outline" size={16} color="rgba(255,255,255,0.7)" />
         </Pressable>
       </View>
@@ -393,13 +393,13 @@ export function AIAssistantScreen({ navigation }: any) {
                   <Text style={dynStyles.actionBannerText} numberOfLines={2}>
                     I can do that — {getActionDescription(msg.pendingAction)}
                   </Text>
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     style={dynStyles.actionConfirmBtn}
                     onPress={() => executeAction(msg.id, msg.pendingAction!)}
                   >
                     <Ionicons name="checkmark" size={16} color="#fff" />
                   </Pressable>
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     style={dynStyles.actionCancelBtn}
                     onPress={() => setConfirmedActions((prev) => new Set(prev).add(msg.id))}
                   >
@@ -437,7 +437,7 @@ export function AIAssistantScreen({ navigation }: any) {
               <Text style={dynStyles.suggestionsTitle}>{t('ai.suggestions')}</Text>
               <View style={dynStyles.suggestionsGrid}>
                 {quickChips.map((s) => (
-                  <Pressable key={s.label} onPress={() => handleSend(s.prompt)} style={dynStyles.suggestionChip}>
+                  <Pressable accessibilityRole="button" key={s.label} onPress={() => handleSend(s.prompt)} style={dynStyles.suggestionChip}>
                     <Ionicons name={s.icon as keyof typeof Ionicons.glyphMap} size={16} color={colors.primary} />
                     <Text style={dynStyles.suggestionText}>{s.label}</Text>
                   </Pressable>
@@ -452,7 +452,7 @@ export function AIAssistantScreen({ navigation }: any) {
         {messages.length > 0 && !isTyping && (
           <View style={dynStyles.quickSuggestions}>
             {quickChips.map((s) => (
-              <Pressable key={s.label} onPress={() => handleSend(s.prompt)} style={dynStyles.quickChip}>
+              <Pressable accessibilityRole="button" key={s.label} onPress={() => handleSend(s.prompt)} style={dynStyles.quickChip}>
                 <Text style={dynStyles.quickChipText}>{s.label}</Text>
               </Pressable>
             ))}

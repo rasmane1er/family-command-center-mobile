@@ -279,13 +279,13 @@ export function DocumentsScreen({ navigation, route }: any) {
   const screenHeader = (
     <LinearGradient colors={['#2980B9', '#1A5276']} style={[s.header, { paddingTop: insets.top + 6 }]}>
       <View style={s.headerRow}>
-        <Pressable onPress={() => navigation.goBack()} style={s.back}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={s.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <View style={{ flex: 1 }}>
           <Text style={s.headerTitle}>{vehicleLabel ? `${vehicleLabel} Docs` : 'Document Vault'}</Text>
         </View>
-        <Pressable onPress={() => setShowModal(true)} style={s.headerBtn}>
+        <Pressable accessibilityRole="button" onPress={() => setShowModal(true)} style={s.headerBtn}>
           <Ionicons name="add" size={26} color="#fff" />
         </Pressable>
       </View>
@@ -296,7 +296,7 @@ export function DocumentsScreen({ navigation, route }: any) {
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.catBar} contentContainerStyle={s.catBarContent}>
         {CATEGORIES_CONFIG.map((cat) => (
-          <Pressable key={cat.key} onPress={() => setActiveCategory(cat.key)}
+          <Pressable accessibilityRole="button" key={cat.key} onPress={() => setActiveCategory(cat.key)}
             style={[s.catChip, activeCategory === cat.key && { borderColor: cat.color, backgroundColor: cat.color + '15' }]}>
             <Ionicons name={cat.icon as any} size={13} color={activeCategory === cat.key ? cat.color : colors.textSecondary} />
             <Text style={[s.catText, activeCategory === cat.key && { color: cat.color }]}>{cat.label}</Text>
@@ -311,7 +311,7 @@ export function DocumentsScreen({ navigation, route }: any) {
       colors={['#2980B9', '#1A5276']}
       style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
     >
-      <Pressable onPress={() => navigation.goBack()} style={s.back}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={s.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={s.headerTitle}>{vehicleLabel ? `${vehicleLabel} Docs` : 'Documents'}</Text>
@@ -335,7 +335,7 @@ export function DocumentsScreen({ navigation, route }: any) {
         {filtered.map((doc) => {
           const catInfo = getCatInfo(doc.category);
           return (
-            <Pressable key={doc.id} onPress={() => setViewDoc(doc)}>
+            <Pressable accessibilityRole="button" key={doc.id} onPress={() => setViewDoc(doc)}>
               <Card style={s.docCard} variant="elevated">
                 <View style={s.docRow}>
                   <View style={[s.docIconWrap, { backgroundColor: catInfo.color + '15' }]}>
@@ -367,16 +367,16 @@ export function DocumentsScreen({ navigation, route }: any) {
 
                   <View style={s.docActions}>
                     {doc.fileUrl && (
-                      <Pressable onPress={() => handleDownload(doc)} style={s.docActionBtn}
+                      <Pressable accessibilityRole="button" onPress={() => handleDownload(doc)} style={s.docActionBtn}
                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                         <Ionicons name="download-outline" size={18} color={colors.primary} />
                       </Pressable>
                     )}
-                    <Pressable onPress={() => handleShare(doc)} style={s.docActionBtn}
+                    <Pressable accessibilityRole="button" onPress={() => handleShare(doc)} style={s.docActionBtn}
                       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                       <Ionicons name="share-outline" size={18} color={colors.primary} />
                     </Pressable>
-                    <Pressable onPress={() => handleDelete(doc.id, doc.title)} style={s.docActionBtn}
+                    <Pressable accessibilityRole="button" onPress={() => handleDelete(doc.id, doc.title)} style={s.docActionBtn}
                       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                       <Ionicons name="trash-outline" size={16} color={colors.danger} />
                     </Pressable>
@@ -392,7 +392,7 @@ export function DocumentsScreen({ navigation, route }: any) {
             <Ionicons name="folder-open-outline" size={64} color={colors.textMuted} />
             <Text style={s.emptyTitle}>No documents yet</Text>
             <Text style={s.emptyDesc}>Tap + to upload a file or add a document record</Text>
-            <Pressable style={s.emptyBtn} onPress={() => setShowModal(true)}>
+            <Pressable accessibilityRole="button" style={s.emptyBtn} onPress={() => setShowModal(true)}>
               <LinearGradient colors={['#2980B9', '#1A5276']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.emptyBtnGrad}>
                 <Ionicons name="cloud-upload-outline" size={18} color="#fff" />
                 <Text style={s.emptyBtnText}>Upload Document</Text>
@@ -423,7 +423,7 @@ export function DocumentsScreen({ navigation, route }: any) {
                 <Text style={s.viewTitle}>{viewDoc.title}</Text>
                 <Text style={s.viewCat}>{viewDoc.category}</Text>
               </View>
-              <Pressable onPress={() => setViewDoc(null)} style={s.closeBtn}>
+              <Pressable accessibilityRole="button" onPress={() => setViewDoc(null)} style={s.closeBtn}>
                 <Ionicons name="close" size={22} color={colors.text} />
               </Pressable>
             </View>
@@ -466,7 +466,7 @@ export function DocumentsScreen({ navigation, route }: any) {
 
               <View style={s.viewActions}>
                 {viewDoc.fileUrl && (
-                  <Pressable style={[s.viewActionBtn, { flex: 1 }]} onPress={() => handleDownload(viewDoc)} disabled={downloading}>
+                  <Pressable accessibilityRole="button" style={[s.viewActionBtn, { flex: 1 }]} onPress={() => handleDownload(viewDoc)} disabled={downloading}>
                     <LinearGradient colors={['#2980B9', '#1A5276']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.viewActionGrad}>
                       {downloading
                         ? <ActivityIndicator color="#fff" size="small" />
@@ -478,7 +478,7 @@ export function DocumentsScreen({ navigation, route }: any) {
                     </LinearGradient>
                   </Pressable>
                 )}
-                <Pressable style={[s.viewActionBtn, { flex: 1 }]} onPress={() => handleShare(viewDoc)}>
+                <Pressable accessibilityRole="button" style={[s.viewActionBtn, { flex: 1 }]} onPress={() => handleShare(viewDoc)}>
                   <LinearGradient colors={['#27AE60', '#1E8449']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.viewActionGrad}>
                     <Ionicons name="share-social-outline" size={18} color="#fff" />
                     <Text style={s.viewActionText}>Share</Text>
@@ -486,7 +486,7 @@ export function DocumentsScreen({ navigation, route }: any) {
                 </Pressable>
               </View>
 
-              <Pressable style={s.deleteFullBtn} onPress={() => handleDelete(viewDoc.id, viewDoc.title)}>
+              <Pressable accessibilityRole="button" style={s.deleteFullBtn} onPress={() => handleDelete(viewDoc.id, viewDoc.title)}>
                 <Ionicons name="trash-outline" size={16} color={colors.danger} />
                 <Text style={[s.viewActionText, { color: colors.danger }]}>Delete Document</Text>
               </Pressable>
@@ -502,7 +502,7 @@ export function DocumentsScreen({ navigation, route }: any) {
           <Text style={s.modalTitle}>Add Document</Text>
 
           {/* File picker section */}
-          <Pressable style={[s.uploadArea, pickedFile && s.uploadAreaDone]} onPress={handlePickFile}>
+          <Pressable accessibilityRole="button" style={[s.uploadArea, pickedFile && s.uploadAreaDone]} onPress={handlePickFile}>
             {pickedFile ? (
               <>
                 <Ionicons name={getFileIcon(pickedFile.name) as any} size={36} color={colors.primary} />
@@ -520,17 +520,17 @@ export function DocumentsScreen({ navigation, route }: any) {
           </Pressable>
 
           <Text style={s.modalLabel}>Title *</Text>
-          <TextInput style={s.modalInput} placeholder="e.g. John's Passport"
+          <TextInput accessibilityLabel="e.g. John's Passport" style={s.modalInput} placeholder="e.g. John's Passport"
             value={newTitle} onChangeText={setNewTitle}
             placeholderTextColor={colors.textMuted} autoFocus={!pickedFile} />
 
           <Text style={s.modalLabel}>Issuer</Text>
-          <TextInput style={s.modalInput} placeholder="e.g. US Dept. of State"
+          <TextInput accessibilityLabel="e.g. US Dept. of State" style={s.modalInput} placeholder="e.g. US Dept. of State"
             value={newIssuer} onChangeText={setNewIssuer}
             placeholderTextColor={colors.textMuted} />
 
           <Text style={s.modalLabel}>Expiry Date (MM/DD/YYYY)</Text>
-          <TextInput style={s.modalInput} placeholder="e.g. 03/15/2029 — optional"
+          <TextInput accessibilityLabel="e.g. 03/15/2029 — optional" style={s.modalInput} placeholder="e.g. 03/15/2029 — optional"
             value={newExpiry} onChangeText={setNewExpiry}
             placeholderTextColor={colors.textMuted}
             keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'default'} />
@@ -540,7 +540,7 @@ export function DocumentsScreen({ navigation, route }: any) {
             {DOC_CATEGORIES.map((cat) => {
               const info = getCatInfo(cat);
               return (
-                <Pressable key={cat} onPress={() => setNewCategory(cat)}
+                <Pressable accessibilityRole="button" key={cat} onPress={() => setNewCategory(cat)}
                   style={[s.catGridItem, newCategory === cat && { backgroundColor: info.color + '20', borderColor: info.color }]}>
                   <Ionicons name={info.icon as any} size={15} color={newCategory === cat ? info.color : colors.textSecondary} />
                   <Text style={[s.catGridText, newCategory === cat && { color: info.color }]}>
@@ -553,12 +553,12 @@ export function DocumentsScreen({ navigation, route }: any) {
 
           <Text style={s.modalLabel}>Assign To</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
-            <Pressable onPress={() => setNewMemberId(null)} style={[s.memberChip, !newMemberId && s.memberChipOn]}>
+            <Pressable accessibilityRole="button" onPress={() => setNewMemberId(null)} style={[s.memberChip, !newMemberId && s.memberChipOn]}>
               <Ionicons name="home-outline" size={16} color={!newMemberId ? '#2980B9' : colors.textMuted} />
               <Text style={[s.memberChipName, !newMemberId && { color: '#2980B9' }]}>Family</Text>
             </Pressable>
             {members.map((m) => (
-              <Pressable key={m.id} onPress={() => setNewMemberId(m.id)} style={[s.memberChip, newMemberId === m.id && s.memberChipOn]}>
+              <Pressable accessibilityRole="button" key={m.id} onPress={() => setNewMemberId(m.id)} style={[s.memberChip, newMemberId === m.id && s.memberChipOn]}>
                 <Avatar name={m.name} color={m.avatarColor} imageUri={m.avatar} size={28} />
                 <Text style={[s.memberChipName, newMemberId === m.id && { color: '#2980B9' }]}>{m.name.split(' ')[0]}</Text>
               </Pressable>

@@ -49,7 +49,7 @@ export function RelationshipHealthScreen({ navigation }: any) {
   const screenHeader = (
     <LinearGradient colors={['#880E4F', '#E91E63']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
       <View style={styles.headerTop}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <Text style={styles.headerTitle}>{t('relationship.title')}</Text>
@@ -69,7 +69,7 @@ export function RelationshipHealthScreen({ navigation }: any) {
 
   const screenCompact = (
     <View style={{ backgroundColor: '#880E4F', paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={styles.headerTitle}>{t('relationship.title')}</Text>
@@ -85,7 +85,7 @@ export function RelationshipHealthScreen({ navigation }: any) {
   const tabs = (
     <View style={styles.tabs}>
       {(['bonds', 'languages', 'activities'] as const).map((tab) => (
-        <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
+        <Pressable accessibilityRole="button" key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
           <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
             {tab === 'bonds' ? 'Bond Scores' : tab === 'languages' ? 'Love Languages' : 'Activities'}
           </Text>
@@ -138,7 +138,7 @@ export function RelationshipHealthScreen({ navigation }: any) {
 
         {activeTab === 'languages' && members.map((member) => (
           <Card key={member.id} style={styles.llCard} variant="elevated">
-            <Pressable
+            <Pressable accessibilityRole="button"
               style={styles.llHeader}
               onPress={() => navigation.navigate('MemberDetails', { memberId: member.id })}
             >
@@ -154,7 +154,7 @@ export function RelationshipHealthScreen({ navigation }: any) {
                   <Text style={[styles.llPrimaryText, { color: member.avatarColor }]}>{member.loveLanguage}</Text>
                 </View>
               ) : (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   style={styles.llSecondaryBadge}
                   onPress={() => navigation.navigate('MemberDetails', { memberId: member.id })}
                 >
@@ -180,7 +180,7 @@ export function RelationshipHealthScreen({ navigation }: any) {
                 <Text style={styles.pointsText}>{act.points}</Text>
               </View>
             </View>
-            <Pressable
+            <Pressable accessibilityRole="button"
               onPress={() => Alert.alert('Schedule Activity', `Add "${act.activity}" to your calendar?`, [
                 { text: 'Cancel', style: 'cancel' },
                 { text: 'Open Calendar', onPress: () => navigation.navigate('Calendar') },

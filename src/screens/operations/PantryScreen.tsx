@@ -152,9 +152,9 @@ export function PantryScreen({ navigation }: any) {
           onBack={() => (navigation.canGoBack() ? navigation.goBack() : navigation.navigate('OperationsDashboard'))}
           rightAction={
             <View style={s.headerActions}>
-              <Pressable onPress={handleAutoRestock} style={s.actionBtn}><Ionicons name="cart-outline" size={22} color="#fff" /></Pressable>
-              <Pressable onPress={() => navigation.navigate('ScanItem')} style={s.actionBtn}><Ionicons name="barcode-outline" size={22} color="#fff" /></Pressable>
-              <Pressable onPress={() => setShowModal(true)} style={s.actionBtn}><Ionicons name="add" size={24} color="#fff" /></Pressable>
+              <Pressable accessibilityRole="button" onPress={handleAutoRestock} style={s.actionBtn}><Ionicons name="cart-outline" size={22} color="#fff" /></Pressable>
+              <Pressable accessibilityRole="button" onPress={() => navigation.navigate('ScanItem')} style={s.actionBtn}><Ionicons name="barcode-outline" size={22} color="#fff" /></Pressable>
+              <Pressable accessibilityRole="button" onPress={() => setShowModal(true)} style={s.actionBtn}><Ionicons name="add" size={24} color="#fff" /></Pressable>
             </View>
           }
         >
@@ -176,7 +176,7 @@ export function PantryScreen({ navigation }: any) {
 
           <View style={s.searchBar}>
             <Ionicons name="search-outline" size={18} color="rgba(255,255,255,0.7)" />
-            <TextInput
+            <TextInput accessibilityLabel="Search pantry..."
               style={s.searchInput}
               placeholder="Search pantry..."
               placeholderTextColor="rgba(255,255,255,0.5)"
@@ -187,7 +187,7 @@ export function PantryScreen({ navigation }: any) {
 
       <View style={s.categoryBar}>
         {CATEGORIES.map((cat) => (
-          <Pressable key={cat} onPress={() => setCategory(cat)} style={[s.catChip, category === cat && s.catChipActive]}>
+          <Pressable accessibilityRole="button" key={cat} onPress={() => setCategory(cat)} style={[s.catChip, category === cat && s.catChipActive]}>
             <Text style={[s.catText, category === cat && s.catTextActive]}>{cat}</Text>
           </Pressable>
         ))}
@@ -201,7 +201,7 @@ export function PantryScreen({ navigation }: any) {
       start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
       style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
     >
-      <Pressable onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </Pressable>
       <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>Pantry</Text>
@@ -237,15 +237,15 @@ export function PantryScreen({ navigation }: any) {
                   </View>
                   <Text style={s.itemCategory}>{item.category} • {item.location || 'Pantry'}</Text>
                   <View style={s.itemQuantityRow}>
-                    <Pressable onPress={() => handleQuantityUpdate(item, Math.max(0, item.quantity - 1))} style={s.qtyBtn}>
+                    <Pressable accessibilityRole="button" onPress={() => handleQuantityUpdate(item, Math.max(0, item.quantity - 1))} style={s.qtyBtn}>
                       <Ionicons name="remove" size={16} color={colors.primary} />
                     </Pressable>
                     <Text style={s.itemQuantity}>{item.quantity} {item.unit}</Text>
-                    <Pressable onPress={() => handleQuantityUpdate(item, item.quantity + 1)} style={s.qtyBtn}>
+                    <Pressable accessibilityRole="button" onPress={() => handleQuantityUpdate(item, item.quantity + 1)} style={s.qtyBtn}>
                       <Ionicons name="add" size={16} color={colors.primary} />
                     </Pressable>
                     {isLowStock && <Badge label="Low" variant="warning" size="sm" style={{ marginLeft: 8 }} />}
-                    <Pressable onPress={() => handleDelete(item.id, item.name)} style={s.deleteBtn}>
+                    <Pressable accessibilityRole="button" onPress={() => handleDelete(item.id, item.name)} style={s.deleteBtn}>
                       <Ionicons name="trash-outline" size={14} color={colors.danger} />
                     </Pressable>
                   </View>
@@ -271,36 +271,36 @@ export function PantryScreen({ navigation }: any) {
           <Text style={s.modalTitle}>Add Pantry Item</Text>
 
           <Text style={s.modalLabel}>Item Name *</Text>
-          <TextInput style={s.modalInput} placeholder="e.g. Olive Oil" value={newName} onChangeText={setNewName} placeholderTextColor={colors.textMuted} autoFocus />
+          <TextInput accessibilityLabel="e.g. Olive Oil" style={s.modalInput} placeholder="e.g. Olive Oil" value={newName} onChangeText={setNewName} placeholderTextColor={colors.textMuted} autoFocus />
 
           <View style={s.rowInputs}>
             <View style={{ flex: 1 }}>
               <Text style={s.modalLabel}>Quantity</Text>
-              <TextInput style={s.modalInput} placeholder="1" value={newQuantity} onChangeText={setNewQuantity} keyboardType="numeric" placeholderTextColor={colors.textMuted} />
+              <TextInput accessibilityLabel="1" style={s.modalInput} placeholder="1" value={newQuantity} onChangeText={setNewQuantity} keyboardType="numeric" placeholderTextColor={colors.textMuted} />
             </View>
             <View style={{ flex: 1, marginLeft: 10 }}>
               <Text style={s.modalLabel}>Unit</Text>
-              <TextInput style={s.modalInput} placeholder="pcs / lbs / oz" value={newUnit} onChangeText={setNewUnit} placeholderTextColor={colors.textMuted} />
+              <TextInput accessibilityLabel="pcs / lbs / oz" style={s.modalInput} placeholder="pcs / lbs / oz" value={newUnit} onChangeText={setNewUnit} placeholderTextColor={colors.textMuted} />
             </View>
           </View>
 
           <Text style={s.modalLabel}>Category</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
             {CATEGORIES.filter((c) => c !== 'All').map((cat) => (
-              <Pressable key={cat} onPress={() => setNewCategory(cat)} style={[s.catChip, newCategory === cat && s.catChipActive]}>
+              <Pressable accessibilityRole="button" key={cat} onPress={() => setNewCategory(cat)} style={[s.catChip, newCategory === cat && s.catChipActive]}>
                 <Text style={[s.catText, newCategory === cat && s.catTextActive]}>{cat}</Text>
               </Pressable>
             ))}
           </ScrollView>
 
           <Text style={s.modalLabel}>Storage Location</Text>
-          <TextInput style={s.modalInput} placeholder="e.g. Pantry, Fridge, Freezer" value={newLocation} onChangeText={setNewLocation} placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="e.g. Pantry, Fridge, Freezer" style={s.modalInput} placeholder="e.g. Pantry, Fridge, Freezer" value={newLocation} onChangeText={setNewLocation} placeholderTextColor={colors.textMuted} />
 
           <Text style={s.modalLabel}>Expiry Date (YYYY-MM-DD)</Text>
-          <TextInput style={s.modalInput} placeholder="e.g. 2026-08-01" value={newExpiryDate} onChangeText={setNewExpiryDate} placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="e.g. 2026-08-01" style={s.modalInput} placeholder="e.g. 2026-08-01" value={newExpiryDate} onChangeText={setNewExpiryDate} placeholderTextColor={colors.textMuted} />
 
           <Text style={s.modalLabel}>Min Quantity (for restock alert)</Text>
-          <TextInput style={[s.modalInput, { marginBottom: 24 }]} placeholder="e.g. 1" value={newMinQuantity} onChangeText={setNewMinQuantity} keyboardType="numeric" placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="e.g. 1" style={[s.modalInput, { marginBottom: 24 }]} placeholder="e.g. 1" value={newMinQuantity} onChangeText={setNewMinQuantity} keyboardType="numeric" placeholderTextColor={colors.textMuted} />
 
           <Button title="Add Item" onPress={handleAdd} fullWidth size="lg" disabled={!newName.trim()} />
           <Button title="Cancel" onPress={() => setShowModal(false)} variant="ghost" fullWidth style={{ marginTop: 8 }} />

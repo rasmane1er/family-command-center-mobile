@@ -43,7 +43,7 @@ export function MemoryOfTheDayCard({ onPress }: { onPress?: () => void }) {
 
   if (unique.length === 0 && aiPool.length === 0) {
     return (
-      <Pressable style={styles.emptyCard} onPress={onPress}>
+      <Pressable accessibilityRole="button" style={styles.emptyCard} onPress={onPress}>
         <Text style={styles.emptyEmoji}>📸</Text>
         <View style={{ flex: 1 }}>
           <Text style={styles.emptyTitle}>Start your Family Timeline</Text>
@@ -64,7 +64,7 @@ export function MemoryOfTheDayCard({ onPress }: { onPress?: () => void }) {
       : when.toLocaleDateString(undefined, { month: 'long', day: 'numeric' });
 
     return (
-      <Pressable style={styles.card} onPress={onPress}>
+      <Pressable accessibilityRole="button" style={styles.card} onPress={onPress}>
         <View style={[styles.accent, { backgroundColor: color }]} />
         <View style={styles.content}>
           <View style={styles.topRow}>
@@ -85,7 +85,7 @@ export function MemoryOfTheDayCard({ onPress }: { onPress?: () => void }) {
   // AI memory fallback
   const mem = aiPool[dailyIndex(aiPool.length)];
   return (
-    <Pressable style={styles.card} onPress={onPress}>
+    <Pressable accessibilityRole="button" style={styles.card} onPress={onPress}>
       <View style={[styles.accent, { backgroundColor: '#6366f1' }]} />
       <View style={styles.content}>
         <View style={styles.topRow}>

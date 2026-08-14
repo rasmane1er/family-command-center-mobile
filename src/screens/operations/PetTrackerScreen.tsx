@@ -239,7 +239,7 @@ export function PetTrackerScreen({ navigation }: any) {
         {pets.map((pet) => {
           const speciesInfo = SPECIES_OPTIONS.find((s) => s.value === pet.species)!;
           return (
-            <Pressable
+            <Pressable accessibilityRole="button"
               key={pet.id}
               onLongPress={() => handleDeletePet(pet)}
               style={styles.petCardWrapper}
@@ -274,7 +274,7 @@ export function PetTrackerScreen({ navigation }: any) {
     <View style={styles.tabContent}>
       <View style={styles.eventsHeader}>
         <Text style={styles.sectionTitle}>Upcoming ({pendingEvents.length})</Text>
-        <Pressable onPress={() => { setShowAddEventModal(true); if (pets.length > 0) setEvPetId(pets[0].id); }} style={styles.addEventBtn}>
+        <Pressable accessibilityRole="button" onPress={() => { setShowAddEventModal(true); if (pets.length > 0) setEvPetId(pets[0].id); }} style={styles.addEventBtn}>
           <Ionicons name="add-circle" size={22} color={colors.primary} />
           <Text style={styles.addEventText}>Add Event</Text>
         </Pressable>
@@ -291,7 +291,7 @@ export function PetTrackerScreen({ navigation }: any) {
         const evTypeInfo = EVENT_TYPES.find((t) => t.value === ev.type)!;
         const overdue = isOverdue(ev.date);
         return (
-          <Pressable key={ev.id} onPress={() => { toggleEvent(ev.id); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}>
+          <Pressable accessibilityRole="button" key={ev.id} onPress={() => { toggleEvent(ev.id); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}>
             <Card style={styles.eventCard} variant="elevated">
               <View style={styles.eventRow}>
                 <View style={[styles.eventIconBg, { backgroundColor: colors.primary + '15' }]}>
@@ -308,7 +308,7 @@ export function PetTrackerScreen({ navigation }: any) {
                 <View style={styles.eventRight}>
                   {ev.cost ? <Text style={styles.eventCost}>${ev.cost}</Text> : null}
                   <Badge label={evTypeInfo.label} variant="neutral" size="sm" />
-                  <Pressable onPress={() => deleteEvent(ev.id)} style={styles.deleteIconBtn}>
+                  <Pressable accessibilityRole="button" onPress={() => deleteEvent(ev.id)} style={styles.deleteIconBtn}>
                     <Ionicons name="trash-outline" size={14} color={colors.danger} />
                   </Pressable>
                 </View>
@@ -325,7 +325,7 @@ export function PetTrackerScreen({ navigation }: any) {
             const pet = pets.find((p) => p.id === ev.petId);
             const evTypeInfo = EVENT_TYPES.find((t) => t.value === ev.type)!;
             return (
-              <Pressable key={ev.id} onPress={() => { toggleEvent(ev.id); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}>
+              <Pressable accessibilityRole="button" key={ev.id} onPress={() => { toggleEvent(ev.id); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}>
                 <Card style={{ ...styles.eventCard, ...styles.doneCard } as ViewStyle} variant="default">
                   <View style={styles.eventRow}>
                     <View style={[styles.eventIconBg, { backgroundColor: colors.success + '15' }]}>
@@ -427,11 +427,11 @@ export function PetTrackerScreen({ navigation }: any) {
   const screenHeader = (
     <LinearGradient colors={['#1B5E20', '#388E3C']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
       <View style={styles.headerTop}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <Text style={styles.headerTitle}>{t('petTracker.title')}</Text>
-        <Pressable onPress={() => setShowAddPetModal(true)} style={styles.addBtn}>
+        <Pressable accessibilityRole="button" onPress={() => setShowAddPetModal(true)} style={styles.addBtn}>
           <Ionicons name="add" size={26} color="#fff" />
         </Pressable>
       </View>
@@ -451,7 +451,7 @@ export function PetTrackerScreen({ navigation }: any) {
 
   const screenCompact = (
     <LinearGradient colors={['#1B5E20', '#388E3C']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={styles.headerTitle}>{t('petTracker.title')}</Text>
@@ -475,7 +475,7 @@ export function PetTrackerScreen({ navigation }: any) {
           >
             {vetCharges.length > 0 && (
               <View style={styles.vetBanner}>
-                <Pressable onPress={() => setVetBannerExpanded((v) => !v)} style={styles.vetBannerHeader}>
+                <Pressable accessibilityRole="button" onPress={() => setVetBannerExpanded((v) => !v)} style={styles.vetBannerHeader}>
                   <Ionicons name="medical" size={16} color="#1B5E20" />
                   <Text style={styles.vetBannerTitle}>Detected {vetCharges.length} vet charge(s)</Text>
                   <Ionicons name={vetBannerExpanded ? 'chevron-up' : 'chevron-down'} size={16} color="#1B5E20" />
@@ -493,7 +493,7 @@ export function PetTrackerScreen({ navigation }: any) {
                         {pets.length > 0 && (
                           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ maxWidth: 120 }}>
                             {pets.map((p) => (
-                              <Pressable
+                              <Pressable accessibilityRole="button"
                                 key={p.id}
                                 onPress={() => setSelectedPetForCharge((prev) => ({ ...prev, [chargeKey]: p.id }))}
                                 style={[styles.vetPetChip, selectedPetForCharge[chargeKey] === p.id && styles.vetPetChipActive]}
@@ -503,7 +503,7 @@ export function PetTrackerScreen({ navigation }: any) {
                             ))}
                           </ScrollView>
                         )}
-                        <Pressable
+                        <Pressable accessibilityRole="button"
                           onPress={() => {
                             const petId = selectedPetForCharge[chargeKey] ?? (pets[0]?.id ?? '');
                             if (!petId) {
@@ -525,7 +525,7 @@ export function PetTrackerScreen({ navigation }: any) {
                         >
                           <Text style={styles.vetLogBtnText}>Log</Text>
                         </Pressable>
-                        <Pressable onPress={() => setDismissedCharges((prev) => new Set([...prev, chargeKey]))} style={styles.vetDismissBtn}>
+                        <Pressable accessibilityRole="button" onPress={() => setDismissedCharges((prev) => new Set([...prev, chargeKey]))} style={styles.vetDismissBtn}>
                           <Ionicons name="close" size={14} color={colors.textMuted} />
                         </Pressable>
                       </View>
@@ -536,7 +536,7 @@ export function PetTrackerScreen({ navigation }: any) {
 
             <View style={styles.tabs}>
               {(['pets', 'events', 'health'] as const).map((tab) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={tab}
                   onPress={() => setActiveTab(tab)}
                   style={[styles.tab, activeTab === tab && styles.tabActive]}
@@ -562,12 +562,12 @@ export function PetTrackerScreen({ navigation }: any) {
           <Text style={styles.modalTitle}>Add Pet</Text>
 
           <Text style={styles.modalLabel}>Name *</Text>
-          <TextInput style={styles.modalInput} placeholder="Pet name" value={petName} onChangeText={setPetName} placeholderTextColor={colors.textMuted} autoFocus />
+          <TextInput accessibilityLabel="Pet name" style={styles.modalInput} placeholder="Pet name" value={petName} onChangeText={setPetName} placeholderTextColor={colors.textMuted} autoFocus />
 
           <Text style={styles.modalLabel}>Species *</Text>
           <View style={styles.speciesGrid}>
             {SPECIES_OPTIONS.map((s) => (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={s.value}
                 onPress={() => setPetSpecies(s.value)}
                 style={[styles.speciesChip, petSpecies === s.value && { borderColor: s.color, backgroundColor: s.color + '15' }]}
@@ -579,22 +579,22 @@ export function PetTrackerScreen({ navigation }: any) {
           </View>
 
           <Text style={styles.modalLabel}>Breed</Text>
-          <TextInput style={styles.modalInput} placeholder="e.g. Golden Retriever" value={petBreed} onChangeText={setPetBreed} placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="e.g. Golden Retriever" style={styles.modalInput} placeholder="e.g. Golden Retriever" value={petBreed} onChangeText={setPetBreed} placeholderTextColor={colors.textMuted} />
 
           <Text style={styles.modalLabel}>Date of Birth (YYYY-MM-DD)</Text>
-          <TextInput style={styles.modalInput} placeholder="2020-03-15" value={petDob} onChangeText={setPetDob} placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="2020-03-15" style={styles.modalInput} placeholder="2020-03-15" value={petDob} onChangeText={setPetDob} placeholderTextColor={colors.textMuted} />
 
           <Text style={styles.modalLabel}>Weight (lbs)</Text>
-          <TextInput style={styles.modalInput} placeholder="e.g. 65" value={petWeight} onChangeText={setPetWeight} keyboardType="decimal-pad" placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="e.g. 65" style={styles.modalInput} placeholder="e.g. 65" value={petWeight} onChangeText={setPetWeight} keyboardType="decimal-pad" placeholderTextColor={colors.textMuted} />
 
           <Text style={styles.modalLabel}>Vet Name</Text>
-          <TextInput style={styles.modalInput} placeholder="Dr. Smith" value={petVetName} onChangeText={setPetVetName} placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="Dr. Smith" style={styles.modalInput} placeholder="Dr. Smith" value={petVetName} onChangeText={setPetVetName} placeholderTextColor={colors.textMuted} />
 
           <Text style={styles.modalLabel}>Vet Phone</Text>
-          <TextInput style={styles.modalInput} placeholder="555-0180" value={petVetPhone} onChangeText={setPetVetPhone} keyboardType="phone-pad" placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="555-0180" style={styles.modalInput} placeholder="555-0180" value={petVetPhone} onChangeText={setPetVetPhone} keyboardType="phone-pad" placeholderTextColor={colors.textMuted} />
 
           <Text style={styles.modalLabel}>Notes</Text>
-          <TextInput style={[styles.modalInput, styles.modalTextarea]} placeholder="Any special notes..." value={petNotes} onChangeText={setPetNotes} multiline numberOfLines={3} placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="Any special notes..." style={[styles.modalInput, styles.modalTextarea]} placeholder="Any special notes..." value={petNotes} onChangeText={setPetNotes} multiline numberOfLines={3} placeholderTextColor={colors.textMuted} />
 
           <Button title="Add Pet" onPress={handleAddPet} fullWidth size="lg" disabled={!petName.trim()} />
           <Button title="Cancel" onPress={() => { resetPetForm(); setShowAddPetModal(false); }} variant="ghost" fullWidth style={{ marginTop: 8 }} />
@@ -610,7 +610,7 @@ export function PetTrackerScreen({ navigation }: any) {
           <Text style={styles.modalLabel}>Pet *</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
             {pets.map((p) => (
-              <Pressable key={p.id} onPress={() => setEvPetId(p.id)} style={[styles.petChip, evPetId === p.id && styles.petChipActive]}>
+              <Pressable accessibilityRole="button" key={p.id} onPress={() => setEvPetId(p.id)} style={[styles.petChip, evPetId === p.id && styles.petChipActive]}>
                 <Text style={styles.petChipEmoji}>{p.emoji}</Text>
                 <Text style={styles.petChipName}>{p.name}</Text>
               </Pressable>
@@ -620,7 +620,7 @@ export function PetTrackerScreen({ navigation }: any) {
           <Text style={styles.modalLabel}>Event Type *</Text>
           <View style={styles.eventTypeGrid}>
             {EVENT_TYPES.map((et) => (
-              <Pressable key={et.value} onPress={() => setEvType(et.value)} style={[styles.eventTypeChip, evType === et.value && styles.eventTypeChipActive]}>
+              <Pressable accessibilityRole="button" key={et.value} onPress={() => setEvType(et.value)} style={[styles.eventTypeChip, evType === et.value && styles.eventTypeChipActive]}>
                 <Ionicons name={et.icon as any} size={16} color={evType === et.value ? colors.primary : colors.textSecondary} />
                 <Text style={[styles.eventTypeLabel, evType === et.value && styles.eventTypeLabelActive]}>{et.label}</Text>
               </Pressable>
@@ -628,16 +628,16 @@ export function PetTrackerScreen({ navigation }: any) {
           </View>
 
           <Text style={styles.modalLabel}>Title *</Text>
-          <TextInput style={styles.modalInput} placeholder="Event title" value={evTitle} onChangeText={setEvTitle} placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="Event title" style={styles.modalInput} placeholder="Event title" value={evTitle} onChangeText={setEvTitle} placeholderTextColor={colors.textMuted} />
 
           <Text style={styles.modalLabel}>Date (YYYY-MM-DD) *</Text>
-          <TextInput style={styles.modalInput} placeholder="2024-06-15" value={evDate} onChangeText={setEvDate} placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="2024-06-15" style={styles.modalInput} placeholder="2024-06-15" value={evDate} onChangeText={setEvDate} placeholderTextColor={colors.textMuted} />
 
           <Text style={styles.modalLabel}>Estimated Cost ($)</Text>
-          <TextInput style={styles.modalInput} placeholder="e.g. 120" value={evCost} onChangeText={setEvCost} keyboardType="decimal-pad" placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="e.g. 120" style={styles.modalInput} placeholder="e.g. 120" value={evCost} onChangeText={setEvCost} keyboardType="decimal-pad" placeholderTextColor={colors.textMuted} />
 
           <Text style={styles.modalLabel}>Notes</Text>
-          <TextInput style={[styles.modalInput, styles.modalTextarea]} placeholder="Any notes..." value={evNotes} onChangeText={setEvNotes} multiline numberOfLines={3} placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="Any notes..." style={[styles.modalInput, styles.modalTextarea]} placeholder="Any notes..." value={evNotes} onChangeText={setEvNotes} multiline numberOfLines={3} placeholderTextColor={colors.textMuted} />
 
           <Button title="Add Event" onPress={handleAddEvent} fullWidth size="lg" disabled={!evTitle.trim() || !evDate.trim() || !evPetId} />
           <Button title="Cancel" onPress={() => { resetEventForm(); setShowAddEventModal(false); }} variant="ghost" fullWidth style={{ marginTop: 8 }} />

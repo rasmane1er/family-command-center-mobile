@@ -228,7 +228,7 @@ export function FamilySafetyAssistantScreen({ navigation }: any) {
           {!isUser && item.suggestions && item.suggestions.length > 0 && (
             <View style={styles.suggestionsRow}>
               {item.suggestions.map((s, i) => (
-                <Pressable key={i} style={styles.suggestionChip} onPress={() => setInput(s)}>
+                <Pressable accessibilityRole="button" key={i} style={styles.suggestionChip} onPress={() => setInput(s)}>
                   <Text style={styles.suggestionText}>{s}</Text>
                 </Pressable>
               ))}
@@ -249,7 +249,7 @@ export function FamilySafetyAssistantScreen({ navigation }: any) {
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top }]}>
         <View style={styles.headerRow}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
             <Ionicons name="chevron-back" size={24} color="#fff" />
           </Pressable>
           <View style={styles.headerIcon}>
@@ -271,7 +271,7 @@ export function FamilySafetyAssistantScreen({ navigation }: any) {
           contentContainerStyle={styles.tabsRow}
         >
           {CONTEXT_TABS.map((tab) => (
-            <Pressable
+            <Pressable accessibilityRole="button"
               key={tab.key}
               style={[styles.tab, contextMode === tab.key && styles.tabActive]}
               onPress={() => switchTab(tab.key)}
@@ -300,7 +300,7 @@ export function FamilySafetyAssistantScreen({ navigation }: any) {
             {QUICK_PROMPT_KEYS.map((k) => {
               const p = t(`${NS}.${k}`);
               return (
-                <Pressable key={k} style={styles.quickChip} onPress={() => sendMessage(p)}>
+                <Pressable accessibilityRole="button" key={k} style={styles.quickChip} onPress={() => sendMessage(p)}>
                   <Text style={styles.quickChipText} numberOfLines={1}>{p}</Text>
                 </Pressable>
               );

@@ -225,7 +225,7 @@ export function MealPrepScreen({ navigation: _navigation }: any) {
           colors={['#004D40', '#00695C']}
           style={{ paddingTop: insets.top + 8, paddingBottom: 16, paddingHorizontal: 20 }}
         >
-          <Pressable onPress={() => setSelectedSessionId(null)} style={styles.backRow}>
+          <Pressable accessibilityRole="button" onPress={() => setSelectedSessionId(null)} style={styles.backRow}>
             <Ionicons name={'chevron-back' as any} size={20} color="#fff" />
             <Text style={styles.backText}>Meal Prep</Text>
           </Pressable>
@@ -240,7 +240,7 @@ export function MealPrepScreen({ navigation: _navigation }: any) {
         {/* Sub-tabs */}
         <View style={styles.subTabRow}>
           {(['items', 'ingredients', 'overview'] as SessionTab[]).map((t) => (
-            <Pressable key={t} onPress={() => setSessionTab(t)} style={{ ...styles.subTabPill, ...(sessionTab === t ? styles.subTabPillActive : {}) }}>
+            <Pressable accessibilityRole="button" key={t} onPress={() => setSessionTab(t)} style={{ ...styles.subTabPill, ...(sessionTab === t ? styles.subTabPillActive : {}) }}>
               <Text style={{ ...styles.subTabText, ...(sessionTab === t ? styles.subTabTextActive : {}) }}>
                 {t.charAt(0).toUpperCase() + t.slice(1)}
               </Text>
@@ -255,7 +255,7 @@ export function MealPrepScreen({ navigation: _navigation }: any) {
             <>
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryText}>{sessionItems.filter((i) => i.completed).length}/{sessionItems.length} completed</Text>
-                <Pressable onPress={() => setShowAddItem(true)} style={styles.addSmallBtn}>
+                <Pressable accessibilityRole="button" onPress={() => setShowAddItem(true)} style={styles.addSmallBtn}>
                   <Ionicons name={'add' as any} size={18} color={colors.primary} />
                   <Text style={styles.addSmallText}>Add Item</Text>
                 </Pressable>
@@ -283,7 +283,7 @@ export function MealPrepScreen({ navigation: _navigation }: any) {
                             <Text style={styles.itemMeta}>{minutesToHrsMin(item.prepTimeMinutes + item.cookTimeMinutes)}</Text>
                           </View>
                         </View>
-                        <Pressable onPress={() => { store.completeItem(item.id); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}>
+                        <Pressable accessibilityRole="button" onPress={() => { store.completeItem(item.id); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}>
                           <Ionicons name={(item.completed ? 'checkbox' : 'square-outline') as any} size={24} color={item.completed ? colors.success : colors.textMuted} />
                         </Pressable>
                       </View>
@@ -294,7 +294,7 @@ export function MealPrepScreen({ navigation: _navigation }: any) {
                           </Text>
                         </View>
                         <Text style={styles.storageDays}>{item.storageDays} days</Text>
-                        <Pressable onPress={() => store.removeItem(item.id)} style={{ marginLeft: 'auto' as any }}>
+                        <Pressable accessibilityRole="button" onPress={() => store.removeItem(item.id)} style={{ marginLeft: 'auto' as any }}>
                           <Ionicons name={'trash-outline' as any} size={15} color={colors.danger} />
                         </Pressable>
                       </View>
@@ -310,7 +310,7 @@ export function MealPrepScreen({ navigation: _navigation }: any) {
             <>
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryText}>{purchasedCount} / {sessionIngredients.length} purchased</Text>
-                <Pressable onPress={() => setShowAddIngredient(true)} style={styles.addSmallBtn}>
+                <Pressable accessibilityRole="button" onPress={() => setShowAddIngredient(true)} style={styles.addSmallBtn}>
                   <Ionicons name={'add' as any} size={18} color={colors.primary} />
                   <Text style={styles.addSmallText}>Add Item</Text>
                 </Pressable>
@@ -328,12 +328,12 @@ export function MealPrepScreen({ navigation: _navigation }: any) {
                     {ings.map((ing) => (
                       <Card key={ing.id} style={styles.ingCard}>
                         <View style={styles.ingRow}>
-                          <Pressable onPress={() => { store.toggleIngredientPurchased(ing.id); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}>
+                          <Pressable accessibilityRole="button" onPress={() => { store.toggleIngredientPurchased(ing.id); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}>
                             <Ionicons name={(ing.purchased ? 'checkbox' : 'square-outline') as any} size={22} color={ing.purchased ? colors.success : colors.textMuted} />
                           </Pressable>
                           <Text style={{ ...styles.ingName, ...(ing.purchased ? styles.ingPurchased : {}) }}>{ing.name}</Text>
                           <Text style={styles.ingQty}>{ing.quantity}</Text>
-                          <Pressable onPress={() => store.removeIngredient(ing.id)}>
+                          <Pressable accessibilityRole="button" onPress={() => store.removeIngredient(ing.id)}>
                             <Ionicons name={'trash-outline' as any} size={15} color={colors.danger} />
                           </Pressable>
                         </View>
@@ -396,7 +396,7 @@ export function MealPrepScreen({ navigation: _navigation }: any) {
                 <Text style={styles.fieldLabel}>Session Status</Text>
                 <View style={styles.optionRow}>
                   {(['planned', 'in-progress', 'completed'] as PrepSession['status'][]).map((s) => (
-                    <Pressable key={s} onPress={() => store.updateSession(selectedSession.id, { status: s })} style={{ ...styles.optionChip, ...(selectedSession.status === s ? styles.optionChipActive : {}) }}>
+                    <Pressable accessibilityRole="button" key={s} onPress={() => store.updateSession(selectedSession.id, { status: s })} style={{ ...styles.optionChip, ...(selectedSession.status === s ? styles.optionChipActive : {}) }}>
                       <Text style={{ ...styles.optionChipText, ...(selectedSession.status === s ? styles.optionChipTextActive : {}) }}>
                         {s.charAt(0).toUpperCase() + s.slice(1)}
                       </Text>
@@ -410,7 +410,7 @@ export function MealPrepScreen({ navigation: _navigation }: any) {
 
         {/* FAB for detail view */}
         {sessionTab !== 'overview' && (
-          <Pressable
+          <Pressable accessibilityRole="button"
             onPress={() => { if (sessionTab === 'items') setShowAddItem(true); else setShowAddIngredient(true); }}
             style={styles.fab}
           >
@@ -427,27 +427,27 @@ export function MealPrepScreen({ navigation: _navigation }: any) {
               <View style={{ width: 40, height: 4, backgroundColor: '#ccc', borderRadius: 2, alignSelf: 'center', marginBottom: 16 }} />
               <Text style={styles.modalTitle}>Add Prep Item</Text>
               <Text style={styles.fieldLabel}>Name *</Text>
-              <TextInput style={styles.input} value={itemName} onChangeText={setItemName} placeholder="e.g. Baked Chicken Breasts" />
+              <TextInput accessibilityLabel="e.g. Baked Chicken Breasts" style={styles.input} value={itemName} onChangeText={setItemName} placeholder="e.g. Baked Chicken Breasts" />
               <Text style={styles.fieldLabel}>Category</Text>
               <View style={styles.optionRow}>
                 {PREP_CATEGORIES.map((c) => (
-                  <Pressable key={c.value} onPress={() => setItemCategory(c.value)} style={{ ...styles.optionChip, ...(itemCategory === c.value ? { backgroundColor: c.color } : {}) }}>
+                  <Pressable accessibilityRole="button" key={c.value} onPress={() => setItemCategory(c.value)} style={{ ...styles.optionChip, ...(itemCategory === c.value ? { backgroundColor: c.color } : {}) }}>
                     <Text style={{ ...styles.optionChipText, ...(itemCategory === c.value ? { color: '#fff' } : {}) }}>{c.label}</Text>
                   </Pressable>
                 ))}
               </View>
               <Text style={styles.fieldLabel}>Servings</Text>
-              <TextInput style={styles.input} value={itemServings} onChangeText={setItemServings} placeholder="4" keyboardType="number-pad" />
+              <TextInput accessibilityLabel="4" style={styles.input} value={itemServings} onChangeText={setItemServings} placeholder="4" keyboardType="number-pad" />
               <Text style={styles.fieldLabel}>Prep Time (minutes)</Text>
-              <TextInput style={styles.input} value={itemPrepTime} onChangeText={setItemPrepTime} placeholder="15" keyboardType="number-pad" />
+              <TextInput accessibilityLabel="15" style={styles.input} value={itemPrepTime} onChangeText={setItemPrepTime} placeholder="15" keyboardType="number-pad" />
               <Text style={styles.fieldLabel}>Cook Time (minutes)</Text>
-              <TextInput style={styles.input} value={itemCookTime} onChangeText={setItemCookTime} placeholder="30" keyboardType="number-pad" />
+              <TextInput accessibilityLabel="30" style={styles.input} value={itemCookTime} onChangeText={setItemCookTime} placeholder="30" keyboardType="number-pad" />
               <Text style={styles.fieldLabel}>Instructions</Text>
-              <TextInput style={{ ...styles.input, height: 80 }} value={itemInstructions} onChangeText={setItemInstructions} placeholder="How to prepare this item" multiline />
+              <TextInput accessibilityLabel="How to prepare this item" style={{ ...styles.input, height: 80 }} value={itemInstructions} onChangeText={setItemInstructions} placeholder="How to prepare this item" multiline />
               <Text style={styles.fieldLabel}>Storage Method</Text>
               <View style={styles.optionRow}>
                 {STORAGE_METHODS.map((m) => (
-                  <Pressable key={m} onPress={() => setItemStorageMethod(m)} style={{ ...styles.optionChip, ...(itemStorageMethod === m ? styles.optionChipActive : {}) }}>
+                  <Pressable accessibilityRole="button" key={m} onPress={() => setItemStorageMethod(m)} style={{ ...styles.optionChip, ...(itemStorageMethod === m ? styles.optionChipActive : {}) }}>
                     <Text style={{ ...styles.optionChipText, ...(itemStorageMethod === m ? styles.optionChipTextActive : {}) }}>
                       {m === 'room-temp' ? 'Room Temp' : m.charAt(0).toUpperCase() + m.slice(1)}
                     </Text>
@@ -455,7 +455,7 @@ export function MealPrepScreen({ navigation: _navigation }: any) {
                 ))}
               </View>
               <Text style={styles.fieldLabel}>Lasts (days)</Text>
-              <TextInput style={styles.input} value={itemStorageDays} onChangeText={setItemStorageDays} placeholder="5" keyboardType="number-pad" />
+              <TextInput accessibilityLabel="5" style={styles.input} value={itemStorageDays} onChangeText={setItemStorageDays} placeholder="5" keyboardType="number-pad" />
               <View style={styles.modalButtons}>
                 <Button title="Cancel" variant="ghost" onPress={() => { resetItemForm(); setShowAddItem(false); }} />
                 <Button title="Add Item" onPress={handleAddItem} disabled={!itemName.trim()} />
@@ -471,11 +471,11 @@ export function MealPrepScreen({ navigation: _navigation }: any) {
               <View style={{ width: 40, height: 4, backgroundColor: '#ccc', borderRadius: 2, alignSelf: 'center', marginBottom: 16 }} />
               <Text style={styles.modalTitle}>Add Ingredient</Text>
               <Text style={styles.fieldLabel}>Name *</Text>
-              <TextInput style={styles.input} value={ingName} onChangeText={setIngName} placeholder="e.g. Chicken breasts" />
+              <TextInput accessibilityLabel="e.g. Chicken breasts" style={styles.input} value={ingName} onChangeText={setIngName} placeholder="e.g. Chicken breasts" />
               <Text style={styles.fieldLabel}>Quantity</Text>
-              <TextInput style={styles.input} value={ingQty} onChangeText={setIngQty} placeholder="e.g. 2 lbs, 3 cups" />
+              <TextInput accessibilityLabel="e.g. 2 lbs, 3 cups" style={styles.input} value={ingQty} onChangeText={setIngQty} placeholder="e.g. 2 lbs, 3 cups" />
               <Text style={styles.fieldLabel}>Aisle (optional)</Text>
-              <TextInput style={styles.input} value={ingAisle} onChangeText={setIngAisle} placeholder="e.g. Meat, Produce, Dairy" />
+              <TextInput accessibilityLabel="e.g. Meat, Produce, Dairy" style={styles.input} value={ingAisle} onChangeText={setIngAisle} placeholder="e.g. Meat, Produce, Dairy" />
               <View style={styles.modalButtons}>
                 <Button title="Cancel" variant="ghost" onPress={() => { resetIngredientForm(); setShowAddIngredient(false); }} />
                 <Button title="Add" onPress={handleAddIngredient} disabled={!ingName.trim()} />
@@ -512,7 +512,7 @@ export function MealPrepScreen({ navigation: _navigation }: any) {
             const items = store.getItemsForSession(session.id);
             const ings = store.getIngredientsForSession(session.id);
             return (
-              <Pressable key={session.id} onPress={() => { setSelectedSessionId(session.id); setSessionTab('items'); }}>
+              <Pressable accessibilityRole="button" key={session.id} onPress={() => { setSelectedSessionId(session.id); setSessionTab('items'); }}>
                 <Card style={styles.sessionCard}>
                   <View style={styles.sessionCardHeader}>
                     <View style={{ flex: 1 }}>
@@ -536,7 +536,7 @@ export function MealPrepScreen({ navigation: _navigation }: any) {
                       <Ionicons name={'cart-outline' as any} size={14} color={colors.textSecondary} />
                       <Text style={styles.sessionStatText}>{ings.filter((i) => i.purchased).length}/{ings.length} bought</Text>
                     </View>
-                    <Pressable onPress={() => handleDeleteSession(session)} hitSlop={8} style={{ marginLeft: 'auto' as any }}>
+                    <Pressable accessibilityRole="button" onPress={() => handleDeleteSession(session)} hitSlop={8} style={{ marginLeft: 'auto' as any }}>
                       <Ionicons name={'trash-outline' as any} size={16} color={colors.danger} />
                     </Pressable>
                   </View>
@@ -554,13 +554,13 @@ export function MealPrepScreen({ navigation: _navigation }: any) {
             <View style={{ width: 40, height: 4, backgroundColor: '#ccc', borderRadius: 2, alignSelf: 'center', marginBottom: 16 }} />
             <Text style={styles.modalTitle}>New Prep Session</Text>
             <Text style={styles.fieldLabel}>Title *</Text>
-            <TextInput style={styles.input} value={sessTitle} onChangeText={setSessTitle} placeholder="e.g. Sunday Batch Cook" />
+            <TextInput accessibilityLabel="e.g. Sunday Batch Cook" style={styles.input} value={sessTitle} onChangeText={setSessTitle} placeholder="e.g. Sunday Batch Cook" />
             <Text style={styles.fieldLabel}>Scheduled Date (YYYY-MM-DD)</Text>
-            <TextInput style={styles.input} value={sessDate} onChangeText={setSessDate} placeholder="2026-08-09" />
+            <TextInput accessibilityLabel="2026-08-09" style={styles.input} value={sessDate} onChangeText={setSessDate} placeholder="2026-08-09" />
             <Text style={styles.fieldLabel}>Estimated Hours</Text>
-            <TextInput style={styles.input} value={sessHours} onChangeText={setSessHours} placeholder="3" keyboardType="decimal-pad" />
+            <TextInput accessibilityLabel="3" style={styles.input} value={sessHours} onChangeText={setSessHours} placeholder="3" keyboardType="decimal-pad" />
             <Text style={styles.fieldLabel}>Notes</Text>
-            <TextInput style={{ ...styles.input, height: 80 }} value={sessNotes} onChangeText={setSessNotes} placeholder="What's the focus this session?" multiline />
+            <TextInput accessibilityLabel="What's the focus this session?" style={{ ...styles.input, height: 80 }} value={sessNotes} onChangeText={setSessNotes} placeholder="What's the focus this session?" multiline />
             <View style={styles.modalButtons}>
               <Button title="Cancel" variant="ghost" onPress={() => { resetSessionForm(); setShowAddSession(false); }} />
               <Button title="Create Session" onPress={handleAddSession} disabled={!sessTitle.trim()} />
@@ -570,7 +570,7 @@ export function MealPrepScreen({ navigation: _navigation }: any) {
       </Modal>
 
       {/* FAB */}
-      <Pressable onPress={() => setShowAddSession(true)} style={styles.fab}>
+      <Pressable accessibilityRole="button" onPress={() => setShowAddSession(true)} style={styles.fab}>
         <LinearGradient colors={['#004D40', '#00695C']} style={styles.fabGradient}>
           <Ionicons name={'add' as any} size={28} color="#fff" />
         </LinearGradient>

@@ -82,7 +82,7 @@ export function MilitaryHubScreen({ navigation }: any) {
         )}
 
         {MODULES.map((mod) => (
-          <Pressable key={mod.key} onPress={() => navigation.navigate(mod.key)}>
+          <Pressable accessibilityRole="button" key={mod.key} onPress={() => navigation.navigate(mod.key)}>
             <Card style={styles.moduleCard} variant="elevated">
               <View style={styles.moduleIcon}>
                 <Ionicons name={mod.icon as any} size={24} color={MILITARY_GREEN} />

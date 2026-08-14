@@ -369,7 +369,7 @@ export function ScreenTimeScreen({ navigation }: any) {
       <View style={styles.headerGlow} />
 
       <View style={styles.headerRow}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </Pressable>
 
@@ -415,7 +415,7 @@ export function ScreenTimeScreen({ navigation }: any) {
           contentContainerStyle={styles.memberScrollContent}
         >
           {childMembers.map((m) => (
-            <Pressable
+            <Pressable accessibilityRole="button"
               key={m.id}
               onPress={() => setSelectedMemberId(m.id)}
               style={[
@@ -449,7 +449,7 @@ export function ScreenTimeScreen({ navigation }: any) {
       colors={['#190A33', '#44206F']}
       style={[styles.compactHeader, { paddingTop: insets.top }]}
     >
-      <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </Pressable>
 
@@ -544,7 +544,7 @@ export function ScreenTimeScreen({ navigation }: any) {
                 </View>
 
                 <View style={styles.limitControls}>
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     style={styles.limitBtn}
                     onPress={() => handleLimitChange(-1)}
                   >
@@ -555,7 +555,7 @@ export function ScreenTimeScreen({ navigation }: any) {
                     Adjust in 30-minute increments · 0 = No Limit
                   </Text>
 
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     style={styles.limitBtn}
                     onPress={() => handleLimitChange(1)}
                   >
@@ -571,7 +571,7 @@ export function ScreenTimeScreen({ navigation }: any) {
                     <Text style={styles.cardTitle}>Scheduled Downtime</Text>
                   </View>
 
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     onPress={() => setShowAddDowntime(true)}
                     style={styles.smallAddBtn}
                   >
@@ -602,7 +602,7 @@ export function ScreenTimeScreen({ navigation }: any) {
                       thumbColor="#fff"
                     />
 
-                    <Pressable
+                    <Pressable accessibilityRole="button"
                       onPress={() => handleDeleteDowntime(dt.id)}
                       style={styles.deleteBtn}
                     >
@@ -623,7 +623,7 @@ export function ScreenTimeScreen({ navigation }: any) {
                     <Text style={styles.cardTitle}>Blocked Apps</Text>
                   </View>
 
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     onPress={() => {
                       setBlockedMode(true);
                       setAppsSearch('');
@@ -653,7 +653,7 @@ export function ScreenTimeScreen({ navigation }: any) {
                     <Text style={styles.appChipText} numberOfLines={1}>
                       {pkg}
                     </Text>
-                    <Pressable onPress={() => handleRemoveApp(pkg, 'blocked')}>
+                    <Pressable accessibilityRole="button" onPress={() => handleRemoveApp(pkg, 'blocked')}>
                       <Ionicons
                         name="close-circle"
                         size={16}
@@ -698,7 +698,7 @@ export function ScreenTimeScreen({ navigation }: any) {
                     </View>
                   ) : null}
 
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     style={[
                       styles.saveBtn,
                       styles.iosPickerBtn,
@@ -713,7 +713,7 @@ export function ScreenTimeScreen({ navigation }: any) {
                   </Pressable>
 
                   {iosPickerResult && (
-                    <Pressable
+                    <Pressable accessibilityRole="button"
                       style={[styles.cancelBtn, { marginTop: 10 }]}
                       onPress={handleIOSClearRestrictions}
                     >
@@ -734,7 +734,7 @@ export function ScreenTimeScreen({ navigation }: any) {
                     <Text style={styles.cardTitle}>Allowed Apps Only</Text>
                   </View>
 
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     onPress={() => {
                       setBlockedMode(false);
                       setAppsSearch('');
@@ -763,7 +763,7 @@ export function ScreenTimeScreen({ navigation }: any) {
                     <Text style={styles.appChipText} numberOfLines={1}>
                       {pkg}
                     </Text>
-                    <Pressable onPress={() => handleRemoveApp(pkg, 'allowed')}>
+                    <Pressable accessibilityRole="button" onPress={() => handleRemoveApp(pkg, 'allowed')}>
                       <Ionicons
                         name="close-circle"
                         size={16}
@@ -789,7 +789,7 @@ export function ScreenTimeScreen({ navigation }: any) {
           <Text style={styles.modalTitle}>Add Downtime Window</Text>
 
           <Text style={styles.fieldLabel}>Label *</Text>
-          <TextInput
+          <TextInput accessibilityLabel="e.g. Bedtime, School Hours"
             style={styles.input}
             placeholder="e.g. Bedtime, School Hours"
             value={dtLabel}
@@ -798,7 +798,7 @@ export function ScreenTimeScreen({ navigation }: any) {
           />
 
           <Text style={styles.fieldLabel}>Start Time (HH:mm)</Text>
-          <TextInput
+          <TextInput accessibilityLabel="22:00"
             style={styles.input}
             placeholder="22:00"
             value={dtStart}
@@ -807,7 +807,7 @@ export function ScreenTimeScreen({ navigation }: any) {
           />
 
           <Text style={styles.fieldLabel}>End Time (HH:mm)</Text>
-          <TextInput
+          <TextInput accessibilityLabel="07:00"
             style={styles.input}
             placeholder="07:00"
             value={dtEnd}
@@ -818,7 +818,7 @@ export function ScreenTimeScreen({ navigation }: any) {
           <Text style={styles.fieldLabel}>Active Days</Text>
           <View style={styles.daysRow}>
             {ALL_DAYS.map((d) => (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={d}
                 onPress={() => toggleDay(d)}
                 style={[styles.dayBtn, dtDays.includes(d) && styles.dayBtnActive]}
@@ -835,11 +835,11 @@ export function ScreenTimeScreen({ navigation }: any) {
             ))}
           </View>
 
-          <Pressable style={styles.saveBtn} onPress={handleAddDowntime}>
+          <Pressable accessibilityRole="button" style={styles.saveBtn} onPress={handleAddDowntime}>
             <Text style={styles.saveBtnText}>Add Downtime</Text>
           </Pressable>
 
-          <Pressable
+          <Pressable accessibilityRole="button"
             style={styles.cancelBtn}
             onPress={() => setShowAddDowntime(false)}
           >
@@ -860,12 +860,12 @@ export function ScreenTimeScreen({ navigation }: any) {
             <Text style={styles.modalTitle}>
               {blockedMode ? 'Block Apps' : 'Allow Apps'}
             </Text>
-            <Pressable onPress={() => setShowAddApp(false)} style={styles.pickerClose}>
+            <Pressable accessibilityRole="button" onPress={() => setShowAddApp(false)} style={styles.pickerClose}>
               <Ionicons name="close" size={22} color={colors.text} />
             </Pressable>
           </View>
 
-          <TextInput
+          <TextInput accessibilityLabel="Search apps…"
             style={[styles.input, { marginHorizontal: 16, marginTop: 4 }]}
             placeholder="Search apps…"
             value={appsSearch}
@@ -888,7 +888,7 @@ export function ScreenTimeScreen({ navigation }: any) {
               </Text>
               {/* Fallback: manual entry */}
               <Text style={[styles.fieldLabel, { marginTop: 20, marginHorizontal: 16 }]}>Or enter manually:</Text>
-              <TextInput
+              <TextInput accessibilityLabel="Gmail or com.example.app"
                 style={[styles.input, { marginHorizontal: 16, marginTop: 4 }]}
                 placeholder="Gmail or com.example.app"
                 value={appInput}
@@ -896,7 +896,7 @@ export function ScreenTimeScreen({ navigation }: any) {
                 autoCapitalize="none"
                 placeholderTextColor={colors.textMuted}
               />
-              <Pressable style={[styles.saveBtn, { marginHorizontal: 16, marginTop: 12 }]} onPress={handleAddApp}>
+              <Pressable accessibilityRole="button" style={[styles.saveBtn, { marginHorizontal: 16, marginTop: 12 }]} onPress={handleAddApp}>
                 <Text style={styles.saveBtnText}>{blockedMode ? 'Block App' : 'Add to Allowlist'}</Text>
               </Pressable>
             </View>
@@ -915,7 +915,7 @@ export function ScreenTimeScreen({ navigation }: any) {
                   ? (memberRule?.blockedApps ?? []).includes(item.packageName)
                   : (memberRule?.allowedApps ?? []).includes(item.packageName);
                 return (
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     style={styles.appPickerRow}
                     onPress={() => handleToggleApp(item.packageName, isBlocked)}
                   >

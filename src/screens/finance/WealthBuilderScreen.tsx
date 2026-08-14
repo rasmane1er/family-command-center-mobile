@@ -181,11 +181,11 @@ export function WealthBuilderScreen({ navigation }: any) {
   const screenHeader = (
         <LinearGradient colors={['#1B5E20', '#2E7D32']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
           <View style={styles.headerTop}>
-            <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+            <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
               <Ionicons name="arrow-back" size={24} color="#fff" />
             </Pressable>
             <Text style={styles.headerTitle}>{t('wealth.title')}</Text>
-            <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowModal(true); }} style={styles.addBtn}>
+            <Pressable accessibilityRole="button" onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowModal(true); }} style={styles.addBtn}>
               <Ionicons name="add" size={24} color="#fff" />
             </Pressable>
           </View>
@@ -210,7 +210,7 @@ export function WealthBuilderScreen({ navigation }: any) {
     
   <View style={styles.tabs}>
           {(['portfolio', 'forecast', 'insights'] as const).map((tab) => (
-            <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
+            <Pressable accessibilityRole="button" key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
               <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
                 {tab === 'portfolio' ? 'Portfolio' : tab === 'forecast' ? 'Forecast' : 'AI Insights'}
               </Text>
@@ -225,7 +225,7 @@ export function WealthBuilderScreen({ navigation }: any) {
       start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
       style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
     >
-      <Pressable onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </Pressable>
       <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>{t('wealth.title')}</Text>
@@ -295,10 +295,10 @@ export function WealthBuilderScreen({ navigation }: any) {
                         {gain >= 0 ? '+' : ''}{gainPctEntry.toFixed(1)}%
                       </Text>
                       <View style={{ flexDirection: 'row', gap: 6, marginTop: 2 }}>
-                        <Pressable onPress={() => { setEditingEntry(e); setNewName(e.name); setNewCategory(e.category); setNewCurrentValue(String(e.currentValue)); setNewCostBasis(String(e.costBasis)); setNewInstitution(e.institution ?? ''); setShowModal(true); }} style={styles.holdingActionBtn}>
+                        <Pressable accessibilityRole="button" onPress={() => { setEditingEntry(e); setNewName(e.name); setNewCategory(e.category); setNewCurrentValue(String(e.currentValue)); setNewCostBasis(String(e.costBasis)); setNewInstitution(e.institution ?? ''); setShowModal(true); }} style={styles.holdingActionBtn}>
                           <Ionicons name="create-outline" size={13} color={colors.textMuted} />
                         </Pressable>
-                        <Pressable onPress={() => { Alert.alert('Delete Holding', `Remove "${e.name}"?`, [{ text: 'Cancel', style: 'cancel' }, { text: 'Delete', style: 'destructive', onPress: () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); deleteEntry(e.id); } }]); }} style={styles.holdingActionBtn}>
+                        <Pressable accessibilityRole="button" onPress={() => { Alert.alert('Delete Holding', `Remove "${e.name}"?`, [{ text: 'Cancel', style: 'cancel' }, { text: 'Delete', style: 'destructive', onPress: () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); deleteEntry(e.id); } }]); }} style={styles.holdingActionBtn}>
                           <Ionicons name="trash-outline" size={13} color={colors.textMuted} />
                         </Pressable>
                       </View>
@@ -387,7 +387,7 @@ export function WealthBuilderScreen({ navigation }: any) {
           <Text style={styles.modalTitle}>{editingEntry ? 'Edit Holding' : 'Add Holding'}</Text>
 
           {/* Import from Plaid button */}
-          {!editingEntry && <Pressable style={styles.plaidImportBtn} onPress={openPlaidSubSheet}>
+          {!editingEntry && <Pressable accessibilityRole="button" style={styles.plaidImportBtn} onPress={openPlaidSubSheet}>
             <Ionicons name="link" size={18} color="#2E7D32" />
             <Text style={styles.plaidImportBtnText}>Import from Plaid Accounts</Text>
             <Ionicons name="chevron-forward" size={16} color="#2E7D32" />
@@ -396,23 +396,23 @@ export function WealthBuilderScreen({ navigation }: any) {
           <Text style={styles.modalLabel}>Category</Text>
           <View style={styles.catGrid}>
             {WEALTH_CATEGORIES.map((cat) => (
-              <Pressable key={cat} onPress={() => setNewCategory(cat)} style={[styles.catChip, newCategory === cat && { backgroundColor: CATEGORY_COLORS[cat] ?? '#95A5A6', borderColor: CATEGORY_COLORS[cat] ?? '#95A5A6' }]}>
+              <Pressable accessibilityRole="button" key={cat} onPress={() => setNewCategory(cat)} style={[styles.catChip, newCategory === cat && { backgroundColor: CATEGORY_COLORS[cat] ?? '#95A5A6', borderColor: CATEGORY_COLORS[cat] ?? '#95A5A6' }]}>
                 <Text style={[styles.catChipText, newCategory === cat && { color: '#fff' }]}>{CATEGORY_LABELS[cat] ?? cat}</Text>
               </Pressable>
             ))}
           </View>
 
           <Text style={styles.modalLabel}>Name</Text>
-          <TextInput style={styles.modalInput} value={newName} onChangeText={setNewName} placeholder="e.g. Vanguard S&P 500, Primary Home..." placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="e.g. Vanguard S&P 500, Primary Home..." style={styles.modalInput} value={newName} onChangeText={setNewName} placeholder="e.g. Vanguard S&P 500, Primary Home..." placeholderTextColor={colors.textMuted} />
 
           <Text style={styles.modalLabel}>Current Value ($)</Text>
-          <TextInput style={styles.modalInput} value={newCurrentValue} onChangeText={setNewCurrentValue} placeholder="0" placeholderTextColor={colors.textMuted} keyboardType="numeric" />
+          <TextInput accessibilityLabel="0" style={styles.modalInput} value={newCurrentValue} onChangeText={setNewCurrentValue} placeholder="0" placeholderTextColor={colors.textMuted} keyboardType="numeric" />
 
           <Text style={styles.modalLabel}>Cost Basis ($)</Text>
-          <TextInput style={styles.modalInput} value={newCostBasis} onChangeText={setNewCostBasis} placeholder="What you originally paid" placeholderTextColor={colors.textMuted} keyboardType="numeric" />
+          <TextInput accessibilityLabel="What you originally paid" style={styles.modalInput} value={newCostBasis} onChangeText={setNewCostBasis} placeholder="What you originally paid" placeholderTextColor={colors.textMuted} keyboardType="numeric" />
 
           <Text style={styles.modalLabel}>Institution (Optional)</Text>
-          <TextInput style={styles.modalInput} value={newInstitution} onChangeText={setNewInstitution} placeholder="Fidelity, Chase, Coinbase..." placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="Fidelity, Chase, Coinbase..." style={styles.modalInput} value={newInstitution} onChangeText={setNewInstitution} placeholder="Fidelity, Chase, Coinbase..." placeholderTextColor={colors.textMuted} />
 
           <Button title={editingEntry ? 'Save Changes' : 'Add Holding'} onPress={handleAddEntry} />
           <Button title="Cancel" onPress={() => { setShowModal(false); setEditingEntry(null); setNewName(''); setNewCategory('savings'); setNewCurrentValue(''); setNewCostBasis(''); setNewInstitution(''); }} variant="ghost" style={{ marginTop: 8 }} />
@@ -425,7 +425,7 @@ export function WealthBuilderScreen({ navigation }: any) {
           <View style={styles.subSheet}>
             <View style={styles.subSheetHeader}>
               <Text style={styles.subSheetTitle}>Plaid Accounts</Text>
-              <Pressable onPress={() => setShowPlaidSubSheet(false)}>
+              <Pressable accessibilityRole="button" onPress={() => setShowPlaidSubSheet(false)}>
                 <Ionicons name="close" size={24} color={colors.text} />
               </Pressable>
             </View>
@@ -436,7 +436,7 @@ export function WealthBuilderScreen({ navigation }: any) {
             ) : (
               <ScrollView>
                 {plaidAccounts.map((acct) => (
-                  <Pressable key={acct.plaidAccountId} style={styles.plaidAcctRow} onPress={() => prefillFromPlaid(acct)}>
+                  <Pressable accessibilityRole="button" key={acct.plaidAccountId} style={styles.plaidAcctRow} onPress={() => prefillFromPlaid(acct)}>
                     <View style={styles.plaidAcctIcon}>
                       <Ionicons name="wallet" size={18} color="#2E7D32" />
                     </View>

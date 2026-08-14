@@ -60,7 +60,7 @@ function DeploymentCard({ deployment, memberName, memberColor, onPress }: {
   const halfwayPassed = progress !== null && progress >= 0.5;
 
   return (
-    <Pressable onPress={onPress}>
+    <Pressable accessibilityRole="button" onPress={onPress}>
       <Card style={styles.card} variant="elevated">
         <View style={styles.cardTop}>
           <Avatar name={memberName} color={memberColor} size={36} />
@@ -207,7 +207,7 @@ export function DeploymentTrackerScreen({ navigation }: any) {
         onBack={() => navigation.goBack()}
         colors={['#0F2952', MILITARY_GREEN]}
         rightAction={
-          <Pressable onPress={openAdd} style={styles.addBtn}>
+          <Pressable accessibilityRole="button" onPress={openAdd} style={styles.addBtn}>
             <Ionicons name="add" size={24} color="#fff" />
           </Pressable>
         }
@@ -243,7 +243,7 @@ export function DeploymentTrackerScreen({ navigation }: any) {
           <Text style={styles.fieldLabel}>Service Member</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
             {members.map((m) => (
-              <Pressable key={m.id} onPress={() => setMemberId(m.id)} style={[styles.memberChip, memberId === m.id && styles.memberChipActive]}>
+              <Pressable accessibilityRole="button" key={m.id} onPress={() => setMemberId(m.id)} style={[styles.memberChip, memberId === m.id && styles.memberChipActive]}>
                 <Avatar name={m.name} color={m.avatarColor} size={28} />
                 <Text style={styles.memberChipText}>{m.name.split(' ')[0]}</Text>
               </Pressable>
@@ -253,30 +253,30 @@ export function DeploymentTrackerScreen({ navigation }: any) {
           <Text style={styles.fieldLabel}>Type</Text>
           <View style={styles.typeRow}>
             {(['deployment', 'tdy', 'training'] as DeploymentType[]).map((t) => (
-              <Pressable key={t} onPress={() => setType(t)} style={[styles.typeChip, type === t && styles.typeChipActive]}>
+              <Pressable accessibilityRole="button" key={t} onPress={() => setType(t)} style={[styles.typeChip, type === t && styles.typeChipActive]}>
                 <Text style={[styles.typeChipText, type === t && styles.typeChipTextActive]}>{TYPE_LABELS[t]}</Text>
               </Pressable>
             ))}
           </View>
 
           <Text style={styles.fieldLabel}>Location</Text>
-          <TextInput style={styles.input} placeholder="e.g. Ramstein AB, Germany" value={location} onChangeText={setLocation} placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="e.g. Ramstein AB, Germany" style={styles.input} placeholder="e.g. Ramstein AB, Germany" value={location} onChangeText={setLocation} placeholderTextColor={colors.textMuted} />
 
           <Text style={styles.fieldLabel}>Start Date (YYYY-MM-DD)</Text>
-          <TextInput style={styles.input} placeholder="2026-08-01" value={startDate} onChangeText={setStartDate} placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="2026-08-01" style={styles.input} placeholder="2026-08-01" value={startDate} onChangeText={setStartDate} placeholderTextColor={colors.textMuted} />
 
           <Text style={styles.fieldLabel}>End Date (optional)</Text>
-          <TextInput style={styles.input} placeholder="Leave blank if unknown" value={endDate} onChangeText={setEndDate} placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="Leave blank if unknown" style={styles.input} placeholder="Leave blank if unknown" value={endDate} onChangeText={setEndDate} placeholderTextColor={colors.textMuted} />
 
           <Text style={styles.fieldLabel}>R&amp;R / Leave Date (optional)</Text>
-          <TextInput style={styles.input} placeholder="2026-11-15" value={rrDate} onChangeText={setRrDate} placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="2026-11-15" style={styles.input} placeholder="2026-11-15" value={rrDate} onChangeText={setRrDate} placeholderTextColor={colors.textMuted} />
 
           <Text style={styles.fieldLabel}>Notes</Text>
-          <TextInput style={[styles.input, styles.textArea]} placeholder="Optional notes" value={notes} onChangeText={setNotes} placeholderTextColor={colors.textMuted} multiline />
+          <TextInput accessibilityLabel="Optional notes" style={[styles.input, styles.textArea]} placeholder="Optional notes" value={notes} onChangeText={setNotes} placeholderTextColor={colors.textMuted} multiline />
 
           <Button title={editingId ? 'Save Changes' : 'Add Entry'} onPress={handleSave} fullWidth size="lg" style={{ marginTop: 8 }} />
           {editingId && (
-            <Pressable style={styles.deleteBtn} onPress={handleDelete}>
+            <Pressable accessibilityRole="button" style={styles.deleteBtn} onPress={handleDelete}>
               <Text style={styles.deleteBtnText}>Delete Entry</Text>
             </Pressable>
           )}

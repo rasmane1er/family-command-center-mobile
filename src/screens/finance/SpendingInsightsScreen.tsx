@@ -101,7 +101,7 @@ export function SpendingInsightsScreen({ navigation }: { navigation: any }) {
   return (
     <View style={s.container}>
       <View style={s.header}>
-        <Pressable onPress={() => navigation.goBack()} style={s.backBtn}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={s.backBtn}>
           <Ionicons name="chevron-back" size={22} color="#1E3A5F" />
         </Pressable>
         <Text style={s.headerTitle}>{t('spending.title')}</Text>
@@ -109,11 +109,11 @@ export function SpendingInsightsScreen({ navigation }: { navigation: any }) {
       </View>
 
       <View style={s.monthRow}>
-        <Pressable onPress={() => shiftMonth(-1)} style={s.monthArrow}>
+        <Pressable accessibilityRole="button" onPress={() => shiftMonth(-1)} style={s.monthArrow}>
           <Ionicons name="chevron-back" size={18} color="#1E3A5F" />
         </Pressable>
         <Text style={s.monthLabel}>{monthLabel}</Text>
-        <Pressable onPress={() => shiftMonth(1)} style={s.monthArrow}>
+        <Pressable accessibilityRole="button" onPress={() => shiftMonth(1)} style={s.monthArrow}>
           <Ionicons name="chevron-forward" size={18} color="#1E3A5F" />
         </Pressable>
       </View>

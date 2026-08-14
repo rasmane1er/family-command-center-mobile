@@ -219,11 +219,11 @@ export function VehiclesScreen({ navigation }: any) {
   const screenHeader = (
     <LinearGradient colors={['#E74C3C', '#C0392B']} style={[s.header, { paddingTop: insets.top + 6 }]}>
       <View style={s.headerRow}>
-        <Pressable onPress={() => navigation.goBack()} style={s.back}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={s.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <Text style={s.headerTitle}>{t('vehicles.title')}</Text>
-        <Pressable onPress={() => setShowAdd(true)} style={s.headerBtn}>
+        <Pressable accessibilityRole="button" onPress={() => setShowAdd(true)} style={s.headerBtn}>
           <Ionicons name="add" size={26} color="#fff" />
         </Pressable>
       </View>
@@ -233,7 +233,7 @@ export function VehiclesScreen({ navigation }: any) {
 
   const screenCompact = (
     <LinearGradient colors={['#E74C3C', '#C0392B']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => navigation.goBack()} style={s.back}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={s.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={s.headerTitle}>{t('vehicles.title')}</Text>
@@ -285,7 +285,7 @@ export function VehiclesScreen({ navigation }: any) {
                       <Ionicons name="warning" size={13} color="#fff" />
                     </View>
                   )}
-                  <Pressable onPress={() => handleDelete(vehicle.id, vehicleName)} style={s.deleteBtn}>
+                  <Pressable accessibilityRole="button" onPress={() => handleDelete(vehicle.id, vehicleName)} style={s.deleteBtn}>
                     <Ionicons name="trash-outline" size={16} color={colors.danger} />
                   </Pressable>
                 </View>
@@ -395,17 +395,17 @@ export function VehiclesScreen({ navigation }: any) {
 
               {/* Action buttons */}
               <View style={s.actionRow}>
-                <Pressable style={s.actionBtn} onPress={() => openLogService(vehicle)}>
+                <Pressable accessibilityRole="button" style={s.actionBtn} onPress={() => openLogService(vehicle)}>
                   <Ionicons name="construct-outline" size={16} color="#E74C3C" />
                   <Text style={[s.actionText, { color: '#E74C3C' }]}>Log Service</Text>
                 </Pressable>
-                <Pressable style={s.actionBtn} onPress={() => setHistoryVehicle(vehicle)}>
+                <Pressable accessibilityRole="button" style={s.actionBtn} onPress={() => setHistoryVehicle(vehicle)}>
                   <Ionicons name="time-outline" size={16} color={colors.primary} />
                   <Text style={[s.actionText, { color: colors.primary }]}>
                     History {serviceLogs.length > 0 ? `(${serviceLogs.length})` : ''}
                   </Text>
                 </Pressable>
-                <Pressable style={s.actionBtn} onPress={() => openDocuments(vehicle)}>
+                <Pressable accessibilityRole="button" style={s.actionBtn} onPress={() => openDocuments(vehicle)}>
                   <Ionicons name="document-outline" size={16} color="#8E44AD" />
                   <Text style={[s.actionText, { color: '#8E44AD' }]}>Documents</Text>
                 </Pressable>
@@ -419,7 +419,7 @@ export function VehiclesScreen({ navigation }: any) {
             <Ionicons name="car-outline" size={64} color={colors.textMuted} />
             <Text style={s.emptyTitle}>No vehicles added</Text>
             <Text style={s.emptyDesc}>Track maintenance, insurance, and registration for all your vehicles</Text>
-            <Pressable style={s.emptyBtn} onPress={() => setShowAdd(true)}>
+            <Pressable accessibilityRole="button" style={s.emptyBtn} onPress={() => setShowAdd(true)}>
               <LinearGradient colors={['#E74C3C', '#C0392B']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.emptyBtnGrad}>
                 <Ionicons name="add" size={18} color="#fff" />
                 <Text style={s.emptyBtnText}>Add Vehicle</Text>
@@ -439,40 +439,40 @@ export function VehiclesScreen({ navigation }: any) {
             <Text style={s.modalTitle}>Add Vehicle</Text>
 
             <Text style={s.modalLabel}>Make *</Text>
-            <TextInput style={s.modalInput} placeholder="e.g. Toyota" value={newMake} onChangeText={setNewMake} placeholderTextColor={colors.textMuted} autoFocus />
+            <TextInput accessibilityLabel="e.g. Toyota" style={s.modalInput} placeholder="e.g. Toyota" value={newMake} onChangeText={setNewMake} placeholderTextColor={colors.textMuted} autoFocus />
 
             <Text style={s.modalLabel}>Model *</Text>
-            <TextInput style={s.modalInput} placeholder="e.g. Camry" value={newModel} onChangeText={setNewModel} placeholderTextColor={colors.textMuted} />
+            <TextInput accessibilityLabel="e.g. Camry" style={s.modalInput} placeholder="e.g. Camry" value={newModel} onChangeText={setNewModel} placeholderTextColor={colors.textMuted} />
 
             <View style={s.halfRow}>
               <View style={{ flex: 1 }}>
                 <Text style={s.modalLabel}>Year</Text>
-                <TextInput style={s.modalInput} placeholder="2024" value={newYear} onChangeText={setNewYear} keyboardType="numeric" placeholderTextColor={colors.textMuted} />
+                <TextInput accessibilityLabel="2024" style={s.modalInput} placeholder="2024" value={newYear} onChangeText={setNewYear} keyboardType="numeric" placeholderTextColor={colors.textMuted} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={s.modalLabel}>Color</Text>
-                <TextInput style={s.modalInput} placeholder="Silver" value={newColor} onChangeText={setNewColor} placeholderTextColor={colors.textMuted} />
+                <TextInput accessibilityLabel="Silver" style={s.modalInput} placeholder="Silver" value={newColor} onChangeText={setNewColor} placeholderTextColor={colors.textMuted} />
               </View>
             </View>
 
             <View style={s.halfRow}>
               <View style={{ flex: 1 }}>
                 <Text style={s.modalLabel}>License Plate</Text>
-                <TextInput style={s.modalInput} placeholder="ABC-1234" value={newPlate} onChangeText={setNewPlate} autoCapitalize="characters" placeholderTextColor={colors.textMuted} />
+                <TextInput accessibilityLabel="ABC-1234" style={s.modalInput} placeholder="ABC-1234" value={newPlate} onChangeText={setNewPlate} autoCapitalize="characters" placeholderTextColor={colors.textMuted} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={s.modalLabel}>Current Mileage</Text>
-                <TextInput style={s.modalInput} placeholder="e.g. 45000" value={newMileage} onChangeText={setNewMileage} keyboardType="numeric" placeholderTextColor={colors.textMuted} />
+                <TextInput accessibilityLabel="e.g. 45000" style={s.modalInput} placeholder="e.g. 45000" value={newMileage} onChangeText={setNewMileage} keyboardType="numeric" placeholderTextColor={colors.textMuted} />
               </View>
             </View>
 
             <Text style={s.modalLabel}>VIN</Text>
-            <TextInput style={s.modalInput} placeholder="Vehicle Identification Number" value={newVin} onChangeText={setNewVin} autoCapitalize="characters" placeholderTextColor={colors.textMuted} />
+            <TextInput accessibilityLabel="Vehicle Identification Number" style={s.modalInput} placeholder="Vehicle Identification Number" value={newVin} onChangeText={setNewVin} autoCapitalize="characters" placeholderTextColor={colors.textMuted} />
 
             <Text style={s.modalLabel}>Fuel Type</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
               {FUEL_TYPES.map((ft) => (
-                <Pressable key={ft} onPress={() => setNewFuelType(ft)}
+                <Pressable accessibilityRole="button" key={ft} onPress={() => setNewFuelType(ft)}
                   style={[s.fuelChip, newFuelType === ft && s.fuelChipOn]}>
                   <Text style={[s.fuelChipText, newFuelType === ft && s.fuelChipTextOn]}>{ft}</Text>
                 </Pressable>
@@ -480,18 +480,18 @@ export function VehiclesScreen({ navigation }: any) {
             </ScrollView>
 
             <Text style={s.modalLabel}>Insurance Expiry (MM/DD/YYYY)</Text>
-            <TextInput style={s.modalInput} placeholder="Optional" value={newInsuranceExp} onChangeText={setNewInsuranceExp} keyboardType="numeric" placeholderTextColor={colors.textMuted} />
+            <TextInput accessibilityLabel="Optional" style={s.modalInput} placeholder="Optional" value={newInsuranceExp} onChangeText={setNewInsuranceExp} keyboardType="numeric" placeholderTextColor={colors.textMuted} />
 
             <Text style={s.modalLabel}>Registration Expiry (MM/DD/YYYY)</Text>
-            <TextInput style={s.modalInput} placeholder="Optional" value={newRegExp} onChangeText={setNewRegExp} keyboardType="numeric" placeholderTextColor={colors.textMuted} />
+            <TextInput accessibilityLabel="Optional" style={s.modalInput} placeholder="Optional" value={newRegExp} onChangeText={setNewRegExp} keyboardType="numeric" placeholderTextColor={colors.textMuted} />
 
             <Text style={s.modalLabel}>Primary Driver</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 24 }}>
-              <Pressable onPress={() => setNewDriverId(null)} style={[s.driverChip, !newDriverId && s.driverChipOn]}>
+              <Pressable accessibilityRole="button" onPress={() => setNewDriverId(null)} style={[s.driverChip, !newDriverId && s.driverChipOn]}>
                 <Text style={s.driverChipLabel}>None</Text>
               </Pressable>
               {members.map((m) => (
-                <Pressable key={m.id} onPress={() => setNewDriverId(m.id)} style={[s.driverChip, newDriverId === m.id && s.driverChipOn]}>
+                <Pressable accessibilityRole="button" key={m.id} onPress={() => setNewDriverId(m.id)} style={[s.driverChip, newDriverId === m.id && s.driverChipOn]}>
                   <Avatar name={m.name} color={m.avatarColor} imageUri={m.avatar} size={30} />
                   <Text style={s.driverChipLabel}>{m.name.split(' ')[0]}</Text>
                 </Pressable>
@@ -517,7 +517,7 @@ export function VehiclesScreen({ navigation }: any) {
             <Text style={s.modalLabel}>Service Type</Text>
             <View style={s.typeGrid}>
               {SERVICE_TYPES.map((t) => (
-                <Pressable key={t} onPress={() => setSvcType(t)}
+                <Pressable accessibilityRole="button" key={t} onPress={() => setSvcType(t)}
                   style={[s.typeChip, svcType === t && s.typeChipOn]}>
                   <Text style={[s.typeChipText, svcType === t && s.typeChipTextOn]}>{t}</Text>
                 </Pressable>
@@ -527,27 +527,27 @@ export function VehiclesScreen({ navigation }: any) {
             <View style={s.halfRow}>
               <View style={{ flex: 1 }}>
                 <Text style={s.modalLabel}>Date</Text>
-                <TextInput style={s.modalInput} value={svcDate} onChangeText={setSvcDate} placeholder="MM/DD/YYYY" keyboardType="numeric" placeholderTextColor={colors.textMuted} />
+                <TextInput accessibilityLabel="MM/DD/YYYY" style={s.modalInput} value={svcDate} onChangeText={setSvcDate} placeholder="MM/DD/YYYY" keyboardType="numeric" placeholderTextColor={colors.textMuted} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={s.modalLabel}>Mileage</Text>
-                <TextInput style={s.modalInput} value={svcMiles} onChangeText={setSvcMiles} placeholder="e.g. 50000" keyboardType="numeric" placeholderTextColor={colors.textMuted} />
+                <TextInput accessibilityLabel="e.g. 50000" style={s.modalInput} value={svcMiles} onChangeText={setSvcMiles} placeholder="e.g. 50000" keyboardType="numeric" placeholderTextColor={colors.textMuted} />
               </View>
             </View>
 
             <View style={s.halfRow}>
               <View style={{ flex: 1 }}>
                 <Text style={s.modalLabel}>Cost ($)</Text>
-                <TextInput style={s.modalInput} value={svcCost} onChangeText={setSvcCost} placeholder="0.00" keyboardType="decimal-pad" placeholderTextColor={colors.textMuted} />
+                <TextInput accessibilityLabel="0.00" style={s.modalInput} value={svcCost} onChangeText={setSvcCost} placeholder="0.00" keyboardType="decimal-pad" placeholderTextColor={colors.textMuted} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={s.modalLabel}>Shop / Mechanic</Text>
-                <TextInput style={s.modalInput} value={svcShop} onChangeText={setSvcShop} placeholder="Optional" placeholderTextColor={colors.textMuted} />
+                <TextInput accessibilityLabel="Optional" style={s.modalInput} value={svcShop} onChangeText={setSvcShop} placeholder="Optional" placeholderTextColor={colors.textMuted} />
               </View>
             </View>
 
             <Text style={s.modalLabel}>Notes</Text>
-            <TextInput style={[s.modalInput, { minHeight: 80, textAlignVertical: 'top' }]}
+            <TextInput accessibilityLabel="Any additional details…" style={[s.modalInput, { minHeight: 80, textAlignVertical: 'top' }]}
               value={svcNotes} onChangeText={setSvcNotes}
               placeholder="Any additional details…" multiline
               placeholderTextColor={colors.textMuted} />
@@ -569,7 +569,7 @@ export function VehiclesScreen({ navigation }: any) {
                 <Text style={s.modalSubtitle}>{historyVehicle.year} {historyVehicle.make} {historyVehicle.model}</Text>
               )}
             </View>
-            <Pressable onPress={() => setHistoryVehicle(null)} style={s.closeBtn}>
+            <Pressable accessibilityRole="button" onPress={() => setHistoryVehicle(null)} style={s.closeBtn}>
               <Ionicons name="close" size={22} color={colors.text} />
             </Pressable>
           </View>

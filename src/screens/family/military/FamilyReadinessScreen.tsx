@@ -161,7 +161,7 @@ export function FamilyReadinessScreen({ navigation }: any) {
         <Text style={styles.sectionTitle}>{t('family.screens.familyReadiness.serviceMemberSection')}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
           {members.map((m) => (
-            <Pressable
+            <Pressable accessibilityRole="button"
               key={m.id}
               onPress={() => { setServiceMemberId(m.id); setDirty(true); }}
               style={[styles.memberChip, serviceMemberId === m.id && styles.memberChipActive]}
@@ -175,32 +175,32 @@ export function FamilyReadinessScreen({ navigation }: any) {
         <Text style={styles.sectionTitle}>{t('family.screens.familyReadiness.branchSection')}</Text>
         <View style={styles.branchGrid}>
           {BRANCHES.map((b) => (
-            <Pressable key={b} onPress={() => { setBranch(b); setDirty(true); }} style={[styles.branchChip, branch === b && styles.branchChipActive]}>
+            <Pressable accessibilityRole="button" key={b} onPress={() => { setBranch(b); setDirty(true); }} style={[styles.branchChip, branch === b && styles.branchChipActive]}>
               <Text style={[styles.branchChipText, branch === b && styles.branchChipTextActive]}>{b}</Text>
             </Pressable>
           ))}
         </View>
 
         <Text style={styles.fieldLabel}>{t('family.screens.familyReadiness.rankLabel')}</Text>
-        <TextInput style={styles.input} placeholder={t('family.screens.familyReadiness.rankPlaceholder')} value={rank} onChangeText={(v) => { setRank(v); setDirty(true); }} placeholderTextColor={colors.textMuted} />
+        <TextInput accessibilityLabel={t('family.screens.familyReadiness.rankPlaceholder')} style={styles.input} placeholder={t('family.screens.familyReadiness.rankPlaceholder')} value={rank} onChangeText={(v) => { setRank(v); setDirty(true); }} placeholderTextColor={colors.textMuted} />
 
         <Text style={styles.fieldLabel}>{t('family.screens.familyReadiness.unitLabel')}</Text>
-        <TextInput style={styles.input} placeholder={t('family.screens.familyReadiness.unitPlaceholder')} value={unit} onChangeText={(v) => { setUnit(v); setDirty(true); }} placeholderTextColor={colors.textMuted} />
+        <TextInput accessibilityLabel={t('family.screens.familyReadiness.unitPlaceholder')} style={styles.input} placeholder={t('family.screens.familyReadiness.unitPlaceholder')} value={unit} onChangeText={(v) => { setUnit(v); setDirty(true); }} placeholderTextColor={colors.textMuted} />
 
         <Text style={styles.fieldLabel}>{t('family.screens.familyReadiness.dutyStationLabel')}</Text>
-        <TextInput style={styles.input} placeholder={t('family.screens.familyReadiness.dutyStationPlaceholder')} value={dutyStation} onChangeText={(v) => { setDutyStation(v); setDirty(true); }} placeholderTextColor={colors.textMuted} />
+        <TextInput accessibilityLabel={t('family.screens.familyReadiness.dutyStationPlaceholder')} style={styles.input} placeholder={t('family.screens.familyReadiness.dutyStationPlaceholder')} value={dutyStation} onChangeText={(v) => { setDutyStation(v); setDirty(true); }} placeholderTextColor={colors.textMuted} />
 
         <Text style={styles.fieldLabel}>{t('family.screens.familyReadiness.deersIdLabel')}</Text>
-        <TextInput style={styles.input} placeholder={t('family.screens.familyReadiness.deersIdPlaceholder')} value={deersId} onChangeText={(v) => { setDeersId(v); setDirty(true); }} placeholderTextColor={colors.textMuted} />
+        <TextInput accessibilityLabel={t('family.screens.familyReadiness.deersIdPlaceholder')} style={styles.input} placeholder={t('family.screens.familyReadiness.deersIdPlaceholder')} value={deersId} onChangeText={(v) => { setDeersId(v); setDirty(true); }} placeholderTextColor={colors.textMuted} />
 
         <Text style={styles.fieldLabel}>{t('family.screens.familyReadiness.tricareRegionLabel')}</Text>
-        <TextInput style={styles.input} placeholder={t('family.screens.familyReadiness.tricareRegionPlaceholder')} value={tricareRegion} onChangeText={(v) => { setTricareRegion(v); setDirty(true); }} placeholderTextColor={colors.textMuted} />
+        <TextInput accessibilityLabel={t('family.screens.familyReadiness.tricareRegionPlaceholder')} style={styles.input} placeholder={t('family.screens.familyReadiness.tricareRegionPlaceholder')} value={tricareRegion} onChangeText={(v) => { setTricareRegion(v); setDirty(true); }} placeholderTextColor={colors.textMuted} />
 
         <Button title={t('family.screens.familyReadiness.saveButton')} onPress={handleSave} fullWidth size="lg" disabled={!dirty} style={{ marginBottom: 24 }} />
 
         <View style={styles.sectionRow}>
           <Text style={styles.sectionTitle}>{t('family.screens.familyReadiness.contactsSection')}</Text>
-          <Pressable onPress={openAddContact} style={styles.addContactBtn}>
+          <Pressable accessibilityRole="button" onPress={openAddContact} style={styles.addContactBtn}>
             <Ionicons name="add" size={16} color={MILITARY_GREEN} />
             <Text style={styles.addContactBtnText}>{t('family.screens.familyReadiness.addButton')}</Text>
           </Pressable>
@@ -222,19 +222,19 @@ export function FamilyReadinessScreen({ navigation }: any) {
             </View>
             <View style={styles.contactActions}>
               {c.phone && (
-                <Pressable onPress={() => handleCall(c)} style={styles.contactActionBtn}>
+                <Pressable accessibilityRole="button" onPress={() => handleCall(c)} style={styles.contactActionBtn}>
                   <Ionicons name="call" size={16} color={MILITARY_GREEN} />
                 </Pressable>
               )}
               {c.email && (
-                <Pressable onPress={() => handleEmail(c)} style={styles.contactActionBtn}>
+                <Pressable accessibilityRole="button" onPress={() => handleEmail(c)} style={styles.contactActionBtn}>
                   <Ionicons name="mail" size={16} color={MILITARY_GREEN} />
                 </Pressable>
               )}
-              <Pressable onPress={() => openEditContact(c)} style={styles.contactActionBtn}>
+              <Pressable accessibilityRole="button" onPress={() => openEditContact(c)} style={styles.contactActionBtn}>
                 <Ionicons name="create-outline" size={16} color={colors.primary} />
               </Pressable>
-              <Pressable onPress={() => handleDeleteContact(c)} style={styles.contactActionBtn}>
+              <Pressable accessibilityRole="button" onPress={() => handleDeleteContact(c)} style={styles.contactActionBtn}>
                 <Ionicons name="trash-outline" size={16} color={colors.danger} />
               </Pressable>
             </View>
@@ -254,16 +254,16 @@ export function FamilyReadinessScreen({ navigation }: any) {
           <Text style={styles.modalTitle}>{editingContactId ? t('family.screens.familyReadiness.editContactTitle') : t('family.screens.familyReadiness.addContactTitle')}</Text>
 
           <Text style={styles.fieldLabel}>{t('family.screens.familyReadiness.nameLabel')}</Text>
-          <TextInput style={styles.input} placeholder={t('family.screens.familyReadiness.namePlaceholder')} value={contactName} onChangeText={setContactName} placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel={t('family.screens.familyReadiness.namePlaceholder')} style={styles.input} placeholder={t('family.screens.familyReadiness.namePlaceholder')} value={contactName} onChangeText={setContactName} placeholderTextColor={colors.textMuted} />
 
           <Text style={styles.fieldLabel}>{t('family.screens.familyReadiness.roleLabel')}</Text>
-          <TextInput style={styles.input} placeholder={t('family.screens.familyReadiness.rolePlaceholder')} value={contactRole} onChangeText={setContactRole} placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel={t('family.screens.familyReadiness.rolePlaceholder')} style={styles.input} placeholder={t('family.screens.familyReadiness.rolePlaceholder')} value={contactRole} onChangeText={setContactRole} placeholderTextColor={colors.textMuted} />
 
           <Text style={styles.fieldLabel}>{t('family.screens.familyReadiness.phoneLabel')}</Text>
-          <TextInput style={styles.input} placeholder={t('family.screens.familyReadiness.phonePlaceholder')} value={contactPhone} onChangeText={setContactPhone} keyboardType="phone-pad" placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel={t('family.screens.familyReadiness.phonePlaceholder')} style={styles.input} placeholder={t('family.screens.familyReadiness.phonePlaceholder')} value={contactPhone} onChangeText={setContactPhone} keyboardType="phone-pad" placeholderTextColor={colors.textMuted} />
 
           <Text style={styles.fieldLabel}>{t('family.screens.familyReadiness.emailLabel')}</Text>
-          <TextInput style={styles.input} placeholder={t('family.screens.familyReadiness.emailPlaceholder')} value={contactEmail} onChangeText={setContactEmail} keyboardType="email-address" autoCapitalize="none" placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel={t('family.screens.familyReadiness.emailPlaceholder')} style={styles.input} placeholder={t('family.screens.familyReadiness.emailPlaceholder')} value={contactEmail} onChangeText={setContactEmail} keyboardType="email-address" autoCapitalize="none" placeholderTextColor={colors.textMuted} />
 
           <Button title={editingContactId ? t('family.screens.familyReadiness.saveChangesButton') : t('family.screens.familyReadiness.addContactTitle')} onPress={handleSaveContact} fullWidth size="lg" />
           <Button title={t('family.screens.familyReadiness.cancelButton')} onPress={() => setShowContactModal(false)} variant="ghost" fullWidth style={{ marginTop: 8 }} />

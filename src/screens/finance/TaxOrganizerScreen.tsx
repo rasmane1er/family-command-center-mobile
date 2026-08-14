@@ -196,14 +196,14 @@ export function TaxOrganizerScreen({ navigation }: any) {
       <LinearGradient colors={GRADIENT_COLORS} style={{ paddingTop: insets.top + 8, paddingBottom: 0 }}>
         {/* Header top row */}
         <View style={styles.headerTop}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </Pressable>
           <View style={styles.headerCenter}>
             <Text style={styles.headerTitle}>Tax Organizer</Text>
             <Text style={styles.headerSub}>Documents & deductions tracker</Text>
           </View>
-          <Pressable
+          <Pressable accessibilityRole="button"
             onPress={() => activeTab === 'Documents' ? setShowAddDocModal(true) : setShowAddDedModal(true)}
             style={styles.addBtn}
           >
@@ -213,11 +213,11 @@ export function TaxOrganizerScreen({ navigation }: any) {
 
         {/* Year selector */}
         <View style={styles.yearRow}>
-          <Pressable onPress={() => setSelectedYear(selectedYear - 1)} style={styles.yearArrow}>
+          <Pressable accessibilityRole="button" onPress={() => setSelectedYear(selectedYear - 1)} style={styles.yearArrow}>
             <Ionicons name="chevron-back" size={22} color="#fff" />
           </Pressable>
           <Text style={styles.yearText}>{selectedYear} Tax Year</Text>
-          <Pressable onPress={() => setSelectedYear(selectedYear + 1)} style={styles.yearArrow}>
+          <Pressable accessibilityRole="button" onPress={() => setSelectedYear(selectedYear + 1)} style={styles.yearArrow}>
             <Ionicons name="chevron-forward" size={22} color="#fff" />
           </Pressable>
         </View>
@@ -225,7 +225,7 @@ export function TaxOrganizerScreen({ navigation }: any) {
         {/* Tabs */}
         <View style={styles.tabRow}>
           {tabs.map((tab) => (
-            <Pressable
+            <Pressable accessibilityRole="button"
               key={tab}
               onPress={() => setActiveTab(tab)}
               style={activeTab === tab ? styles.tabActive : styles.tabInactive}
@@ -252,7 +252,7 @@ export function TaxOrganizerScreen({ navigation }: any) {
                   borderColor: color,
                 };
                 return (
-                  <Pressable key={f} onPress={() => setDocFilter(f)} style={chipStyle}>
+                  <Pressable accessibilityRole="button" key={f} onPress={() => setDocFilter(f)} style={chipStyle}>
                     <Text style={[styles.filterChipText, { color: isActive ? '#fff' : color }]}>
                       {f === 'All' ? 'All' : getStatusLabel(f)}
                     </Text>
@@ -272,7 +272,7 @@ export function TaxOrganizerScreen({ navigation }: any) {
                 const statusColor = getStatusColor(doc.status);
                 const cardStyle: ViewStyle = { ...styles.listCard, borderLeftColor: statusColor, borderLeftWidth: 4 };
                 return (
-                  <Pressable key={doc.id} onPress={() => handleDocPress(doc.id, doc.name, doc.status)}>
+                  <Pressable accessibilityRole="button" key={doc.id} onPress={() => handleDocPress(doc.id, doc.name, doc.status)}>
                     <View style={cardStyle}>
                       <View style={styles.docRow}>
                         <View style={[styles.categoryBadge, { backgroundColor: statusColor + '22' }]}>
@@ -327,7 +327,7 @@ export function TaxOrganizerScreen({ navigation }: any) {
                       <Text style={styles.catTotal}>{formatCurrency(catTotal)}</Text>
                     </View>
                     {catDeds.map((ded) => (
-                      <Pressable
+                      <Pressable accessibilityRole="button"
                         key={ded.id}
                         onLongPress={() =>
                           Alert.alert('Delete?', ded.description, [
@@ -411,7 +411,7 @@ export function TaxOrganizerScreen({ navigation }: any) {
       </ScrollView>
 
       {/* FAB */}
-      <Pressable
+      <Pressable accessibilityRole="button"
         style={styles.fab}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -431,7 +431,7 @@ export function TaxOrganizerScreen({ navigation }: any) {
           <Text style={styles.modalTitle}>Add Tax Document</Text>
           <ScrollView>
             <Text style={styles.fieldLabel}>Document Name *</Text>
-            <TextInput
+            <TextInput accessibilityLabel="e.g. W-2 from Employer"
               style={styles.input}
               value={docName}
               onChangeText={setDocName}
@@ -441,7 +441,7 @@ export function TaxOrganizerScreen({ navigation }: any) {
             <Text style={styles.fieldLabel}>Category</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
               {TAX_CATEGORIES.map((cat) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={cat.value}
                   onPress={() => setDocCategory(cat.value)}
                   style={docCategory === cat.value ? styles.pickerItemActive : styles.pickerItem}
@@ -454,7 +454,7 @@ export function TaxOrganizerScreen({ navigation }: any) {
             <Text style={styles.fieldLabel}>Status</Text>
             <View style={styles.statusRow}>
               {DOCUMENT_STATUSES.map((s) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={s.value}
                   onPress={() => setDocStatus(s.value)}
                   style={[styles.statusChip, { borderColor: s.color, backgroundColor: docStatus === s.value ? s.color : 'transparent' }]}
@@ -465,7 +465,7 @@ export function TaxOrganizerScreen({ navigation }: any) {
             </View>
 
             <Text style={styles.fieldLabel}>Amount (optional)</Text>
-            <TextInput
+            <TextInput accessibilityLabel="0.00"
               style={styles.input}
               value={docAmount}
               onChangeText={setDocAmount}
@@ -474,7 +474,7 @@ export function TaxOrganizerScreen({ navigation }: any) {
             />
 
             <Text style={styles.fieldLabel}>Due Date (optional)</Text>
-            <TextInput
+            <TextInput accessibilityLabel="YYYY-MM-DD"
               style={styles.input}
               value={docDueDate}
               onChangeText={setDocDueDate}
@@ -482,7 +482,7 @@ export function TaxOrganizerScreen({ navigation }: any) {
             />
 
             <Text style={styles.fieldLabel}>Notes</Text>
-            <TextInput
+            <TextInput accessibilityLabel="Additional notes..."
               style={[styles.input, { height: 80 }]}
               value={docNotes}
               onChangeText={setDocNotes}
@@ -490,10 +490,10 @@ export function TaxOrganizerScreen({ navigation }: any) {
               multiline
             />
 
-            <Pressable style={styles.saveBtn} onPress={handleAddDoc}>
+            <Pressable accessibilityRole="button" style={styles.saveBtn} onPress={handleAddDoc}>
               <Text style={styles.saveBtnText}>Add Document</Text>
             </Pressable>
-            <Pressable style={styles.cancelBtn} onPress={() => { resetDocForm(); setShowAddDocModal(false); }}>
+            <Pressable accessibilityRole="button" style={styles.cancelBtn} onPress={() => { resetDocForm(); setShowAddDocModal(false); }}>
               <Text style={styles.cancelBtnText}>Cancel</Text>
             </Pressable>
           </ScrollView>
@@ -509,7 +509,7 @@ export function TaxOrganizerScreen({ navigation }: any) {
             <Text style={styles.fieldLabel}>Category</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
               {TAX_CATEGORIES.map((cat) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={cat.value}
                   onPress={() => setDedCategory(cat.value)}
                   style={dedCategory === cat.value ? styles.pickerItemActive : styles.pickerItem}
@@ -520,7 +520,7 @@ export function TaxOrganizerScreen({ navigation }: any) {
             </ScrollView>
 
             <Text style={styles.fieldLabel}>Description *</Text>
-            <TextInput
+            <TextInput accessibilityLabel="e.g. Charitable donation to Red Cross"
               style={styles.input}
               value={dedDescription}
               onChangeText={setDedDescription}
@@ -528,7 +528,7 @@ export function TaxOrganizerScreen({ navigation }: any) {
             />
 
             <Text style={styles.fieldLabel}>Amount *</Text>
-            <TextInput
+            <TextInput accessibilityLabel="0.00"
               style={styles.input}
               value={dedAmount}
               onChangeText={setDedAmount}
@@ -537,7 +537,7 @@ export function TaxOrganizerScreen({ navigation }: any) {
             />
 
             <Text style={styles.fieldLabel}>Date</Text>
-            <TextInput
+            <TextInput accessibilityLabel="YYYY-MM-DD"
               style={styles.input}
               value={dedDate}
               onChangeText={setDedDate}
@@ -546,17 +546,17 @@ export function TaxOrganizerScreen({ navigation }: any) {
 
             <Text style={styles.fieldLabel}>Receipt Count</Text>
             <View style={styles.counterRow}>
-              <Pressable onPress={() => setDedReceipts(String(Math.max(0, parseInt(dedReceipts, 10) - 1)))} style={styles.counterBtn}>
+              <Pressable accessibilityRole="button" onPress={() => setDedReceipts(String(Math.max(0, parseInt(dedReceipts, 10) - 1)))} style={styles.counterBtn}>
                 <Ionicons name="remove" size={20} color={colors.primary} />
               </Pressable>
               <Text style={styles.counterValue}>{dedReceipts}</Text>
-              <Pressable onPress={() => setDedReceipts(String(parseInt(dedReceipts, 10) + 1))} style={styles.counterBtn}>
+              <Pressable accessibilityRole="button" onPress={() => setDedReceipts(String(parseInt(dedReceipts, 10) + 1))} style={styles.counterBtn}>
                 <Ionicons name="add" size={20} color={colors.primary} />
               </Pressable>
             </View>
 
             <Text style={styles.fieldLabel}>Notes</Text>
-            <TextInput
+            <TextInput accessibilityLabel="Additional notes..."
               style={[styles.input, { height: 80 }]}
               value={dedNotes}
               onChangeText={setDedNotes}
@@ -564,10 +564,10 @@ export function TaxOrganizerScreen({ navigation }: any) {
               multiline
             />
 
-            <Pressable style={styles.saveBtn} onPress={handleAddDed}>
+            <Pressable accessibilityRole="button" style={styles.saveBtn} onPress={handleAddDed}>
               <Text style={styles.saveBtnText}>Add Deduction</Text>
             </Pressable>
-            <Pressable style={styles.cancelBtn} onPress={() => { resetDedForm(); setShowAddDedModal(false); }}>
+            <Pressable accessibilityRole="button" style={styles.cancelBtn} onPress={() => { resetDedForm(); setShowAddDedModal(false); }}>
               <Text style={styles.cancelBtnText}>Cancel</Text>
             </Pressable>
           </ScrollView>

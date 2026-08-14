@@ -301,11 +301,11 @@ export function FamilyGoalsScreen({ navigation }: any) {
   const screenHeader = (
     <LinearGradient colors={['#1A237E', '#283593']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
       <View style={styles.headerTop}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <Text style={styles.headerTitle}>{t('goals.title')}</Text>
-        <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
+        <Pressable accessibilityRole="button" onPress={() => setShowAddModal(true)} style={styles.addBtn}>
           <Ionicons name="add" size={26} color="#fff" />
         </Pressable>
       </View>
@@ -327,7 +327,7 @@ export function FamilyGoalsScreen({ navigation }: any) {
 
       <View style={styles.tabRow}>
         {tabs.map((tab) => (
-          <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
+          <Pressable accessibilityRole="button" key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
             <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>{t(`family.screens.familyGoals.${tabLabelKeys[tab]}`)}</Text>
           </Pressable>
         ))}
@@ -337,11 +337,11 @@ export function FamilyGoalsScreen({ navigation }: any) {
 
   const screenCompact = (
     <LinearGradient colors={['#1A237E', '#283593']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => navigation.goBack()}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={styles.headerTitle}>{t('goals.title')}</Text>
-      <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
+      <Pressable accessibilityRole="button" onPress={() => setShowAddModal(true)} style={styles.addBtn}>
         <Ionicons name="add" size={26} color="#fff" />
       </Pressable>
     </LinearGradient>
@@ -412,7 +412,7 @@ export function FamilyGoalsScreen({ navigation }: any) {
         {activeTab === 'By Category' && (
           <>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
-              <Pressable
+              <Pressable accessibilityRole="button"
                 onPress={() => setSelectedCategory('all')}
                 style={[styles.categoryChip, selectedCategory === 'all' && styles.categoryChipActive]}
               >
@@ -422,7 +422,7 @@ export function FamilyGoalsScreen({ navigation }: any) {
                 const count = activeGoals.filter((g) => g.category === cat).length;
                 if (count === 0) return null;
                 return (
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     key={cat}
                     onPress={() => setSelectedCategory(cat)}
                     style={[
@@ -458,14 +458,14 @@ export function FamilyGoalsScreen({ navigation }: any) {
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{t('family.screens.familyGoals.addFamilyGoal')}</Text>
-            <Pressable onPress={() => { resetModal(); setShowAddModal(false); }}>
+            <Pressable accessibilityRole="button" onPress={() => { resetModal(); setShowAddModal(false); }}>
               <Ionicons name="close" size={24} color={colors.text} />
             </Pressable>
           </View>
 
           <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
             <Text style={styles.modalLabel}>{t('family.screens.familyGoals.titleLabel')}</Text>
-            <TextInput
+            <TextInput accessibilityLabel={t('family.screens.familyGoals.titlePlaceholder')}
               style={styles.modalInput}
               value={newTitle}
               onChangeText={setNewTitle}
@@ -474,7 +474,7 @@ export function FamilyGoalsScreen({ navigation }: any) {
             />
 
             <Text style={styles.modalLabel}>{t('family.screens.familyGoals.descriptionLabel')}</Text>
-            <TextInput
+            <TextInput accessibilityLabel={t('family.screens.familyGoals.descriptionPlaceholder')}
               style={[styles.modalInput, { height: 70 }]}
               value={newDescription}
               onChangeText={setNewDescription}
@@ -486,7 +486,7 @@ export function FamilyGoalsScreen({ navigation }: any) {
             <Text style={styles.modalLabel}>{t('family.screens.familyGoals.categoryLabel')}</Text>
             <View style={styles.categoryGrid}>
               {ALL_CATEGORIES.map((cat) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={cat}
                   onPress={() => { setNewCategory(cat); setNewColor(CATEGORY_COLORS[cat]); }}
                   style={[styles.categoryGridItem, newCategory === cat && { borderColor: CATEGORY_COLORS[cat], backgroundColor: CATEGORY_COLORS[cat] + '15' }]}
@@ -502,7 +502,7 @@ export function FamilyGoalsScreen({ navigation }: any) {
             <Text style={styles.modalLabel}>{t('family.screens.familyGoals.iconLabel')}</Text>
             <View style={styles.iconRow}>
               {ICON_OPTIONS.map((icon) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={icon}
                   onPress={() => setNewIcon(icon)}
                   style={[styles.iconOption, newIcon === icon && { backgroundColor: newColor + '20', borderColor: newColor }]}
@@ -515,7 +515,7 @@ export function FamilyGoalsScreen({ navigation }: any) {
             <Text style={styles.modalLabel}>{t('family.screens.familyGoals.colorLabel')}</Text>
             <View style={styles.colorPicker}>
               {COLOR_PALETTE.map((c) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={c}
                   onPress={() => setNewColor(c)}
                   style={[styles.colorSwatch, { backgroundColor: c }, newColor === c && styles.colorSwatchActive]}
@@ -524,7 +524,7 @@ export function FamilyGoalsScreen({ navigation }: any) {
             </View>
 
             <Text style={styles.modalLabel}>{t('family.screens.familyGoals.targetDateLabel')}</Text>
-            <TextInput
+            <TextInput accessibilityLabel={t('family.screens.familyGoals.targetDatePlaceholder')}
               style={styles.modalInput}
               value={newTargetDate}
               onChangeText={setNewTargetDate}
@@ -535,7 +535,7 @@ export function FamilyGoalsScreen({ navigation }: any) {
             <Text style={styles.modalLabel}>{t('family.screens.familyGoals.priorityLabel')}</Text>
             <View style={styles.chipRow}>
               {(['low', 'medium', 'high'] as const).map((p) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={p}
                   onPress={() => setNewPriority(p)}
                   style={[styles.chip, newPriority === p && { backgroundColor: PRIORITY_COLORS[p], borderColor: PRIORITY_COLORS[p] }]}
@@ -549,7 +549,7 @@ export function FamilyGoalsScreen({ navigation }: any) {
 
             <Text style={styles.modalLabel}>{t('family.screens.familyGoals.membersInvolvedLabel')}</Text>
             {members.map((m) => (
-              <Pressable key={m.id} onPress={() => toggleMember(m.id)} style={styles.memberRow}>
+              <Pressable accessibilityRole="button" key={m.id} onPress={() => toggleMember(m.id)} style={styles.memberRow}>
                 <View style={[styles.memberAvatar, { backgroundColor: m.avatarColor }]}>
                   <Text style={styles.memberAvatarText}>{m.name[0]}</Text>
                 </View>
@@ -562,7 +562,7 @@ export function FamilyGoalsScreen({ navigation }: any) {
 
             <Text style={styles.modalLabel}>{t('family.screens.familyGoals.milestonesLabel')}</Text>
             <View style={styles.milestoneInputRow}>
-              <TextInput
+              <TextInput accessibilityLabel={t('family.screens.familyGoals.milestonePlaceholder')}
                 style={[styles.modalInput, { flex: 1, marginBottom: 0 }]}
                 value={milestoneInput}
                 onChangeText={setMilestoneInput}
@@ -570,7 +570,7 @@ export function FamilyGoalsScreen({ navigation }: any) {
                 placeholderTextColor={colors.textMuted}
                 onSubmitEditing={addMilestone}
               />
-              <Pressable onPress={addMilestone} style={[styles.milestoneAddBtn, { backgroundColor: newColor }]}>
+              <Pressable accessibilityRole="button" onPress={addMilestone} style={[styles.milestoneAddBtn, { backgroundColor: newColor }]}>
                 <Ionicons name="add" size={20} color="#fff" />
               </Pressable>
             </View>
@@ -578,13 +578,13 @@ export function FamilyGoalsScreen({ navigation }: any) {
               <View key={m.id} style={styles.milestoneListRow}>
                 <Ionicons name="remove-circle-outline" size={18} color={colors.textMuted} />
                 <Text style={styles.milestoneListText}>{m.text}</Text>
-                <Pressable onPress={() => removeMilestone(m.id)}>
+                <Pressable accessibilityRole="button" onPress={() => removeMilestone(m.id)}>
                   <Ionicons name="close" size={16} color={colors.danger} />
                 </Pressable>
               </View>
             ))}
 
-            <Pressable
+            <Pressable accessibilityRole="button"
               onPress={handleAdd}
               style={[styles.submitBtn, { backgroundColor: newColor }, !newTitle.trim() && styles.submitBtnDisabled]}
             >

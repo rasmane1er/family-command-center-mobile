@@ -45,10 +45,10 @@ export function HomeSetupScreen({ navigation }: any) {
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <LinearGradient colors={['#0F2952', '#1E4A8A']} style={styles.header}>
           <View style={styles.headerTopRow}>
-            <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+            <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
               <Ionicons name="arrow-back" size={24} color="#fff" />
             </Pressable>
-            <Pressable onPress={() => navigation.navigate('VehicleSetup')} style={styles.skipBtn}>
+            <Pressable accessibilityRole="button" onPress={() => navigation.navigate('VehicleSetup')} style={styles.skipBtn}>
               <Text style={styles.skipBtnText}>{t('onboarding.screens.homeSetup.skipBadge')}</Text>
             </Pressable>
           </View>
@@ -63,7 +63,7 @@ export function HomeSetupScreen({ navigation }: any) {
         <Text style={styles.sectionLabel}>{t('onboarding.screens.homeSetup.homeTypeLabel')}</Text>
         <View style={styles.chipGrid}>
           {homeTypes.map((ht) => (
-            <Pressable
+            <Pressable accessibilityRole="button"
               key={ht}
               onPress={() => setHomeType(ht)}
               style={[styles.chip, homeType === ht && styles.chipActive]}
@@ -76,7 +76,7 @@ export function HomeSetupScreen({ navigation }: any) {
         <Text style={styles.sectionLabel}>{t('onboarding.screens.homeSetup.rentOrOwnLabel')}</Text>
         <View style={styles.toggleRow}>
           {(['own', 'rent'] as const).map((v) => (
-            <Pressable
+            <Pressable accessibilityRole="button"
               key={v}
               onPress={() => setRentOrOwn(v)}
               style={[styles.toggleChip, rentOrOwn === v && styles.toggleChipActive]}
@@ -105,7 +105,7 @@ export function HomeSetupScreen({ navigation }: any) {
         <Text style={styles.sectionLabel}>{t('onboarding.screens.homeSetup.bedroomsLabel')}</Text>
         <View style={styles.countSelector}>
           {['1', '2', '3', '4', '5+'].map((n) => (
-            <Pressable
+            <Pressable accessibilityRole="button"
               key={n}
               onPress={() => setBedrooms(n)}
               style={[styles.countChip, bedrooms === n && styles.countChipActive]}
@@ -130,7 +130,7 @@ export function HomeSetupScreen({ navigation }: any) {
           style={{ marginTop: 8 }}
           rightIcon={<Ionicons name="arrow-forward" size={18} color="#fff" style={{ marginLeft: 8 }} />}
         />
-        <Pressable onPress={() => navigation.navigate('VehicleSetup')} style={styles.skipButton}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.navigate('VehicleSetup')} style={styles.skipButton}>
           <Text style={styles.skipText}>{t('onboarding.screens.homeSetup.skipForNow')}</Text>
         </Pressable>
       </ScrollView>

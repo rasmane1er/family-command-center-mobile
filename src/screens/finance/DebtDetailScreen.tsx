@@ -85,7 +85,7 @@ export function DebtDetailScreen({ navigation, route }: Props) {
     return (
       <View style={styles.notFound}>
         <Text style={styles.notFoundText}>Debt not found.</Text>
-        <Pressable onPress={() => navigation.goBack()}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()}>
           <Text style={styles.backLink}>Go Back</Text>
         </Pressable>
       </View>
@@ -136,7 +136,7 @@ export function DebtDetailScreen({ navigation, route }: Props) {
       <ScrollView contentContainerStyle={styles.content}>
         <LinearGradient colors={[color, color + 'CC']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
           <View style={styles.headerTop}>
-            <Pressable onPress={() => navigation.goBack()} hitSlop={12}>
+            <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} hitSlop={12}>
               <Ionicons name="arrow-back" size={24} color="#fff" />
             </Pressable>
             <View style={styles.headerMid}>
@@ -252,7 +252,7 @@ export function DebtDetailScreen({ navigation, route }: Props) {
 
       {/* Mark payment CTA */}
       <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
-        <Pressable style={[styles.payBtn, { backgroundColor: color }]} onPress={handleMarkPayment}>
+        <Pressable accessibilityRole="button" style={[styles.payBtn, { backgroundColor: color }]} onPress={handleMarkPayment}>
           <Ionicons name="checkmark-circle" size={20} color="#fff" />
           <Text style={styles.payBtnText}>Mark Payment Made</Text>
         </Pressable>

@@ -114,7 +114,7 @@ export function CoParentingScreen({ navigation }: any) {
 
     return (
       <Card key={grant.id} style={styles.grantCard} variant="elevated">
-        <Pressable onPress={() => grant.status === 'ACTIVE' && handleExpandGrant(grant)} style={styles.grantTop}>
+        <Pressable accessibilityRole="button" onPress={() => grant.status === 'ACTIVE' && handleExpandGrant(grant)} style={styles.grantTop}>
           <View style={styles.childIcon}>
             <Ionicons name="person" size={20} color={colors.primary} />
           </View>
@@ -131,11 +131,11 @@ export function CoParentingScreen({ navigation }: any) {
 
         {grant.status === 'PENDING' && !asOwner && (
           <View style={styles.rowActions}>
-            <Pressable onPress={() => acceptCoParentGrant(grant.id)} style={[styles.actionBtn, styles.acceptBtn]}>
+            <Pressable accessibilityRole="button" onPress={() => acceptCoParentGrant(grant.id)} style={[styles.actionBtn, styles.acceptBtn]}>
               <Ionicons name="checkmark" size={16} color="#fff" />
               <Text style={[styles.actionBtnText, { color: '#fff' }]}>Accept</Text>
             </Pressable>
-            <Pressable onPress={() => declineCoParentGrant(grant.id)} style={styles.actionBtn}>
+            <Pressable accessibilityRole="button" onPress={() => declineCoParentGrant(grant.id)} style={styles.actionBtn}>
               <Ionicons name="close" size={16} color={colors.danger} />
               <Text style={[styles.actionBtnText, { color: colors.danger }]}>Decline</Text>
             </Pressable>
@@ -144,7 +144,7 @@ export function CoParentingScreen({ navigation }: any) {
 
         {grant.status === 'ACTIVE' && (
           <View style={styles.rowActions}>
-            <Pressable onPress={() => handleRevoke(grant)} style={styles.actionBtn}>
+            <Pressable accessibilityRole="button" onPress={() => handleRevoke(grant)} style={styles.actionBtn}>
               <Ionicons name="close-circle-outline" size={16} color={colors.danger} />
               <Text style={[styles.actionBtnText, { color: colors.danger }]}>Revoke Access</Text>
             </Pressable>
@@ -160,7 +160,7 @@ export function CoParentingScreen({ navigation }: any) {
                 <View key={f.key} style={styles.fieldRow}>
                   <Ionicons name={f.icon as any} size={15} color={colors.textMuted} />
                   {canEdit ? (
-                    <TextInput
+                    <TextInput accessibilityLabel={f.label}
                       style={styles.fieldInput}
                       placeholder={f.label}
                       placeholderTextColor={colors.textMuted}
@@ -187,11 +187,11 @@ export function CoParentingScreen({ navigation }: any) {
       <StatusBar style="light" />
       <LinearGradient colors={['#0F2952', '#1E4A8A']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
         <View style={styles.headerTop}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+          <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </Pressable>
           <Text style={styles.headerTitle}>Co-Parenting</Text>
-          <Pressable onPress={() => setShowShareModal(true)} style={styles.addBtn}>
+          <Pressable accessibilityRole="button" onPress={() => setShowShareModal(true)} style={styles.addBtn}>
             <Ionicons name="add" size={22} color="#fff" />
           </Pressable>
         </View>
@@ -240,7 +240,7 @@ export function CoParentingScreen({ navigation }: any) {
             {children.length === 0 ? (
               <Text style={styles.emptyDesc}>Add a child in Family Profiles first.</Text>
             ) : children.map((c) => (
-              <Pressable key={c.id} onPress={() => setSelectedChildId(c.id)} style={[styles.chip, selectedChildId === c.id && styles.chipActive]}>
+              <Pressable accessibilityRole="button" key={c.id} onPress={() => setSelectedChildId(c.id)} style={[styles.chip, selectedChildId === c.id && styles.chipActive]}>
                 <Text style={[styles.chipText, selectedChildId === c.id && styles.chipTextActive]}>{c.name}</Text>
               </Pressable>
             ))}
@@ -254,7 +254,7 @@ export function CoParentingScreen({ navigation }: any) {
               const other = c.requesterFamily ?? c.recipientFamily;
               const otherFamilyId = c.requesterFamily ? c.requesterFamilyId : c.recipientFamilyId;
               return (
-                <Pressable key={c.id} onPress={() => setSelectedFamilyId(otherFamilyId)} style={[styles.chip, selectedFamilyId === otherFamilyId && styles.chipActive]}>
+                <Pressable accessibilityRole="button" key={c.id} onPress={() => setSelectedFamilyId(otherFamilyId)} style={[styles.chip, selectedFamilyId === otherFamilyId && styles.chipActive]}>
                   <Text style={[styles.chipText, selectedFamilyId === otherFamilyId && styles.chipTextActive]}>{other?.name ?? 'Household'}</Text>
                 </Pressable>
               );
@@ -263,10 +263,10 @@ export function CoParentingScreen({ navigation }: any) {
 
           <Text style={styles.modalLabel}>Permission</Text>
           <View style={styles.chipRow}>
-            <Pressable onPress={() => setPermission('VIEW')} style={[styles.chip, permission === 'VIEW' && styles.chipActive]}>
+            <Pressable accessibilityRole="button" onPress={() => setPermission('VIEW')} style={[styles.chip, permission === 'VIEW' && styles.chipActive]}>
               <Text style={[styles.chipText, permission === 'VIEW' && styles.chipTextActive]}>View Only</Text>
             </Pressable>
-            <Pressable onPress={() => setPermission('EDIT')} style={[styles.chip, permission === 'EDIT' && styles.chipActive]}>
+            <Pressable accessibilityRole="button" onPress={() => setPermission('EDIT')} style={[styles.chip, permission === 'EDIT' && styles.chipActive]}>
               <Text style={[styles.chipText, permission === 'EDIT' && styles.chipTextActive]}>Can Edit</Text>
             </Pressable>
           </View>

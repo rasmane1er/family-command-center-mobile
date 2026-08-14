@@ -332,7 +332,7 @@ export function GeofenceScreen({ navigation }: any) {
           (nothing scrolls behind the map), so this is a simple overlay
           instead, matching the standard map-app pattern. */}
       <View style={[styles.floatingHeader, { paddingTop: insets.top + 8 }]} pointerEvents="box-none">
-        <Pressable onPress={() => navigation.goBack()} style={[styles.floatingBtn, shadows.card]}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={[styles.floatingBtn, shadows.card]}>
           <Ionicons name="arrow-back" size={22} color={colors.text} />
         </Pressable>
         <View style={[styles.headerStatsPill, shadows.card]}>
@@ -341,7 +341,7 @@ export function GeofenceScreen({ navigation }: any) {
             {zones.length} zone{zones.length === 1 ? "" : "s"} · {activeZones} active
           </Text>
         </View>
-        <Pressable
+        <Pressable accessibilityRole="button"
           onPress={() => setShowZonesList((v) => !v)}
           style={[styles.floatingBtn, shadows.card, showZonesList && styles.floatingBtnActive]}
         >
@@ -351,10 +351,10 @@ export function GeofenceScreen({ navigation }: any) {
 
       {!draftZone && (
         <>
-          <Pressable style={[styles.fab, { bottom: insets.bottom + 24 }, shadows.card]} onPress={() => startNewZone()}>
+          <Pressable accessibilityRole="button" style={[styles.fab, { bottom: insets.bottom + 24 }, shadows.card]} onPress={() => startNewZone()}>
             <Ionicons name="add" size={26} color="#fff" />
           </Pressable>
-          <Pressable
+          <Pressable accessibilityRole="button"
             style={[styles.fabSecondary, { bottom: insets.bottom + 90 }, shadows.card]}
             onPress={() => startNewZone("dutyStation")}
           >
@@ -378,7 +378,7 @@ export function GeofenceScreen({ navigation }: any) {
             )}
 
             {zones.map((zone) => (
-              <Pressable key={zone.id} style={styles.zoneCard} onPress={() => flyToZone(zone)}>
+              <Pressable accessibilityRole="button" key={zone.id} style={styles.zoneCard} onPress={() => flyToZone(zone)}>
                 <View style={[styles.zoneIcon, { backgroundColor: zone.color + "22" }]}>
                   <Ionicons name={zone.icon as any} size={22} color={zone.color} />
                 </View>
@@ -406,10 +406,10 @@ export function GeofenceScreen({ navigation }: any) {
                     trackColor={{ false: colors.border, true: zone.color }}
                     thumbColor="#fff"
                   />
-                  <Pressable onPress={() => startEditZone(zone)} style={styles.editBtn}>
+                  <Pressable accessibilityRole="button" onPress={() => startEditZone(zone)} style={styles.editBtn}>
                     <Ionicons name="create-outline" size={16} color={colors.primary} />
                   </Pressable>
-                  <Pressable onPress={() => handleDelete(zone)} style={styles.deleteBtn}>
+                  <Pressable accessibilityRole="button" onPress={() => handleDelete(zone)} style={styles.deleteBtn}>
                     <Ionicons name="trash-outline" size={16} color={colors.danger} />
                   </Pressable>
                 </View>
@@ -425,7 +425,7 @@ export function GeofenceScreen({ navigation }: any) {
             <View style={styles.sheetHandle} />
             <Text style={styles.sheetTitle}>{editingZoneId ? "Edit Zone" : "New Zone"}</Text>
 
-            <TextInput
+            <TextInput accessibilityLabel="Zone name (e.g. Home, School, Park)"
               style={styles.input}
               placeholder="Zone name (e.g. Home, School, Park)"
               value={draftZone.name}
@@ -433,7 +433,7 @@ export function GeofenceScreen({ navigation }: any) {
               placeholderTextColor={colors.textMuted}
             />
 
-            <Pressable style={styles.locateBtn} onPress={useMyLocation} disabled={locating}>
+            <Pressable accessibilityRole="button" style={styles.locateBtn} onPress={useMyLocation} disabled={locating}>
               <Ionicons name="locate" size={16} color={colors.primary} />
               <Text style={styles.locateBtnText}>{locating ? "Locating…" : "Use My Current Location"}</Text>
             </Pressable>
@@ -457,7 +457,7 @@ export function GeofenceScreen({ navigation }: any) {
             <Text style={styles.fieldLabel}>{t('family.screens.geofence.alertTriggerLabel')}</Text>
             <View style={styles.optionRow}>
               {ACTION_OPTIONS.map((opt) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={opt.value}
                   onPress={() => setDraftZone({ ...draftZone, action: opt.value })}
                   style={[styles.optionChip, draftZone.action === opt.value && styles.optionChipActive]}
@@ -472,7 +472,7 @@ export function GeofenceScreen({ navigation }: any) {
             <Text style={styles.fieldLabel}>Color</Text>
             <View style={styles.colorRow}>
               {ZONE_COLORS.map((c) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={c}
                   onPress={() => setDraftZone({ ...draftZone, color: c })}
                   style={[styles.colorSwatch, { backgroundColor: c }, draftZone.color === c && styles.colorSwatchSelected]}
@@ -483,7 +483,7 @@ export function GeofenceScreen({ navigation }: any) {
             <Text style={styles.fieldLabel}>Icon</Text>
             <View style={styles.iconRow}>
               {ZONE_ICONS.map((ic) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={ic}
                   onPress={() => setDraftZone({ ...draftZone, icon: ic })}
                   style={[styles.iconSwatch, draftZone.icon === ic && { backgroundColor: draftZone.color + "33" }]}
@@ -498,7 +498,7 @@ export function GeofenceScreen({ navigation }: any) {
                 <Text style={styles.fieldLabel}>Watch Members</Text>
                 <View style={styles.memberChips}>
                   {childMembers.map((m) => (
-                    <Pressable
+                    <Pressable accessibilityRole="button"
                       key={m.id}
                       onPress={() => toggleMember(m.id)}
                       style={[
@@ -515,12 +515,12 @@ export function GeofenceScreen({ navigation }: any) {
               </>
             )}
 
-            <Pressable style={styles.saveBtn} onPress={saveDraft}>
+            <Pressable accessibilityRole="button" style={styles.saveBtn} onPress={saveDraft}>
               <Text style={styles.saveBtnText}>{editingZoneId ? "Save Changes" : "Add Zone"}</Text>
             </Pressable>
 
             {editingZoneId && (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 style={styles.deleteZoneBtn}
                 onPress={() => {
                   const zone = zones.find((z) => z.id === editingZoneId);
@@ -531,7 +531,7 @@ export function GeofenceScreen({ navigation }: any) {
               </Pressable>
             )}
 
-            <Pressable style={styles.cancelBtn} onPress={cancelDraft}>
+            <Pressable accessibilityRole="button" style={styles.cancelBtn} onPress={cancelDraft}>
               <Text style={styles.cancelBtnText}>Cancel</Text>
             </Pressable>
           </ScrollView>

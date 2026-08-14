@@ -62,10 +62,10 @@ const LegacyItemCard = React.memo(function LegacyItemCard({ item, authorName, on
           <Text style={styles.itemTitle}>{item.title}</Text>
           <Text style={styles.itemMeta}>{authorName} {item.date ? `• ${new Date(item.date).getFullYear()}` : ''}</Text>
         </View>
-        <Pressable onPress={() => onToggleFeatured(item.id)} style={{ marginRight: 12 }}>
+        <Pressable accessibilityRole="button" onPress={() => onToggleFeatured(item.id)} style={{ marginRight: 12 }}>
           <Ionicons name={item.isFeatured ? 'star' : 'star-outline'} size={20} color={item.isFeatured ? colors.secondary : colors.textMuted} />
         </Pressable>
-        <Pressable onPress={() => onDelete(item)}>
+        <Pressable accessibilityRole="button" onPress={() => onDelete(item)}>
           <Ionicons name="trash-outline" size={20} color={colors.textMuted} />
         </Pressable>
       </View>
@@ -78,7 +78,7 @@ const LegacyItemCard = React.memo(function LegacyItemCard({ item, authorName, on
           {item.reactions.length > 0 && (
             <Text style={styles.reactionCount}>{item.reactions.length}</Text>
           )}
-          <Pressable
+          <Pressable accessibilityRole="button"
             onPress={() => onReact(item.id)}
             style={styles.addReactionBtn}
           >
@@ -149,14 +149,14 @@ export function LegacyVaultScreen({ navigation }: any) {
   const screenHeader = (
     <LinearGradient colors={['#4A1942', '#7B2D8B']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
       <View style={styles.headerTop}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <View style={{ flex: 1 }}>
           <Text style={styles.headerTitle}>{t('legacyVault.title')}</Text>
           <Text style={styles.headerSub}>Family stories • Traditions • Milestones</Text>
         </View>
-        <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
+        <Pressable accessibilityRole="button" onPress={() => setShowModal(true)} style={styles.addBtn}>
           <Ionicons name="add" size={24} color="#fff" />
         </Pressable>
       </View>
@@ -178,7 +178,7 @@ export function LegacyVaultScreen({ navigation }: any) {
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 12 }}>
         {FILTER_TYPES.map((ft) => (
-          <Pressable
+          <Pressable accessibilityRole="button"
             key={ft.key}
             onPress={() => setFilter(ft.key)}
             style={[styles.filterChip, filter === ft.key && styles.filterChipActive]}
@@ -192,11 +192,11 @@ export function LegacyVaultScreen({ navigation }: any) {
 
   const screenCompact = (
     <View style={{ backgroundColor: '#4A1942', paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={styles.headerTitle}>{t('legacyVault.title')}</Text>
-      <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
+      <Pressable accessibilityRole="button" onPress={() => setShowModal(true)} style={styles.addBtn}>
         <Ionicons name="add" size={24} color="#fff" />
       </Pressable>
     </View>
@@ -225,7 +225,7 @@ export function LegacyVaultScreen({ navigation }: any) {
                     {featured.map((item) => {
                       const cfg = TYPE_CONFIG[item.type];
                       return (
-                        <Pressable key={item.id} style={[styles.featuredCard, { backgroundColor: cfg.color + '15', borderColor: cfg.color + '40' }]}>
+                        <Pressable accessibilityRole="button" key={item.id} style={[styles.featuredCard, { backgroundColor: cfg.color + '15', borderColor: cfg.color + '40' }]}>
                           <Ionicons name={cfg.icon as any} size={28} color={cfg.color} />
                           <Text style={styles.featuredTitle} numberOfLines={2}>{item.title}</Text>
                           <Text style={styles.featuredAuthor}>{getMemberName(item.memberId)}</Text>
@@ -260,7 +260,7 @@ export function LegacyVaultScreen({ navigation }: any) {
             {ADD_TYPES.map((t) => {
               const cfg = TYPE_CONFIG[t];
               return (
-                <Pressable key={t} onPress={() => setNewType(t)} style={[styles.typeChip, newType === t && { backgroundColor: cfg.color + '20', borderColor: cfg.color }]}>
+                <Pressable accessibilityRole="button" key={t} onPress={() => setNewType(t)} style={[styles.typeChip, newType === t && { backgroundColor: cfg.color + '20', borderColor: cfg.color }]}>
                   <Ionicons name={cfg.icon as any} size={16} color={newType === t ? cfg.color : colors.textSecondary} />
                   <Text style={[styles.typeChipText, newType === t && { color: cfg.color }]}>{cfg.label}</Text>
                 </Pressable>
@@ -269,10 +269,10 @@ export function LegacyVaultScreen({ navigation }: any) {
           </ScrollView>
 
           <Text style={styles.modalLabel}>Title *</Text>
-          <TextInput style={styles.modalInput} placeholder="e.g. Grandma's Apple Pie Recipe" value={newTitle} onChangeText={setNewTitle} placeholderTextColor={colors.textMuted} autoFocus />
+          <TextInput accessibilityLabel="e.g. Grandma's Apple Pie Recipe" style={styles.modalInput} placeholder="e.g. Grandma's Apple Pie Recipe" value={newTitle} onChangeText={setNewTitle} placeholderTextColor={colors.textMuted} autoFocus />
 
           <Text style={styles.modalLabel}>Story / Content</Text>
-          <TextInput
+          <TextInput accessibilityLabel="Write the story, memory, or tradition here..."
             style={[styles.modalInput, styles.modalTextarea]}
             placeholder="Write the story, memory, or tradition here..."
             value={newContent}
@@ -285,11 +285,11 @@ export function LegacyVaultScreen({ navigation }: any) {
 
           <Text style={styles.modalLabel}>About</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 24 }}>
-            <Pressable onPress={() => setNewMemberId(null)} style={[styles.memberChip, !newMemberId && styles.memberChipActive]}>
+            <Pressable accessibilityRole="button" onPress={() => setNewMemberId(null)} style={[styles.memberChip, !newMemberId && styles.memberChipActive]}>
               <Text style={styles.memberChipName}>Family</Text>
             </Pressable>
             {members.map((m) => (
-              <Pressable key={m.id} onPress={() => setNewMemberId(m.id)} style={[styles.memberChip, newMemberId === m.id && styles.memberChipActive]}>
+              <Pressable accessibilityRole="button" key={m.id} onPress={() => setNewMemberId(m.id)} style={[styles.memberChip, newMemberId === m.id && styles.memberChipActive]}>
                 <Avatar name={m.name} color={m.avatarColor} size={28} />
                 <Text style={styles.memberChipName}>{m.name.split(' ')[0]}</Text>
               </Pressable>

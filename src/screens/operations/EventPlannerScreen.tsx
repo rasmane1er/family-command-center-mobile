@@ -240,7 +240,7 @@ export function EventPlannerScreen({ navigation: _navigation }: any) {
       <View style={styles.container}>
         <StatusBar style="light" />
         <LinearGradient colors={['#880E4F', '#AD1457']} style={{ paddingTop: insets.top + 8, paddingBottom: 16, paddingHorizontal: 20 }}>
-          <Pressable onPress={() => setSelectedEventId(null)} style={styles.backRow}>
+          <Pressable accessibilityRole="button" onPress={() => setSelectedEventId(null)} style={styles.backRow}>
             <Ionicons name={'chevron-back' as any} size={20} color="#fff" />
             <Text style={styles.backText}>Events</Text>
           </Pressable>
@@ -257,7 +257,7 @@ export function EventPlannerScreen({ navigation: _navigation }: any) {
         {/* Sub-tabs */}
         <View style={styles.tabRow}>
           {(['guests', 'tasks', 'budget'] as DetailTab[]).map((t) => (
-            <Pressable key={t} onPress={() => setDetailTab(t)} style={{ ...styles.tabPill, ...(detailTab === t ? styles.tabPillActive : {}) }}>
+            <Pressable accessibilityRole="button" key={t} onPress={() => setDetailTab(t)} style={{ ...styles.tabPill, ...(detailTab === t ? styles.tabPillActive : {}) }}>
               <Text style={{ ...styles.tabPillText, ...(detailTab === t ? styles.tabPillTextActive : {}) }}>
                 {t.charAt(0).toUpperCase() + t.slice(1)}
               </Text>
@@ -270,7 +270,7 @@ export function EventPlannerScreen({ navigation: _navigation }: any) {
             <>
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryText}>{confirmedCount} confirmed · {eventGuests.length} invited</Text>
-                <Pressable onPress={() => setShowAddGuest(true)} style={styles.addSmallBtn}>
+                <Pressable accessibilityRole="button" onPress={() => setShowAddGuest(true)} style={styles.addSmallBtn}>
                   <Ionicons name={'add' as any} size={18} color={colors.primary} />
                   <Text style={styles.addSmallText}>Add Guest</Text>
                 </Pressable>
@@ -292,7 +292,7 @@ export function EventPlannerScreen({ navigation: _navigation }: any) {
                       </View>
                       <View style={styles.rsvpRow}>
                         {RSVP_OPTIONS.map((opt) => (
-                          <Pressable
+                          <Pressable accessibilityRole="button"
                             key={opt.value}
                             onPress={() => store.updateGuestRSVP(g.id, opt.value)}
                             style={{ ...styles.rsvpBtn, ...(g.rsvp === opt.value ? { backgroundColor: getRSVPColor(opt.value) } : {}) }}
@@ -303,7 +303,7 @@ export function EventPlannerScreen({ navigation: _navigation }: any) {
                           </Pressable>
                         ))}
                       </View>
-                      <Pressable onPress={() => store.removeGuest(g.id)}>
+                      <Pressable accessibilityRole="button" onPress={() => store.removeGuest(g.id)}>
                         <Ionicons name={'trash-outline' as any} size={16} color={colors.danger} />
                       </Pressable>
                     </View>
@@ -317,7 +317,7 @@ export function EventPlannerScreen({ navigation: _navigation }: any) {
             <>
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryText}>{eventTasks.filter((t) => t.completed).length}/{eventTasks.length} done</Text>
-                <Pressable onPress={() => setShowAddTask(true)} style={styles.addSmallBtn}>
+                <Pressable accessibilityRole="button" onPress={() => setShowAddTask(true)} style={styles.addSmallBtn}>
                   <Ionicons name={'add' as any} size={18} color={colors.primary} />
                   <Text style={styles.addSmallText}>Add Task</Text>
                 </Pressable>
@@ -332,7 +332,7 @@ export function EventPlannerScreen({ navigation: _navigation }: any) {
                 eventTasks.map((t) => (
                   <Card key={t.id} style={{ ...styles.listCard, ...(t.completed ? { opacity: 0.6 } : {}) }}>
                     <View style={styles.taskRow}>
-                      <Pressable onPress={() => { store.completeTask(t.id); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}>
+                      <Pressable accessibilityRole="button" onPress={() => { store.completeTask(t.id); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}>
                         <Ionicons name={(t.completed ? 'checkbox' : 'square-outline') as any} size={22} color={t.completed ? colors.success : colors.textMuted} />
                       </Pressable>
                       <View style={[styles.catIconSmall, { backgroundColor: '#F0F4FF' }]}>
@@ -361,7 +361,7 @@ export function EventPlannerScreen({ navigation: _navigation }: any) {
               </Card>
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryText}>{eventExpenses.length} expense{eventExpenses.length !== 1 ? 's' : ''}</Text>
-                <Pressable onPress={() => setShowAddExpense(true)} style={styles.addSmallBtn}>
+                <Pressable accessibilityRole="button" onPress={() => setShowAddExpense(true)} style={styles.addSmallBtn}>
                   <Ionicons name={'add' as any} size={18} color={colors.primary} />
                   <Text style={styles.addSmallText}>Add Expense</Text>
                 </Pressable>
@@ -382,7 +382,7 @@ export function EventPlannerScreen({ navigation: _navigation }: any) {
                       </View>
                       <Text style={styles.expenseAmount}>${ex.amount.toFixed(2)}</Text>
                       <Badge label={ex.paid ? 'Paid' : 'Unpaid'} variant={ex.paid ? 'success' : 'warning'} />
-                      <Pressable onPress={() => store.removeExpense(ex.id)} style={{ marginLeft: 8 }}>
+                      <Pressable accessibilityRole="button" onPress={() => store.removeExpense(ex.id)} style={{ marginLeft: 8 }}>
                         <Ionicons name={'trash-outline' as any} size={16} color={colors.danger} />
                       </Pressable>
                     </View>
@@ -400,15 +400,15 @@ export function EventPlannerScreen({ navigation: _navigation }: any) {
               <View style={{ width: 40, height: 4, backgroundColor: '#ccc', borderRadius: 2, alignSelf: 'center', marginBottom: 16 }} />
               <Text style={styles.modalTitle}>Add Guest</Text>
               <Text style={styles.fieldLabel}>Name *</Text>
-              <TextInput style={styles.input} value={guName} onChangeText={setGuName} placeholder="Full name" />
+              <TextInput accessibilityLabel="Full name" style={styles.input} value={guName} onChangeText={setGuName} placeholder="Full name" />
               <Text style={styles.fieldLabel}>Email</Text>
-              <TextInput style={styles.input} value={guEmail} onChangeText={setGuEmail} placeholder="Email address" keyboardType="email-address" />
+              <TextInput accessibilityLabel="Email address" style={styles.input} value={guEmail} onChangeText={setGuEmail} placeholder="Email address" keyboardType="email-address" />
               <Text style={styles.fieldLabel}>Phone</Text>
-              <TextInput style={styles.input} value={guPhone} onChangeText={setGuPhone} placeholder="Phone number" keyboardType="phone-pad" />
+              <TextInput accessibilityLabel="Phone number" style={styles.input} value={guPhone} onChangeText={setGuPhone} placeholder="Phone number" keyboardType="phone-pad" />
               <Text style={styles.fieldLabel}>RSVP Status</Text>
               <View style={styles.optionRow}>
                 {RSVP_OPTIONS.map((opt) => (
-                  <Pressable key={opt.value} onPress={() => setGuRsvp(opt.value)} style={{ ...styles.optionChip, ...(guRsvp === opt.value ? styles.optionChipActive : {}) }}>
+                  <Pressable accessibilityRole="button" key={opt.value} onPress={() => setGuRsvp(opt.value)} style={{ ...styles.optionChip, ...(guRsvp === opt.value ? styles.optionChipActive : {}) }}>
                     <Text style={{ ...styles.optionChipText, ...(guRsvp === opt.value ? styles.optionChipTextActive : {}) }}>{opt.label}</Text>
                   </Pressable>
                 ))}
@@ -418,7 +418,7 @@ export function EventPlannerScreen({ navigation: _navigation }: any) {
                 <Switch value={guPlusOne} onValueChange={setGuPlusOne} trackColor={{ true: colors.primary }} />
               </View>
               <Text style={styles.fieldLabel}>Dietary Restrictions</Text>
-              <TextInput style={styles.input} value={guDiet} onChangeText={setGuDiet} placeholder="e.g. Vegetarian, No nuts" />
+              <TextInput accessibilityLabel="e.g. Vegetarian, No nuts" style={styles.input} value={guDiet} onChangeText={setGuDiet} placeholder="e.g. Vegetarian, No nuts" />
               <View style={styles.modalButtons}>
                 <Button title="Cancel" variant="ghost" onPress={() => { resetGuestForm(); setShowAddGuest(false); }} />
                 <Button title="Add Guest" onPress={handleAddGuest} disabled={!guName.trim()} />
@@ -434,19 +434,19 @@ export function EventPlannerScreen({ navigation: _navigation }: any) {
               <View style={{ width: 40, height: 4, backgroundColor: '#ccc', borderRadius: 2, alignSelf: 'center', marginBottom: 16 }} />
               <Text style={styles.modalTitle}>Add Task</Text>
               <Text style={styles.fieldLabel}>Title *</Text>
-              <TextInput style={styles.input} value={tkTitle} onChangeText={setTkTitle} placeholder="Task description" />
+              <TextInput accessibilityLabel="Task description" style={styles.input} value={tkTitle} onChangeText={setTkTitle} placeholder="Task description" />
               <Text style={styles.fieldLabel}>Category</Text>
               <View style={styles.optionRow}>
                 {TASK_CATEGORIES.map((c) => (
-                  <Pressable key={c} onPress={() => setTkCategory(c)} style={{ ...styles.optionChip, ...(tkCategory === c ? styles.optionChipActive : {}) }}>
+                  <Pressable accessibilityRole="button" key={c} onPress={() => setTkCategory(c)} style={{ ...styles.optionChip, ...(tkCategory === c ? styles.optionChipActive : {}) }}>
                     <Text style={{ ...styles.optionChipText, ...(tkCategory === c ? styles.optionChipTextActive : {}) }}>{c}</Text>
                   </Pressable>
                 ))}
               </View>
               <Text style={styles.fieldLabel}>Due Date (YYYY-MM-DD)</Text>
-              <TextInput style={styles.input} value={tkDue} onChangeText={setTkDue} placeholder="2026-08-10" />
+              <TextInput accessibilityLabel="2026-08-10" style={styles.input} value={tkDue} onChangeText={setTkDue} placeholder="2026-08-10" />
               <Text style={styles.fieldLabel}>Assigned To</Text>
-              <TextInput style={styles.input} value={tkAssigned} onChangeText={setTkAssigned} placeholder="Family member name" />
+              <TextInput accessibilityLabel="Family member name" style={styles.input} value={tkAssigned} onChangeText={setTkAssigned} placeholder="Family member name" />
               <View style={styles.modalButtons}>
                 <Button title="Cancel" variant="ghost" onPress={() => { resetTaskForm(); setShowAddTask(false); }} />
                 <Button title="Add Task" onPress={handleAddTask} disabled={!tkTitle.trim()} />
@@ -462,11 +462,11 @@ export function EventPlannerScreen({ navigation: _navigation }: any) {
               <View style={{ width: 40, height: 4, backgroundColor: '#ccc', borderRadius: 2, alignSelf: 'center', marginBottom: 16 }} />
               <Text style={styles.modalTitle}>Add Expense</Text>
               <Text style={styles.fieldLabel}>Category</Text>
-              <TextInput style={styles.input} value={exCategory} onChangeText={setExCategory} placeholder="e.g. Catering, Venue" />
+              <TextInput accessibilityLabel="e.g. Catering, Venue" style={styles.input} value={exCategory} onChangeText={setExCategory} placeholder="e.g. Catering, Venue" />
               <Text style={styles.fieldLabel}>Description *</Text>
-              <TextInput style={styles.input} value={exDesc} onChangeText={setExDesc} placeholder="What did you spend on?" />
+              <TextInput accessibilityLabel="What did you spend on?" style={styles.input} value={exDesc} onChangeText={setExDesc} placeholder="What did you spend on?" />
               <Text style={styles.fieldLabel}>Amount ($)</Text>
-              <TextInput style={styles.input} value={exAmount} onChangeText={setExAmount} placeholder="0.00" keyboardType="decimal-pad" />
+              <TextInput accessibilityLabel="0.00" style={styles.input} value={exAmount} onChangeText={setExAmount} placeholder="0.00" keyboardType="decimal-pad" />
               <View style={styles.switchRow}>
                 <Text style={styles.fieldLabel}>Already Paid</Text>
                 <Switch value={exPaid} onValueChange={setExPaid} trackColor={{ true: colors.success }} />
@@ -491,7 +491,7 @@ export function EventPlannerScreen({ navigation: _navigation }: any) {
         <Text style={styles.headerSubtitle}>Parties & celebrations</Text>
         <View style={styles.tabRow}>
           {(['upcoming', 'past'] as ViewTab[]).map((t) => (
-            <Pressable key={t} onPress={() => setViewTab(t)} style={{ ...styles.tabPillLight, ...(viewTab === t ? styles.tabPillLightActive : {}) }}>
+            <Pressable accessibilityRole="button" key={t} onPress={() => setViewTab(t)} style={{ ...styles.tabPillLight, ...(viewTab === t ? styles.tabPillLightActive : {}) }}>
               <Text style={{ ...styles.tabPillLightText, ...(viewTab === t ? styles.tabPillLightTextActive : {}) }}>
                 {t.charAt(0).toUpperCase() + t.slice(1)} ({(t === 'upcoming' ? upcoming : past).length})
               </Text>
@@ -513,7 +513,7 @@ export function EventPlannerScreen({ navigation: _navigation }: any) {
             const spent = store.getTotalSpent(event.id);
             const budgetPct = event.budget > 0 ? Math.min(spent / event.budget, 1) : 0;
             return (
-              <Pressable key={event.id} onPress={() => { setSelectedEventId(event.id); setDetailTab('guests'); }}>
+              <Pressable accessibilityRole="button" key={event.id} onPress={() => { setSelectedEventId(event.id); setDetailTab('guests'); }}>
                 <Card style={styles.eventCard}>
                   <View style={styles.eventCardHeader}>
                     <Text style={styles.eventEmoji}>{event.emoji}</Text>
@@ -541,7 +541,7 @@ export function EventPlannerScreen({ navigation: _navigation }: any) {
                         <Text style={styles.footerText}>${spent.toFixed(0)} / ${event.budget.toFixed(0)}</Text>
                       </View>
                     )}
-                    <Pressable onPress={() => handleDeleteEvent(event)} hitSlop={8}>
+                    <Pressable accessibilityRole="button" onPress={() => handleDeleteEvent(event)} hitSlop={8}>
                       <Ionicons name={'trash-outline' as any} size={16} color={colors.danger} />
                     </Pressable>
                   </View>
@@ -559,11 +559,11 @@ export function EventPlannerScreen({ navigation: _navigation }: any) {
             <View style={{ width: 40, height: 4, backgroundColor: '#ccc', borderRadius: 2, alignSelf: 'center', marginBottom: 16 }} />
             <Text style={styles.modalTitle}>New Event</Text>
             <Text style={styles.fieldLabel}>Title *</Text>
-            <TextInput style={styles.input} value={evTitle} onChangeText={setEvTitle} placeholder="Event name" />
+            <TextInput accessibilityLabel="Event name" style={styles.input} value={evTitle} onChangeText={setEvTitle} placeholder="Event name" />
             <Text style={styles.fieldLabel}>Event Type</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
               {EVENT_TYPES.map((et) => (
-                <Pressable key={et.value} onPress={() => setEvType(et.value)} style={{ ...styles.optionChip, ...(evType === et.value ? styles.optionChipActive : {}), marginRight: 8 }}>
+                <Pressable accessibilityRole="button" key={et.value} onPress={() => setEvType(et.value)} style={{ ...styles.optionChip, ...(evType === et.value ? styles.optionChipActive : {}), marginRight: 8 }}>
                   <Text style={{ ...styles.optionChipText, ...(evType === et.value ? styles.optionChipTextActive : {}) }}>{et.label}</Text>
                 </Pressable>
               ))}
@@ -571,23 +571,23 @@ export function EventPlannerScreen({ navigation: _navigation }: any) {
             <Text style={styles.fieldLabel}>Emoji</Text>
             <View style={styles.emojiRow}>
               {EMOJIS.map((em) => (
-                <Pressable key={em} onPress={() => setEvEmoji(em)} style={{ ...styles.emojiBtn, ...(evEmoji === em ? styles.emojiBtnActive : {}) }}>
+                <Pressable accessibilityRole="button" key={em} onPress={() => setEvEmoji(em)} style={{ ...styles.emojiBtn, ...(evEmoji === em ? styles.emojiBtnActive : {}) }}>
                   <Text style={styles.emojiText}>{em}</Text>
                 </Pressable>
               ))}
             </View>
             <Text style={styles.fieldLabel}>Date (YYYY-MM-DD)</Text>
-            <TextInput style={styles.input} value={evDate} onChangeText={setEvDate} placeholder="2026-08-15" />
+            <TextInput accessibilityLabel="2026-08-15" style={styles.input} value={evDate} onChangeText={setEvDate} placeholder="2026-08-15" />
             <Text style={styles.fieldLabel}>Time</Text>
-            <TextInput style={styles.input} value={evTime} onChangeText={setEvTime} placeholder="3:00 PM" />
+            <TextInput accessibilityLabel="3:00 PM" style={styles.input} value={evTime} onChangeText={setEvTime} placeholder="3:00 PM" />
             <Text style={styles.fieldLabel}>Location</Text>
-            <TextInput style={styles.input} value={evLocation} onChangeText={setEvLocation} placeholder="Venue or address" />
+            <TextInput accessibilityLabel="Venue or address" style={styles.input} value={evLocation} onChangeText={setEvLocation} placeholder="Venue or address" />
             <Text style={styles.fieldLabel}>Budget ($)</Text>
-            <TextInput style={styles.input} value={evBudget} onChangeText={setEvBudget} placeholder="500" keyboardType="decimal-pad" />
+            <TextInput accessibilityLabel="500" style={styles.input} value={evBudget} onChangeText={setEvBudget} placeholder="500" keyboardType="decimal-pad" />
             <Text style={styles.fieldLabel}>Host</Text>
-            <TextInput style={styles.input} value={evHost} onChangeText={setEvHost} placeholder="Family member name" />
+            <TextInput accessibilityLabel="Family member name" style={styles.input} value={evHost} onChangeText={setEvHost} placeholder="Family member name" />
             <Text style={styles.fieldLabel}>Description</Text>
-            <TextInput style={{ ...styles.input, height: 80 }} value={evDesc} onChangeText={setEvDesc} placeholder="What's the occasion?" multiline />
+            <TextInput accessibilityLabel="What's the occasion?" style={{ ...styles.input, height: 80 }} value={evDesc} onChangeText={setEvDesc} placeholder="What's the occasion?" multiline />
             <View style={styles.modalButtons}>
               <Button title="Cancel" variant="ghost" onPress={() => { resetEventForm(); setShowAddEvent(false); }} />
               <Button title="Create Event" onPress={handleAddEvent} disabled={!evTitle.trim()} />
@@ -597,7 +597,7 @@ export function EventPlannerScreen({ navigation: _navigation }: any) {
       </Modal>
 
       {/* FAB */}
-      <Pressable
+      <Pressable accessibilityRole="button"
         onPress={() => setShowAddEvent(true)}
         style={styles.fab}
       >

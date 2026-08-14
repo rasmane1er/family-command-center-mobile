@@ -189,11 +189,11 @@ function CalendarTab({ birthdays, getDaysUntil }: { birthdays: Birthday[]; getDa
   return (
     <View style={styles.calendarContainer}>
       <View style={styles.calMonthNav}>
-        <Pressable onPress={prevMonth} style={styles.calNavBtn}>
+        <Pressable accessibilityRole="button" onPress={prevMonth} style={styles.calNavBtn}>
           <Ionicons name="chevron-back" size={20} color={colors.text} />
         </Pressable>
         <Text style={styles.calMonthTitle}>{monthNames[viewMonth]} {viewYear}</Text>
-        <Pressable onPress={nextMonth} style={styles.calNavBtn}>
+        <Pressable accessibilityRole="button" onPress={nextMonth} style={styles.calNavBtn}>
           <Ionicons name="chevron-forward" size={20} color={colors.text} />
         </Pressable>
       </View>
@@ -210,7 +210,7 @@ function CalendarTab({ birthdays, getDaysUntil }: { birthdays: Birthday[]; getDa
           const isToday = day === today.getDate() && viewMonth === today.getMonth() && viewYear === today.getFullYear();
           const isSelected = day === selectedDay;
           return (
-            <Pressable
+            <Pressable accessibilityRole="button"
               key={i}
               onPress={() => day && setSelectedDay(day === selectedDay ? null : day)}
               style={[
@@ -329,13 +329,13 @@ function AddBirthdayModal({
         <View style={styles.modal}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{t('family.screens.birthdayTracker.addBirthday')}</Text>
-            <Pressable onPress={onClose}>
+            <Pressable accessibilityRole="button" onPress={onClose}>
               <Ionicons name="close" size={24} color={colors.text} />
             </Pressable>
           </View>
           <ScrollView contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">
             <Text style={styles.fieldLabel}>{t('family.screens.birthdayTracker.fieldName')}</Text>
-            <TextInput
+            <TextInput accessibilityLabel={t('family.screens.birthdayTracker.placeholderName')}
               style={styles.input}
               value={name}
               onChangeText={setName}
@@ -347,7 +347,7 @@ function AddBirthdayModal({
             <Text style={styles.fieldLabel}>{t('family.screens.birthdayTracker.fieldRelationship')}</Text>
             <View style={styles.chipRow}>
               {RELATIONSHIPS.map((r) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={r}
                   onPress={() => setRelationship(r)}
                   style={[styles.chip, relationship === r && styles.chipActive]}
@@ -360,7 +360,7 @@ function AddBirthdayModal({
             </View>
 
             <Text style={styles.fieldLabel}>{t('family.screens.birthdayTracker.fieldDate')}</Text>
-            <TextInput
+            <TextInput accessibilityLabel={t('family.screens.birthdayTracker.placeholderDate')}
               style={styles.input}
               value={date}
               onChangeText={setDate}
@@ -371,7 +371,7 @@ function AddBirthdayModal({
             />
 
             <Text style={styles.fieldLabel}>{t('family.screens.birthdayTracker.fieldBirthYear')}</Text>
-            <TextInput
+            <TextInput accessibilityLabel={t('family.screens.birthdayTracker.placeholderBirthYear')}
               style={styles.input}
               value={birthYear}
               onChangeText={setBirthYear}
@@ -384,7 +384,7 @@ function AddBirthdayModal({
             <Text style={styles.fieldLabel}>{t('family.screens.birthdayTracker.fieldRemindDays')}</Text>
             <View style={styles.chipRow}>
               {REMIND_OPTIONS.map((d) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={d}
                   onPress={() => setRemindDays(d)}
                   style={[styles.chip, remindDays === d && styles.chipActive]}
@@ -395,7 +395,7 @@ function AddBirthdayModal({
             </View>
 
             <Text style={styles.fieldLabel}>{t('family.screens.birthdayTracker.fieldGiftIdeas')}</Text>
-            <TextInput
+            <TextInput accessibilityLabel={t('family.screens.birthdayTracker.placeholderGiftIdeas')}
               style={styles.input}
               value={giftIdeas}
               onChangeText={setGiftIdeas}
@@ -404,7 +404,7 @@ function AddBirthdayModal({
             />
 
             <Text style={styles.fieldLabel}>{t('family.screens.birthdayTracker.fieldNotes')}</Text>
-            <TextInput
+            <TextInput accessibilityLabel={t('family.screens.birthdayTracker.placeholderNotes')}
               style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
               value={notes}
               onChangeText={setNotes}
@@ -416,7 +416,7 @@ function AddBirthdayModal({
             <Text style={styles.fieldLabel}>{t('family.screens.birthdayTracker.fieldAvatarColor')}</Text>
             <View style={styles.colorRow}>
               {AVATAR_COLORS.map((c) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={c}
                   onPress={() => setSelectedColor(c)}
                   style={[
@@ -432,7 +432,7 @@ function AddBirthdayModal({
               ))}
             </View>
 
-            <Pressable
+            <Pressable accessibilityRole="button"
               onPress={handleAdd}
               disabled={!name.trim() || !date.trim()}
               style={[styles.submitBtn, (!name.trim() || !date.trim()) && { opacity: 0.4 }]}
@@ -501,14 +501,14 @@ export function BirthdayTrackerScreen({ navigation }: any) {
       style={[styles.header, { paddingTop: insets.top + 6 }]}
     >
       <View style={styles.headerRow}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <View style={{ flex: 1 }}>
           <Text style={styles.headerTitle}>{t('family.screens.birthdayTracker.headerTitle')}</Text>
           <Text style={styles.headerSub}>{t('family.screens.birthdayTracker.headerSub')}</Text>
         </View>
-        <Pressable onPress={() => setShowAdd(true)} style={styles.addBtn}>
+        <Pressable accessibilityRole="button" onPress={() => setShowAdd(true)} style={styles.addBtn}>
           <Ionicons name="add" size={22} color="#fff" />
         </Pressable>
       </View>
@@ -530,7 +530,7 @@ export function BirthdayTrackerScreen({ navigation }: any) {
 
   const screenCompact = (
     <LinearGradient colors={['#880E4F', '#AD1457', '#E91E63']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>{t('family.screens.birthdayTracker.headerTitle')}</Text>
@@ -558,7 +558,7 @@ export function BirthdayTrackerScreen({ navigation }: any) {
 
             <View style={styles.tabs}>
               {(['upcoming', 'all', 'calendar'] as Tab[]).map((tab) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={tab}
                   onPress={() => setActiveTab(tab)}
                   style={[styles.tab, activeTab === tab && styles.tabActive]}

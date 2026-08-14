@@ -90,7 +90,7 @@ function TripDetailModal({ trip, onClose }: { trip: Trip; onClose: () => void })
 
       <LinearGradient colors={[trip.color, trip.color + 'BB']} style={[styles.detailHeader, { paddingTop: insets.top + 6 }]}>
         <View style={styles.detailHeaderRow}>
-          <Pressable onPress={onClose} style={styles.back}>
+          <Pressable accessibilityRole="button" onPress={onClose} style={styles.back}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </Pressable>
           <View style={{ flex: 1 }}>
@@ -119,7 +119,7 @@ function TripDetailModal({ trip, onClose }: { trip: Trip; onClose: () => void })
 
         <View style={styles.detailTabs}>
           {(['itinerary', 'packing', 'budget'] as const).map((t) => (
-            <Pressable key={t} onPress={() => setTab(t)} style={[styles.detailTabChip, tab === t && styles.detailTabChipActive]}>
+            <Pressable accessibilityRole="button" key={t} onPress={() => setTab(t)} style={[styles.detailTabChip, tab === t && styles.detailTabChipActive]}>
               <Text style={[styles.detailTabChipText, tab === t && { color: trip.color }]}>
                 {t.charAt(0).toUpperCase() + t.slice(1)}
                 {t === 'packing' && totalItems > 0 ? ` (${packedCount}/${totalItems})` : ''}
@@ -132,7 +132,7 @@ function TripDetailModal({ trip, onClose }: { trip: Trip; onClose: () => void })
       <ScrollView contentContainerStyle={[styles.detailContent, { paddingBottom: 100 }]}>
         {tab === 'itinerary' && (
           <>
-            <Pressable style={[styles.addItemBtn, { borderColor: trip.color }]} onPress={() => setShowAddItin(true)}>
+            <Pressable accessibilityRole="button" style={[styles.addItemBtn, { borderColor: trip.color }]} onPress={() => setShowAddItin(true)}>
               <Ionicons name="add" size={16} color={trip.color} />
               <Text style={[styles.addItemBtnText, { color: trip.color }]}>Add Itinerary Item</Text>
             </Pressable>
@@ -148,7 +148,7 @@ function TripDetailModal({ trip, onClose }: { trip: Trip; onClose: () => void })
                   {items.map((item) => {
                     const cfg = ITIN_TYPE_ICONS[item.type];
                     return (
-                      <Pressable key={item.id} onLongPress={() => handleDeleteItin(item)}>
+                      <Pressable accessibilityRole="button" key={item.id} onLongPress={() => handleDeleteItin(item)}>
                         <Card style={styles.itinCard} variant="elevated">
                           <View style={styles.itinRow}>
                             <View style={styles.itinTimeCol}>
@@ -178,7 +178,7 @@ function TripDetailModal({ trip, onClose }: { trip: Trip; onClose: () => void })
 
         {tab === 'packing' && (
           <>
-            <Pressable style={[styles.addItemBtn, { borderColor: trip.color }]} onPress={() => setShowAddPack(true)}>
+            <Pressable accessibilityRole="button" style={[styles.addItemBtn, { borderColor: trip.color }]} onPress={() => setShowAddPack(true)}>
               <Ionicons name="add" size={16} color={trip.color} />
               <Text style={[styles.addItemBtnText, { color: trip.color }]}>Add Packing Item</Text>
             </Pressable>
@@ -195,7 +195,7 @@ function TripDetailModal({ trip, onClose }: { trip: Trip; onClose: () => void })
               <View key={cat}>
                 <Text style={styles.packCatHeader}>{cat}</Text>
                 {items.map((item) => (
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     key={item.id}
                     onPress={() => {
                       togglePackingItem(trip.id, item.id);
@@ -339,20 +339,20 @@ function AddItineraryItemModal({ visible, onClose, onAdd }: { visible: boolean; 
           <Text style={styles.addTripTitle}>Add Itinerary Item</Text>
 
           <Text style={styles.addTripLabel}>Title *</Text>
-          <TextInput style={styles.addTripInput} value={title} onChangeText={setTitle} placeholder="e.g. Flight to Maui" placeholderTextColor={colors.textSecondary} autoFocus />
+          <TextInput accessibilityLabel="e.g. Flight to Maui" style={styles.addTripInput} value={title} onChangeText={setTitle} placeholder="e.g. Flight to Maui" placeholderTextColor={colors.textSecondary} autoFocus />
 
           <Text style={styles.addTripLabel}>Location *</Text>
-          <TextInput style={styles.addTripInput} value={location} onChangeText={setLocation} placeholder="e.g. DFW → OGG" placeholderTextColor={colors.textSecondary} />
+          <TextInput accessibilityLabel="e.g. DFW → OGG" style={styles.addTripInput} value={location} onChangeText={setLocation} placeholder="e.g. DFW → OGG" placeholderTextColor={colors.textSecondary} />
 
           <View style={{ flexDirection: 'row', gap: 12 }}>
             <View style={{ flex: 1 }}>
               <Text style={styles.addTripLabel}>Date (YYYY-MM-DD) *</Text>
-              <TextInput style={styles.addTripInput} value={date} onChangeText={setDate} placeholder="2026-08-10" placeholderTextColor={colors.textSecondary} />
+              <TextInput accessibilityLabel="2026-08-10" style={styles.addTripInput} value={date} onChangeText={setDate} placeholder="2026-08-10" placeholderTextColor={colors.textSecondary} />
               {date.trim().length > 0 && !dateValid && <Text style={styles.fieldError}>Invalid date</Text>}
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.addTripLabel}>Time (24h) *</Text>
-              <TextInput style={styles.addTripInput} value={time} onChangeText={setTime} placeholder="14:00" placeholderTextColor={colors.textSecondary} />
+              <TextInput accessibilityLabel="14:00" style={styles.addTripInput} value={time} onChangeText={setTime} placeholder="14:00" placeholderTextColor={colors.textSecondary} />
               {time.trim().length > 0 && !timeValid && <Text style={styles.fieldError}>Use HH:MM</Text>}
             </View>
           </View>
@@ -362,7 +362,7 @@ function AddItineraryItemModal({ visible, onClose, onAdd }: { visible: boolean; 
             {ITIN_TYPES.map((t) => {
               const cfg = ITIN_TYPE_ICONS[t];
               return (
-                <Pressable key={t} onPress={() => setType(t)} style={[styles.typeChip, type === t && { backgroundColor: cfg.color + '20', borderColor: cfg.color }]}>
+                <Pressable accessibilityRole="button" key={t} onPress={() => setType(t)} style={[styles.typeChip, type === t && { backgroundColor: cfg.color + '20', borderColor: cfg.color }]}>
                   <Ionicons name={cfg.icon as any} size={14} color={cfg.color} />
                   <Text style={[styles.typeChipText, type === t && { color: cfg.color, fontWeight: '700' }]}>{t}</Text>
                 </Pressable>
@@ -371,17 +371,17 @@ function AddItineraryItemModal({ visible, onClose, onAdd }: { visible: boolean; 
           </View>
 
           <Text style={styles.addTripLabel}>Cost ($, optional)</Text>
-          <TextInput style={styles.addTripInput} value={cost} onChangeText={setCost} placeholder="e.g. 320" keyboardType="numeric" placeholderTextColor={colors.textSecondary} />
+          <TextInput accessibilityLabel="e.g. 320" style={styles.addTripInput} value={cost} onChangeText={setCost} placeholder="e.g. 320" keyboardType="numeric" placeholderTextColor={colors.textSecondary} />
 
           <Text style={styles.addTripLabel}>Notes (optional)</Text>
-          <TextInput style={styles.addTripInput} value={notes} onChangeText={setNotes} placeholder="e.g. Ocean view rooms x2" placeholderTextColor={colors.textSecondary} />
+          <TextInput accessibilityLabel="e.g. Ocean view rooms x2" style={styles.addTripInput} value={notes} onChangeText={setNotes} placeholder="e.g. Ocean view rooms x2" placeholderTextColor={colors.textSecondary} />
 
-          <Pressable onPress={handleAdd} disabled={!canSubmit} style={[styles.addTripSubmit, !canSubmit && { opacity: 0.4 }]}>
+          <Pressable accessibilityRole="button" onPress={handleAdd} disabled={!canSubmit} style={[styles.addTripSubmit, !canSubmit && { opacity: 0.4 }]}>
             <Ionicons name="add-circle" size={18} color="#fff" />
             <Text style={styles.addTripSubmitText}>Add to Itinerary</Text>
           </Pressable>
 
-          <Pressable onPress={onClose} style={{ paddingVertical: 14, alignItems: 'center' }}>
+          <Pressable accessibilityRole="button" onPress={onClose} style={{ paddingVertical: 14, alignItems: 'center' }}>
             <Text style={{ fontSize: 14, color: colors.textSecondary }}>Cancel</Text>
           </Pressable>
         </ScrollView>
@@ -422,29 +422,29 @@ function AddPackingItemModal({ visible, onClose, onAdd, members }: { visible: bo
           <Text style={styles.addTripTitle}>Add Packing Item</Text>
 
           <Text style={styles.addTripLabel}>Item Name *</Text>
-          <TextInput style={styles.addTripInput} value={name} onChangeText={setName} placeholder="e.g. Sunscreen" placeholderTextColor={colors.textSecondary} autoFocus />
+          <TextInput accessibilityLabel="e.g. Sunscreen" style={styles.addTripInput} value={name} onChangeText={setName} placeholder="e.g. Sunscreen" placeholderTextColor={colors.textSecondary} autoFocus />
 
           <Text style={styles.addTripLabel}>Category</Text>
           <View style={styles.addTripEmojiRow}>
             {PACK_CATEGORIES.map((c) => (
-              <Pressable key={c} onPress={() => setCategory(c)} style={[styles.typeChip, category === c && { backgroundColor: colors.primary + '20', borderColor: colors.primary }]}>
+              <Pressable accessibilityRole="button" key={c} onPress={() => setCategory(c)} style={[styles.typeChip, category === c && { backgroundColor: colors.primary + '20', borderColor: colors.primary }]}>
                 <Text style={[styles.typeChipText, category === c && { color: colors.primary, fontWeight: '700' }]}>{c}</Text>
               </Pressable>
             ))}
           </View>
 
           <Text style={styles.addTripLabel}>Quantity</Text>
-          <TextInput style={styles.addTripInput} value={quantity} onChangeText={setQuantity} placeholder="1" keyboardType="numeric" placeholderTextColor={colors.textSecondary} />
+          <TextInput accessibilityLabel="1" style={styles.addTripInput} value={quantity} onChangeText={setQuantity} placeholder="1" keyboardType="numeric" placeholderTextColor={colors.textSecondary} />
 
           {members.length > 0 && (
             <>
               <Text style={styles.addTripLabel}>Assign To (optional)</Text>
               <View style={styles.addTripEmojiRow}>
-                <Pressable onPress={() => setAssignedTo(undefined)} style={[styles.typeChip, !assignedTo && { backgroundColor: colors.primary + '20', borderColor: colors.primary }]}>
+                <Pressable accessibilityRole="button" onPress={() => setAssignedTo(undefined)} style={[styles.typeChip, !assignedTo && { backgroundColor: colors.primary + '20', borderColor: colors.primary }]}>
                   <Text style={[styles.typeChipText, !assignedTo && { color: colors.primary, fontWeight: '700' }]}>Unassigned</Text>
                 </Pressable>
                 {members.map((m) => (
-                  <Pressable key={m.id} onPress={() => setAssignedTo(m.id)} style={[styles.typeChip, assignedTo === m.id && { backgroundColor: m.avatarColor + '20', borderColor: m.avatarColor }]}>
+                  <Pressable accessibilityRole="button" key={m.id} onPress={() => setAssignedTo(m.id)} style={[styles.typeChip, assignedTo === m.id && { backgroundColor: m.avatarColor + '20', borderColor: m.avatarColor }]}>
                     <Text style={[styles.typeChipText, assignedTo === m.id && { color: m.avatarColor, fontWeight: '700' }]}>{m.name.split(' ')[0]}</Text>
                   </Pressable>
                 ))}
@@ -452,12 +452,12 @@ function AddPackingItemModal({ visible, onClose, onAdd, members }: { visible: bo
             </>
           )}
 
-          <Pressable onPress={handleAdd} disabled={!canSubmit} style={[styles.addTripSubmit, !canSubmit && { opacity: 0.4 }]}>
+          <Pressable accessibilityRole="button" onPress={handleAdd} disabled={!canSubmit} style={[styles.addTripSubmit, !canSubmit && { opacity: 0.4 }]}>
             <Ionicons name="add-circle" size={18} color="#fff" />
             <Text style={styles.addTripSubmitText}>Add to Packing List</Text>
           </Pressable>
 
-          <Pressable onPress={onClose} style={{ paddingVertical: 14, alignItems: 'center' }}>
+          <Pressable accessibilityRole="button" onPress={onClose} style={{ paddingVertical: 14, alignItems: 'center' }}>
             <Text style={{ fontSize: 14, color: colors.textSecondary }}>Cancel</Text>
           </Pressable>
         </ScrollView>
@@ -517,27 +517,27 @@ function AddTripModal({ visible, onClose, onAdd }: { visible: boolean; onClose: 
           <Text style={styles.addTripTitle}>Plan New Trip</Text>
 
           <Text style={styles.addTripLabel}>Trip Name *</Text>
-          <TextInput style={styles.addTripInput} value={name} onChangeText={setName} placeholder="e.g. Summer Beach Vacation" placeholderTextColor={colors.textSecondary} autoFocus />
+          <TextInput accessibilityLabel="e.g. Summer Beach Vacation" style={styles.addTripInput} value={name} onChangeText={setName} placeholder="e.g. Summer Beach Vacation" placeholderTextColor={colors.textSecondary} autoFocus />
 
           <Text style={styles.addTripLabel}>Destination *</Text>
-          <TextInput style={styles.addTripInput} value={destination} onChangeText={setDestination} placeholder="e.g. Miami, FL" placeholderTextColor={colors.textSecondary} />
+          <TextInput accessibilityLabel="e.g. Miami, FL" style={styles.addTripInput} value={destination} onChangeText={setDestination} placeholder="e.g. Miami, FL" placeholderTextColor={colors.textSecondary} />
 
           <View style={{ flexDirection: 'row', gap: 12 }}>
             <View style={{ flex: 1 }}>
               <Text style={styles.addTripLabel}>Start Date (YYYY-MM-DD) *</Text>
-              <TextInput style={styles.addTripInput} value={startDate} onChangeText={setStartDate} placeholder="2026-07-01" placeholderTextColor={colors.textSecondary} />
+              <TextInput accessibilityLabel="2026-07-01" style={styles.addTripInput} value={startDate} onChangeText={setStartDate} placeholder="2026-07-01" placeholderTextColor={colors.textSecondary} />
               {startDate.trim().length > 0 && !startValid && <Text style={styles.fieldError}>Invalid date</Text>}
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.addTripLabel}>End Date (YYYY-MM-DD) *</Text>
-              <TextInput style={styles.addTripInput} value={endDate} onChangeText={setEndDate} placeholder="2026-07-10" placeholderTextColor={colors.textSecondary} />
+              <TextInput accessibilityLabel="2026-07-10" style={styles.addTripInput} value={endDate} onChangeText={setEndDate} placeholder="2026-07-10" placeholderTextColor={colors.textSecondary} />
               {endDate.trim().length > 0 && !endValid && <Text style={styles.fieldError}>Invalid date</Text>}
               {startValid && endValid && !rangeValid && <Text style={styles.fieldError}>Must be after start</Text>}
             </View>
           </View>
 
           <Text style={styles.addTripLabel}>Budget ($)</Text>
-          <TextInput style={styles.addTripInput} value={budget} onChangeText={setBudget} placeholder="e.g. 3000" keyboardType="numeric" placeholderTextColor={colors.textSecondary} />
+          <TextInput accessibilityLabel="e.g. 3000" style={styles.addTripInput} value={budget} onChangeText={setBudget} placeholder="e.g. 3000" keyboardType="numeric" placeholderTextColor={colors.textSecondary} />
 
           {members.length > 0 && (
             <>
@@ -546,7 +546,7 @@ function AddTripModal({ visible, onClose, onAdd }: { visible: boolean; onClose: 
                 {members.map((m) => {
                   const selected = attendeeIds.includes(m.id);
                   return (
-                    <Pressable key={m.id} onPress={() => toggleAttendee(m.id)} style={[styles.typeChip, selected && { backgroundColor: m.avatarColor + '20', borderColor: m.avatarColor }]}>
+                    <Pressable accessibilityRole="button" key={m.id} onPress={() => toggleAttendee(m.id)} style={[styles.typeChip, selected && { backgroundColor: m.avatarColor + '20', borderColor: m.avatarColor }]}>
                       {selected && <Ionicons name="checkmark" size={12} color={m.avatarColor} />}
                       <Text style={[styles.typeChipText, selected && { color: m.avatarColor, fontWeight: '700' }]}>{m.name.split(' ')[0]}</Text>
                     </Pressable>
@@ -559,7 +559,7 @@ function AddTripModal({ visible, onClose, onAdd }: { visible: boolean; onClose: 
           <Text style={styles.addTripLabel}>Emoji</Text>
           <View style={styles.addTripEmojiRow}>
             {TRIP_EMOJIS.map((e) => (
-              <Pressable key={e} onPress={() => setEmoji(e)} style={[styles.addTripEmojiChip, emoji === e && styles.addTripEmojiChipActive]}>
+              <Pressable accessibilityRole="button" key={e} onPress={() => setEmoji(e)} style={[styles.addTripEmojiChip, emoji === e && styles.addTripEmojiChipActive]}>
                 <Text style={styles.addTripEmojiText}>{e}</Text>
               </Pressable>
             ))}
@@ -568,11 +568,11 @@ function AddTripModal({ visible, onClose, onAdd }: { visible: boolean; onClose: 
           <Text style={styles.addTripLabel}>Color</Text>
           <View style={styles.addTripColorRow}>
             {TRIP_COLORS.map((c) => (
-              <Pressable key={c} onPress={() => setColor(c)} style={[styles.addTripColorSwatch, { backgroundColor: c }, color === c && styles.addTripColorSwatchSelected]} />
+              <Pressable accessibilityRole="button" key={c} onPress={() => setColor(c)} style={[styles.addTripColorSwatch, { backgroundColor: c }, color === c && styles.addTripColorSwatchSelected]} />
             ))}
           </View>
 
-          <Pressable
+          <Pressable accessibilityRole="button"
             onPress={handleAdd}
             disabled={!canSubmit}
             style={[styles.addTripSubmit, !canSubmit && { opacity: 0.4 }]}
@@ -581,7 +581,7 @@ function AddTripModal({ visible, onClose, onAdd }: { visible: boolean; onClose: 
             <Text style={styles.addTripSubmitText}>Create Trip</Text>
           </Pressable>
 
-          <Pressable onPress={onClose} style={{ paddingVertical: 14, alignItems: 'center' }}>
+          <Pressable accessibilityRole="button" onPress={onClose} style={{ paddingVertical: 14, alignItems: 'center' }}>
             <Text style={{ fontSize: 14, color: colors.textSecondary }}>Cancel</Text>
           </Pressable>
         </ScrollView>
@@ -618,21 +618,21 @@ export function TravelPlanningScreen({ navigation }: any) {
   const screenHeader = (
     <LinearGradient colors={['#0E6655', '#1ABC9C']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
       <View style={styles.headerRow}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <View style={{ flex: 1 }}>
           <Text style={styles.headerTitle}>{t('travel.title')}</Text>
           <Text style={styles.headerSub}>{upcomingCount} upcoming trips</Text>
         </View>
-        <Pressable style={styles.addBtn} onPress={() => setShowAddTrip(true)}>
+        <Pressable accessibilityRole="button" style={styles.addBtn} onPress={() => setShowAddTrip(true)}>
           <Ionicons name="add" size={22} color="#fff" />
         </Pressable>
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
         {(['all', 'planning', 'upcoming', 'active', 'completed'] as const).map((f) => (
-          <Pressable key={f} onPress={() => setFilter(f)} style={[styles.filterChip, filter === f && styles.filterChipActive]}>
+          <Pressable accessibilityRole="button" key={f} onPress={() => setFilter(f)} style={[styles.filterChip, filter === f && styles.filterChipActive]}>
             <Text style={[styles.filterText, filter === f && styles.filterTextActive]}>
               {f === 'all' ? 'All' : STATUS_CONFIG[f].label}
             </Text>
@@ -644,7 +644,7 @@ export function TravelPlanningScreen({ navigation }: any) {
 
   const screenCompact = (
     <LinearGradient colors={['#0E6655', '#1ABC9C']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={styles.headerTitle}>{t('travel.title')}</Text>
@@ -685,7 +685,7 @@ export function TravelPlanningScreen({ navigation }: any) {
             : 0;
 
           return (
-            <Pressable key={trip.id} onLongPress={() => Alert.alert('Delete Trip', `Remove "${trip.name}"?`, [
+            <Pressable accessibilityRole="button" key={trip.id} onLongPress={() => Alert.alert('Delete Trip', `Remove "${trip.name}"?`, [
               { text: 'Cancel', style: 'cancel' },
               { text: 'Delete', style: 'destructive', onPress: () => deleteTrip(trip.id) },
             ])}>

@@ -40,7 +40,7 @@ function StarRating({ rating, onRate, size = 18 }: { rating: number; onRate?: (r
   return (
     <View style={{ flexDirection: 'row', gap: 2 }}>
       {[1, 2, 3, 4, 5].map((star) => (
-        <Pressable key={star} onPress={() => onRate && onRate(star)} disabled={!onRate}>
+        <Pressable accessibilityRole="button" key={star} onPress={() => onRate && onRate(star)} disabled={!onRate}>
           <Ionicons
             name={star <= rating ? ('star' as any) : ('star-outline' as any)}
             size={size}
@@ -79,7 +79,7 @@ function BookCard({ book, onDelete, onUpdatePages, onComplete }: {
         <View style={styles.bookInfo}>
           <View style={styles.bookTitleRow}>
             <Text style={styles.bookTitle} numberOfLines={2}>{book.title}</Text>
-            <Pressable onPress={onDelete} style={styles.deleteBtn}>
+            <Pressable accessibilityRole="button" onPress={onDelete} style={styles.deleteBtn}>
               <Ionicons name={'trash-outline' as any} size={16} color={colors.textMuted} />
             </Pressable>
           </View>
@@ -106,13 +106,13 @@ function BookCard({ book, onDelete, onUpdatePages, onComplete }: {
               </View>
               <View style={styles.bookActions}>
                 {onUpdatePages && (
-                  <Pressable style={styles.actionBtn} onPress={onUpdatePages}>
+                  <Pressable accessibilityRole="button" style={styles.actionBtn} onPress={onUpdatePages}>
                     <Ionicons name={'pencil' as any} size={13} color="#2980B9" />
                     <Text style={[styles.actionBtnText, { color: '#2980B9' }]}>Update pages</Text>
                   </Pressable>
                 )}
                 {onComplete && (
-                  <Pressable style={[styles.actionBtn, styles.actionBtnGreen]} onPress={onComplete}>
+                  <Pressable accessibilityRole="button" style={[styles.actionBtn, styles.actionBtnGreen]} onPress={onComplete}>
                     <Ionicons name={'checkmark-circle' as any} size={13} color="#fff" />
                     <Text style={[styles.actionBtnText, { color: '#fff' }]}>Mark complete</Text>
                   </Pressable>
@@ -237,7 +237,7 @@ export function ReadingTrackerScreen({ navigation }: any) {
 
       {/* Header */}
       <LinearGradient colors={['#4A148C', '#6A1B9A']} style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name={'arrow-back' as any} size={24} color="#fff" />
         </Pressable>
         <View style={styles.headerText}>
@@ -250,7 +250,7 @@ export function ReadingTrackerScreen({ navigation }: any) {
       {/* Tabs */}
       <View style={styles.tabRow}>
         {(['bookshelf', 'progress', 'challenges'] as const).map((tab) => (
-          <Pressable
+          <Pressable accessibilityRole="button"
             key={tab}
             style={[styles.tabBtn, activeTab === tab && styles.tabBtnActive]}
             onPress={() => setActiveTab(tab)}
@@ -270,7 +270,7 @@ export function ReadingTrackerScreen({ navigation }: any) {
             {/* Member tabs */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.memberScroll} contentContainerStyle={styles.memberScrollContent}>
               {MEMBERS.map((m) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={m.id}
                   style={[styles.memberChip, selectedMemberId === m.id && { backgroundColor: m.color, borderColor: m.color }]}
                   onPress={() => setSelectedMemberId(m.id)}
@@ -364,11 +364,11 @@ export function ReadingTrackerScreen({ navigation }: any) {
                     </View>
                     <Text style={styles.pagesLeftText}>{pagesLeft} pages left</Text>
                     <View style={styles.bookActions}>
-                      <Pressable style={styles.actionBtn} onPress={() => openUpdatePages(book.id)}>
+                      <Pressable accessibilityRole="button" style={styles.actionBtn} onPress={() => openUpdatePages(book.id)}>
                         <Ionicons name={'pencil' as any} size={13} color="#2980B9" />
                         <Text style={[styles.actionBtnText, { color: '#2980B9' }]}>Update pages</Text>
                       </Pressable>
-                      <Pressable style={[styles.actionBtn, styles.actionBtnGreen]} onPress={() => openComplete(book.id)}>
+                      <Pressable accessibilityRole="button" style={[styles.actionBtn, styles.actionBtnGreen]} onPress={() => openComplete(book.id)}>
                         <Ionicons name={'checkmark-circle' as any} size={13} color="#fff" />
                         <Text style={[styles.actionBtnText, { color: '#fff' }]}>Mark complete</Text>
                       </Pressable>
@@ -436,7 +436,7 @@ export function ReadingTrackerScreen({ navigation }: any) {
       </ScrollView>
 
       {/* FAB */}
-      <Pressable style={styles.fab} onPress={openAddBook}>
+      <Pressable accessibilityRole="button" style={styles.fab} onPress={openAddBook}>
         <LinearGradient colors={['#6A1B9A', '#4A148C']} style={styles.fabGradient}>
           <Ionicons name={'add' as any} size={32} color="#fff" />
         </LinearGradient>
@@ -449,7 +449,7 @@ export function ReadingTrackerScreen({ navigation }: any) {
             <View style={{ width: 40, height: 4, backgroundColor: '#ccc', borderRadius: 2, alignSelf: 'center', marginBottom: 16 }} />
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Add Book</Text>
-              <Pressable onPress={() => setShowAddBook(false)}>
+              <Pressable accessibilityRole="button" onPress={() => setShowAddBook(false)}>
                 <Ionicons name={'close' as any} size={24} color={colors.text} />
               </Pressable>
             </View>
@@ -458,7 +458,7 @@ export function ReadingTrackerScreen({ navigation }: any) {
               <Text style={styles.fieldLabel}>Member</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 {MEMBERS.map((m) => (
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     key={m.id}
                     style={[styles.chipBtn, bMemberId === m.id && { backgroundColor: m.color, borderColor: m.color }]}
                     onPress={() => setBMemberId(m.id)}
@@ -471,7 +471,7 @@ export function ReadingTrackerScreen({ navigation }: any) {
               <Text style={styles.fieldLabel}>Cover Emoji</Text>
               <View style={styles.emojiRow}>
                 {COVER_EMOJIS.map((e) => (
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     key={e}
                     style={[styles.emojiBtn, bEmoji === e && styles.emojiBtnActive]}
                     onPress={() => setBEmoji(e)}
@@ -482,23 +482,23 @@ export function ReadingTrackerScreen({ navigation }: any) {
               </View>
 
               <Text style={styles.fieldLabel}>Title *</Text>
-              <TextInput style={styles.textInput} value={bTitle} onChangeText={setBTitle} placeholder="Book title" placeholderTextColor={colors.textMuted} />
+              <TextInput accessibilityLabel="Book title" style={styles.textInput} value={bTitle} onChangeText={setBTitle} placeholder="Book title" placeholderTextColor={colors.textMuted} />
 
               <Text style={styles.fieldLabel}>Author</Text>
-              <TextInput style={styles.textInput} value={bAuthor} onChangeText={setBAuthor} placeholder="Author name" placeholderTextColor={colors.textMuted} />
+              <TextInput accessibilityLabel="Author name" style={styles.textInput} value={bAuthor} onChangeText={setBAuthor} placeholder="Author name" placeholderTextColor={colors.textMuted} />
 
               <Text style={styles.fieldLabel}>Total Pages *</Text>
-              <TextInput style={styles.textInput} value={bPages} onChangeText={setBPages} placeholder="300" placeholderTextColor={colors.textMuted} keyboardType="numeric" />
+              <TextInput accessibilityLabel="300" style={styles.textInput} value={bPages} onChangeText={setBPages} placeholder="300" placeholderTextColor={colors.textMuted} keyboardType="numeric" />
 
               <Text style={styles.fieldLabel}>Genre</Text>
-              <TextInput style={styles.textInput} value={bGenre} onChangeText={setBGenre} placeholder="e.g. Fantasy, Fiction" placeholderTextColor={colors.textMuted} />
+              <TextInput accessibilityLabel="e.g. Fantasy, Fiction" style={styles.textInput} value={bGenre} onChangeText={setBGenre} placeholder="e.g. Fantasy, Fiction" placeholderTextColor={colors.textMuted} />
 
               <Text style={styles.fieldLabel}>Status</Text>
               <View style={styles.chipRow}>
                 {STATUS_TYPES.map((s) => {
                   const cfg = STATUS_CONFIG[s];
                   return (
-                    <Pressable
+                    <Pressable accessibilityRole="button"
                       key={s}
                       style={[styles.chipBtn, bStatus === s && { backgroundColor: cfg.color, borderColor: cfg.color }]}
                       onPress={() => setBStatus(s)}
@@ -511,9 +511,9 @@ export function ReadingTrackerScreen({ navigation }: any) {
               </View>
 
               <Text style={styles.fieldLabel}>Notes</Text>
-              <TextInput style={[styles.textInput, styles.textInputMultiline]} value={bNotes} onChangeText={setBNotes} placeholder="Why you want to read this, recommendations..." placeholderTextColor={colors.textMuted} multiline />
+              <TextInput accessibilityLabel="Why you want to read this, recommendations..." style={[styles.textInput, styles.textInputMultiline]} value={bNotes} onChangeText={setBNotes} placeholder="Why you want to read this, recommendations..." placeholderTextColor={colors.textMuted} multiline />
 
-              <Pressable style={styles.saveBtn} onPress={handleAddBook}>
+              <Pressable accessibilityRole="button" style={styles.saveBtn} onPress={handleAddBook}>
                 <LinearGradient colors={['#6A1B9A', '#4A148C']} style={styles.saveBtnGradient}>
                   <Ionicons name={'checkmark-circle' as any} size={20} color="#fff" />
                   <Text style={styles.saveBtnText}>Add Book</Text>
@@ -530,13 +530,13 @@ export function ReadingTrackerScreen({ navigation }: any) {
           <View style={{ width: 40, height: 4, backgroundColor: '#ccc', borderRadius: 2, alignSelf: 'center', marginBottom: 16 }} />
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Update Progress</Text>
-            <Pressable onPress={() => setShowUpdatePages(false)}>
+            <Pressable accessibilityRole="button" onPress={() => setShowUpdatePages(false)}>
               <Ionicons name={'close' as any} size={24} color={colors.text} />
             </Pressable>
           </View>
           <View style={styles.modalContent}>
             <Text style={styles.fieldLabel}>Current Page</Text>
-            <TextInput
+            <TextInput accessibilityLabel="0"
               style={styles.textInput}
               value={newPage}
               onChangeText={setNewPage}
@@ -545,7 +545,7 @@ export function ReadingTrackerScreen({ navigation }: any) {
               keyboardType="numeric"
               autoFocus
             />
-            <Pressable style={[styles.saveBtn, { marginTop: 24 }]} onPress={handleUpdatePages}>
+            <Pressable accessibilityRole="button" style={[styles.saveBtn, { marginTop: 24 }]} onPress={handleUpdatePages}>
               <LinearGradient colors={['#6A1B9A', '#4A148C']} style={styles.saveBtnGradient}>
                 <Ionicons name={'checkmark-circle' as any} size={20} color="#fff" />
                 <Text style={styles.saveBtnText}>Update Pages</Text>
@@ -561,7 +561,7 @@ export function ReadingTrackerScreen({ navigation }: any) {
           <View style={{ width: 40, height: 4, backgroundColor: '#ccc', borderRadius: 2, alignSelf: 'center', marginBottom: 16 }} />
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Mark as Complete</Text>
-            <Pressable onPress={() => setShowComplete(false)}>
+            <Pressable accessibilityRole="button" onPress={() => setShowComplete(false)}>
               <Ionicons name={'close' as any} size={24} color={colors.text} />
             </Pressable>
           </View>
@@ -573,7 +573,7 @@ export function ReadingTrackerScreen({ navigation }: any) {
             <Text style={styles.ratingHint}>
               {starRating === 1 ? 'Not for me' : starRating === 2 ? 'Okay' : starRating === 3 ? 'Good' : starRating === 4 ? 'Really liked it' : 'Amazing!'}
             </Text>
-            <Pressable style={[styles.saveBtn, { marginTop: 24 }]} onPress={handleComplete}>
+            <Pressable accessibilityRole="button" style={[styles.saveBtn, { marginTop: 24 }]} onPress={handleComplete}>
               <LinearGradient colors={['#27AE60', '#1ABC9C']} style={styles.saveBtnGradient}>
                 <Ionicons name={'checkmark-circle' as any} size={20} color="#fff" />
                 <Text style={styles.saveBtnText}>Complete Book 🎉</Text>

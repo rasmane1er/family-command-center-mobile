@@ -81,7 +81,7 @@ export function PlaidLinkButton({ onSuccess, onExit, style }: Props) {
   }, [loading, handleSuccess, handleExit, t]);
 
   return (
-    <Pressable onPress={handlePress} disabled={loading} style={[styles.btn, style]}>
+    <Pressable accessibilityRole="button" onPress={handlePress} disabled={loading} style={[styles.btn, style]}>
       {loading ? (
         <ActivityIndicator size="small" color="#fff" />
       ) : (

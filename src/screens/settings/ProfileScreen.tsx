@@ -185,11 +185,11 @@ export function ProfileScreen({ navigation }: any) {
     <View style={{ flex: 1, backgroundColor: '#f0f4f8' }}>
       {/* Header */}
       <LinearGradient colors={['#0F2952', '#1a3a6e']} style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <Text style={styles.headerTitle}>{t('profile.headerTitle')}</Text>
-        <Pressable onPress={save} disabled={saving} style={styles.saveBtn}>
+        <Pressable accessibilityRole="button" onPress={save} disabled={saving} style={styles.saveBtn}>
           {saving
             ? <ActivityIndicator size="small" color="#fff" />
             : <Text style={styles.saveBtnText}>{t('profile.save')}</Text>}
@@ -199,7 +199,7 @@ export function ProfileScreen({ navigation }: any) {
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}>
         {/* Avatar */}
         <View style={styles.avatarSection}>
-          <Pressable onPress={pickPhoto} style={styles.avatarWrap}>
+          <Pressable accessibilityRole="button" onPress={pickPhoto} style={styles.avatarWrap}>
             {avatarUrl ? (
               <Image source={{ uri: avatarUrl }} style={styles.avatarImg} />
             ) : (
@@ -218,7 +218,7 @@ export function ProfileScreen({ navigation }: any) {
           </Pressable>
 
           {avatarUrl && (
-            <Pressable onPress={removePhoto} style={styles.removePhotoBtn}>
+            <Pressable accessibilityRole="button" onPress={removePhoto} style={styles.removePhotoBtn}>
               <Text style={styles.removePhotoText}>{t('profile.removePhoto')}</Text>
             </Pressable>
           )}
@@ -230,7 +230,7 @@ export function ProfileScreen({ navigation }: any) {
             <Text style={styles.sectionLabel}>{t('profile.sectionAvatar')}</Text>
             <View style={styles.colorRow}>
               {AVATAR_COLORS.map((c) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={c}
                   onPress={() => setAvatarColor(c)}
                   style={[styles.colorDot, { backgroundColor: c }, avatarColor === c && styles.colorDotSelected]}
@@ -246,7 +246,7 @@ export function ProfileScreen({ navigation }: any) {
 
           <Text style={styles.fieldLabel}>{t('profile.fieldName')}</Text>
           {canEditIdentity ? (
-            <TextInput
+            <TextInput accessibilityLabel={t('profile.namePlaceholder')}
               style={styles.input}
               value={name}
               onChangeText={setName}
@@ -265,7 +265,7 @@ export function ProfileScreen({ navigation }: any) {
           )}
 
           <Text style={styles.fieldLabel}>{t('profile.fieldPhone')}</Text>
-          <TextInput
+          <TextInput accessibilityLabel={t('profile.phonePlaceholder')}
             style={styles.input}
             value={phone}
             onChangeText={setPhone}
@@ -276,7 +276,7 @@ export function ProfileScreen({ navigation }: any) {
 
           <Text style={styles.fieldLabel}>{t('profile.fieldDob')}</Text>
           {canEditIdentity ? (
-            <TextInput
+            <TextInput accessibilityLabel={t('profile.dobPlaceholder')}
               style={styles.input}
               value={dateOfBirth}
               onChangeText={setDateOfBirth}
@@ -303,7 +303,7 @@ export function ProfileScreen({ navigation }: any) {
               </View>
             </View>
           ) : (
-            <TextInput
+            <TextInput accessibilityLabel={t('profile.emailPlaceholder')}
               style={styles.input}
               value={email}
               onChangeText={setEmail}
@@ -321,7 +321,7 @@ export function ProfileScreen({ navigation }: any) {
             <Text style={styles.sectionLabel}>{t('profile.sectionRole')}</Text>
             <View style={styles.roleGrid}>
               {(Object.keys(ROLE_ICONS) as MemberRole[]).filter((v) => v !== 'child').map((v) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={v}
                   onPress={() => setRole(v)}
                   style={[styles.roleChip, role === v && styles.roleChipSelected]}

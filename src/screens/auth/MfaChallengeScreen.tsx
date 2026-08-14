@@ -46,7 +46,7 @@ export function MfaChallengeScreen() {
         style={StyleSheet.absoluteFill}
       />
       <View style={[styles.content, { paddingTop: insets.top + 40 }]}>
-        <Pressable style={styles.backButton} onPress={() => Alert.alert(
+        <Pressable accessibilityRole="button" style={styles.backButton} onPress={() => Alert.alert(
           t('auth.screens.mfaChallenge.cancelTitle'),
           t('auth.screens.mfaChallenge.cancelMessage'),
           [
@@ -64,7 +64,7 @@ export function MfaChallengeScreen() {
         <Text style={styles.title}>{t('auth.screens.mfaChallenge.title')}</Text>
         <Text style={styles.subtitle}>{t('auth.screens.mfaChallenge.subtitle')}</Text>
 
-        <TextInput
+        <TextInput accessibilityLabel={t('auth.screens.mfaChallenge.placeholder')}
           style={styles.input}
           placeholder={t('auth.screens.mfaChallenge.placeholder')}
           placeholderTextColor="rgba(255,255,255,0.4)"
@@ -79,7 +79,7 @@ export function MfaChallengeScreen() {
 
         {error && <Text style={styles.errorText}>{error}</Text>}
 
-        <Pressable
+        <Pressable accessibilityRole="button"
           style={[styles.submitButton, (!code.trim() || loading) && styles.submitButtonDisabled]}
           onPress={handleSubmit}
           disabled={!code.trim() || loading}

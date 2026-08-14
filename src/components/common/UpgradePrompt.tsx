@@ -51,7 +51,7 @@ export function UpgradePrompt({ visible, onClose, featureName, requiredTier, des
                 {TIER_LABELS[requiredTier]} — {TIER_PRICES[requiredTier]}
               </Text>
             </View>
-            <Pressable onPress={handleUpgrade} style={styles.upgradeBtn} disabled={isLoading}>
+            <Pressable accessibilityRole="button" onPress={handleUpgrade} style={styles.upgradeBtn} disabled={isLoading}>
               <LinearGradient colors={['#F5A623', '#FF8C42']} style={styles.upgradeBtnGradient}>
                 {isLoading ? (
                   <ActivityIndicator size="small" color="#fff" />
@@ -62,7 +62,7 @@ export function UpgradePrompt({ visible, onClose, featureName, requiredTier, des
                 )}
               </LinearGradient>
             </Pressable>
-            <Pressable onPress={onClose} style={styles.cancelBtn} disabled={isLoading}>
+            <Pressable accessibilityRole="button" onPress={onClose} style={styles.cancelBtn} disabled={isLoading}>
               <Text style={[styles.cancelText, { color: colors.textSecondary }]}>{t('screens.shared.maybeLater')}</Text>
             </Pressable>
           </View>

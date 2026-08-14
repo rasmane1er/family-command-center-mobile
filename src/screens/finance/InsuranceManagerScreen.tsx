@@ -239,11 +239,11 @@ export function InsuranceManagerScreen({ navigation }: any) {
   const screenHeader = (
     <LinearGradient colors={['#0D47A1', '#1565C0']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
       <View style={styles.headerTop}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <Text style={styles.headerTitle}>Insurance</Text>
-        <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
+        <Pressable accessibilityRole="button" onPress={() => setShowAddModal(true)} style={styles.addBtn}>
           <Ionicons name="add" size={26} color="#fff" />
         </Pressable>
       </View>
@@ -267,7 +267,7 @@ export function InsuranceManagerScreen({ navigation }: any) {
 
       <View style={styles.tabRow}>
         {tabs.map((tab) => (
-          <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
+          <Pressable accessibilityRole="button" key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
             <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>{tab}</Text>
           </Pressable>
         ))}
@@ -277,11 +277,11 @@ export function InsuranceManagerScreen({ navigation }: any) {
 
   const screenCompact = (
     <View style={{ backgroundColor: '#0D47A1', paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={styles.headerTitle}>Insurance</Text>
-      <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
+      <Pressable accessibilityRole="button" onPress={() => setShowAddModal(true)} style={styles.addBtn}>
         <Ionicons name="add" size={26} color="#fff" />
       </Pressable>
     </View>
@@ -300,7 +300,7 @@ export function InsuranceManagerScreen({ navigation }: any) {
         {/* Detected Insurance Banner */}
         {detectedInsurance.length > 0 && (
           <View style={styles.detectedBanner}>
-            <Pressable style={styles.detectedBannerHeader} onPress={() => setDetectedExpanded((v) => !v)}>
+            <Pressable accessibilityRole="button" style={styles.detectedBannerHeader} onPress={() => setDetectedExpanded((v) => !v)}>
               <View style={styles.detectedBannerLeft}>
                 <Ionicons name="sparkles" size={15} color="#1565C0" />
                 <Text style={styles.detectedBannerTitle}>
@@ -320,7 +320,7 @@ export function InsuranceManagerScreen({ navigation }: any) {
                 </View>
                 <Text style={styles.detectedAmount}>${d.amount.toFixed(2)}</Text>
                 <Badge label={d.frequency} variant="info" size="sm" />
-                <Pressable style={styles.addDetectedBtn} onPress={() => prefillFromDetected(d)}>
+                <Pressable accessibilityRole="button" style={styles.addDetectedBtn} onPress={() => prefillFromDetected(d)}>
                   <Ionicons name="add" size={14} color="#fff" />
                   <Text style={styles.addDetectedBtnText}>Add</Text>
                 </Pressable>
@@ -358,10 +358,10 @@ export function InsuranceManagerScreen({ navigation }: any) {
                       </View>
                       <Text style={styles.policyNumber}>{maskPolicyNumber(policy.policyNumber)}</Text>
                     </View>
-                    <Pressable onPress={() => handleEdit(policy)} style={styles.editBtn}>
+                    <Pressable accessibilityRole="button" onPress={() => handleEdit(policy)} style={styles.editBtn}>
                       <Ionicons name="create-outline" size={17} color={colors.primary} />
                     </Pressable>
-                    <Pressable onPress={() => handleDelete(policy.id, policy.provider)} style={styles.deleteBtn}>
+                    <Pressable accessibilityRole="button" onPress={() => handleDelete(policy.id, policy.provider)} style={styles.deleteBtn}>
                       <Ionicons name="trash-outline" size={17} color={colors.danger} />
                     </Pressable>
                   </View>
@@ -548,7 +548,7 @@ export function InsuranceManagerScreen({ navigation }: any) {
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{editingPolicy ? 'Edit Policy' : 'Add Insurance Policy'}</Text>
-            <Pressable onPress={() => { resetModal(); setShowAddModal(false); }}>
+            <Pressable accessibilityRole="button" onPress={() => { resetModal(); setShowAddModal(false); }}>
               <Ionicons name="close" size={24} color={colors.text} />
             </Pressable>
           </View>
@@ -557,7 +557,7 @@ export function InsuranceManagerScreen({ navigation }: any) {
             <Text style={styles.modalLabel}>Type</Text>
             <View style={styles.typeGrid}>
               {INSURANCE_TYPES.map((t) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={t}
                   onPress={() => { setNewType(t); setNewColor(TYPE_COLORS[t]); }}
                   style={[styles.typeGridItem, newType === t && { borderColor: TYPE_COLORS[t], backgroundColor: TYPE_COLORS[t] + '15' }]}
@@ -569,7 +569,7 @@ export function InsuranceManagerScreen({ navigation }: any) {
             </View>
 
             <Text style={styles.modalLabel}>Provider *</Text>
-            <TextInput
+            <TextInput accessibilityLabel="e.g. Blue Cross Blue Shield"
               style={styles.modalInput}
               value={newProvider}
               onChangeText={setNewProvider}
@@ -578,7 +578,7 @@ export function InsuranceManagerScreen({ navigation }: any) {
             />
 
             <Text style={styles.modalLabel}>Policy Number *</Text>
-            <TextInput
+            <TextInput accessibilityLabel="e.g. BCBS-2024-4892"
               style={styles.modalInput}
               value={newPolicyNumber}
               onChangeText={setNewPolicyNumber}
@@ -587,7 +587,7 @@ export function InsuranceManagerScreen({ navigation }: any) {
             />
 
             <Text style={styles.modalLabel}>Premium Amount *</Text>
-            <TextInput
+            <TextInput accessibilityLabel="0.00"
               style={styles.modalInput}
               value={newPremium}
               onChangeText={setNewPremium}
@@ -599,7 +599,7 @@ export function InsuranceManagerScreen({ navigation }: any) {
             <Text style={styles.modalLabel}>Frequency</Text>
             <View style={styles.chipRow}>
               {FREQUENCY_OPTIONS.map((f) => (
-                <Pressable key={f} onPress={() => setNewFrequency(f)} style={[styles.chip, newFrequency === f && styles.chipActive]}>
+                <Pressable accessibilityRole="button" key={f} onPress={() => setNewFrequency(f)} style={[styles.chip, newFrequency === f && styles.chipActive]}>
                   <Text style={[styles.chipText, newFrequency === f && styles.chipTextActive]}>
                     {f.charAt(0).toUpperCase() + f.slice(1)}
                   </Text>
@@ -608,7 +608,7 @@ export function InsuranceManagerScreen({ navigation }: any) {
             </View>
 
             <Text style={styles.modalLabel}>Renewal Date (YYYY-MM-DD)</Text>
-            <TextInput
+            <TextInput accessibilityLabel="2025-01-01"
               style={styles.modalInput}
               value={newRenewalDate}
               onChangeText={setNewRenewalDate}
@@ -617,7 +617,7 @@ export function InsuranceManagerScreen({ navigation }: any) {
             />
 
             <Text style={styles.modalLabel}>Deductible</Text>
-            <TextInput
+            <TextInput accessibilityLabel="0"
               style={styles.modalInput}
               value={newDeductible}
               onChangeText={setNewDeductible}
@@ -627,7 +627,7 @@ export function InsuranceManagerScreen({ navigation }: any) {
             />
 
             <Text style={styles.modalLabel}>Coverage Amount</Text>
-            <TextInput
+            <TextInput accessibilityLabel="0"
               style={styles.modalInput}
               value={newCoverageAmount}
               onChangeText={setNewCoverageAmount}
@@ -637,7 +637,7 @@ export function InsuranceManagerScreen({ navigation }: any) {
             />
 
             <Text style={styles.modalLabel}>Agent Name</Text>
-            <TextInput
+            <TextInput accessibilityLabel="Optional"
               style={styles.modalInput}
               value={newAgentName}
               onChangeText={setNewAgentName}
@@ -646,7 +646,7 @@ export function InsuranceManagerScreen({ navigation }: any) {
             />
 
             <Text style={styles.modalLabel}>Agent Phone</Text>
-            <TextInput
+            <TextInput accessibilityLabel="Optional"
               style={styles.modalInput}
               value={newAgentPhone}
               onChangeText={setNewAgentPhone}
@@ -657,7 +657,7 @@ export function InsuranceManagerScreen({ navigation }: any) {
 
             <Text style={styles.modalLabel}>Members Insured</Text>
             {members.map((m) => (
-              <Pressable key={m.id} onPress={() => toggleMember(m.id)} style={styles.memberRow}>
+              <Pressable accessibilityRole="button" key={m.id} onPress={() => toggleMember(m.id)} style={styles.memberRow}>
                 <View style={[styles.memberAvatar, { backgroundColor: m.avatarColor }]}>
                   <Text style={styles.memberAvatarText}>{m.name[0]}</Text>
                 </View>
@@ -671,11 +671,11 @@ export function InsuranceManagerScreen({ navigation }: any) {
             <Text style={styles.modalLabel}>Color</Text>
             <View style={styles.colorPicker}>
               {COLOR_PALETTE.map((c) => (
-                <Pressable key={c} onPress={() => setNewColor(c)} style={[styles.colorSwatch, { backgroundColor: c }, newColor === c && styles.colorSwatchActive]} />
+                <Pressable accessibilityRole="button" key={c} onPress={() => setNewColor(c)} style={[styles.colorSwatch, { backgroundColor: c }, newColor === c && styles.colorSwatchActive]} />
               ))}
             </View>
 
-            <Pressable
+            <Pressable accessibilityRole="button"
               onPress={handleAdd}
               style={[styles.submitBtn, (!newProvider.trim() || !newPolicyNumber.trim() || !newPremium) && styles.submitBtnDisabled]}
             >

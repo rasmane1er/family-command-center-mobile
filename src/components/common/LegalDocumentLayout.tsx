@@ -30,7 +30,7 @@ export function LegalDocumentLayout({ title, lastUpdated, intro, sections, navig
       <StatusBar style="light" />
       <LinearGradient colors={['#0F2952', '#1E4A8A']} style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <View style={styles.headerRow}>
-          <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} hitSlop={8}>
+          <Pressable accessibilityRole="button" style={styles.backBtn} onPress={() => navigation.goBack()} hitSlop={8}>
             <Ionicons name="chevron-back" size={20} color="#fff" />
           </Pressable>
           <View style={{ flex: 1 }}>

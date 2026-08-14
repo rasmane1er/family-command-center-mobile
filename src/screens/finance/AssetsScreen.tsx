@@ -195,7 +195,7 @@ export function AssetsScreen({ navigation }: any) {
         onBack={() => navigation.goBack()}
         colors={['#1A1A2E', '#16213E']}
         rightAction={
-          <Pressable onPress={() => setShowAddModal(true)} style={s.addBtn}>
+          <Pressable accessibilityRole="button" onPress={() => setShowAddModal(true)} style={s.addBtn}>
             <Ionicons name="add" size={26} color="#fff" />
           </Pressable>
         }
@@ -215,7 +215,7 @@ export function AssetsScreen({ navigation }: any) {
       start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
       style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
     >
-      <Pressable onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </Pressable>
       <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>Assets</Text>
@@ -236,7 +236,7 @@ export function AssetsScreen({ navigation }: any) {
             <View style={s.plaidCardHeader}>
               <Ionicons name="link" size={16} color="#8E44AD" />
               <Text style={s.plaidCardTitle}>Link Plaid Accounts</Text>
-              <Pressable onPress={() => setShowPlaidCard(false)}>
+              <Pressable accessibilityRole="button" onPress={() => setShowPlaidCard(false)}>
                 <Ionicons name="close" size={16} color={colors.textMuted} />
               </Pressable>
             </View>
@@ -251,7 +251,7 @@ export function AssetsScreen({ navigation }: any) {
                   {acct.mask && <Text style={s.plaidAccountMask}>••••{acct.mask}</Text>}
                 </View>
                 <Text style={s.plaidAccountBalance}>${acct.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</Text>
-                <Pressable style={s.importBtn} onPress={() => prefillFromPlaid(acct)}>
+                <Pressable accessibilityRole="button" style={s.importBtn} onPress={() => prefillFromPlaid(acct)}>
                   <Text style={s.importBtnText}>Import</Text>
                 </Pressable>
               </View>
@@ -279,10 +279,10 @@ export function AssetsScreen({ navigation }: any) {
                   <Text style={s.plaidAccountMask}>{format(new Date(p.date), 'MMM d')} · {p.suggestedCategory}</Text>
                 </View>
                 <Text style={s.plaidAccountBalance}>${p.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</Text>
-                <Pressable style={s.importBtn} onPress={() => importPurchaseAsAsset(p)}>
+                <Pressable accessibilityRole="button" style={s.importBtn} onPress={() => importPurchaseAsAsset(p)}>
                   <Text style={s.importBtnText}>Import</Text>
                 </Pressable>
-                <Pressable
+                <Pressable accessibilityRole="button"
                   hitSlop={8}
                   style={{ marginLeft: 8 }}
                   onPress={() => setDismissedPurchases((prev) => new Set(prev).add(purchaseKey(p)))}
@@ -363,10 +363,10 @@ export function AssetsScreen({ navigation }: any) {
                       <Text style={s.assetValue}>${asset.value.toLocaleString()}</Text>
                       {!isVehicleCat && (
                         <View style={{ flexDirection: 'row', gap: 6, marginTop: 6 }}>
-                          <Pressable onPress={() => { setEditingAsset(asset); setNewName(asset.name); setNewCategory(asset.category); setNewValue(String(asset.value)); setNewPurchasePrice(asset.purchasePrice != null ? String(asset.purchasePrice) : ''); setShowAddModal(true); }} style={s.deleteBtn}>
+                          <Pressable accessibilityRole="button" onPress={() => { setEditingAsset(asset); setNewName(asset.name); setNewCategory(asset.category); setNewValue(String(asset.value)); setNewPurchasePrice(asset.purchasePrice != null ? String(asset.purchasePrice) : ''); setShowAddModal(true); }} style={s.deleteBtn}>
                             <Ionicons name="create-outline" size={14} color={colors.textMuted} />
                           </Pressable>
-                          <Pressable onPress={() => handleDelete(asset.id, asset.name, isVehicleCat)} style={s.deleteBtn}>
+                          <Pressable accessibilityRole="button" onPress={() => handleDelete(asset.id, asset.name, isVehicleCat)} style={s.deleteBtn}>
                             <Ionicons name="trash-outline" size={14} color={colors.textMuted} />
                           </Pressable>
                         </View>
@@ -396,13 +396,13 @@ export function AssetsScreen({ navigation }: any) {
           <View style={s.modalSheet}>
             <View style={s.modalHeader}>
               <Text style={s.modalTitle}>{editingAsset ? 'Edit Asset' : 'Add Asset'}</Text>
-              <Pressable onPress={() => { setShowAddModal(false); setEditingAsset(null); setNewName(''); setNewValue(''); setNewPurchasePrice(''); setNewCategory('Electronics'); }}>
+              <Pressable accessibilityRole="button" onPress={() => { setShowAddModal(false); setEditingAsset(null); setNewName(''); setNewValue(''); setNewPurchasePrice(''); setNewCategory('Electronics'); }}>
                 <Ionicons name="close" size={24} color={colors.text} />
               </Pressable>
             </View>
 
             <Text style={s.modalLabel}>Asset Name</Text>
-            <TextInput
+            <TextInput accessibilityLabel="e.g. MacBook Pro, Dining Table"
               style={s.modalInput}
               value={newName}
               onChangeText={setNewName}
@@ -413,7 +413,7 @@ export function AssetsScreen({ navigation }: any) {
             <Text style={s.modalLabel}>Category</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
               {CATEGORIES.map((c) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={c}
                   onPress={() => setNewCategory(c)}
                   style={[s.catChip, newCategory === c && { backgroundColor: categoryColors[c] ?? colors.primary, borderColor: categoryColors[c] ?? colors.primary }]}
@@ -425,7 +425,7 @@ export function AssetsScreen({ navigation }: any) {
             </ScrollView>
 
             <Text style={s.modalLabel}>Current Value ($)</Text>
-            <TextInput
+            <TextInput accessibilityLabel="0"
               style={s.modalInput}
               value={newValue}
               onChangeText={setNewValue}
@@ -435,7 +435,7 @@ export function AssetsScreen({ navigation }: any) {
             />
 
             <Text style={s.modalLabel}>Purchase Price ($) — Optional</Text>
-            <TextInput
+            <TextInput accessibilityLabel="0"
               style={s.modalInput}
               value={newPurchasePrice}
               onChangeText={setNewPurchasePrice}
@@ -444,7 +444,7 @@ export function AssetsScreen({ navigation }: any) {
               keyboardType="decimal-pad"
             />
 
-            <Pressable
+            <Pressable accessibilityRole="button"
               onPress={handleAddAsset}
               style={[s.modalSubmit, (!newName.trim() || !newValue) && s.modalSubmitDisabled]}
             >

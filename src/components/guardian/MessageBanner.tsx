@@ -78,7 +78,7 @@ export function MessageBanner({ banner, onDismiss, onPress }: Props) {
         { top: insets.top + 8, transform: [{ translateY }] },
       ]}
     >
-      <Pressable
+      <Pressable accessibilityRole="button"
         style={styles.inner}
         onPress={() => {
           const id = banner.deviceId;
@@ -97,7 +97,7 @@ export function MessageBanner({ banner, onDismiss, onPress }: Props) {
             {banner.content}
           </Text>
         </View>
-        <Pressable onPress={() => dismiss()} style={styles.closeBtn} hitSlop={8}>
+        <Pressable accessibilityRole="button" onPress={() => dismiss()} style={styles.closeBtn} hitSlop={8}>
           <Ionicons name="close" size={18} color="rgba(255,255,255,0.7)" />
         </Pressable>
       </Pressable>

@@ -209,13 +209,13 @@ function AddEditModal({ visible, initial, detectedDebts, familyId, onClose, onSa
         <ScrollView style={modalStyles.sheet} contentContainerStyle={modalStyles.sheetContent} keyboardShouldPersistTaps="handled">
           <View style={modalStyles.header}>
             <Text style={modalStyles.title}>{initial ? 'Edit Debt' : 'Add Debt'}</Text>
-            <Pressable onPress={onClose} hitSlop={12}>
+            <Pressable accessibilityRole="button" onPress={onClose} hitSlop={12}>
               <Ionicons name="close" size={24} color={TEXT} />
             </Pressable>
           </View>
 
           <Text style={modalStyles.label}>Name *</Text>
-          <TextInput
+          <TextInput accessibilityLabel="e.g. Chase Sapphire"
             style={modalStyles.input}
             value={form.name}
             onChangeText={(v) => set('name', v)}
@@ -226,7 +226,7 @@ function AddEditModal({ visible, initial, detectedDebts, familyId, onClose, onSa
           <Text style={modalStyles.label}>Type *</Text>
           <View style={modalStyles.typeGrid}>
             {DEBT_TYPES.map((t) => (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={t}
                 onPress={() => set('type', t)}
                 style={[modalStyles.typeChip, form.type === t && { backgroundColor: debtColor(t), borderColor: debtColor(t) }]}
@@ -244,23 +244,23 @@ function AddEditModal({ visible, initial, detectedDebts, familyId, onClose, onSa
           </View>
 
           <Text style={modalStyles.label}>Current Balance ($) *</Text>
-          <TextInput style={modalStyles.input} value={form.balance} onChangeText={(v) => set('balance', v)}
+          <TextInput accessibilityLabel="0" style={modalStyles.input} value={form.balance} onChangeText={(v) => set('balance', v)}
             placeholder="0" placeholderTextColor={SUBTEXT} keyboardType="decimal-pad" />
 
           <Text style={modalStyles.label}>Original Balance ($)</Text>
-          <TextInput style={modalStyles.input} value={form.originalBalance} onChangeText={(v) => set('originalBalance', v)}
+          <TextInput accessibilityLabel="Same as balance if unsure" style={modalStyles.input} value={form.originalBalance} onChangeText={(v) => set('originalBalance', v)}
             placeholder="Same as balance if unsure" placeholderTextColor={SUBTEXT} keyboardType="decimal-pad" />
 
           <Text style={modalStyles.label}>Interest Rate (APR %)</Text>
-          <TextInput style={modalStyles.input} value={form.interestRate} onChangeText={(v) => set('interestRate', v)}
+          <TextInput accessibilityLabel="e.g. 21.99" style={modalStyles.input} value={form.interestRate} onChangeText={(v) => set('interestRate', v)}
             placeholder="e.g. 21.99" placeholderTextColor={SUBTEXT} keyboardType="decimal-pad" />
 
           <Text style={modalStyles.label}>Minimum Payment ($/mo) *</Text>
-          <TextInput style={modalStyles.input} value={form.minimumPayment} onChangeText={(v) => set('minimumPayment', v)}
+          <TextInput accessibilityLabel="0" style={modalStyles.input} value={form.minimumPayment} onChangeText={(v) => set('minimumPayment', v)}
             placeholder="0" placeholderTextColor={SUBTEXT} keyboardType="decimal-pad" />
 
           <Text style={modalStyles.label}>Due Day (1–31)</Text>
-          <TextInput style={modalStyles.input} value={form.dueDate} onChangeText={(v) => set('dueDate', v)}
+          <TextInput accessibilityLabel="15" style={modalStyles.input} value={form.dueDate} onChangeText={(v) => set('dueDate', v)}
             placeholder="15" placeholderTextColor={SUBTEXT} keyboardType="number-pad" />
 
           <View style={modalStyles.switchRow}>
@@ -270,14 +270,14 @@ function AddEditModal({ visible, initial, detectedDebts, familyId, onClose, onSa
           </View>
 
           <Text style={modalStyles.label}>Notes</Text>
-          <TextInput style={[modalStyles.input, modalStyles.inputMulti]} value={form.notes} onChangeText={(v) => set('notes', v)}
+          <TextInput accessibilityLabel="Optional notes" style={[modalStyles.input, modalStyles.inputMulti]} value={form.notes} onChangeText={(v) => set('notes', v)}
             placeholder="Optional notes" placeholderTextColor={SUBTEXT} multiline numberOfLines={2} />
 
           {detectedDebts.length > 0 && (
             <>
               <Text style={[modalStyles.label, { marginTop: 8 }]}>Link to Plaid Account</Text>
               {detectedDebts.map((d) => (
-                <Pressable key={d.plaidAccountId} style={[modalStyles.plaidOption, form.plaidAccountId === d.plaidAccountId && modalStyles.plaidOptionActive]}
+                <Pressable accessibilityRole="button" key={d.plaidAccountId} style={[modalStyles.plaidOption, form.plaidAccountId === d.plaidAccountId && modalStyles.plaidOptionActive]}
                   onPress={() => handleLinkPlaid(d)}>
                   <Ionicons name="link" size={14} color={form.plaidAccountId === d.plaidAccountId ? ACCENT : SUBTEXT} />
                   <Text style={modalStyles.plaidOptionText}>{d.name}{d.mask ? ` ••${d.mask}` : ''} — ${formatMoney(d.balance)}</Text>
@@ -286,7 +286,7 @@ function AddEditModal({ visible, initial, detectedDebts, familyId, onClose, onSa
             </>
           )}
 
-          <Pressable
+          <Pressable accessibilityRole="button"
             style={[modalStyles.saveBtn, !canSave && { opacity: 0.4 }]}
             disabled={!canSave}
             onPress={() => onSave(form)}
@@ -500,7 +500,7 @@ export function DebtPayoffScreen({ navigation }: { navigation: { goBack: () => v
                         <Text style={styles.trackedBadgeText}>Tracking</Text>
                       </View>
                     ) : (
-                      <Pressable style={styles.addDetectedBtn} onPress={() => handleAddDetected(d)}>
+                      <Pressable accessibilityRole="button" style={styles.addDetectedBtn} onPress={() => handleAddDetected(d)}>
                         <Ionicons name="add" size={13} color="#fff" />
                         <Text style={styles.addDetectedBtnText}>Add to Plan</Text>
                       </Pressable>
@@ -517,7 +517,7 @@ export function DebtPayoffScreen({ navigation }: { navigation: { goBack: () => v
       <View style={styles.section}>
         <View style={styles.sectionRow}>
           <Text style={styles.sectionTitle}>My Debts</Text>
-          <Pressable style={styles.addBtn} onPress={() => { setEditingDebt(null); setShowModal(true); }}>
+          <Pressable accessibilityRole="button" style={styles.addBtn} onPress={() => { setEditingDebt(null); setShowModal(true); }}>
             <Ionicons name="add" size={18} color={PRIMARY} />
             <Text style={styles.addBtnText}>Add Debt</Text>
           </Pressable>
@@ -541,7 +541,7 @@ export function DebtPayoffScreen({ navigation }: { navigation: { goBack: () => v
             const aprPct = Math.round(debt.interestRate * 10000) / 100;
 
             return (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={debt.id}
                 style={styles.debtCard}
                 onLongPress={() => handleLongPressDebt(debt)}
@@ -592,7 +592,7 @@ export function DebtPayoffScreen({ navigation }: { navigation: { goBack: () => v
                   </View>
 
                   <View style={styles.debtActions}>
-                    <Pressable style={[styles.payBtnSmall, { backgroundColor: color }]} onPress={() => handleMarkPayment(debt)}>
+                    <Pressable accessibilityRole="button" style={[styles.payBtnSmall, { backgroundColor: color }]} onPress={() => handleMarkPayment(debt)}>
                       <Ionicons name="checkmark" size={13} color="#fff" />
                       <Text style={styles.payBtnSmallText}>Payment</Text>
                     </Pressable>
@@ -632,7 +632,7 @@ export function DebtPayoffScreen({ navigation }: { navigation: { goBack: () => v
                 ) : debts.length > 0 ? (
                   <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                     {debts.map((d) => (
-                      <Pressable key={d.id} style={styles.matchChip} onPress={() => handleMatchDetection(det, d.id)}>
+                      <Pressable accessibilityRole="button" key={d.id} style={styles.matchChip} onPress={() => handleMatchDetection(det, d.id)}>
                         <Text style={styles.matchChipText} numberOfLines={1}>{d.name}</Text>
                       </Pressable>
                     ))}
@@ -655,7 +655,7 @@ export function DebtPayoffScreen({ navigation }: { navigation: { goBack: () => v
       <Text style={styles.sectionTitle}>Strategy</Text>
       <View style={styles.strategyRow}>
         {(['avalanche', 'snowball'] as PayoffStrategy[]).map((s) => (
-          <Pressable
+          <Pressable accessibilityRole="button"
             key={s}
             style={[styles.strategyCard, strategy === s && styles.strategyCardActive]}
             onPress={() => { Haptics.selectionAsync(); setStrategy(s); }}
@@ -670,7 +670,7 @@ export function DebtPayoffScreen({ navigation }: { navigation: { goBack: () => v
       </View>
 
       {showTooltip && (
-        <Pressable style={styles.tooltip} onPress={() => setShowTooltip(null)}>
+        <Pressable accessibilityRole="button" style={styles.tooltip} onPress={() => setShowTooltip(null)}>
           <Text style={styles.tooltipText}>
             {showTooltip === 'avalanche'
               ? '🔥 Avalanche: Pay highest-interest debt first. Saves the most money over time.'
@@ -682,7 +682,7 @@ export function DebtPayoffScreen({ navigation }: { navigation: { goBack: () => v
       <Text style={styles.sectionTitle}>Extra Monthly Budget</Text>
       <View style={styles.sliderRow}>
         {[0, 50, 100, 150, 200, 300, 500].map((v) => (
-          <Pressable key={v} style={[styles.sliderChip, extraBudget === v && styles.sliderChipActive]}
+          <Pressable accessibilityRole="button" key={v} style={[styles.sliderChip, extraBudget === v && styles.sliderChipActive]}
             onPress={() => { Haptics.selectionAsync(); setExtraBudget(v); }}>
             <Text style={[styles.sliderChipText, extraBudget === v && { color: '#fff' }]}>
               {v === 0 ? 'None' : `+$${v}`}
@@ -762,11 +762,11 @@ export function DebtPayoffScreen({ navigation }: { navigation: { goBack: () => v
       <StatusBar style="light" />
       <LinearGradient colors={[PRIMARY, '#2A4D7F', ACCENT]} style={[styles.header, { paddingTop: insets.top + 6 }]}>
         <View style={styles.headerTop}>
-          <Pressable onPress={() => navigation.goBack()} hitSlop={10}>
+          <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} hitSlop={10}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </Pressable>
           <Text style={styles.headerTitle}>{t('debt.title')}</Text>
-          <Pressable onPress={handleSyncBalances} disabled={syncingBalances} hitSlop={10}>
+          <Pressable accessibilityRole="button" onPress={handleSyncBalances} disabled={syncingBalances} hitSlop={10}>
             {syncingBalances
               ? <ActivityIndicator color="#fff" size="small" />
               : <Ionicons name="sync" size={22} color="#fff" />}
@@ -784,7 +784,7 @@ export function DebtPayoffScreen({ navigation }: { navigation: { goBack: () => v
       {/* Tab bar */}
       <View style={styles.tabBar}>
         {(['debts', 'strategy', 'timeline'] as Tab[]).map((tab) => (
-          <Pressable key={tab} style={[styles.tabItem, activeTab === tab && styles.tabItemActive]}
+          <Pressable accessibilityRole="button" key={tab} style={[styles.tabItem, activeTab === tab && styles.tabItemActive]}
             onPress={() => setActiveTab(tab)}>
             <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
               {tab.charAt(0).toUpperCase() + tab.slice(1)}

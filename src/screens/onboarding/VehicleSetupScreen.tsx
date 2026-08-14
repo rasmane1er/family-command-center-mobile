@@ -46,10 +46,10 @@ export function VehicleSetupScreen({ navigation }: any) {
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <LinearGradient colors={['#0F2952', '#1E4A8A']} style={styles.header}>
           <View style={styles.headerTopRow}>
-            <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+            <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
               <Ionicons name="arrow-back" size={24} color="#fff" />
             </Pressable>
-            <Pressable onPress={handleNext} style={styles.skipBtn}>
+            <Pressable accessibilityRole="button" onPress={handleNext} style={styles.skipBtn}>
               <Text style={styles.skipBtnText}>{t('onboarding.screens.vehicleSetup.skipBadge')}</Text>
             </Pressable>
           </View>
@@ -71,7 +71,7 @@ export function VehicleSetupScreen({ navigation }: any) {
                 <Text style={styles.vehicleName}>{v.year} {v.make} {v.model}</Text>
                 {v.licensePlate && <Text style={styles.vehicleDetail}>{v.licensePlate}</Text>}
               </View>
-              <Pressable onPress={() => setVehicles(vehicles.filter((_, vi) => vi !== i))}>
+              <Pressable accessibilityRole="button" onPress={() => setVehicles(vehicles.filter((_, vi) => vi !== i))}>
                 <Ionicons name="trash-outline" size={20} color={colors.danger} />
               </Pressable>
             </View>
@@ -104,7 +104,7 @@ export function VehicleSetupScreen({ navigation }: any) {
           fullWidth size="lg"
           rightIcon={<Ionicons name="arrow-forward" size={18} color="#fff" style={{ marginLeft: 8 }} />}
         />
-        <Pressable onPress={handleNext} style={styles.skipButton}>
+        <Pressable accessibilityRole="button" onPress={handleNext} style={styles.skipButton}>
           <Text style={styles.skipText}>{t('onboarding.screens.vehicleSetup.skipForNow')}</Text>
         </Pressable>
       </ScrollView>

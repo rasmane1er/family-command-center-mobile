@@ -79,7 +79,7 @@ function StarRating({ rating, onRate }: { rating: number; onRate?: (r: number) =
   return (
     <View style={{ flexDirection: 'row', gap: 3 }}>
       {[1, 2, 3, 4, 5].map((i) => (
-        <Pressable key={i} onPress={() => onRate?.(i)} disabled={!onRate}>
+        <Pressable accessibilityRole="button" key={i} onPress={() => onRate?.(i)} disabled={!onRate}>
           <Ionicons
             name={i <= rating ? 'star' : 'star-outline'}
             size={16}
@@ -399,11 +399,11 @@ export function ChildcareManagerScreen({ navigation }: any) {
       style={[styles.header, { paddingTop: insets.top + 6 }]}
     >
       <View style={styles.headerRow}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <Text style={styles.headerTitle}>{t('childcare.title')}</Text>
-        <Pressable onPress={() => setShowAddCaregiverModal(true)} style={styles.addBtn}>
+        <Pressable accessibilityRole="button" onPress={() => setShowAddCaregiverModal(true)} style={styles.addBtn}>
           <Ionicons name="add" size={22} color="#fff" />
         </Pressable>
       </View>
@@ -425,7 +425,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
     
     <View style={styles.tabs}>
             {(['caregivers', 'schedule', 'payments', 'info'] as const).map((t) => (
-              <Pressable key={t} onPress={() => setActiveTab(t)} style={[styles.tab, activeTab === t && styles.tabActive]}>
+              <Pressable accessibilityRole="button" key={t} onPress={() => setActiveTab(t)} style={[styles.tab, activeTab === t && styles.tabActive]}>
                 <Text style={[styles.tabText, activeTab === t && styles.tabTextActive]}>
                   {t.charAt(0).toUpperCase() + t.slice(1)}
                 </Text>
@@ -440,7 +440,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
       colors={['#E65100', '#EF6C00', '#F57C00']}
       style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
     >
-      <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={styles.headerTitle}>{t('childcare.title')}</Text>
@@ -489,7 +489,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
                     </View>
                     <Badge label={TYPE_LABELS[c.type]} variant={TYPE_VARIANT[c.type]} />
                   </View>
-                  <Pressable onPress={() => handleDeleteCaregiver(c)} style={styles.deleteBtn}>
+                  <Pressable accessibilityRole="button" onPress={() => handleDeleteCaregiver(c)} style={styles.deleteBtn}>
                     <Ionicons name="trash-outline" size={14} color={colors.textMuted} />
                   </Pressable>
                 </View>
@@ -521,7 +521,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
                 )}
 
                 {c.type === 'daycare' && (
-                  <Pressable onPress={() => openEnrollmentModal(c.id)} style={styles.enrollmentBox}>
+                  <Pressable accessibilityRole="button" onPress={() => openEnrollmentModal(c.id)} style={styles.enrollmentBox}>
                     {c.enrollment ? (
                       <>
                         <View style={styles.enrollmentRow}>
@@ -553,7 +553,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
                 </View>
 
                 <View style={styles.caregiverActions}>
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     onPress={() => { togglePreferred(c.id); Haptics.selectionAsync(); }}
                     style={[styles.actionBtn, c.isPreferred && styles.actionBtnPreferred]}
                   >
@@ -562,7 +562,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
                       {c.isPreferred ? 'Preferred' : 'Set Preferred'}
                     </Text>
                   </Pressable>
-                  <Pressable onPress={() => handleBookNow(c)} style={styles.bookNowBtn}>
+                  <Pressable accessibilityRole="button" onPress={() => handleBookNow(c)} style={styles.bookNowBtn}>
                     <Text style={styles.bookNowText}>Book Now</Text>
                   </Pressable>
                 </View>
@@ -620,11 +620,11 @@ export function ChildcareManagerScreen({ navigation }: any) {
                     )}
                     {b.notes && <Text style={styles.bookingNotes}>{b.notes}</Text>}
                     <View style={styles.bookingActions}>
-                      <Pressable onPress={() => handleCompleteBooking(b)} style={styles.completeBtn}>
+                      <Pressable accessibilityRole="button" onPress={() => handleCompleteBooking(b)} style={styles.completeBtn}>
                         <Ionicons name="checkmark-circle-outline" size={14} color={colors.success} />
                         <Text style={styles.completeBtnText}>Complete</Text>
                       </Pressable>
-                      <Pressable onPress={() => handleCancelBooking(b)} style={styles.cancelBtnInline}>
+                      <Pressable accessibilityRole="button" onPress={() => handleCancelBooking(b)} style={styles.cancelBtnInline}>
                         <Ionicons name="close-circle-outline" size={14} color={colors.danger} />
                         <Text style={styles.cancelBtnText}>Cancel</Text>
                       </Pressable>
@@ -739,7 +739,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
                         <Text style={styles.avatarInitialSmall}>{child.name.charAt(0)}</Text>
                       </View>
                       <Text style={[styles.payCaregiverName, { flex: 1, marginLeft: 10 }]}>{child.name}</Text>
-                      <Pressable onPress={() => openCareInfoModal(child.id)} style={styles.editCareInfoBtn}>
+                      <Pressable accessibilityRole="button" onPress={() => openCareInfoModal(child.id)} style={styles.editCareInfoBtn}>
                         <Ionicons name="pencil" size={13} color="#EF6C00" />
                         <Text style={styles.editCareInfoBtnText}>{hasInfo ? 'Edit' : 'Add Info'}</Text>
                       </Pressable>
@@ -799,7 +799,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
           <Text style={styles.modalTitle}>Add Caregiver</Text>
 
           <Text style={styles.modalLabel}>Name</Text>
-          <TextInput
+          <TextInput accessibilityLabel="Caregiver name..."
             style={styles.modalInput}
             placeholder="Caregiver name..."
             value={cgName}
@@ -811,7 +811,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
           <Text style={styles.modalLabel}>Type</Text>
           <View style={styles.typeGrid}>
             {CAREGIVER_TYPES.map((t) => (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={t.type}
                 onPress={() => setCgType(t.type)}
                 style={[styles.typeChip, cgType === t.type && styles.typeChipActive]}
@@ -825,7 +825,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
           </View>
 
           <Text style={styles.modalLabel}>Phone (optional)</Text>
-          <TextInput
+          <TextInput accessibilityLabel="+1 (555) 000-0000"
             style={styles.modalInput}
             placeholder="+1 (555) 000-0000"
             value={cgPhone}
@@ -835,7 +835,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
           />
 
           <Text style={styles.modalLabel}>Hourly Rate ($)</Text>
-          <TextInput
+          <TextInput accessibilityLabel="0 for free/relative"
             style={styles.modalInput}
             placeholder="0 for free/relative"
             value={cgRate}
@@ -849,7 +849,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
           <View style={{ height: 16 }} />
 
           <Text style={styles.modalLabel}>Certifications (comma-separated)</Text>
-          <TextInput
+          <TextInput accessibilityLabel="e.g. CPR, First Aid"
             style={styles.modalInput}
             placeholder="e.g. CPR, First Aid"
             value={cgCerts}
@@ -858,7 +858,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
           />
 
           <Text style={styles.modalLabel}>Notes (optional)</Text>
-          <TextInput
+          <TextInput accessibilityLabel="Additional notes..."
             style={[styles.modalInput, { height: 80, textAlignVertical: 'top' }]}
             placeholder="Additional notes..."
             value={cgNotes}
@@ -870,7 +870,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
           <Text style={styles.modalLabel}>Avatar Color</Text>
           <View style={styles.colorRow}>
             {AVATAR_COLORS.map((c) => (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={c}
                 onPress={() => setCgColor(c)}
                 style={[styles.colorSwatch, { backgroundColor: c }, cgColor === c && styles.colorSwatchSelected]}
@@ -918,7 +918,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
           <Text style={styles.modalLabel}>Caregiver</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
             {caregivers.map((c) => (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={c.id}
                 onPress={() => setBkCaregiverId(c.id)}
                 style={[styles.cgChip, bkCaregiverId === c.id && styles.cgChipActive]}
@@ -936,7 +936,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
               <Text style={styles.modalLabel}>Which kids? (optional)</Text>
               <View style={[styles.typeGrid, { marginBottom: 16 }]}>
                 {children.map((child) => (
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     key={child.id}
                     onPress={() => toggleBkChild(child.id)}
                     style={[styles.typeChip, bkChildIds.includes(child.id) && styles.typeChipActive]}
@@ -951,7 +951,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
           )}
 
           <Text style={styles.modalLabel}>Date (YYYY-MM-DD)</Text>
-          <TextInput
+          <TextInput accessibilityLabel="2026-07-04"
             style={[styles.modalInput, bkDateError && styles.modalInputError]}
             placeholder="2026-07-04"
             value={bkDate}
@@ -961,7 +961,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
           {bkDateError && <Text style={styles.modalErrorText}>{bkDateError}</Text>}
 
           <Text style={styles.modalLabel}>Start Time</Text>
-          <TextInput
+          <TextInput accessibilityLabel="Start Time"
             style={[styles.modalInput, bkStartTimeError && styles.modalInputError]}
             placeholder='e.g. "6:00 PM"'
             value={bkStartTime}
@@ -971,7 +971,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
           {bkStartTimeError && <Text style={styles.modalErrorText}>{bkStartTimeError}</Text>}
 
           <Text style={styles.modalLabel}>End Time</Text>
-          <TextInput
+          <TextInput accessibilityLabel="End Time"
             style={[styles.modalInput, bkEndTimeError && styles.modalInputError]}
             placeholder='e.g. "10:00 PM"'
             value={bkEndTime}
@@ -981,7 +981,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
           {bkEndTimeError && <Text style={styles.modalErrorText}>{bkEndTimeError}</Text>}
 
           <Text style={styles.modalLabel}>Hours Worked (auto-calculated)</Text>
-          <TextInput
+          <TextInput accessibilityLabel="e.g. 4"
             style={styles.modalInput}
             placeholder="e.g. 4"
             value={bkHours}
@@ -991,7 +991,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
           />
 
           <Text style={styles.modalLabel}>Amount to Pay ($, auto-calculated)</Text>
-          <TextInput
+          <TextInput accessibilityLabel="e.g. 60.00"
             style={styles.modalInput}
             placeholder="e.g. 60.00"
             value={bkAmountPaid}
@@ -1001,7 +1001,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
           />
 
           <Text style={styles.modalLabel}>Notes (optional)</Text>
-          <TextInput
+          <TextInput accessibilityLabel="Special instructions..."
             style={[styles.modalInput, { height: 80, textAlignVertical: 'top' }]}
             placeholder="Special instructions..."
             value={bkNotes}
@@ -1041,7 +1041,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
           <Text style={styles.modalLabel}>Days</Text>
           <View style={[styles.typeGrid, { marginBottom: 16 }]}>
             {WEEKDAYS.map((day) => (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={day}
                 onPress={() => toggleEnDay(day)}
                 style={[styles.typeChip, enSchedule.includes(day) && styles.typeChipActive]}
@@ -1052,7 +1052,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
           </View>
 
           <Text style={styles.modalLabel}>Drop-off Time</Text>
-          <TextInput
+          <TextInput accessibilityLabel="Drop-off Time"
             style={styles.modalInput}
             placeholder='e.g. "7:30 AM"'
             value={enStartTime}
@@ -1061,7 +1061,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
           />
 
           <Text style={styles.modalLabel}>Pick-up Time</Text>
-          <TextInput
+          <TextInput accessibilityLabel="Pick-up Time"
             style={styles.modalInput}
             placeholder='e.g. "5:30 PM"'
             value={enEndTime}
@@ -1070,7 +1070,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
           />
 
           <Text style={styles.modalLabel}>Monthly Tuition ($)</Text>
-          <TextInput
+          <TextInput accessibilityLabel="e.g. 950"
             style={styles.modalInput}
             placeholder="e.g. 950"
             value={enTuition}
@@ -1104,7 +1104,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
           </Text>
 
           <Text style={styles.modalLabel}>Allergies (comma-separated)</Text>
-          <TextInput
+          <TextInput accessibilityLabel="e.g. Peanuts, Bee stings"
             style={styles.modalInput}
             placeholder="e.g. Peanuts, Bee stings"
             value={ciAllergies}
@@ -1113,7 +1113,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
           />
 
           <Text style={styles.modalLabel}>Medical Conditions (comma-separated)</Text>
-          <TextInput
+          <TextInput accessibilityLabel="e.g. Asthma"
             style={styles.modalInput}
             placeholder="e.g. Asthma"
             value={ciConditions}
@@ -1122,7 +1122,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
           />
 
           <Text style={styles.modalLabel}>Blood Type (optional)</Text>
-          <TextInput
+          <TextInput accessibilityLabel="e.g. O+"
             style={styles.modalInput}
             placeholder="e.g. O+"
             value={ciBloodType}
@@ -1131,7 +1131,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
           />
 
           <Text style={styles.modalLabel}>Doctor Name</Text>
-          <TextInput
+          <TextInput accessibilityLabel="e.g. Dr. Martinez"
             style={styles.modalInput}
             placeholder="e.g. Dr. Martinez"
             value={ciDoctorName}
@@ -1140,7 +1140,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
           />
 
           <Text style={styles.modalLabel}>Doctor Phone</Text>
-          <TextInput
+          <TextInput accessibilityLabel="+1 (555) 000-0000"
             style={styles.modalInput}
             placeholder="+1 (555) 000-0000"
             value={ciDoctorPhone}
@@ -1150,7 +1150,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
           />
 
           <Text style={styles.modalLabel}>Emergency Contact Name</Text>
-          <TextInput
+          <TextInput accessibilityLabel="e.g. Grandma Rosa"
             style={styles.modalInput}
             placeholder="e.g. Grandma Rosa"
             value={ciEcName}
@@ -1159,7 +1159,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
           />
 
           <Text style={styles.modalLabel}>Emergency Contact Relationship</Text>
-          <TextInput
+          <TextInput accessibilityLabel="e.g. Grandmother"
             style={styles.modalInput}
             placeholder="e.g. Grandmother"
             value={ciEcRelationship}
@@ -1168,7 +1168,7 @@ export function ChildcareManagerScreen({ navigation }: any) {
           />
 
           <Text style={styles.modalLabel}>Emergency Contact Phone</Text>
-          <TextInput
+          <TextInput accessibilityLabel="+1 (555) 000-0000"
             style={styles.modalInput}
             placeholder="+1 (555) 000-0000"
             value={ciEcPhone}

@@ -110,21 +110,21 @@ export function FamilyTimelineScreen({ navigation }: any) {
   const screenHeader = (
     <LinearGradient colors={['#4A0072', '#7B2D8B']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
       <View style={styles.headerRow}>
-        <Pressable onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.getParent()?.navigate("Home")} style={styles.back}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.getParent()?.navigate("Home")} style={styles.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <View style={{ flex: 1 }}>
           <Text style={styles.headerTitle}>{t('family.screens.familyTimeline.headerTitle')}</Text>
           <Text style={styles.headerSub}>{t('family.screens.familyTimeline.headerSub', { count: entries.length, highlights })}</Text>
         </View>
-        <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
+        <Pressable accessibilityRole="button" onPress={() => setShowModal(true)} style={styles.addBtn}>
           <Ionicons name="add" size={22} color="#fff" />
         </Pressable>
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
         {TYPE_FILTERS.map((f) => (
-          <Pressable
+          <Pressable accessibilityRole="button"
             key={f.key}
             onPress={() => setFilter(f.key)}
             style={[styles.filterChip, filter === f.key && styles.filterChipActive]}
@@ -139,11 +139,11 @@ export function FamilyTimelineScreen({ navigation }: any) {
 
   const screenCompact = (
     <LinearGradient colors={['#4A0072', '#7B2D8B']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.getParent()?.navigate("Home")} style={styles.back}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.getParent()?.navigate("Home")} style={styles.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={styles.headerTitle}>{t('family.screens.familyTimeline.headerTitle')}</Text>
-      <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
+      <Pressable accessibilityRole="button" onPress={() => setShowModal(true)} style={styles.addBtn}>
         <Ionicons name="add" size={22} color="#fff" />
       </Pressable>
     </LinearGradient>
@@ -192,7 +192,7 @@ export function FamilyTimelineScreen({ navigation }: any) {
                 </View>
 
                 {/* Entry card */}
-                <Pressable onLongPress={() => handleDelete(entry)} style={{ flex: 1 }}>
+                <Pressable accessibilityRole="button" onLongPress={() => handleDelete(entry)} style={{ flex: 1 }}>
                   <Card
                     style={entry.isHighlight ? { ...styles.entryCard, ...styles.entryCardHighlight, borderLeftColor: cfg.color } : styles.entryCard}
                     variant="elevated"
@@ -246,7 +246,7 @@ export function FamilyTimelineScreen({ navigation }: any) {
             {ENTRY_TYPES.map((entryType) => {
               const cfg = TYPE_CONFIG[entryType];
               return (
-                <Pressable key={entryType} onPress={() => setNewType(entryType)} style={[styles.typeChip, newType === entryType && { backgroundColor: cfg.color + '20', borderColor: cfg.color }]}>
+                <Pressable accessibilityRole="button" key={entryType} onPress={() => setNewType(entryType)} style={[styles.typeChip, newType === entryType && { backgroundColor: cfg.color + '20', borderColor: cfg.color }]}>
                   <Ionicons name={cfg.icon as any} size={14} color={newType === entryType ? cfg.color : colors.textSecondary} />
                   <Text style={[styles.typeChipText, newType === entryType && { color: cfg.color }]}>{t(`family.screens.familyTimeline.${cfg.labelKey}`)}</Text>
                 </Pressable>
@@ -257,17 +257,17 @@ export function FamilyTimelineScreen({ navigation }: any) {
           <Text style={styles.modalLabel}>Emoji</Text>
           <View style={styles.emojiGrid}>
             {QUICK_EMOJIS.map((e) => (
-              <Pressable key={e} onPress={() => setNewEmoji(e)} style={[styles.emojiBtn, newEmoji === e && styles.emojiBtnActive]}>
+              <Pressable accessibilityRole="button" key={e} onPress={() => setNewEmoji(e)} style={[styles.emojiBtn, newEmoji === e && styles.emojiBtnActive]}>
                 <Text style={styles.emojiText}>{e}</Text>
               </Pressable>
             ))}
           </View>
 
           <Text style={styles.modalLabel}>Title *</Text>
-          <TextInput style={styles.modalInput} placeholder="e.g. Aiden's First Home Run" value={newTitle} onChangeText={setNewTitle} placeholderTextColor={colors.textMuted} autoFocus />
+          <TextInput accessibilityLabel="e.g. Aiden's First Home Run" style={styles.modalInput} placeholder="e.g. Aiden's First Home Run" value={newTitle} onChangeText={setNewTitle} placeholderTextColor={colors.textMuted} autoFocus />
 
           <Text style={styles.modalLabel}>Description</Text>
-          <TextInput
+          <TextInput accessibilityLabel="Describe this moment..."
             style={[styles.modalInput, styles.modalTextarea]}
             placeholder="Describe this moment..."
             value={newDesc}
@@ -280,11 +280,11 @@ export function FamilyTimelineScreen({ navigation }: any) {
 
           <Text style={styles.modalLabel}>About</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
-            <Pressable onPress={() => setNewMemberId(null)} style={[styles.memberChip, !newMemberId && styles.memberChipActive]}>
+            <Pressable accessibilityRole="button" onPress={() => setNewMemberId(null)} style={[styles.memberChip, !newMemberId && styles.memberChipActive]}>
               <Text style={styles.memberChipName}>Family</Text>
             </Pressable>
             {members.map((m) => (
-              <Pressable key={m.id} onPress={() => setNewMemberId(m.id)} style={[styles.memberChip, newMemberId === m.id && styles.memberChipActive]}>
+              <Pressable accessibilityRole="button" key={m.id} onPress={() => setNewMemberId(m.id)} style={[styles.memberChip, newMemberId === m.id && styles.memberChipActive]}>
                 <Avatar name={m.name} color={m.avatarColor} size={28} />
                 <Text style={styles.memberChipName}>{m.name.split(' ')[0]}</Text>
               </Pressable>

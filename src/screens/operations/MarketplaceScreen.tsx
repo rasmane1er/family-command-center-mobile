@@ -157,11 +157,11 @@ export function MarketplaceScreen({ navigation }: any) {
   const screenHeader = (
     <LinearGradient colors={['#E65100', '#F57C00']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
       <View style={styles.headerTop}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <Text style={styles.headerTitle}>Family Marketplace</Text>
-        <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowModal(true); }} style={styles.addBtn}>
+        <Pressable accessibilityRole="button" onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowModal(true); }} style={styles.addBtn}>
           <Ionicons name="add" size={24} color="#fff" />
         </Pressable>
       </View>
@@ -183,7 +183,7 @@ export function MarketplaceScreen({ navigation }: any) {
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 12 }}>
         {['all', 'chores', 'skills', 'lessons', 'favors'].map((cat) => (
-          <Pressable
+          <Pressable accessibilityRole="button"
             key={cat}
             onPress={() => setFilter(cat)}
             style={[styles.filterChip, filter === cat && styles.filterChipActive]}
@@ -197,7 +197,7 @@ export function MarketplaceScreen({ navigation }: any) {
     
     <View style={styles.tabs}>
             {(['available', 'claimed', 'history'] as const).map((tab) => (
-              <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
+              <Pressable accessibilityRole="button" key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
                 <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
                   {tab === 'available' ? `Available (${available.length})` : tab === 'claimed' ? `In Progress (${claimed.length})` : `Done (${completed.length})`}
                 </Text>
@@ -209,7 +209,7 @@ export function MarketplaceScreen({ navigation }: any) {
 
   const screenCompact = (
     <LinearGradient colors={['#E65100', '#F57C00']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={styles.headerTitle}>Family Marketplace</Text>
@@ -264,7 +264,7 @@ export function MarketplaceScreen({ navigation }: any) {
                 </View>
 
                 {listing.isAvailable && (
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     onPress={() => handleClaim(listing.id, listing.title, listing.pointsValue)}
                     style={[styles.claimBtn, { backgroundColor: cfg.color }]}
                   >
@@ -283,7 +283,7 @@ export function MarketplaceScreen({ navigation }: any) {
                       <View style={styles.completedBanner}>
                         <Ionicons name="checkmark-circle" size={14} color={colors.success} />
                         <Text style={styles.completedText}>Completed by {getMemberName(listing.claimedBy)} — points awarded</Text>
-                        <Pressable onPress={() => handleDeleteListing(listing.id, listing.title)} hitSlop={8}>
+                        <Pressable accessibilityRole="button" onPress={() => handleDeleteListing(listing.id, listing.title)} hitSlop={8}>
                           <Ionicons name="trash-outline" size={16} color={colors.textMuted} />
                         </Pressable>
                       </View>
@@ -295,7 +295,7 @@ export function MarketplaceScreen({ navigation }: any) {
                       <View style={styles.claimedBanner}>
                         <Ionicons name="hourglass-outline" size={14} color={colors.warning} />
                         <Text style={styles.claimedText}>{getMemberName(listing.claimedBy)} submitted this — awaiting parent approval</Text>
-                        <Pressable onPress={goToTasks} style={styles.doneBtn}>
+                        <Pressable accessibilityRole="button" onPress={goToTasks} style={styles.doneBtn}>
                           <Text style={styles.doneBtnText}>Review</Text>
                         </Pressable>
                       </View>
@@ -308,7 +308,7 @@ export function MarketplaceScreen({ navigation }: any) {
                     <View style={styles.claimedBanner}>
                       <Ionicons name="person" size={14} color={colors.warning} />
                       <Text style={styles.claimedText}>Claimed by {getMemberName(listing.claimedBy)}</Text>
-                      <Pressable onPress={goToTasks} style={styles.doneBtn}>
+                      <Pressable accessibilityRole="button" onPress={goToTasks} style={styles.doneBtn}>
                         <Text style={styles.doneBtnText}>Open in Tasks</Text>
                       </Pressable>
                     </View>
@@ -339,7 +339,7 @@ export function MarketplaceScreen({ navigation }: any) {
             {LISTING_CATEGORIES.map((cat) => {
               const cfg = CATEGORY_CONFIG[cat];
               return (
-                <Pressable key={cat} onPress={() => setNewCategory(cat)} style={[styles.catChip, newCategory === cat && { backgroundColor: cfg.color, borderColor: cfg.color }]}>
+                <Pressable accessibilityRole="button" key={cat} onPress={() => setNewCategory(cat)} style={[styles.catChip, newCategory === cat && { backgroundColor: cfg.color, borderColor: cfg.color }]}>
                   <Ionicons name={cfg.icon as any} size={14} color={newCategory === cat ? '#fff' : cfg.color} />
                   <Text style={[styles.catChipText, newCategory === cat && { color: '#fff' }]}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</Text>
                 </Pressable>
@@ -348,13 +348,13 @@ export function MarketplaceScreen({ navigation }: any) {
           </View>
 
           <Text style={styles.modalLabel}>Title</Text>
-          <TextInput style={styles.modalInput} value={newTitle} onChangeText={setNewTitle} placeholder="What needs to be done?" placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="What needs to be done?" style={styles.modalInput} value={newTitle} onChangeText={setNewTitle} placeholder="What needs to be done?" placeholderTextColor={colors.textMuted} />
 
           <Text style={styles.modalLabel}>Description</Text>
-          <TextInput style={[styles.modalInput, styles.modalTextarea]} value={newDesc} onChangeText={setNewDesc} placeholder="Add details about this task..." placeholderTextColor={colors.textMuted} multiline numberOfLines={3} />
+          <TextInput accessibilityLabel="Add details about this task..." style={[styles.modalInput, styles.modalTextarea]} value={newDesc} onChangeText={setNewDesc} placeholder="Add details about this task..." placeholderTextColor={colors.textMuted} multiline numberOfLines={3} />
 
           <Text style={styles.modalLabel}>Points Value ({MIN_POINTS}–{MAX_POINTS})</Text>
-          <TextInput style={styles.modalInput} value={newPoints} onChangeText={setNewPoints} placeholder="50" placeholderTextColor={colors.textMuted} keyboardType="numeric" />
+          <TextInput accessibilityLabel="50" style={styles.modalInput} value={newPoints} onChangeText={setNewPoints} placeholder="50" placeholderTextColor={colors.textMuted} keyboardType="numeric" />
 
           <Button title="Post Task" onPress={handlePost} />
           <Button title="Cancel" onPress={() => setShowModal(false)} variant="ghost" style={{ marginTop: 8 }} />

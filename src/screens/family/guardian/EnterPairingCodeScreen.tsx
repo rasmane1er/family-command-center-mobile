@@ -92,7 +92,7 @@ export function EnterPairingCodeScreen({ navigation }: any) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color={colors.text} />
         </Pressable>
         <Text style={styles.headerTitle}>{t('family.screens.enterPairingCode.headerTitle')}</Text>
@@ -118,7 +118,7 @@ export function EnterPairingCodeScreen({ navigation }: any) {
               <Text style={styles.scanHint}>{t('family.screens.enterPairingCode.scanHint')}</Text>
 
               {(scanned || isPairing) && (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   style={styles.scanAgainBtn}
                   onPress={() => {
                     setScanned(false);
@@ -148,7 +148,7 @@ export function EnterPairingCodeScreen({ navigation }: any) {
       <View style={styles.manualCard}>
         <Text style={styles.manualLabel}>{t('family.screens.enterPairingCode.manualLabel')}</Text>
         <View style={styles.manualRow}>
-          <TextInput
+          <TextInput accessibilityLabel={t('family.screens.enterPairingCode.manualPlaceholder')}
             style={styles.manualInput}
             placeholder={t('family.screens.enterPairingCode.manualPlaceholder')}
             placeholderTextColor={colors.textMuted}

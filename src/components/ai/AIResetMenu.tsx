@@ -49,7 +49,7 @@ export function AIResetMenu({ actions, iconColor = 'rgba(255,255,255,0.6)' }: Pr
 
   return (
     <>
-      <Pressable onPress={() => setVisible(true)} style={styles.trigger} hitSlop={10}>
+      <Pressable accessibilityRole="button" onPress={() => setVisible(true)} style={styles.trigger} hitSlop={10}>
         <Ionicons name="ellipsis-vertical" size={20} color={iconColor} />
       </Pressable>
 
@@ -59,13 +59,13 @@ export function AIResetMenu({ actions, iconColor = 'rgba(255,255,255,0.6)' }: Pr
         animationType="fade"
         onRequestClose={() => setVisible(false)}
       >
-        <Pressable style={styles.backdrop} onPress={() => setVisible(false)}>
+        <Pressable accessibilityRole="button" style={styles.backdrop} onPress={() => setVisible(false)}>
           <View style={styles.sheet}>
             <View style={styles.sheetHandle} />
             <Text style={styles.sheetTitle}>{t('screens.shared.aiResetOptionsTitle')}</Text>
 
             {actions.map((action, i) => (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={i}
                 style={[styles.row, i < actions.length - 1 && styles.rowBorder]}
                 onPress={() => run(action)}
@@ -87,7 +87,7 @@ export function AIResetMenu({ actions, iconColor = 'rgba(255,255,255,0.6)' }: Pr
               </Pressable>
             ))}
 
-            <Pressable style={styles.cancelBtn} onPress={() => setVisible(false)}>
+            <Pressable accessibilityRole="button" style={styles.cancelBtn} onPress={() => setVisible(false)}>
               <Text style={styles.cancelText}>{t('common.cancel')}</Text>
             </Pressable>
           </View>

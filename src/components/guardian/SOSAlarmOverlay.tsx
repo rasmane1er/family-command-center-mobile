@@ -96,7 +96,7 @@ export function SOSAlarmOverlay({ visible, childName, message, onDismiss }: SOSA
 
         <View style={styles.divider} />
 
-        <TouchableOpacity style={styles.acknowledgeBtn} onPress={onDismiss} activeOpacity={0.8}>
+        <TouchableOpacity accessibilityRole="button" style={styles.acknowledgeBtn} onPress={onDismiss} activeOpacity={0.8}>
           <Ionicons name="checkmark-circle" size={24} color="#fff" />
           <Text style={styles.acknowledgeBtnText}>I'm Responding</Text>
         </TouchableOpacity>

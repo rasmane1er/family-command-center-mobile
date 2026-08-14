@@ -216,7 +216,7 @@ export function OperationsDashboardScreen({ navigation }: any) {
           const hasAlert = item.count > 0;
           return (
             <View key={item.label} style={styles.alertCard}>
-              <Pressable
+              <Pressable accessibilityRole="button"
                 onPress={() => navigation.navigate(item.screen)}
                 style={({ pressed }) => [styles.alertCardInner, pressed && styles.pressed]}
               >
@@ -294,7 +294,7 @@ export function OperationsDashboardScreen({ navigation }: any) {
             onMomentumScrollEnd={onMomentumScrollEnd}
             scrollEventThrottle={scrollEventThrottle}
           >
-            <Pressable
+            <Pressable accessibilityRole="button"
               disabled={!priorityAlert.screen}
               onPress={() =>
                 priorityAlert.screen && navigation.navigate(priorityAlert.screen)
@@ -385,7 +385,7 @@ export function OperationsDashboardScreen({ navigation }: any) {
                 const active = activeFilter === filter;
 
                 return (
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     key={filter}
                     onPress={() => setActiveFilter(filter)}
                     style={[styles.filterChip, active && styles.filterChipActive]}
@@ -402,7 +402,7 @@ export function OperationsDashboardScreen({ navigation }: any) {
 
             <View style={styles.moduleList}>
               {filteredModules.map((mod) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={mod.key}
                   onPress={() => navigation.navigate(mod.key)}
                   style={({ pressed }) => [
@@ -457,7 +457,7 @@ function QuickTile({ title, subtitle, icon, color, onPress }: any) {
   return (
     // Shadow wrapper — must NOT have overflow:hidden so Android elevation is visible
     <View style={[styles.quickTile, { shadowColor: color }]}>
-      <Pressable
+      <Pressable accessibilityRole="button"
         onPress={onPress}
         style={({ pressed }) => [styles.quickTileInner, pressed && styles.pressed]}
       >

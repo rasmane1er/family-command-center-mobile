@@ -39,7 +39,7 @@ export function PremiumHeader({
       >
         <View style={styles.topRow}>
           {onBack ? (
-            <Pressable onPress={onBack} style={styles.backBtn} hitSlop={8}>
+            <Pressable accessibilityRole="button" onPress={onBack} style={styles.backBtn} hitSlop={8}>
               <Ionicons name="arrow-back" size={22} color="#fff" />
             </Pressable>
           ) : (

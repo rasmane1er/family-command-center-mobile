@@ -89,12 +89,12 @@ export function ConnectBankScreen({ navigation }: any) {
 
   const screenHeader = (
     <View style={[styles.header, { paddingTop: insets.top + 6 }]}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color={colors.text} />
         </Pressable>
         <Text style={styles.headerTitle}>Connected Banks</Text>
         {items.length > 0 && (
-          <Pressable onPress={handleSync} disabled={isSyncing} style={styles.syncBtn}>
+          <Pressable accessibilityRole="button" onPress={handleSync} disabled={isSyncing} style={styles.syncBtn}>
             {isSyncing
               ? <ActivityIndicator size="small" color={colors.primary} />
               : <Ionicons name="refresh-outline" size={20} color={colors.primary} />
@@ -109,7 +109,7 @@ export function ConnectBankScreen({ navigation }: any) {
       start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
       style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
     >
-      <Pressable onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </Pressable>
       <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>Connect Bank</Text>
@@ -156,7 +156,7 @@ export function ConnectBankScreen({ navigation }: any) {
                       : 'Never synced'}
                   </Text>
                 </View>
-                <Pressable
+                <Pressable accessibilityRole="button"
                   onPress={() => handleDisconnect(item.id, item.institutionName)}
                   style={styles.disconnectBtn}
                 >

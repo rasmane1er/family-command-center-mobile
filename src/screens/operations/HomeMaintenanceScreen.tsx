@@ -224,7 +224,7 @@ export function HomeMaintenanceScreen({ navigation }: any) {
             </View>
           </View>
           {showActions && (
-            <Pressable onPress={() => handleDelete(task)} style={styles.deleteBtn}>
+            <Pressable accessibilityRole="button" onPress={() => handleDelete(task)} style={styles.deleteBtn}>
               <Ionicons name="trash-outline" size={16} color={colors.danger} />
             </Pressable>
           )}
@@ -342,11 +342,11 @@ export function HomeMaintenanceScreen({ navigation }: any) {
   const screenHeader = (
     <LinearGradient colors={['#37474F', '#546E7A']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
       <View style={styles.headerTop}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <Text style={styles.headerTitle}>{t('ops.homeMaintenance')}</Text>
-        <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
+        <Pressable accessibilityRole="button" onPress={() => setShowAddModal(true)} style={styles.addBtn}>
           <Ionicons name="add" size={26} color="#fff" />
         </Pressable>
       </View>
@@ -369,7 +369,7 @@ export function HomeMaintenanceScreen({ navigation }: any) {
     
     <View style={styles.tabs}>
             {(['pending', 'done', 'recurring'] as const).map((tab) => (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={tab}
                 onPress={() => setActiveTab(tab)}
                 style={[styles.tab, activeTab === tab && styles.tabActive]}
@@ -388,7 +388,7 @@ export function HomeMaintenanceScreen({ navigation }: any) {
       colors={['#37474F', '#546E7A']}
       style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
     >
-      <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={styles.headerTitle}>{t('ops.homeMaintenance')}</Text>
@@ -422,7 +422,7 @@ export function HomeMaintenanceScreen({ navigation }: any) {
                   <Text style={styles.seasonalTitle}>🍂 {season} Suggestions</Text>
                   <View style={styles.seasonalChips}>
                     {suggestions.map((s) => (
-                      <Pressable
+                      <Pressable accessibilityRole="button"
                         key={s}
                         onPress={() => {
                           setFormTitle(s);
@@ -485,12 +485,12 @@ export function HomeMaintenanceScreen({ navigation }: any) {
           <Text style={styles.modalTitle}>Add Maintenance Task</Text>
 
           <Text style={styles.modalLabel}>Title *</Text>
-          <TextInput style={styles.modalInput} placeholder="e.g. Replace HVAC filter" value={formTitle} onChangeText={setFormTitle} placeholderTextColor={colors.textMuted} autoFocus />
+          <TextInput accessibilityLabel="e.g. Replace HVAC filter" style={styles.modalInput} placeholder="e.g. Replace HVAC filter" value={formTitle} onChangeText={setFormTitle} placeholderTextColor={colors.textMuted} autoFocus />
 
           <Text style={styles.modalLabel}>Category</Text>
           <View style={styles.catGrid}>
             {CATEGORIES.map((c) => (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={c.value}
                 onPress={() => setFormCategory(c.value)}
                 style={[styles.catChip, formCategory === c.value && styles.catChipActive]}
@@ -504,7 +504,7 @@ export function HomeMaintenanceScreen({ navigation }: any) {
           <Text style={styles.modalLabel}>Priority</Text>
           <View style={styles.priorityRow}>
             {PRIORITIES.map((p) => (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={p.value}
                 onPress={() => setFormPriority(p.value)}
                 style={[styles.priorityChip, formPriority === p.value && { borderColor: p.color, backgroundColor: p.color + '18' }]}
@@ -515,16 +515,16 @@ export function HomeMaintenanceScreen({ navigation }: any) {
           </View>
 
           <Text style={styles.modalLabel}>Due Date (YYYY-MM-DD)</Text>
-          <TextInput style={styles.modalInput} placeholder="2024-07-01" value={formDueDate} onChangeText={setFormDueDate} placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="2024-07-01" style={styles.modalInput} placeholder="2024-07-01" value={formDueDate} onChangeText={setFormDueDate} placeholderTextColor={colors.textMuted} />
 
           <Text style={styles.modalLabel}>Estimated Cost ($)</Text>
-          <TextInput style={styles.modalInput} placeholder="e.g. 200" value={formCost} onChangeText={setFormCost} keyboardType="decimal-pad" placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="e.g. 200" style={styles.modalInput} placeholder="e.g. 200" value={formCost} onChangeText={setFormCost} keyboardType="decimal-pad" placeholderTextColor={colors.textMuted} />
 
           <Text style={styles.modalLabel}>Contractor / Service Provider</Text>
-          <TextInput style={styles.modalInput} placeholder="e.g. Bob's Plumbing (555-0199)" value={formContractor} onChangeText={setFormContractor} placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="e.g. Bob's Plumbing (555-0199)" style={styles.modalInput} placeholder="e.g. Bob's Plumbing (555-0199)" value={formContractor} onChangeText={setFormContractor} placeholderTextColor={colors.textMuted} />
 
           <Text style={styles.modalLabel}>Notes</Text>
-          <TextInput style={[styles.modalInput, styles.modalTextarea]} placeholder="Any additional notes..." value={formNotes} onChangeText={setFormNotes} multiline numberOfLines={3} placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="Any additional notes..." style={[styles.modalInput, styles.modalTextarea]} placeholder="Any additional notes..." value={formNotes} onChangeText={setFormNotes} multiline numberOfLines={3} placeholderTextColor={colors.textMuted} />
 
           <View style={styles.recurringRow}>
             <View>
@@ -539,7 +539,7 @@ export function HomeMaintenanceScreen({ navigation }: any) {
               <Text style={styles.modalLabel}>Interval</Text>
               <View style={styles.intervalRow}>
                 {INTERVALS.map((i) => (
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     key={i.value}
                     onPress={() => setFormInterval(i.value)}
                     style={[styles.intervalChip, formInterval === i.value && styles.intervalChipActive]}

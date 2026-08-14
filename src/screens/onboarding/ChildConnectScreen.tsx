@@ -49,7 +49,7 @@ export function ChildConnectScreen({ navigation }: any) {
       style={[styles.container, { paddingTop: insets.top }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <Pressable onPress={handleBack} style={styles.backBtn}>
+      <Pressable accessibilityRole="button" onPress={handleBack} style={styles.backBtn}>
         <Ionicons name="arrow-back" size={22} color="rgba(255,255,255,0.7)" />
       </Pressable>
 
@@ -68,7 +68,7 @@ export function ChildConnectScreen({ navigation }: any) {
           Enter the 6-character code shown on your parent's phone
         </Text>
 
-        <TextInput
+        <TextInput accessibilityLabel="X X X X X X"
           style={styles.codeInput}
           value={code}
           onChangeText={(t) => setCode(t.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, CODE_LENGTH))}
@@ -83,7 +83,7 @@ export function ChildConnectScreen({ navigation }: any) {
           onSubmitEditing={handleConnect}
         />
 
-        <Pressable
+        <Pressable accessibilityRole="button"
           style={[styles.connectBtn, (code.length < CODE_LENGTH || loading) && styles.connectBtnDisabled]}
           onPress={handleConnect}
           disabled={code.length < CODE_LENGTH || loading}

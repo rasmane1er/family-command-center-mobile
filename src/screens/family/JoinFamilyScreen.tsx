@@ -137,7 +137,7 @@ export function JoinFamilyScreen({ navigation }: any) {
       />
 
       <View style={styles.overlay}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </Pressable>
         <Text style={styles.title}>{t('family.screens.joinFamily.title')}</Text>
@@ -184,7 +184,7 @@ export function JoinFamilyScreen({ navigation }: any) {
             </Text>
 
             <Text style={styles.label}>{t('family.screens.joinFamily.yourName')}</Text>
-            <TextInput
+            <TextInput accessibilityLabel={t('family.screens.joinFamily.namePlaceholder')}
               style={styles.input}
               placeholder={t('family.screens.joinFamily.namePlaceholder')}
               value={requesterName}
@@ -196,7 +196,7 @@ export function JoinFamilyScreen({ navigation }: any) {
             <Text style={styles.label}>{t('family.screens.joinFamily.role')}</Text>
             <View style={styles.roleGrid}>
               {ROLES.map((role) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={role}
                   onPress={() => setRequesterRole(role)}
                   style={[styles.roleChip, requesterRole === role && styles.roleChipActive]}

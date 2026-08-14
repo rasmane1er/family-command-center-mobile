@@ -79,7 +79,7 @@ export function ReferAndEarnScreen() {
       <LinearGradient colors={['#0A1628', '#0D2D52', '#0B4F82']} style={[s.hero, { paddingTop: insets.top + 12 }]}>
         <View style={s.heroOrb} />
         {/* Back button */}
-        <Pressable
+        <Pressable accessibilityRole="button"
           onPress={() => navigation.goBack()}
           style={s.backBtn}
           hitSlop={12}
@@ -139,7 +139,7 @@ export function ReferAndEarnScreen() {
         <View style={s.codeRow}>
           <Text style={[s.code, { color: colors.primary }]}>{data?.referralCode ?? '——'}</Text>
         </View>
-        <Pressable
+        <Pressable accessibilityRole="button"
           style={({ pressed }) => [s.shareBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
           onPress={handleShare}
           disabled={!data?.referralCode}

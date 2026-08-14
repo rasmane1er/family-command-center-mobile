@@ -163,7 +163,7 @@ export function ScanItemScreen({ navigation }: any) {
     return (
       <View style={styles.container}>
         <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-          <Pressable onPress={resetScan} style={styles.backBtn}>
+          <Pressable accessibilityRole="button" onPress={resetScan} style={styles.backBtn}>
             <Ionicons name="arrow-back" size={22} color={colors.text} />
           </Pressable>
           <Text style={styles.headerTitle}>Confirm Items</Text>
@@ -175,7 +175,7 @@ export function ScanItemScreen({ navigation }: any) {
             I found {reviewItems.length} item{reviewItems.length === 1 ? '' : 's'}. Uncheck anything that's wrong or already in your pantry:
           </Text>
           {reviewItems.map((item, index) => (
-            <Pressable key={`${item.name}-${index}`} onPress={() => toggleReviewItem(index)} style={styles.reviewRow}>
+            <Pressable accessibilityRole="button" key={`${item.name}-${index}`} onPress={() => toggleReviewItem(index)} style={styles.reviewRow}>
               <Ionicons
                 name={item.selected ? 'checkbox' : 'square-outline'}
                 size={22}
@@ -206,7 +206,7 @@ export function ScanItemScreen({ navigation }: any) {
     return (
       <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-          <Pressable onPress={resetScan} style={styles.backBtn}>
+          <Pressable accessibilityRole="button" onPress={resetScan} style={styles.backBtn}>
             <Ionicons name="arrow-back" size={22} color={colors.text} />
           </Pressable>
           <Text style={styles.headerTitle}>{state === 'not-found' ? 'Not Found — Add Manually' : 'Confirm Item'}</Text>
@@ -226,36 +226,36 @@ export function ScanItemScreen({ navigation }: any) {
           {imageUrl && <Image source={{ uri: imageUrl }} style={styles.productImage} resizeMode="contain" />}
 
           <Text style={styles.label}>Item Name *</Text>
-          <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="e.g. Whole Milk" placeholderTextColor={colors.textMuted} autoFocus={state === 'not-found'} />
+          <TextInput accessibilityLabel="e.g. Whole Milk" style={styles.input} value={name} onChangeText={setName} placeholder="e.g. Whole Milk" placeholderTextColor={colors.textMuted} autoFocus={state === 'not-found'} />
 
           <Text style={styles.label}>Brand</Text>
-          <TextInput style={styles.input} value={brand} onChangeText={setBrand} placeholder="e.g. Organic Valley" placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="e.g. Organic Valley" style={styles.input} value={brand} onChangeText={setBrand} placeholder="e.g. Organic Valley" placeholderTextColor={colors.textMuted} />
 
           <View style={styles.row}>
             <View style={{ flex: 1 }}>
               <Text style={styles.label}>Quantity</Text>
-              <TextInput style={styles.input} value={quantity} onChangeText={setQuantity} keyboardType="numeric" placeholderTextColor={colors.textMuted} />
+              <TextInput accessibilityLabel="pcs / lbs / oz" style={styles.input} value={quantity} onChangeText={setQuantity} keyboardType="numeric" placeholderTextColor={colors.textMuted} />
             </View>
             <View style={{ flex: 1, marginLeft: 10 }}>
               <Text style={styles.label}>Unit</Text>
-              <TextInput style={styles.input} value={unit} onChangeText={setUnit} placeholder="pcs / lbs / oz" placeholderTextColor={colors.textMuted} />
+              <TextInput accessibilityLabel="pcs / lbs / oz" style={styles.input} value={unit} onChangeText={setUnit} placeholder="pcs / lbs / oz" placeholderTextColor={colors.textMuted} />
             </View>
           </View>
 
           <Text style={styles.label}>Category</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
             {CATEGORIES.map((cat) => (
-              <Pressable key={cat} onPress={() => setCategory(cat)} style={[styles.catChip, category === cat && styles.catChipActive]}>
+              <Pressable accessibilityRole="button" key={cat} onPress={() => setCategory(cat)} style={[styles.catChip, category === cat && styles.catChipActive]}>
                 <Text style={[styles.catText, category === cat && styles.catTextActive]}>{cat}</Text>
               </Pressable>
             ))}
           </ScrollView>
 
           <Text style={styles.label}>Storage Location</Text>
-          <TextInput style={styles.input} value={location} onChangeText={setLocation} placeholder="e.g. Pantry, Fridge, Freezer" placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="e.g. Pantry, Fridge, Freezer" style={styles.input} value={location} onChangeText={setLocation} placeholder="e.g. Pantry, Fridge, Freezer" placeholderTextColor={colors.textMuted} />
 
           <Text style={styles.label}>Expiry Date (YYYY-MM-DD)</Text>
-          <TextInput style={[styles.input, { marginBottom: 24 }]} value={expiryDate} onChangeText={setExpiryDate} placeholder="Optional" placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="Optional" style={[styles.input, { marginBottom: 24 }]} value={expiryDate} onChangeText={setExpiryDate} placeholder="Optional" placeholderTextColor={colors.textMuted} />
 
           <Button title="Add to Pantry" onPress={handleSave} fullWidth size="lg" disabled={!name.trim()} />
           <Button title="Scan Again" onPress={resetScan} variant="ghost" fullWidth style={{ marginTop: 8 }} />
@@ -267,7 +267,7 @@ export function ScanItemScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color={colors.text} />
         </Pressable>
         <Text style={styles.headerTitle}>Scan Item</Text>
@@ -275,11 +275,11 @@ export function ScanItemScreen({ navigation }: any) {
       </View>
 
       <View style={styles.modeToggle}>
-        <Pressable onPress={() => setMode('barcode')} style={[styles.modeBtn, mode === 'barcode' && styles.modeBtnActive]}>
+        <Pressable accessibilityRole="button" onPress={() => setMode('barcode')} style={[styles.modeBtn, mode === 'barcode' && styles.modeBtnActive]}>
           <Ionicons name="barcode-outline" size={16} color={mode === 'barcode' ? '#fff' : colors.textSecondary} />
           <Text style={[styles.modeBtnText, mode === 'barcode' && styles.modeBtnTextActive]}>Barcode</Text>
         </Pressable>
-        <Pressable onPress={() => setMode('photo')} style={[styles.modeBtn, mode === 'photo' && styles.modeBtnActive]}>
+        <Pressable accessibilityRole="button" onPress={() => setMode('photo')} style={[styles.modeBtn, mode === 'photo' && styles.modeBtnActive]}>
           <Ionicons name="sparkles-outline" size={16} color={mode === 'photo' ? '#fff' : colors.textSecondary} />
           <Text style={[styles.modeBtnText, mode === 'photo' && styles.modeBtnTextActive]}>AI Photo</Text>
         </Pressable>
@@ -317,7 +317,7 @@ export function ScanItemScreen({ navigation }: any) {
               {state === 'analyzing-photo' ? (
                 <ActivityIndicator color="#fff" size="small" style={{ marginTop: 16 }} />
               ) : (
-                <Pressable onPress={takePantryPhoto} style={styles.captureBtn}>
+                <Pressable accessibilityRole="button" onPress={takePantryPhoto} style={styles.captureBtn}>
                   <Ionicons name="camera" size={26} color="#fff" />
                 </Pressable>
               )}

@@ -135,11 +135,11 @@ export function TimeEconomyScreen({ navigation }: any) {
   const screenHeader = (
     <LinearGradient colors={['#004D40', '#00796B']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
       <View style={styles.headerTop}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <Text style={styles.headerTitle}>{t('timeEconomy.title')}</Text>
-        <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setNewMemberIdModal(activeMemberId); setShowModal(true); }} style={styles.addBtn}>
+        <Pressable accessibilityRole="button" onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setNewMemberIdModal(activeMemberId); setShowModal(true); }} style={styles.addBtn}>
           <Ionicons name="add" size={24} color="#fff" />
         </Pressable>
       </View>
@@ -152,7 +152,7 @@ export function TimeEconomyScreen({ navigation }: any) {
     
     <View style={styles.tabs}>
             {(['overview', 'schedule', 'insights'] as const).map((tab) => (
-              <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
+              <Pressable accessibilityRole="button" key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
                 <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
                   {tab.charAt(0).toUpperCase() + tab.slice(1)}
                 </Text>
@@ -164,7 +164,7 @@ export function TimeEconomyScreen({ navigation }: any) {
 
   const screenCompact = (
     <LinearGradient colors={['#004D40', '#00796B']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={styles.headerTitle}>{t('timeEconomy.title')}</Text>
@@ -240,7 +240,7 @@ export function TimeEconomyScreen({ navigation }: any) {
           <>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
               {members.map((m) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={m.id}
                   onPress={() => setSelectedMember(m.id)}
                   style={[styles.memberTab, activeMemberId === m.id && { borderBottomColor: m.avatarColor, borderBottomWidth: 2.5 }]}
@@ -313,7 +313,7 @@ export function TimeEconomyScreen({ navigation }: any) {
           <Text style={styles.modalLabel}>Member</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
             {members.map((m) => (
-              <Pressable key={m.id} onPress={() => setNewMemberIdModal(m.id)} style={[styles.memberChip, newMemberIdModal === m.id && { borderColor: m.avatarColor, backgroundColor: m.avatarColor + '15' }]}>
+              <Pressable accessibilityRole="button" key={m.id} onPress={() => setNewMemberIdModal(m.id)} style={[styles.memberChip, newMemberIdModal === m.id && { borderColor: m.avatarColor, backgroundColor: m.avatarColor + '15' }]}>
                 <View style={[styles.memberDot, { backgroundColor: m.avatarColor }]} />
                 <Text style={[styles.memberChipText, newMemberIdModal === m.id && { color: m.avatarColor }]}>{m.name.split(' ')[0]}</Text>
               </Pressable>
@@ -325,7 +325,7 @@ export function TimeEconomyScreen({ navigation }: any) {
             {(Object.keys(CATEGORY_CONFIG) as TimeBlockCategory[]).map((cat) => {
               const cfg = CATEGORY_CONFIG[cat];
               return (
-                <Pressable key={cat} onPress={() => setNewCategory(cat)} style={[styles.catChip, newCategory === cat && { backgroundColor: cfg.color, borderColor: cfg.color }]}>
+                <Pressable accessibilityRole="button" key={cat} onPress={() => setNewCategory(cat)} style={[styles.catChip, newCategory === cat && { backgroundColor: cfg.color, borderColor: cfg.color }]}>
                   <Ionicons name={cfg.icon as any} size={13} color={newCategory === cat ? '#fff' : cfg.color} />
                   <Text style={[styles.catChipText, newCategory === cat && { color: '#fff' }]}>{cat}</Text>
                 </Pressable>
@@ -334,17 +334,17 @@ export function TimeEconomyScreen({ navigation }: any) {
           </View>
 
           <Text style={styles.modalLabel}>Title</Text>
-          <TextInput style={styles.modalInput} value={newTitle} onChangeText={setNewTitle} placeholder="What activity is this?" placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="What activity is this?" style={styles.modalInput} value={newTitle} onChangeText={setNewTitle} placeholder="What activity is this?" placeholderTextColor={colors.textMuted} />
 
           <View style={styles.timeRow}>
             <View style={{ flex: 1 }}>
               <Text style={styles.modalLabel}>Start Time</Text>
-              <TextInput style={styles.modalInput} value={newStart} onChangeText={setNewStart} placeholder="09:00" placeholderTextColor={colors.textMuted} />
+              <TextInput accessibilityLabel="09:00" style={styles.modalInput} value={newStart} onChangeText={setNewStart} placeholder="09:00" placeholderTextColor={colors.textMuted} />
             </View>
             <View style={{ width: 16 }} />
             <View style={{ flex: 1 }}>
               <Text style={styles.modalLabel}>End Time</Text>
-              <TextInput style={styles.modalInput} value={newEnd} onChangeText={setNewEnd} placeholder="10:00" placeholderTextColor={colors.textMuted} />
+              <TextInput accessibilityLabel="10:00" style={styles.modalInput} value={newEnd} onChangeText={setNewEnd} placeholder="10:00" placeholderTextColor={colors.textMuted} />
             </View>
           </View>
 

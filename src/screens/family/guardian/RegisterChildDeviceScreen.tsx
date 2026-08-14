@@ -102,7 +102,7 @@ export function RegisterChildDeviceScreen({ navigation }: any) {
       <View style={styles.headerGlow} />
 
       <View style={styles.headerRow}>
-        <Pressable onPress={handleCancel} style={styles.backBtn}>
+        <Pressable accessibilityRole="button" onPress={handleCancel} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </Pressable>
 
@@ -153,7 +153,7 @@ export function RegisterChildDeviceScreen({ navigation }: any) {
       colors={['#081B33', '#0F2952']}
       style={[styles.compactHeader, { paddingTop: insets.top }]}
     >
-      <Pressable onPress={handleCancel} style={styles.backBtn}>
+      <Pressable accessibilityRole="button" onPress={handleCancel} style={styles.backBtn}>
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </Pressable>
 
@@ -162,7 +162,7 @@ export function RegisterChildDeviceScreen({ navigation }: any) {
         <Text style={styles.compactSubtitle}>{formattedCode}</Text>
       </View>
 
-      <Pressable onPress={handleRefresh} style={styles.compactAction}>
+      <Pressable accessibilityRole="button" onPress={handleRefresh} style={styles.compactAction}>
         <Ionicons name="refresh" size={18} color="#fff" />
       </Pressable>
     </LinearGradient>
@@ -206,7 +206,7 @@ export function RegisterChildDeviceScreen({ navigation }: any) {
               <View style={[styles.codeCard, shadows.md]}>
                 <Ionicons name="alert-circle" size={32} color={colors.danger} />
                 <Text style={styles.codeCardTitle}>{error}</Text>
-                <Pressable style={styles.refreshBtn} onPress={handleRefresh}>
+                <Pressable accessibilityRole="button" style={styles.refreshBtn} onPress={handleRefresh}>
                   <Ionicons name="refresh" size={16} color={colors.primary} />
                   <Text style={styles.refreshBtnText}>Try Again</Text>
                 </Pressable>
@@ -230,7 +230,7 @@ export function RegisterChildDeviceScreen({ navigation }: any) {
                   Give this code to a parent, or let them scan the QR code below.
                 </Text>
 
-                <Pressable style={styles.refreshBtn} onPress={handleRefresh}>
+                <Pressable accessibilityRole="button" style={styles.refreshBtn} onPress={handleRefresh}>
                   <Ionicons name="refresh" size={16} color={colors.primary} />
                   <Text style={styles.refreshBtnText}>Generate New Code</Text>
                 </Pressable>
@@ -309,7 +309,7 @@ export function RegisterChildDeviceScreen({ navigation }: any) {
               ))}
             </View>
 
-            <Pressable style={styles.cancelBtn} onPress={handleCancel}>
+            <Pressable accessibilityRole="button" style={styles.cancelBtn} onPress={handleCancel}>
               <Text style={styles.cancelBtnText}>Cancel Pairing</Text>
             </Pressable>
           </ScrollView>

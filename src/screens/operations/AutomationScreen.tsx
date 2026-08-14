@@ -118,11 +118,11 @@ export function AutomationScreen({ navigation }: any) {
   const screenHeader = (
     <LinearGradient colors={['#1A1A2E', '#16213E']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
       <View style={styles.headerTop}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <Text style={styles.headerTitle}>Automation Engine</Text>
-        <Pressable
+        <Pressable accessibilityRole="button"
           onPress={() => setActiveTab('templates')}
           style={styles.addBtn}
         >
@@ -153,7 +153,7 @@ export function AutomationScreen({ navigation }: any) {
     
     <View style={styles.tabs}>
             {(['rules', 'templates'] as const).map((tab) => (
-              <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
+              <Pressable accessibilityRole="button" key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
                 <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
                   {tab === 'rules' ? `My Rules (${rules.length})` : 'Templates'}
                 </Text>
@@ -165,7 +165,7 @@ export function AutomationScreen({ navigation }: any) {
 
   const screenCompact = (
     <LinearGradient colors={['#1A1A2E', '#16213E']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={styles.headerTitle}>Automation Engine</Text>
@@ -220,7 +220,7 @@ export function AutomationScreen({ navigation }: any) {
               </View>
               <View style={styles.ruleStats}>
                 <Text style={styles.runCount}>Ran {rule.runCount}x</Text>
-                <Pressable onPress={() => handleDelete(rule.id, rule.name)}>
+                <Pressable accessibilityRole="button" onPress={() => handleDelete(rule.id, rule.name)}>
                   <Ionicons name="trash-outline" size={16} color={colors.danger} />
                 </Pressable>
               </View>
@@ -229,7 +229,7 @@ export function AutomationScreen({ navigation }: any) {
         ))}
 
         {activeTab === 'templates' && TEMPLATES.map((t, i) => (
-          <Pressable key={i} onPress={() => handleAddTemplate(t)}>
+          <Pressable accessibilityRole="button" key={i} onPress={() => handleAddTemplate(t)}>
             <Card style={styles.templateCard} variant="elevated">
               <View style={[styles.templateIcon, { backgroundColor: t.color + '15' }]}>
                 <Ionicons name={t.icon as any} size={24} color={t.color} />

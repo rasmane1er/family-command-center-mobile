@@ -18,7 +18,7 @@ export function BiometricLockScreen({ onUnlock }: BiometricLockScreenProps) {
         </View>
         <Text style={styles.title}>{t('screens.shared.biometricLockedTitle')}</Text>
         <Text style={styles.subtitle}>{t('screens.shared.biometricLockedSubtitle')}</Text>
-        <Pressable style={styles.button} onPress={onUnlock}>
+        <Pressable accessibilityRole="button" style={styles.button} onPress={onUnlock}>
           <Text style={styles.buttonText}>{t('screens.shared.unlock')}</Text>
         </Pressable>
       </LinearGradient>

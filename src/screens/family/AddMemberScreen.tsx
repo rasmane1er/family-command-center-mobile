@@ -139,7 +139,7 @@ export function AddMemberScreen({ navigation }: any) {
             colors={['#0F2952', '#1E4A8A']}
             style={[dynStyles.header, { paddingTop: insets.top + 6 }]}
           >
-            <Pressable onPress={() => navigation.goBack()} style={dynStyles.backBtn}>
+            <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={dynStyles.backBtn}>
               <Ionicons name="arrow-back" size={22} color="#fff" />
             </Pressable>
             <Text style={dynStyles.headerTitle}>{t('addMember.title')}</Text>
@@ -148,7 +148,7 @@ export function AddMemberScreen({ navigation }: any) {
         );
         const step1Compact = (
           <LinearGradient colors={['#0F2952', '#1E4A8A']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Pressable onPress={() => navigation.goBack()} style={dynStyles.backBtn}>
+            <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={dynStyles.backBtn}>
               <Ionicons name="arrow-back" size={22} color="#fff" />
             </Pressable>
             <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>{t('addMember.title')}</Text>
@@ -167,7 +167,7 @@ export function AddMemberScreen({ navigation }: any) {
         >
           <Text style={dynStyles.sectionTitle}>How will this person use the app?</Text>
 
-          <Pressable style={dynStyles.typeCard} onPress={() => handleSelectType('local')}>
+          <Pressable accessibilityRole="button" style={dynStyles.typeCard} onPress={() => handleSelectType('local')}>
             <View style={[dynStyles.typeIconBox, { backgroundColor: '#E8F4FD' }]}>
               <Ionicons name="person-outline" size={28} color={colors.primary} />
             </View>
@@ -180,7 +180,7 @@ export function AddMemberScreen({ navigation }: any) {
             <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
           </Pressable>
 
-          <Pressable style={dynStyles.typeCard} onPress={() => handleSelectType('linked')}>
+          <Pressable accessibilityRole="button" style={dynStyles.typeCard} onPress={() => handleSelectType('linked')}>
             <View style={[dynStyles.typeIconBox, { backgroundColor: '#E8F7EE' }]}>
               <Ionicons name="mail-outline" size={28} color={colors.success} />
             </View>
@@ -202,7 +202,7 @@ export function AddMemberScreen({ navigation }: any) {
         <ScrollView contentContainerStyle={dynStyles.content} keyboardShouldPersistTaps="handled">
           {/* Name */}
           <Text style={dynStyles.label}>Name *</Text>
-          <TextInput
+          <TextInput accessibilityLabel="Enter full name"
             style={[dynStyles.input, nameError ? dynStyles.inputError : undefined]}
             placeholder="Enter full name"
             placeholderTextColor={colors.textMuted}
@@ -215,7 +215,7 @@ export function AddMemberScreen({ navigation }: any) {
           <Text style={dynStyles.label}>Role</Text>
           <View style={dynStyles.chipRow}>
             {availableRoles.map((r) => (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={r}
                 style={[dynStyles.chip, role === r && dynStyles.chipActive]}
                 onPress={() => setRole(r)}
@@ -229,7 +229,7 @@ export function AddMemberScreen({ navigation }: any) {
 
           {/* DOB */}
           <Text style={dynStyles.label}>Date of Birth (optional)</Text>
-          <TextInput
+          <TextInput accessibilityLabel="YYYY-MM-DD"
             style={dynStyles.input}
             placeholder="YYYY-MM-DD"
             placeholderTextColor={colors.textMuted}
@@ -241,7 +241,7 @@ export function AddMemberScreen({ navigation }: any) {
           <Text style={dynStyles.label}>Avatar Color</Text>
           <View style={dynStyles.colorRow}>
             {AVATAR_COLORS.map((c) => (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={c}
                 style={[dynStyles.colorDot, { backgroundColor: c }, avatarColor === c && dynStyles.colorDotActive]}
                 onPress={() => setAvatarColor(c)}
@@ -270,7 +270,7 @@ export function AddMemberScreen({ navigation }: any) {
               </View>
               {pinEnabled && (
                 <>
-                  <TextInput
+                  <TextInput accessibilityLabel="Enter 4–6 digit PIN"
                     style={[dynStyles.input, pinError ? dynStyles.inputError : undefined]}
                     placeholder="Enter 4–6 digit PIN"
                     placeholderTextColor={colors.textMuted}
@@ -290,7 +290,7 @@ export function AddMemberScreen({ navigation }: any) {
           {memberType === 'linked' && (
             <>
               <Text style={dynStyles.label}>Email (optional)</Text>
-              <TextInput
+              <TextInput accessibilityLabel="their@email.com"
                 style={dynStyles.input}
                 placeholder="their@email.com"
                 placeholderTextColor={colors.textMuted}
@@ -300,7 +300,7 @@ export function AddMemberScreen({ navigation }: any) {
                 autoCapitalize="none"
               />
               <Text style={dynStyles.label}>Phone (optional)</Text>
-              <TextInput
+              <TextInput accessibilityLabel="+1 (555) 000-0000"
                 style={dynStyles.input}
                 placeholder="+1 (555) 000-0000"
                 placeholderTextColor={colors.textMuted}
@@ -318,7 +318,7 @@ export function AddMemberScreen({ navigation }: any) {
           )}
 
           {/* Save button */}
-          <Pressable style={dynStyles.saveBtn} onPress={handleSave}>
+          <Pressable accessibilityRole="button" style={dynStyles.saveBtn} onPress={handleSave}>
             <LinearGradient
               colors={['#1E4A8A', '#0F2952']}
               style={dynStyles.saveBtnGrad}

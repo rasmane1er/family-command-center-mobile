@@ -113,7 +113,7 @@ export function ImportStatementScreen({ navigation, route }: Props) {
     <View style={styles.container}>
       <StatusBar style="dark" />
       <View style={[styles.header, { paddingTop: insets.top + 6 }]}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
           <Ionicons name="arrow-back" size={24} color={TEXT} />
         </Pressable>
         <Text style={styles.headerTitle} numberOfLines={1}>Import Statement</Text>
@@ -154,7 +154,7 @@ export function ImportStatementScreen({ navigation, route }: Props) {
               {parseErrors.length > 0 && (
                 <Text style={styles.errorText}>{parseErrors.length} row{parseErrors.length === 1 ? '' : 's'} couldn't be read.</Text>
               )}
-              <Pressable onPress={invertAllSigns} style={styles.invertRow}>
+              <Pressable accessibilityRole="button" onPress={invertAllSigns} style={styles.invertRow}>
                 <Ionicons name="swap-vertical" size={16} color={PRIMARY} />
                 <Text style={styles.invertText}>Amounts look flipped? Tap to invert income/expense</Text>
               </Pressable>
@@ -162,7 +162,7 @@ export function ImportStatementScreen({ navigation, route }: Props) {
 
             <View style={styles.card}>
               {rows.map((r, i) => (
-                <Pressable key={i} style={styles.row} onPress={() => toggleRow(i)}>
+                <Pressable accessibilityRole="button" key={i} style={styles.row} onPress={() => toggleRow(i)}>
                   <Ionicons
                     name={r.included ? 'checkbox' : 'square-outline'}
                     size={22}

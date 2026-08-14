@@ -19,7 +19,7 @@ export function FamilyInviteQRScreen({ navigation }: any) {
     return (
       <View style={styles.emptyContainer}>
         <StatusBar style="dark" />
-        <Pressable onPress={() => navigation.goBack()} style={styles.backBtnLight}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtnLight}>
           <Ionicons name="arrow-back" size={22} color={colors.text} />
         </Pressable>
         <Ionicons name="people-outline" size={48} color={colors.textMuted} />
@@ -52,7 +52,7 @@ export function FamilyInviteQRScreen({ navigation }: any) {
         colors={['#0F2952', '#16476E']}
         style={[styles.header, { paddingTop: insets.top + 6 }]}
       >
-        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </Pressable>
         <Text style={styles.headerTitle}>{t('inviteQR.title')}</Text>

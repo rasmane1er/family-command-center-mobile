@@ -74,7 +74,7 @@ const PollCard = React.memo(function PollCard({ poll, memberId, onVote, onClose,
             </Text>
           </View>
         </View>
-        <Pressable onPress={() => onDelete(poll.id, poll.question)} style={styles.deleteBtn}>
+        <Pressable accessibilityRole="button" onPress={() => onDelete(poll.id, poll.question)} style={styles.deleteBtn}>
           <Ionicons name="trash-outline" size={16} color={colors.textMuted} />
         </Pressable>
       </View>
@@ -82,7 +82,7 @@ const PollCard = React.memo(function PollCard({ poll, memberId, onVote, onClose,
       {poll.isActive && !myVotedOption ? (
         <View style={styles.votingSection}>
           {poll.options.map((opt) => (
-            <Pressable key={opt.id} onPress={() => onVote(poll.id, opt.id)} style={styles.voteBtn}>
+            <Pressable accessibilityRole="button" key={opt.id} onPress={() => onVote(poll.id, opt.id)} style={styles.voteBtn}>
               <Text style={styles.voteBtnEmoji}>{opt.emoji}</Text>
               <Text style={styles.voteBtnText}>{opt.text}</Text>
               <Text style={styles.voteBtnCount}>{opt.votes.length}</Text>
@@ -113,7 +113,7 @@ const PollCard = React.memo(function PollCard({ poll, memberId, onVote, onClose,
       )}
 
       {poll.isActive && (
-        <Pressable onPress={() => onClose(poll)} style={styles.closeVotingBtn}>
+        <Pressable accessibilityRole="button" onPress={() => onClose(poll)} style={styles.closeVotingBtn}>
           <Text style={styles.closeVotingText}>{t('family.screens.familyPolls.closeVotingBtn')}</Text>
         </Pressable>
       )}
@@ -203,14 +203,14 @@ export function FamilyPollsScreen({ navigation }: any) {
   const screenHeader = (
     <LinearGradient colors={['#1565C0', '#2980B9']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
       <View style={styles.headerRow}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <View style={{ flex: 1 }}>
           <Text style={styles.headerTitle}>{t('family.screens.familyPolls.headerTitle')}</Text>
           <Text style={styles.headerSub}>{t('family.screens.familyPolls.headerSub', { activeCount: activePolls.length, closedCount: closedPolls.length })}</Text>
         </View>
-        <Pressable onPress={() => setShowCreate(true)} style={styles.addBtn}>
+        <Pressable accessibilityRole="button" onPress={() => setShowCreate(true)} style={styles.addBtn}>
           <Ionicons name="add" size={22} color="#fff" />
         </Pressable>
       </View>
@@ -230,7 +230,7 @@ export function FamilyPollsScreen({ navigation }: any) {
     
     <View style={styles.tabs}>
             {(['active', 'closed'] as const).map((tab) => (
-              <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
+              <Pressable accessibilityRole="button" key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
                 <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
                   {tab === 'active'
                     ? t('family.screens.familyPolls.tabActive', { count: activePolls.length })
@@ -244,11 +244,11 @@ export function FamilyPollsScreen({ navigation }: any) {
 
   const screenCompact = (
     <LinearGradient colors={['#1565C0', '#2980B9']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={styles.headerTitle}>{t('family.screens.familyPolls.headerTitle')}</Text>
-      <Pressable onPress={() => setShowCreate(true)} style={styles.addBtn}>
+      <Pressable accessibilityRole="button" onPress={() => setShowCreate(true)} style={styles.addBtn}>
         <Ionicons name="add" size={22} color="#fff" />
       </Pressable>
     </LinearGradient>
@@ -289,13 +289,13 @@ export function FamilyPollsScreen({ navigation }: any) {
           <View style={styles.modal}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{t('family.screens.familyPolls.createPollTitle')}</Text>
-              <Pressable onPress={() => setShowCreate(false)}>
+              <Pressable accessibilityRole="button" onPress={() => setShowCreate(false)}>
                 <Ionicons name="close" size={24} color={colors.text} />
               </Pressable>
             </View>
             <ScrollView contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">
               <Text style={styles.modalLabel}>{t('family.screens.familyPolls.questionLabel')}</Text>
-              <TextInput
+              <TextInput accessibilityLabel={t('family.screens.familyPolls.questionPlaceholder')}
                 style={styles.modalInput}
                 value={question}
                 onChangeText={setQuestion}
@@ -308,7 +308,7 @@ export function FamilyPollsScreen({ navigation }: any) {
               {options.map((opt, i) => (
                 <View key={i} style={styles.optionInput}>
                   <Text style={styles.optionNum}>{i + 1}.</Text>
-                  <TextInput
+                  <TextInput accessibilityLabel={t('family.screens.familyPolls.optionPlaceholder', { num: i + 1 })}
                     style={[styles.modalInput, { flex: 1 }]}
                     value={opt}
                     onChangeText={(v) => setOptions(options.map((o, idx) => idx === i ? v : o))}
@@ -318,12 +318,12 @@ export function FamilyPollsScreen({ navigation }: any) {
                 </View>
               ))}
               {options.length < 4 && (
-                <Pressable onPress={() => setOptions([...options, ''])} style={styles.addOptionBtn}>
+                <Pressable accessibilityRole="button" onPress={() => setOptions([...options, ''])} style={styles.addOptionBtn}>
                   <Ionicons name="add-circle-outline" size={18} color={colors.primary} />
                   <Text style={styles.addOptionText}>{t('family.screens.familyPolls.addAnotherOption')}</Text>
                 </Pressable>
               )}
-              <Pressable
+              <Pressable accessibilityRole="button"
                 onPress={handleCreatePoll}
                 disabled={!question.trim() || options.filter((o) => o.trim()).length < 2}
                 style={[styles.createBtn, (!question.trim() || options.filter((o) => o.trim()).length < 2) && styles.createBtnDisabled]}

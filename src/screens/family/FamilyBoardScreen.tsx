@@ -85,7 +85,7 @@ function PostCard({
   const priorityColor = PRIORITY_COLORS[post.priority];
 
   return (
-    <Pressable onPress={onPress} style={styles.postCardWrapper}>
+    <Pressable accessibilityRole="button" onPress={onPress} style={styles.postCardWrapper}>
       <View style={[styles.priorityBar, { backgroundColor: priorityColor }]} />
       <View style={[styles.postCardInner, post.isPinned && styles.postCardPinned]}>
         <View style={styles.postTopRow}>
@@ -147,11 +147,11 @@ function PostDetailModal({
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={styles.detailModal}>
         <View style={styles.detailHeader}>
-          <Pressable onPress={onClose} style={styles.detailCloseBtn}>
+          <Pressable accessibilityRole="button" onPress={onClose} style={styles.detailCloseBtn}>
             <Ionicons name="close" size={22} color={colors.text} />
           </Pressable>
           <Text style={styles.detailHeaderTitle}>Post Details</Text>
-          <Pressable onPress={() => onTogglePin(post.id)}>
+          <Pressable accessibilityRole="button" onPress={() => onTogglePin(post.id)}>
             <Ionicons name={post.isPinned ? 'pin' : 'pin-outline'} size={22} color={colors.primary} />
           </Pressable>
         </View>
@@ -187,7 +187,7 @@ function PostDetailModal({
           <Text style={styles.detailSectionTitle}>React</Text>
           <View style={styles.emojiGrid}>
             {REACTION_EMOJIS.map((emoji) => (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={emoji}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -200,7 +200,7 @@ function PostDetailModal({
             ))}
           </View>
 
-          <Pressable
+          <Pressable accessibilityRole="button"
             onPress={() => {
               Alert.alert(t('common.deleteTitle'), 'Remove this post from the board?', [
                 { text: 'Cancel', style: 'cancel' },
@@ -273,7 +273,7 @@ function AddPostModal({
         <View style={styles.modal}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>New Post</Text>
-            <Pressable onPress={onClose}>
+            <Pressable accessibilityRole="button" onPress={onClose}>
               <Ionicons name="close" size={24} color={colors.text} />
             </Pressable>
           </View>
@@ -281,7 +281,7 @@ function AddPostModal({
             <Text style={styles.fieldLabel}>Author</Text>
             <View style={styles.chipRow}>
               {members.map((m) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={m.id}
                   onPress={() => setAuthorId(m.id)}
                   style={[styles.chip, effectiveAuthorId === m.id && styles.chipActive]}
@@ -297,7 +297,7 @@ function AddPostModal({
               {CATEGORIES.map((c) => {
                 const cfg = CATEGORY_CONFIG[c];
                 return (
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     key={c}
                     onPress={() => setCategory(c)}
                     style={[styles.categoryBtn, category === c && { backgroundColor: cfg.color + '20', borderColor: cfg.color }]}
@@ -312,7 +312,7 @@ function AddPostModal({
             <Text style={styles.fieldLabel}>Priority</Text>
             <View style={styles.chipRow}>
               {PRIORITIES.map((p) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={p}
                   onPress={() => setPriority(p)}
                   style={[styles.chip, priority === p && { backgroundColor: PRIORITY_COLORS[p] + '20', borderColor: PRIORITY_COLORS[p] }]}
@@ -325,7 +325,7 @@ function AddPostModal({
             </View>
 
             <Text style={styles.fieldLabel}>Title *</Text>
-            <TextInput
+            <TextInput accessibilityLabel="Post title"
               style={styles.input}
               value={title}
               onChangeText={setTitle}
@@ -334,7 +334,7 @@ function AddPostModal({
             />
 
             <Text style={styles.fieldLabel}>Content *</Text>
-            <TextInput
+            <TextInput accessibilityLabel="What do you want to share with the family?"
               style={[styles.input, { height: 100, textAlignVertical: 'top' }]}
               value={content}
               onChangeText={setContent}
@@ -355,7 +355,7 @@ function AddPostModal({
             <Text style={styles.fieldLabel}>Expires In</Text>
             <View style={styles.chipRow}>
               {EXPIRE_OPTIONS.map((opt) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={String(opt.value)}
                   onPress={() => setExpireOption(opt.value)}
                   style={[styles.chip, expireOption === opt.value && styles.chipActive]}
@@ -367,7 +367,7 @@ function AddPostModal({
               ))}
             </View>
 
-            <Pressable
+            <Pressable accessibilityRole="button"
               onPress={handleAdd}
               disabled={!title.trim() || !content.trim()}
               style={[styles.submitBtn, (!title.trim() || !content.trim()) && { opacity: 0.4 }]}
@@ -427,14 +427,14 @@ export function FamilyBoardScreen({ navigation }: any) {
           style={[styles.header, { paddingTop: insets.top + 6 }]}
         >
           <View style={styles.headerRow}>
-            <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+            <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
               <Ionicons name="arrow-back" size={24} color="#fff" />
             </Pressable>
             <View style={{ flex: 1 }}>
               <Text style={styles.headerTitle}>Family Board</Text>
               <Text style={styles.headerSub}>Announcements & Updates</Text>
             </View>
-            <Pressable
+            <Pressable accessibilityRole="button"
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setShowAdd(true); }}
               style={styles.addBtn}
             >
@@ -444,7 +444,7 @@ export function FamilyBoardScreen({ navigation }: any) {
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filtersBar}>
             {FILTERS.map((f) => (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={f.key}
                 onPress={() => setFilter(f.key)}
                 style={[styles.filterChip, filter === f.key && styles.filterChipActive]}
@@ -463,7 +463,7 @@ export function FamilyBoardScreen({ navigation }: any) {
       start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
       style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
     >
-      <Pressable onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </Pressable>
       <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>Family Board</Text>
@@ -499,7 +499,7 @@ export function FamilyBoardScreen({ navigation }: any) {
                   <Text style={{ fontSize: 60 }}>📋</Text>
                   <Text style={styles.emptyTitle}>Board is Empty</Text>
                   <Text style={styles.emptyDesc}>Post announcements, reminders, and updates for the whole family</Text>
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setShowAdd(true); }}
                     style={styles.demoBtn}
                   >

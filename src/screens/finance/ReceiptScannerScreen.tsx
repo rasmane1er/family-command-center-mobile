@@ -268,7 +268,7 @@ export function ReceiptScannerScreen({ navigation }: { navigation: { goBack: () 
       <StatusBar style="light" />
 
       <View style={[styles.topBar, { paddingTop: insets.top + 6 }]}>
-        <Pressable onPress={() => { if (step === 1) navigation.goBack(); else setStep(1); }} style={styles.backBtn}>
+        <Pressable accessibilityRole="button" onPress={() => { if (step === 1) navigation.goBack(); else setStep(1); }} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </Pressable>
         <Text style={styles.topTitle}>
@@ -302,22 +302,22 @@ export function ReceiptScannerScreen({ navigation }: { navigation: { goBack: () 
 
           {!imageUri ? (
             <View style={[styles.captureButtons, { paddingBottom: insets.bottom + 24 }]}>
-              <Pressable onPress={pickFromLibrary} style={styles.libraryBtn}>
+              <Pressable accessibilityRole="button" onPress={pickFromLibrary} style={styles.libraryBtn}>
                 <Ionicons name="images-outline" size={22} color="#fff" />
                 <Text style={styles.libraryBtnText}>Library</Text>
               </Pressable>
-              <Pressable onPress={pickFromCamera} style={styles.shutterBtn}>
+              <Pressable accessibilityRole="button" onPress={pickFromCamera} style={styles.shutterBtn}>
                 <View style={styles.shutterInner} />
               </Pressable>
               <View style={styles.shutterSpacer} />
             </View>
           ) : (
             <View style={[styles.previewActions, { paddingBottom: insets.bottom + 24 }]}>
-              <Pressable onPress={() => { setImageUri(null); setImageBase64(null); }} style={styles.retakeBtn}>
+              <Pressable accessibilityRole="button" onPress={() => { setImageUri(null); setImageBase64(null); }} style={styles.retakeBtn}>
                 <Ionicons name="refresh" size={18} color="#fff" />
                 <Text style={styles.retakeBtnText}>Retake</Text>
               </Pressable>
-              <Pressable onPress={handleScan} style={styles.proceedBtn}>
+              <Pressable accessibilityRole="button" onPress={handleScan} style={styles.proceedBtn}>
                 <Text style={styles.proceedBtnText}>Looks Good</Text>
                 <Ionicons name="arrow-forward" size={18} color="#fff" />
               </Pressable>
@@ -347,7 +347,7 @@ export function ReceiptScannerScreen({ navigation }: { navigation: { goBack: () 
               <>
                 <Ionicons name="alert-circle" size={36} color={colors.danger} />
                 <Text style={styles.scanErrorText}>{scanError}</Text>
-                <Pressable onPress={handleScan} style={styles.retryBtn}>
+                <Pressable accessibilityRole="button" onPress={handleScan} style={styles.retryBtn}>
                   <Text style={styles.retryBtnText}>Retry</Text>
                 </Pressable>
               </>
@@ -372,18 +372,18 @@ export function ReceiptScannerScreen({ navigation }: { navigation: { goBack: () 
           </View>
 
           <Text style={styles.fieldLabel}>Merchant</Text>
-          <TextInput style={styles.fieldInput} value={editMerchant} onChangeText={setEditMerchant} placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="Merchant" style={styles.fieldInput} value={editMerchant} onChangeText={setEditMerchant} placeholderTextColor={colors.textMuted} />
 
           <Text style={styles.fieldLabel}>Amount ($)</Text>
-          <TextInput style={styles.fieldInput} value={editAmount} onChangeText={setEditAmount} keyboardType="decimal-pad" placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="Amount" style={styles.fieldInput} value={editAmount} onChangeText={setEditAmount} keyboardType="decimal-pad" placeholderTextColor={colors.textMuted} />
 
           <Text style={styles.fieldLabel}>Date</Text>
-          <TextInput style={styles.fieldInput} value={editDate} onChangeText={setEditDate} placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="Date" style={styles.fieldInput} value={editDate} onChangeText={setEditDate} placeholderTextColor={colors.textMuted} />
 
           <Text style={styles.fieldLabel}>Category</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
             {CATEGORIES.map((cat) => (
-              <Pressable key={cat} onPress={() => setEditCategory(cat)} style={[styles.categoryPill, editCategory === cat && styles.categoryPillActive]}>
+              <Pressable accessibilityRole="button" key={cat} onPress={() => setEditCategory(cat)} style={[styles.categoryPill, editCategory === cat && styles.categoryPillActive]}>
                 <Text style={[styles.categoryPillText, editCategory === cat && styles.categoryPillTextActive]}>{cat}</Text>
               </Pressable>
             ))}
@@ -402,7 +402,7 @@ export function ReceiptScannerScreen({ navigation }: { navigation: { goBack: () 
                 subscription: 'Recurring monthly charge',
               };
               return (
-                <Pressable key={dest} onPress={() => setDestination(dest)}
+                <Pressable accessibilityRole="button" key={dest} onPress={() => setDestination(dest)}
                   style={[styles.destCard, isSelected && styles.destCardActive]}>
                   {isRecommended && (
                     <View style={styles.recommendedBadge}>
@@ -421,7 +421,7 @@ export function ReceiptScannerScreen({ navigation }: { navigation: { goBack: () 
             <>
               <Text style={styles.fieldLabel}>Add to Pantry ({pantryDraft.filter((i) => i.selected).length})</Text>
               {pantryDraft.map((item, index) => (
-                <Pressable key={`${item.name}-${index}`} onPress={() => togglePantryDraftItem(index)} style={styles.pantryDraftRow}>
+                <Pressable accessibilityRole="button" key={`${item.name}-${index}`} onPress={() => togglePantryDraftItem(index)} style={styles.pantryDraftRow}>
                   <Ionicons
                     name={item.selected ? 'checkbox' : 'square-outline'}
                     size={20}
@@ -430,7 +430,7 @@ export function ReceiptScannerScreen({ navigation }: { navigation: { goBack: () 
                   <Text style={styles.pantryDraftText}>{item.name}{item.quantity > 1 ? ` ×${item.quantity}` : ''}</Text>
                 </Pressable>
               ))}
-              <Pressable
+              <Pressable accessibilityRole="button"
                 onPress={handleAddToPantry}
                 disabled={pantryAdded || pantryDraft.filter((i) => i.selected).length === 0}
                 style={[styles.pantryAddBtn, pantryAdded && styles.pantryAddBtnDone]}
@@ -447,7 +447,7 @@ export function ReceiptScannerScreen({ navigation }: { navigation: { goBack: () 
 
       {step === 3 && (
         <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
-          <Pressable onPress={handleDispatch} style={styles.dispatchBtn}>
+          <Pressable accessibilityRole="button" onPress={handleDispatch} style={styles.dispatchBtn}>
             <Ionicons name="checkmark-circle" size={20} color="#fff" />
             <Text style={styles.dispatchBtnText}>Save & Dispatch</Text>
           </Pressable>

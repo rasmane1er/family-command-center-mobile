@@ -167,7 +167,7 @@ export function MedicationManagerScreen({ navigation: navProp }: any) {
       onBack={() => navigation.goBack()}
       colors={['#880E4F', '#AD1457']}
       rightAction={
-        <Pressable onPress={() => setShowAddModal(true)} style={s.addBtn}>
+        <Pressable accessibilityRole="button" onPress={() => setShowAddModal(true)} style={s.addBtn}>
           <Ionicons name="add" size={26} color="#fff" />
         </Pressable>
       }
@@ -193,11 +193,11 @@ export function MedicationManagerScreen({ navigation: navProp }: any) {
 
   const screenCompact = (
     <View style={{ backgroundColor: '#880E4F', paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => navigation.goBack()} style={s.addBtn}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={s.addBtn}>
         <Ionicons name="arrow-back" size={20} color="#fff" />
       </Pressable>
       <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700', flex: 1, marginLeft: 8 }}>{t('health.screens.medicationManager.headerTitle')}</Text>
-      <Pressable onPress={() => setShowAddModal(true)} style={s.addBtn}>
+      <Pressable accessibilityRole="button" onPress={() => setShowAddModal(true)} style={s.addBtn}>
         <Ionicons name="add" size={22} color="#fff" />
       </Pressable>
     </View>
@@ -252,7 +252,7 @@ export function MedicationManagerScreen({ navigation: navProp }: any) {
             <Text style={s.medName}>{med.name}</Text>
             <Text style={s.medDosage}>{med.dosage} — {freqLabel(med.frequency, t)}</Text>
           </View>
-          <Pressable onPress={() => handleDelete(med)} style={s.deleteBtn}>
+          <Pressable accessibilityRole="button" onPress={() => handleDelete(med)} style={s.deleteBtn}>
             <Ionicons name="trash-outline" size={16} color={colors.danger} />
           </Pressable>
         </View>
@@ -370,7 +370,7 @@ export function MedicationManagerScreen({ navigation: navProp }: any) {
                             <Ionicons name="checkmark-circle" size={22} color={colors.success} />
                           </View>
                         ) : (
-                          <Pressable onPress={() => handleLogDose(med)} style={s.logBtn}>
+                          <Pressable accessibilityRole="button" onPress={() => handleLogDose(med)} style={s.logBtn}>
                             <Ionicons name="add-circle-outline" size={22} color={colors.primary} />
                           </Pressable>
                         )}
@@ -447,7 +447,7 @@ export function MedicationManagerScreen({ navigation: navProp }: any) {
 
       <View style={s.tabs}>
         {(['active', 'schedule', 'history'] as const).map((tab) => (
-          <Pressable
+          <Pressable accessibilityRole="button"
             key={tab}
             onPress={() => setActiveTab(tab)}
             style={[s.tab, activeTab === tab && s.tabActive]}
@@ -483,7 +483,7 @@ export function MedicationManagerScreen({ navigation: navProp }: any) {
           <Text style={s.modalLabel}>{t('health.screens.medicationManager.familyMemberLabel')}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
             {members.map((m) => (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={m.id}
                 onPress={() => setFormMemberId(m.id)}
                 style={[s.memberChip, formMemberId === m.id && s.memberChipActive]}
@@ -497,15 +497,15 @@ export function MedicationManagerScreen({ navigation: navProp }: any) {
           </ScrollView>
 
           <Text style={s.modalLabel}>{t('health.screens.medicationManager.medicationNameLabel')}</Text>
-          <TextInput style={s.modalInput} placeholder={t('health.screens.medicationManager.medicationNamePlaceholder')} value={formName} onChangeText={setFormName} placeholderTextColor={colors.textMuted} autoFocus />
+          <TextInput accessibilityLabel={t('health.screens.medicationManager.medicationNamePlaceholder')} style={s.modalInput} placeholder={t('health.screens.medicationManager.medicationNamePlaceholder')} value={formName} onChangeText={setFormName} placeholderTextColor={colors.textMuted} autoFocus />
 
           <Text style={s.modalLabel}>{t('health.screens.medicationManager.dosageLabel')}</Text>
-          <TextInput style={s.modalInput} placeholder={t('health.screens.medicationManager.dosagePlaceholder')} value={formDosage} onChangeText={setFormDosage} placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel={t('health.screens.medicationManager.dosagePlaceholder')} style={s.modalInput} placeholder={t('health.screens.medicationManager.dosagePlaceholder')} value={formDosage} onChangeText={setFormDosage} placeholderTextColor={colors.textMuted} />
 
           <Text style={s.modalLabel}>{t('health.screens.medicationManager.frequencyLabel')}</Text>
           <View style={s.freqGrid}>
             {FREQ_OPTIONS.map((f) => (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={f.value}
                 onPress={() => setFormFrequency(f.value)}
                 style={[s.freqChip, formFrequency === f.value && s.freqChipActive]}
@@ -516,24 +516,24 @@ export function MedicationManagerScreen({ navigation: navProp }: any) {
           </View>
 
           <Text style={s.modalLabel}>{t('health.screens.medicationManager.instructionsLabel')}</Text>
-          <TextInput style={[s.modalInput, s.modalTextarea]} placeholder={t('health.screens.medicationManager.instructionsPlaceholder')} value={formInstructions} onChangeText={setFormInstructions} multiline numberOfLines={2} placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel={t('health.screens.medicationManager.instructionsPlaceholder')} style={[s.modalInput, s.modalTextarea]} placeholder={t('health.screens.medicationManager.instructionsPlaceholder')} value={formInstructions} onChangeText={setFormInstructions} multiline numberOfLines={2} placeholderTextColor={colors.textMuted} />
 
           <Text style={s.modalLabel}>{t('health.screens.medicationManager.doctorLabel')}</Text>
-          <TextInput style={s.modalInput} placeholder={t('health.screens.medicationManager.doctorPlaceholder')} value={formDoctor} onChangeText={setFormDoctor} placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel={t('health.screens.medicationManager.doctorPlaceholder')} style={s.modalInput} placeholder={t('health.screens.medicationManager.doctorPlaceholder')} value={formDoctor} onChangeText={setFormDoctor} placeholderTextColor={colors.textMuted} />
 
           <Text style={s.modalLabel}>{t('health.screens.medicationManager.pharmacyLabel')}</Text>
-          <TextInput style={s.modalInput} placeholder={t('health.screens.medicationManager.pharmacyPlaceholder')} value={formPharmacy} onChangeText={setFormPharmacy} placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel={t('health.screens.medicationManager.pharmacyPlaceholder')} style={s.modalInput} placeholder={t('health.screens.medicationManager.pharmacyPlaceholder')} value={formPharmacy} onChangeText={setFormPharmacy} placeholderTextColor={colors.textMuted} />
 
           <Text style={s.modalLabel}>{t('health.screens.medicationManager.refillDateLabel')}</Text>
-          <TextInput style={s.modalInput} placeholder={t('health.screens.medicationManager.refillDatePlaceholder')} value={formRefillDate} onChangeText={setFormRefillDate} placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel={t('health.screens.medicationManager.refillDatePlaceholder')} style={s.modalInput} placeholder={t('health.screens.medicationManager.refillDatePlaceholder')} value={formRefillDate} onChangeText={setFormRefillDate} placeholderTextColor={colors.textMuted} />
 
           <Text style={s.modalLabel}>{t('health.screens.medicationManager.pillsRemainingLabel')}</Text>
-          <TextInput style={s.modalInput} placeholder={t('health.screens.medicationManager.pillsRemainingPlaceholder')} value={formPills} onChangeText={setFormPills} keyboardType="number-pad" placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel={t('health.screens.medicationManager.pillsRemainingPlaceholder')} style={s.modalInput} placeholder={t('health.screens.medicationManager.pillsRemainingPlaceholder')} value={formPills} onChangeText={setFormPills} keyboardType="number-pad" placeholderTextColor={colors.textMuted} />
 
           <Text style={s.modalLabel}>{t('health.screens.medicationManager.colorLabel')}</Text>
           <View style={s.colorRow}>
             {COLOR_PRESETS.map((c) => (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={c}
                 onPress={() => setFormColor(c)}
                 style={[s.colorDot, { backgroundColor: c }, formColor === c && s.colorDotActive]}

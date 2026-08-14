@@ -44,7 +44,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
         <Text style={styles.message}>
           {this.props.fallbackMessage ?? i18n.t('screens.shared.errorBoundaryMsg')}
         </Text>
-        <Pressable style={styles.btn} onPress={this.handleReset}>
+        <Pressable accessibilityRole="button" style={styles.btn} onPress={this.handleReset}>
           <Text style={styles.btnText}>{i18n.t('screens.shared.tryAgain')}</Text>
         </Pressable>
       </View>

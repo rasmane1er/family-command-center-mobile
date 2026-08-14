@@ -208,12 +208,12 @@ const activeChild =
   const screenHeader = (
     <LinearGradient colors={['#F5A623', '#E67E22']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
       <View style={styles.headerTop}>
-        <Pressable onPress={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()} style={styles.back}>
+        <Pressable accessibilityRole="button" onPress={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()} style={styles.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <Text style={styles.headerTitle}>Rewards Center</Text>
         {role !== 'child' ? (
-          <Pressable style={styles.settingsBtn} onPress={() => setShowAddReward(true)}>
+          <Pressable accessibilityRole="button" style={styles.settingsBtn} onPress={() => setShowAddReward(true)}>
             <Ionicons name="add" size={22} color="#fff" />
           </Pressable>
         ) : (
@@ -232,7 +232,7 @@ const activeChild =
           {visibleChildren.map((child) => {
             const isActive = selectedChild === child.id || (!selectedChild && children[0].id === child.id);
             return (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={child.id}
                 onPress={() => setSelectedChild(child.id)}
                 style={[styles.childChip, isActive && styles.childChipActive]}
@@ -279,7 +279,7 @@ const activeChild =
     
     <View style={styles.tabs}>
             {(['store', 'achievements', 'history'] as const).map((tab) => (
-              <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tabChip, activeTab === tab && styles.tabChipActive]}>
+              <Pressable accessibilityRole="button" key={tab} onPress={() => setActiveTab(tab)} style={[styles.tabChip, activeTab === tab && styles.tabChipActive]}>
                 <Text style={[styles.tabChipText, activeTab === tab && { color: '#E67E22' }]}>
                   {tab.charAt(0).toUpperCase() + tab.slice(1)}
                 </Text>
@@ -291,7 +291,7 @@ const activeChild =
 
   const screenCompact = (
     <LinearGradient colors={['#F5A623', '#E67E22']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()} style={styles.back}>
+      <Pressable accessibilityRole="button" onPress={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()} style={styles.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={styles.headerTitle}>Rewards Center</Text>
@@ -333,7 +333,7 @@ const activeChild =
                 const progress = reward.cost > 0 ? points / reward.cost : 1;
                 const color = reward.color ?? colors.secondary;
                 return (
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     key={reward.id}
                     onPress={() => handleRedeem(reward)}
                     onLongPress={() => role !== 'child' && handleDeleteCustomReward(reward)}
@@ -400,7 +400,7 @@ const activeChild =
         {activeTab === 'history' && (
           <>
             {role !== 'child' && childRewardHistory.length > 0 && (
-              <Pressable onPress={handleClearHistory} style={styles.clearHistoryBtn}>
+              <Pressable accessibilityRole="button" onPress={handleClearHistory} style={styles.clearHistoryBtn}>
                 <Ionicons name="trash-outline" size={14} color={colors.danger} />
                 <Text style={styles.clearHistoryText}>Clear History</Text>
               </Pressable>
@@ -449,7 +449,7 @@ const activeChild =
           <Text style={styles.modalTitle}>Add Reward</Text>
 
           <Text style={styles.modalLabel}>Reward Name *</Text>
-          <TextInput
+          <TextInput accessibilityLabel="e.g. Pizza Night"
             style={styles.modalInput}
             placeholder="e.g. Pizza Night"
             value={newRewardName}
@@ -459,7 +459,7 @@ const activeChild =
           />
 
           <Text style={styles.modalLabel}>Description</Text>
-          <TextInput
+          <TextInput accessibilityLabel="e.g. Pick the pizza toppings"
             style={styles.modalInput}
             placeholder="e.g. Pick the pizza toppings"
             value={newRewardDesc}
@@ -468,7 +468,7 @@ const activeChild =
           />
 
           <Text style={styles.modalLabel}>Point Cost *</Text>
-          <TextInput
+          <TextInput accessibilityLabel="e.g. 200"
             style={[styles.modalInput, { marginBottom: 24 }]}
             placeholder="e.g. 200"
             value={newRewardCost}

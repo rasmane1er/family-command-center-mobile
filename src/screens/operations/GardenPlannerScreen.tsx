@@ -237,14 +237,14 @@ export function GardenPlannerScreen({ navigation }: any) {
       <LinearGradient colors={GRADIENT_COLORS} style={{ paddingTop: insets.top + 8, paddingBottom: 0 }}>
         {/* Header top row */}
         <View style={styles.headerTop}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </Pressable>
           <View style={styles.headerCenter}>
             <Text style={styles.headerTitle}>Garden Planner</Text>
             <Text style={styles.headerSub}>Plants, watering & tasks</Text>
           </View>
-          <Pressable
+          <Pressable accessibilityRole="button"
             onPress={() => activeTab === 'Tasks' ? setShowAddTaskModal(true) : setShowAddPlantModal(true)}
             style={styles.addBtn}
           >
@@ -265,7 +265,7 @@ export function GardenPlannerScreen({ navigation }: any) {
         {/* Tabs */}
         <View style={styles.tabRow}>
           {tabs.map((tab) => (
-            <Pressable
+            <Pressable accessibilityRole="button"
               key={tab}
               onPress={() => setActiveTab(tab)}
               style={activeTab === tab ? styles.tabActive : styles.tabInactive}
@@ -290,7 +290,7 @@ export function GardenPlannerScreen({ navigation }: any) {
                   borderColor: '#1B5E20',
                 };
                 return (
-                  <Pressable key={loc} onPress={() => setLocationFilter(loc)} style={locStyle}>
+                  <Pressable accessibilityRole="button" key={loc} onPress={() => setLocationFilter(loc)} style={locStyle}>
                     <Text style={[styles.locChipText, { color: isActive ? '#fff' : '#1B5E20' }]}>{loc}</Text>
                   </Pressable>
                 );
@@ -329,14 +329,14 @@ export function GardenPlannerScreen({ navigation }: any) {
                           {needsWater && !justWatered ? ' (overdue)' : ''}
                         </Text>
                       </View>
-                      <Pressable
+                      <Pressable accessibilityRole="button"
                         onPress={() => handleWaterPlant(plant.id, plant.name)}
                         style={[styles.waterBtn, justWatered ? styles.waterBtnDone : null]}
                       >
                         <Ionicons name="water" size={18} color={justWatered ? colors.success : '#1B5E20'} />
                       </Pressable>
                     </View>
-                    <Pressable
+                    <Pressable accessibilityRole="button"
                       style={styles.deletePlantBtn}
                       onLongPress={() =>
                         Alert.alert('Remove plant?', plant.name, [
@@ -371,7 +371,7 @@ export function GardenPlannerScreen({ navigation }: any) {
                             <Text style={styles.taskMeta}>{linkedPlant.emoji} {linkedPlant.name}</Text>
                           )}
                         </View>
-                        <Pressable
+                        <Pressable accessibilityRole="button"
                           onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); completeTask(task.id); }}
                           style={styles.completeBtn}
                         >
@@ -391,7 +391,7 @@ export function GardenPlannerScreen({ navigation }: any) {
                   const cat = TASK_CATEGORIES.find((c) => c.value === task.category);
                   const linkedPlant = task.plantId ? plants.find((p) => p.id === task.plantId) : undefined;
                   return (
-                    <Pressable
+                    <Pressable accessibilityRole="button"
                       key={task.id}
                       onLongPress={() =>
                         Alert.alert('Task options', task.title, [
@@ -423,7 +423,7 @@ export function GardenPlannerScreen({ navigation }: any) {
               <>
                 <Text style={[styles.sectionTitle, { marginTop: 16, color: colors.textMuted }]}>Completed</Text>
                 {completedTasks.map((task) => (
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     key={task.id}
                     onLongPress={() =>
                       Alert.alert('Delete task?', task.title, [
@@ -504,7 +504,7 @@ export function GardenPlannerScreen({ navigation }: any) {
       </ScrollView>
 
       {/* FAB */}
-      <Pressable
+      <Pressable accessibilityRole="button"
         style={styles.fab}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -524,12 +524,12 @@ export function GardenPlannerScreen({ navigation }: any) {
           <Text style={styles.modalTitle}>Add Plant</Text>
           <ScrollView showsVerticalScrollIndicator={false}>
             <Text style={styles.fieldLabel}>Plant Name *</Text>
-            <TextInput style={styles.input} value={pName} onChangeText={setPName} placeholder="e.g. Cherry Tomatoes" />
+            <TextInput accessibilityLabel="e.g. Cherry Tomatoes" style={styles.input} value={pName} onChangeText={setPName} placeholder="e.g. Cherry Tomatoes" />
 
             <Text style={styles.fieldLabel}>Emoji</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
               {PLANT_EMOJIS.map((em) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={em}
                   onPress={() => setPEmoji(em)}
                   style={[styles.emojiBtn, pEmoji === em ? styles.emojiBtnActive : null]}
@@ -542,7 +542,7 @@ export function GardenPlannerScreen({ navigation }: any) {
             <Text style={styles.fieldLabel}>Type</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
               {PLANT_TYPES.map((t) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={t.value}
                   onPress={() => setPType(t.value)}
                   style={pType === t.value ? styles.pickerItemActive : styles.pickerItem}
@@ -553,12 +553,12 @@ export function GardenPlannerScreen({ navigation }: any) {
             </ScrollView>
 
             <Text style={styles.fieldLabel}>Location *</Text>
-            <TextInput style={styles.input} value={pLocation} onChangeText={setPLocation} placeholder="e.g. Backyard Raised Bed" />
+            <TextInput accessibilityLabel="e.g. Backyard Raised Bed" style={styles.input} value={pLocation} onChangeText={setPLocation} placeholder="e.g. Backyard Raised Bed" />
 
             <Text style={styles.fieldLabel}>Status</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
               {PLANT_STATUSES.map((s) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={s.value}
                   onPress={() => setPStatus(s.value)}
                   style={[
@@ -576,7 +576,7 @@ export function GardenPlannerScreen({ navigation }: any) {
             <Text style={styles.fieldLabel}>Watering Frequency</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
               {WATERING_FREQUENCIES.map((f) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={f.value}
                   onPress={() => setPWaterFreq(f.value)}
                   style={pWaterFreq === f.value ? styles.pickerItemActive : styles.pickerItem}
@@ -589,7 +589,7 @@ export function GardenPlannerScreen({ navigation }: any) {
             <Text style={styles.fieldLabel}>Sunlight</Text>
             <View style={styles.sunRow}>
               {SUNLIGHT_OPTIONS.map((s) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={s.value}
                   onPress={() => setPSunlight(s.value)}
                   style={[styles.sunChip, pSunlight === s.value ? styles.sunChipActive : null]}
@@ -600,13 +600,13 @@ export function GardenPlannerScreen({ navigation }: any) {
             </View>
 
             <Text style={styles.fieldLabel}>Planted Date</Text>
-            <TextInput style={styles.input} value={pPlantedDate} onChangeText={setPPlantedDate} placeholder="YYYY-MM-DD" />
+            <TextInput accessibilityLabel="YYYY-MM-DD" style={styles.input} value={pPlantedDate} onChangeText={setPPlantedDate} placeholder="YYYY-MM-DD" />
 
             <Text style={styles.fieldLabel}>Est. Harvest Date (optional)</Text>
-            <TextInput style={styles.input} value={pHarvestDate} onChangeText={setPHarvestDate} placeholder="YYYY-MM-DD" />
+            <TextInput accessibilityLabel="YYYY-MM-DD" style={styles.input} value={pHarvestDate} onChangeText={setPHarvestDate} placeholder="YYYY-MM-DD" />
 
             <Text style={styles.fieldLabel}>Notes</Text>
-            <TextInput
+            <TextInput accessibilityLabel="Care tips, varieties, etc."
               style={[styles.input, { height: 80 }]}
               value={pNotes}
               onChangeText={setPNotes}
@@ -614,10 +614,10 @@ export function GardenPlannerScreen({ navigation }: any) {
               multiline
             />
 
-            <Pressable style={styles.saveBtn} onPress={handleAddPlant}>
+            <Pressable accessibilityRole="button" style={styles.saveBtn} onPress={handleAddPlant}>
               <Text style={styles.saveBtnText}>Add Plant</Text>
             </Pressable>
-            <Pressable style={styles.cancelBtn} onPress={() => { resetPlantForm(); setShowAddPlantModal(false); }}>
+            <Pressable accessibilityRole="button" style={styles.cancelBtn} onPress={() => { resetPlantForm(); setShowAddPlantModal(false); }}>
               <Text style={styles.cancelBtnText}>Cancel</Text>
             </Pressable>
           </ScrollView>
@@ -631,12 +631,12 @@ export function GardenPlannerScreen({ navigation }: any) {
           <Text style={styles.modalTitle}>Add Garden Task</Text>
           <ScrollView showsVerticalScrollIndicator={false}>
             <Text style={styles.fieldLabel}>Title *</Text>
-            <TextInput style={styles.input} value={tTitle} onChangeText={setTTitle} placeholder="e.g. Fertilize tomatoes" />
+            <TextInput accessibilityLabel="e.g. Fertilize tomatoes" style={styles.input} value={tTitle} onChangeText={setTTitle} placeholder="e.g. Fertilize tomatoes" />
 
             <Text style={styles.fieldLabel}>Category</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
               {TASK_CATEGORIES.map((cat) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={cat.value}
                   onPress={() => setTCategory(cat.value)}
                   style={tCategory === cat.value ? styles.pickerItemActive : styles.pickerItem}
@@ -648,18 +648,18 @@ export function GardenPlannerScreen({ navigation }: any) {
             </ScrollView>
 
             <Text style={styles.fieldLabel}>Due Date</Text>
-            <TextInput style={styles.input} value={tDueDate} onChangeText={setTDueDate} placeholder="YYYY-MM-DD" />
+            <TextInput accessibilityLabel="YYYY-MM-DD" style={styles.input} value={tDueDate} onChangeText={setTDueDate} placeholder="YYYY-MM-DD" />
 
             <Text style={styles.fieldLabel}>Link to Plant (optional)</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
-              <Pressable
+              <Pressable accessibilityRole="button"
                 onPress={() => setTPlantId('')}
                 style={tPlantId === '' ? styles.pickerItemActive : styles.pickerItem}
               >
                 <Text style={tPlantId === '' ? styles.pickerTextActive : styles.pickerText}>None</Text>
               </Pressable>
               {plants.map((p) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={p.id}
                   onPress={() => setTPlantId(p.id)}
                   style={tPlantId === p.id ? styles.pickerItemActive : styles.pickerItem}
@@ -671,10 +671,10 @@ export function GardenPlannerScreen({ navigation }: any) {
               ))}
             </ScrollView>
 
-            <Pressable style={styles.saveBtn} onPress={handleAddTask}>
+            <Pressable accessibilityRole="button" style={styles.saveBtn} onPress={handleAddTask}>
               <Text style={styles.saveBtnText}>Add Task</Text>
             </Pressable>
-            <Pressable style={styles.cancelBtn} onPress={() => { resetTaskForm(); setShowAddTaskModal(false); }}>
+            <Pressable accessibilityRole="button" style={styles.cancelBtn} onPress={() => { resetTaskForm(); setShowAddTaskModal(false); }}>
               <Text style={styles.cancelBtnText}>Cancel</Text>
             </Pressable>
           </ScrollView>

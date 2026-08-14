@@ -223,7 +223,7 @@ export function BucketListScreen({ navigation }: any) {
           </View>
         </View>
         <View style={styles.dreamCardActions}>
-          <Pressable
+          <Pressable accessibilityRole="button"
             style={styles.completeBtn}
             onPress={() => handleComplete(item)}
           >
@@ -235,7 +235,7 @@ export function BucketListScreen({ navigation }: any) {
               <Text style={styles.completeBtnText}>{t('family.screens.bucketList.markAsDone')}</Text>
             </LinearGradient>
           </Pressable>
-          <Pressable
+          <Pressable accessibilityRole="button"
             onPress={() => handleDelete(item.id, item.title)}
             style={styles.deleteIconBtn}
           >
@@ -252,11 +252,11 @@ export function BucketListScreen({ navigation }: any) {
       style={{ paddingTop: insets.top + 6, paddingBottom: 8, paddingHorizontal: 20 }}
     >
       <View style={styles.headerTop}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <Text style={styles.headerTitle}>{t('family.screens.bucketList.headerTitle')}</Text>
-        <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
+        <Pressable accessibilityRole="button" onPress={() => setShowModal(true)} style={styles.addBtn}>
           <Ionicons name="add" size={22} color="#fff" />
         </Pressable>
       </View>
@@ -287,7 +287,7 @@ export function BucketListScreen({ navigation }: any) {
 
   const screenCompact = (
     <LinearGradient colors={['#4A148C', '#6A1B9A', '#7B1FA2']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>{t('family.screens.bucketList.headerTitle')}</Text>
@@ -314,7 +314,7 @@ export function BucketListScreen({ navigation }: any) {
             {/* Tabs */}
             <View style={styles.tabs}>
               {(['dreams', 'completed', 'category'] as TabType[]).map((tab) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={tab}
                   onPress={() => setActiveTab(tab)}
                   style={[styles.tab, activeTab === tab && styles.tabActive]}
@@ -395,7 +395,7 @@ export function BucketListScreen({ navigation }: any) {
                   const count = categoryCounts[cat];
                   const isSelected = selectedCategory === cat;
                   return (
-                    <Pressable
+                    <Pressable accessibilityRole="button"
                       key={cat}
                       onPress={() =>
                         setSelectedCategory(isSelected ? null : cat)
@@ -444,7 +444,7 @@ export function BucketListScreen({ navigation }: any) {
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{t('bucketList.addDream')}</Text>
-            <Pressable onPress={() => setShowModal(false)}>
+            <Pressable accessibilityRole="button" onPress={() => setShowModal(false)}>
               <Ionicons name="close" size={24} color={colors.text} />
             </Pressable>
           </View>
@@ -452,7 +452,7 @@ export function BucketListScreen({ navigation }: any) {
             <Text style={styles.fieldLabel}>Choose an Emoji</Text>
             <View style={styles.emojiGrid}>
               {EMOJI_OPTIONS.map((e) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={e}
                   onPress={() => setModalEmoji(e)}
                   style={[
@@ -466,7 +466,7 @@ export function BucketListScreen({ navigation }: any) {
             </View>
 
             <Text style={styles.fieldLabel}>Title *</Text>
-            <TextInput
+            <TextInput accessibilityLabel="What's the dream?"
               style={styles.textInput}
               value={modalTitle}
               onChangeText={setModalTitle}
@@ -475,7 +475,7 @@ export function BucketListScreen({ navigation }: any) {
             />
 
             <Text style={styles.fieldLabel}>Description</Text>
-            <TextInput
+            <TextInput accessibilityLabel="Tell us more about this dream..."
               style={[styles.textInput, styles.textInputMultiline]}
               value={modalDesc}
               onChangeText={setModalDesc}
@@ -491,7 +491,7 @@ export function BucketListScreen({ navigation }: any) {
                 const cc = CATEGORY_CONFIG[cat];
                 const isActive = modalCategory === cat;
                 return (
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     key={cat}
                     onPress={() => setModalCategory(cat)}
                     style={[
@@ -507,7 +507,7 @@ export function BucketListScreen({ navigation }: any) {
             </View>
 
             <Text style={styles.fieldLabel}>Target Year (optional)</Text>
-            <TextInput
+            <TextInput accessibilityLabel="e.g. 2026"
               style={styles.textInput}
               value={modalYear}
               onChangeText={setModalYear}
@@ -517,7 +517,7 @@ export function BucketListScreen({ navigation }: any) {
             />
 
             <Text style={styles.fieldLabel}>Estimated Cost ($)</Text>
-            <TextInput
+            <TextInput accessibilityLabel="e.g. 5000"
               style={styles.textInput}
               value={modalCost}
               onChangeText={setModalCost}
@@ -531,7 +531,7 @@ export function BucketListScreen({ navigation }: any) {
               {(['low', 'medium', 'high'] as const).map((p) => {
                 const pc = PRIORITY_CONFIG[p];
                 return (
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     key={p}
                     onPress={() => setModalPriority(p)}
                     style={[
@@ -552,7 +552,7 @@ export function BucketListScreen({ navigation }: any) {
               {members.map((m) => {
                 const isSelected = modalMembers.includes(m.id);
                 return (
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     key={m.id}
                     onPress={() => toggleModalMember(m.id)}
                     style={[
@@ -572,7 +572,7 @@ export function BucketListScreen({ navigation }: any) {
               })}
             </View>
 
-            <Pressable style={styles.saveBtn} onPress={handleAddItem}>
+            <Pressable accessibilityRole="button" style={styles.saveBtn} onPress={handleAddItem}>
               <LinearGradient
                 colors={['#4A148C', '#7B1FA2']}
                 style={styles.saveBtnGradient}

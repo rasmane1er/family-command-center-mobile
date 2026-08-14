@@ -224,7 +224,7 @@ export function NegotiatorScreen({ navigation }: any) {
   const screenHeader = (
       <LinearGradient colors={['#0D2137', '#0F2952']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
         <View style={styles.headerTop}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+          <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </Pressable>
           <View style={{ flex: 1 }}>
@@ -252,7 +252,7 @@ export function NegotiatorScreen({ navigation }: any) {
 
     <View style={styles.tabs}>
             {(['chief', 'negotiate', 'conflicts', 'chat'] as const).map((tab) => (
-              <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
+              <Pressable accessibilityRole="button" key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
                 <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
                   {tab === 'chief' ? t(`${NS}.tabBriefing`) : tab === 'negotiate' ? t(`${NS}.tabScripts`) : tab === 'conflicts' ? t(`${NS}.tabConflicts`) : t(`${NS}.tabChat`)}
                 </Text>
@@ -268,7 +268,7 @@ export function NegotiatorScreen({ navigation }: any) {
       start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
       style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
     >
-      <Pressable onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </Pressable>
       <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>{t(`${NS}.compactTitle`)}</Text>
@@ -334,7 +334,7 @@ export function NegotiatorScreen({ navigation }: any) {
               {activeTab === 'negotiate' && (
                 <View style={styles.scenariosGrid}>
                   {NEGOTIATION_SCENARIOS.map((s) => (
-                    <Pressable
+                    <Pressable accessibilityRole="button"
                       key={s.id}
                       onPress={() => handleNegotiate(s)}
                       style={[styles.scenarioCard, { borderLeftColor: s.color }]}
@@ -408,7 +408,7 @@ export function NegotiatorScreen({ navigation }: any) {
                         t(`${NS}.chatStarter2`),
                         t(`${NS}.chatStarter3`),
                       ].map((q) => (
-                        <Pressable key={q} style={styles.chatStarter} onPress={() => handleChatSend(q)}>
+                        <Pressable accessibilityRole="button" key={q} style={styles.chatStarter} onPress={() => handleChatSend(q)}>
                           <Text style={styles.chatStarterText}>{q}</Text>
                           <Ionicons name="arrow-forward" size={14} color="#0F2952" />
                         </Pressable>
@@ -439,7 +439,7 @@ export function NegotiatorScreen({ navigation }: any) {
                   {suggestions.length > 0 &&
                     !chatLoading &&
                     suggestions.map((s) => (
-                      <Pressable key={s} style={styles.chatSuggestion} onPress={() => handleChatSend(s)}>
+                      <Pressable accessibilityRole="button" key={s} style={styles.chatSuggestion} onPress={() => handleChatSend(s)}>
                         <Text style={styles.chatSuggestionText}>{s}</Text>
                       </Pressable>
                     ))}

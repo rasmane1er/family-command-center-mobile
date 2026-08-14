@@ -253,11 +253,11 @@ export function MealPlanningScreen({ navigation }: any) {
   const screenHeader = (
     <LinearGradient colors={['#F5A623', '#FF8C42']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
       <View style={styles.headerTop}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <Text style={styles.headerTitle}>{t('mealPlanning.title')}</Text>
-        <Pressable onPress={handleGeneratePlan} style={styles.addBtn}>
+        <Pressable accessibilityRole="button" onPress={handleGeneratePlan} style={styles.addBtn}>
           <Ionicons name="sparkles-outline" size={22} color="#fff" />
         </Pressable>
       </View>
@@ -268,7 +268,7 @@ export function MealPlanningScreen({ navigation }: any) {
         {weekDays.map((day) => {
           const hasMeals = Object.keys(weekMeals[day.name] || {}).length > 0;
           return (
-            <Pressable
+            <Pressable accessibilityRole="button"
               key={day.name}
               onPress={() => setSelectedDay(day.name)}
               style={[styles.dayChip, selectedDay === day.name && styles.dayChipActive]}
@@ -286,7 +286,7 @@ export function MealPlanningScreen({ navigation }: any) {
 
   const screenCompact = (
     <LinearGradient colors={['#F5A623', '#FF8C42']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={styles.headerTitle}>{t('mealPlanning.title')}</Text>
@@ -351,17 +351,17 @@ export function MealPlanningScreen({ navigation }: any) {
                       )}
                     </View>
                     <View style={styles.mealActions}>
-                      <Pressable onPress={() => openAddMeal(selectedDay, mealType)} style={styles.mealSwap}>
+                      <Pressable accessibilityRole="button" onPress={() => openAddMeal(selectedDay, mealType)} style={styles.mealSwap}>
                         <Ionicons name="pencil-outline" size={16} color={colors.primary} />
                       </Pressable>
-                      <Pressable onPress={() => handleRemoveMeal(selectedDay, mealType)} style={styles.mealRemove}>
+                      <Pressable accessibilityRole="button" onPress={() => handleRemoveMeal(selectedDay, mealType)} style={styles.mealRemove}>
                         <Ionicons name="close" size={16} color={colors.danger} />
                       </Pressable>
                     </View>
                   </View>
                 </Card>
               ) : (
-                <Pressable onPress={() => openAddMeal(selectedDay, mealType)} style={styles.addMealBtn}>
+                <Pressable accessibilityRole="button" onPress={() => openAddMeal(selectedDay, mealType)} style={styles.addMealBtn}>
                   <Ionicons name="add-circle-outline" size={20} color={colors.secondary} />
                   <Text style={styles.addMealText}>Plan {mealType}</Text>
                 </Pressable>
@@ -378,11 +378,11 @@ export function MealPlanningScreen({ navigation }: any) {
               <Text style={styles.aiText}>Based on your pantry, I can generate a balanced weekly meal plan. Tap the ✨ button to auto-fill the whole week!</Text>
             </View>
           </View>
-          <Pressable onPress={handleGeneratePlan} style={styles.aiGenerateBtn}>
+          <Pressable accessibilityRole="button" onPress={handleGeneratePlan} style={styles.aiGenerateBtn}>
             <Ionicons name="flash" size={16} color="#fff" />
             <Text style={styles.aiGenerateText}>Generate Weekly Plan</Text>
           </Pressable>
-          <Pressable onPress={handleGenerateShoppingList} style={styles.shoppingListBtn}>
+          <Pressable accessibilityRole="button" onPress={handleGenerateShoppingList} style={styles.shoppingListBtn}>
             <Ionicons name="cart-outline" size={16} color={colors.secondary} />
             <Text style={styles.shoppingListBtnText}>Generate Shopping List</Text>
           </Pressable>
@@ -398,7 +398,7 @@ export function MealPlanningScreen({ navigation }: any) {
           <Text style={styles.modalSubtitle}>{addingMeal?.day}</Text>
 
           <Text style={styles.modalLabel}>Meal Name *</Text>
-          <TextInput
+          <TextInput accessibilityLabel="e.g. Grilled Chicken Salad"
             style={styles.modalInput}
             placeholder="e.g. Grilled Chicken Salad"
             value={newMealName}
@@ -410,18 +410,18 @@ export function MealPlanningScreen({ navigation }: any) {
           <View style={styles.rowInputs}>
             <View style={{ flex: 1 }}>
               <Text style={styles.modalLabel}>Calories</Text>
-              <TextInput style={styles.modalInput} placeholder="e.g. 450" value={newMealCals} onChangeText={setNewMealCals} keyboardType="numeric" placeholderTextColor={colors.textMuted} />
+              <TextInput accessibilityLabel="e.g. 450" style={styles.modalInput} placeholder="e.g. 450" value={newMealCals} onChangeText={setNewMealCals} keyboardType="numeric" placeholderTextColor={colors.textMuted} />
             </View>
             <View style={{ flex: 1, marginLeft: 10 }}>
               <Text style={styles.modalLabel}>Prep (min)</Text>
-              <TextInput style={styles.modalInput} placeholder="e.g. 20" value={newMealPrep} onChangeText={setNewMealPrep} keyboardType="numeric" placeholderTextColor={colors.textMuted} />
+              <TextInput accessibilityLabel="e.g. 20" style={styles.modalInput} placeholder="e.g. 20" value={newMealPrep} onChangeText={setNewMealPrep} keyboardType="numeric" placeholderTextColor={colors.textMuted} />
             </View>
           </View>
 
           <Text style={styles.modalLabel}>Tags</Text>
           <View style={styles.tagsGrid}>
             {MEAL_TAGS.map((tag) => (
-              <Pressable key={tag} onPress={() => toggleTag(tag)} style={[styles.tagChip, selectedTags.includes(tag) && styles.tagChipActive]}>
+              <Pressable accessibilityRole="button" key={tag} onPress={() => toggleTag(tag)} style={[styles.tagChip, selectedTags.includes(tag) && styles.tagChipActive]}>
                 <Text style={[styles.tagChipText, selectedTags.includes(tag) && styles.tagChipTextActive]}>{tag}</Text>
               </Pressable>
             ))}

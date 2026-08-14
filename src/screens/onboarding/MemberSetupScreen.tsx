@@ -105,7 +105,7 @@ export function MemberSetupScreen({ navigation }: any) {
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <LinearGradient colors={['#0F2952', '#1E4A8A']} style={styles.header}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+          <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </Pressable>
           <View style={styles.stepBadge}><Text style={styles.stepText}>{t('onboarding.screens.memberSetup.stepBadge')}</Text></View>
@@ -138,7 +138,7 @@ export function MemberSetupScreen({ navigation }: any) {
                   {isSelf ? (
                     <Ionicons name="lock-closed-outline" size={18} color={colors.textMuted} />
                   ) : (
-                    <Pressable onPress={() => removeMember(m.id)}>
+                    <Pressable accessibilityRole="button" onPress={() => removeMember(m.id)}>
                       <Ionicons name="trash-outline" size={20} color={colors.danger} />
                     </Pressable>
                   )}
@@ -152,7 +152,7 @@ export function MemberSetupScreen({ navigation }: any) {
 
         <View style={styles.roleSelector}>
           {roles.map((r) => (
-            <Pressable
+            <Pressable accessibilityRole="button"
               key={r.value}
               onPress={() => setRole(r.value)}
               style={[styles.roleChip, role === r.value && styles.roleChipActive]}
@@ -207,7 +207,7 @@ export function MemberSetupScreen({ navigation }: any) {
           rightIcon={<Ionicons name="arrow-forward" size={18} color="#fff" style={{ marginLeft: 8 }} />}
         />
 
-        <Pressable onPress={handleNext} style={styles.skipButton}>
+        <Pressable accessibilityRole="button" onPress={handleNext} style={styles.skipButton}>
           <Text style={styles.skipText}>{t('onboarding.screens.memberSetup.skipForNow')}</Text>
         </Pressable>
       </ScrollView>

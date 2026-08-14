@@ -172,7 +172,7 @@ export function GuardianDashboardScreen({ navigation }: any) {
       style={[styles.header, { paddingTop: insets.top + 8 }]}
     >
       <View style={styles.headerRow}>
-        <Pressable onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.getParent()?.navigate('Home')} style={styles.headerIconButton}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.getParent()?.navigate('Home')} style={styles.headerIconButton}>
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </Pressable>
 
@@ -187,7 +187,7 @@ export function GuardianDashboardScreen({ navigation }: any) {
           </Text>
         </View>
 
-        <Pressable
+        <Pressable accessibilityRole="button"
           onPress={() => navigation.navigate('ApprovalRequests')}
           style={styles.headerIconButton}
         >
@@ -269,7 +269,7 @@ export function GuardianDashboardScreen({ navigation }: any) {
       end={{ x: 1, y: 1 }}
       style={[styles.compactHeader, { paddingTop: insets.top }]}
     >
-      <Pressable onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.getParent()?.navigate('Home')} style={styles.compactBack}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.getParent()?.navigate('Home')} style={styles.compactBack}>
         <Ionicons name="arrow-back" size={21} color="#fff" />
       </Pressable>
 
@@ -281,7 +281,7 @@ export function GuardianDashboardScreen({ navigation }: any) {
         </Text>
       </View>
 
-      <Pressable
+      <Pressable accessibilityRole="button"
         onPress={() => navigation.navigate('ApprovalRequests')}
         style={styles.compactAction}
       >
@@ -322,7 +322,7 @@ export function GuardianDashboardScreen({ navigation }: any) {
           >
             {/* SOS Banner */}
             {unresolved.length > 0 && (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 onPress={() => navigation.navigate('SOSAlerts')}
                 style={styles.sosBanner}
               >
@@ -342,7 +342,7 @@ export function GuardianDashboardScreen({ navigation }: any) {
                 { label: 'SOS Alerts', icon: 'warning', route: 'SOSAlerts', color: colors.danger, bg: colors.dangerLight },
                 { label: 'Approvals', icon: 'checkmark-circle', route: 'ApprovalRequests', color: colors.success, bg: colors.successLight },
               ].map((item) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={item.route}
                   onPress={() => navigation.navigate(item.route)}
                   style={[styles.quickLink, shadows.sm]}
@@ -356,7 +356,7 @@ export function GuardianDashboardScreen({ navigation }: any) {
             </View>
 
             {showChildRegistrationBanner && (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 style={[styles.childBanner, shadows.card]}
                 onPress={() => navigation.navigate('RegisterChildDevice')}
               >
@@ -384,7 +384,7 @@ export function GuardianDashboardScreen({ navigation }: any) {
             )}
 
             {pairedDevices.map((device) => (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={device.id}
                 style={[styles.deviceCard, shadows.card]}
                 onPress={() => navigation.navigate('ChildDeviceDetail', { deviceId: device.id })}
@@ -435,7 +435,7 @@ export function GuardianDashboardScreen({ navigation }: any) {
 
                         {/* Lock / Unlock toggle */}
                         {device.status === 'restricted' ? (
-                          <Pressable
+                          <Pressable accessibilityRole="button"
                             style={[styles.deviceActionBtn, isOffline && styles.deviceActionBtnDisabled]}
                             disabled={isOffline}
                             onPress={() => handleQuickCommand(device, 'unlock')}
@@ -444,7 +444,7 @@ export function GuardianDashboardScreen({ navigation }: any) {
                             <Text style={[styles.deviceActionText, { color: colors.success }]}>Unlock</Text>
                           </Pressable>
                         ) : (
-                          <Pressable
+                          <Pressable accessibilityRole="button"
                             style={[styles.deviceActionBtn, isOffline && styles.deviceActionBtnDisabled]}
                             disabled={isOffline}
                             onPress={() => handleQuickCommand(device, 'lock')}
@@ -456,7 +456,7 @@ export function GuardianDashboardScreen({ navigation }: any) {
 
                         {/* School mode toggle */}
                         {device.status === 'school_mode' ? (
-                          <Pressable
+                          <Pressable accessibilityRole="button"
                             style={[styles.deviceActionBtn, isOffline && styles.deviceActionBtnDisabled]}
                             disabled={isOffline}
                             onPress={() => handleQuickCommand(device, 'school_off')}
@@ -465,7 +465,7 @@ export function GuardianDashboardScreen({ navigation }: any) {
                             <Text style={[styles.deviceActionText, { color: colors.textMuted }]}>School ✓</Text>
                           </Pressable>
                         ) : (
-                          <Pressable
+                          <Pressable accessibilityRole="button"
                             style={[styles.deviceActionBtn, isOffline && styles.deviceActionBtnDisabled]}
                             disabled={isOffline}
                             onPress={() => handleQuickCommand(device, 'school_on')}
@@ -477,7 +477,7 @@ export function GuardianDashboardScreen({ navigation }: any) {
 
                         {/* Bedtime toggle */}
                         {device.status === 'bedtime' ? (
-                          <Pressable
+                          <Pressable accessibilityRole="button"
                             style={[styles.deviceActionBtn, isOffline && styles.deviceActionBtnDisabled]}
                             disabled={isOffline}
                             onPress={() => handleQuickCommand(device, 'bedtime_off')}
@@ -486,7 +486,7 @@ export function GuardianDashboardScreen({ navigation }: any) {
                             <Text style={[styles.deviceActionText, { color: colors.textMuted }]}>Bedtime ✓</Text>
                           </Pressable>
                         ) : (
-                          <Pressable
+                          <Pressable accessibilityRole="button"
                             style={[styles.deviceActionBtn, isOffline && styles.deviceActionBtnDisabled]}
                             disabled={isOffline}
                             onPress={() => handleQuickCommand(device, 'bedtime_on')}
@@ -499,7 +499,7 @@ export function GuardianDashboardScreen({ navigation }: any) {
                     );
                   })()}
 
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     style={styles.deviceActionBtn}
                     onPress={() => navigation.navigate('ChildDeviceDetail', { deviceId: device.id })}
                   >
@@ -514,7 +514,7 @@ export function GuardianDashboardScreen({ navigation }: any) {
       </CollapsibleHeader>
 
       {/* FAB */}
-      <Pressable
+      <Pressable accessibilityRole="button"
         style={[
           styles.fab,
           {

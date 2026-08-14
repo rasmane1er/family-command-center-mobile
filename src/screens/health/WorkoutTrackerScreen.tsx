@@ -150,7 +150,7 @@ export function WorkoutTrackerScreen({ navigation: navProp }: any) {
         onBack={() => navigation.goBack()}
         colors={['#BF360C', '#D84315', '#E64A19']}
         rightAction={
-          <Pressable
+          <Pressable accessibilityRole="button"
             onPress={() => {
               setModalMemberId(selectedMemberId);
               setShowModal(true);
@@ -188,7 +188,7 @@ export function WorkoutTrackerScreen({ navigation: navProp }: any) {
           const count = getWeeklyCount(m.id);
           const isActive = m.id === selectedMemberId;
           return (
-            <Pressable
+            <Pressable accessibilityRole="button"
               key={m.id}
               onPress={() => setSelectedMemberId(m.id)}
               style={[s.memberTab, isActive && s.memberTabActive]}
@@ -209,11 +209,11 @@ export function WorkoutTrackerScreen({ navigation: navProp }: any) {
 
   const screenCompact = (
     <View style={{ backgroundColor: '#BF360C', paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => navigation.goBack()} style={s.addBtn}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={s.addBtn}>
         <Ionicons name="arrow-back" size={20} color="#fff" />
       </Pressable>
       <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700', flex: 1, marginLeft: 8 }}>{t('workout.title')}</Text>
-      <Pressable onPress={() => { setModalMemberId(selectedMemberId); setShowModal(true); }} style={s.addBtn}>
+      <Pressable accessibilityRole="button" onPress={() => { setModalMemberId(selectedMemberId); setShowModal(true); }} style={s.addBtn}>
         <Ionicons name="add" size={22} color="#fff" />
       </Pressable>
     </View>
@@ -314,7 +314,7 @@ export function WorkoutTrackerScreen({ navigation: navProp }: any) {
                     </View>
                     {w.notes ? <Text style={s.workoutNotes}>{w.notes}</Text> : null}
                   </View>
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     onPress={() => handleDelete(w.id, w.title)}
                     style={s.deleteBtn}
                   >
@@ -358,7 +358,7 @@ export function WorkoutTrackerScreen({ navigation: navProp }: any) {
         <View style={s.modalContainer}>
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>{t('health.screens.workoutTracker.logWorkoutTitle')}</Text>
-            <Pressable onPress={() => setShowModal(false)}>
+            <Pressable accessibilityRole="button" onPress={() => setShowModal(false)}>
               <Ionicons name="close" size={24} color={colors.text} />
             </Pressable>
           </View>
@@ -366,7 +366,7 @@ export function WorkoutTrackerScreen({ navigation: navProp }: any) {
             <Text style={s.fieldLabel}>{t('health.screens.workoutTracker.familyMemberLabel')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.modalMemberScroll}>
               {members.map((m) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={m.id}
                   onPress={() => setModalMemberId(m.id)}
                   style={[
@@ -396,7 +396,7 @@ export function WorkoutTrackerScreen({ navigation: navProp }: any) {
                 const wc = WORKOUT_CONFIG[type];
                 const isActive = type === modalType;
                 return (
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     key={type}
                     onPress={() => setModalType(type)}
                     style={[
@@ -414,7 +414,7 @@ export function WorkoutTrackerScreen({ navigation: navProp }: any) {
             </View>
 
             <Text style={s.fieldLabel}>{t('health.screens.workoutTracker.titleLabel')}</Text>
-            <TextInput
+            <TextInput accessibilityLabel={t('health.screens.workoutTracker.titlePlaceholder')}
               style={s.textInput}
               value={modalTitle}
               onChangeText={setModalTitle}
@@ -423,7 +423,7 @@ export function WorkoutTrackerScreen({ navigation: navProp }: any) {
             />
 
             <Text style={s.fieldLabel}>{t('health.screens.workoutTracker.dateLabel')}</Text>
-            <TextInput
+            <TextInput accessibilityLabel={t('health.screens.workoutTracker.datePlaceholder')}
               style={s.textInput}
               value={modalDate}
               onChangeText={setModalDate}
@@ -432,7 +432,7 @@ export function WorkoutTrackerScreen({ navigation: navProp }: any) {
             />
 
             <Text style={s.fieldLabel}>{t('health.screens.workoutTracker.durationLabel')}</Text>
-            <TextInput
+            <TextInput accessibilityLabel={t('health.screens.workoutTracker.durationPlaceholder')}
               style={s.textInput}
               value={modalDuration}
               onChangeText={setModalDuration}
@@ -442,7 +442,7 @@ export function WorkoutTrackerScreen({ navigation: navProp }: any) {
             />
 
             <Text style={s.fieldLabel}>{t('health.screens.workoutTracker.caloriesLabel')}</Text>
-            <TextInput
+            <TextInput accessibilityLabel={t('health.screens.workoutTracker.caloriesPlaceholder')}
               style={s.textInput}
               value={modalCalories}
               onChangeText={setModalCalories}
@@ -453,7 +453,7 @@ export function WorkoutTrackerScreen({ navigation: navProp }: any) {
 
             <Text style={s.fieldLabel}>{t('health.screens.workoutTracker.distanceLabel')}</Text>
             <View style={s.distanceRow}>
-              <TextInput
+              <TextInput accessibilityLabel={t('health.screens.workoutTracker.distancePlaceholder')}
                 style={[s.textInput, { flex: 1, marginRight: 10 }]}
                 value={modalDistance}
                 onChangeText={setModalDistance}
@@ -463,7 +463,7 @@ export function WorkoutTrackerScreen({ navigation: navProp }: any) {
               />
               <View style={s.unitToggle}>
                 {(['miles', 'km'] as const).map((unit) => (
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     key={unit}
                     onPress={() => setModalDistUnit(unit)}
                     style={[
@@ -485,7 +485,7 @@ export function WorkoutTrackerScreen({ navigation: navProp }: any) {
             </View>
 
             <Text style={s.fieldLabel}>{t('health.screens.workoutTracker.notesLabel')}</Text>
-            <TextInput
+            <TextInput accessibilityLabel={t('health.screens.workoutTracker.notesPlaceholder')}
               style={[s.textInput, s.textInputMultiline]}
               value={modalNotes}
               onChangeText={setModalNotes}
@@ -495,7 +495,7 @@ export function WorkoutTrackerScreen({ navigation: navProp }: any) {
               numberOfLines={3}
             />
 
-            <Pressable style={s.saveBtn} onPress={handleAddWorkout}>
+            <Pressable accessibilityRole="button" style={s.saveBtn} onPress={handleAddWorkout}>
               <LinearGradient
                 colors={['#BF360C', '#E64A19']}
                 style={s.saveBtnGradient}

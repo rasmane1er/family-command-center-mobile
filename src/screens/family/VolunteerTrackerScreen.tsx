@@ -177,7 +177,7 @@ export function VolunteerTrackerScreen({ navigation: _navigation }: any) {
         </View>
         <View style={styles.tabRow}>
           {(['log', 'members', 'impact'] as MainTab[]).map((t) => (
-            <Pressable key={t} onPress={() => setActiveTab(t)} style={{ ...styles.tabPill, ...(activeTab === t ? styles.tabPillActive : {}) }}>
+            <Pressable accessibilityRole="button" key={t} onPress={() => setActiveTab(t)} style={{ ...styles.tabPill, ...(activeTab === t ? styles.tabPillActive : {}) }}>
               <Text style={{ ...styles.tabPillText, ...(activeTab === t ? styles.tabPillTextActive : {}) }}>
                 {t.charAt(0).toUpperCase() + t.slice(1)}
               </Text>
@@ -223,7 +223,7 @@ export function VolunteerTrackerScreen({ navigation: _navigation }: any) {
                         <Text style={[styles.causeBadgeText, { color: causeColor }]}>{getCauseLabel(log.cause)}</Text>
                       </View>
                       {log.description ? <Text style={styles.logDesc} numberOfLines={1}>{log.description}</Text> : null}
-                      <Pressable onPress={() => handleDeleteLog(log)} hitSlop={8} style={{ marginLeft: 'auto' as any }}>
+                      <Pressable accessibilityRole="button" onPress={() => handleDeleteLog(log)} hitSlop={8} style={{ marginLeft: 'auto' as any }}>
                         <Ionicons name={'trash-outline' as any} size={15} color={colors.danger} />
                       </Pressable>
                     </View>
@@ -237,7 +237,7 @@ export function VolunteerTrackerScreen({ navigation: _navigation }: any) {
         {/* ─── By Member Tab ───────────────────────────────────────────────── */}
         {activeTab === 'members' && (
           <>
-            <Pressable onPress={() => setShowSetGoal(true)} style={styles.setGoalBtn}>
+            <Pressable accessibilityRole="button" onPress={() => setShowSetGoal(true)} style={styles.setGoalBtn}>
               <Ionicons name={'flag-outline' as any} size={16} color={colors.primary} />
               <Text style={styles.setGoalText}>Set Annual Goal</Text>
             </Pressable>
@@ -337,7 +337,7 @@ export function VolunteerTrackerScreen({ navigation: _navigation }: any) {
       </ScrollView>
 
       {/* FAB */}
-      <Pressable onPress={() => setShowAddLog(true)} style={styles.fab}>
+      <Pressable accessibilityRole="button" onPress={() => setShowAddLog(true)} style={styles.fab}>
         <LinearGradient colors={['#E65100', '#F57C00']} style={styles.fabGradient}>
           <Ionicons name={'add' as any} size={28} color="#fff" />
         </LinearGradient>
@@ -352,29 +352,29 @@ export function VolunteerTrackerScreen({ navigation: _navigation }: any) {
             <Text style={styles.fieldLabel}>Family Member</Text>
             <View style={styles.optionRow}>
               {MEMBERS.map((m) => (
-                <Pressable key={m.id} onPress={() => { setLogMemberId(m.id); setLogMemberName(m.name); }} style={{ ...styles.optionChip, ...(logMemberId === m.id ? { backgroundColor: m.color } : {}) }}>
+                <Pressable accessibilityRole="button" key={m.id} onPress={() => { setLogMemberId(m.id); setLogMemberName(m.name); }} style={{ ...styles.optionChip, ...(logMemberId === m.id ? { backgroundColor: m.color } : {}) }}>
                   <Text style={{ ...styles.optionChipText, ...(logMemberId === m.id ? { color: '#fff' } : {}) }}>{m.name}</Text>
                 </Pressable>
               ))}
             </View>
             <Text style={styles.fieldLabel}>Organization *</Text>
-            <TextInput style={styles.input} value={logOrg} onChangeText={setLogOrg} placeholder="Organization name" />
+            <TextInput accessibilityLabel="Organization name" style={styles.input} value={logOrg} onChangeText={setLogOrg} placeholder="Organization name" />
             <Text style={styles.fieldLabel}>Cause</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
               {CAUSES.map((c) => (
-                <Pressable key={c.value} onPress={() => setLogCause(c.value)} style={{ ...styles.optionChip, ...(logCause === c.value ? { backgroundColor: c.color } : {}), marginRight: 8 }}>
+                <Pressable accessibilityRole="button" key={c.value} onPress={() => setLogCause(c.value)} style={{ ...styles.optionChip, ...(logCause === c.value ? { backgroundColor: c.color } : {}), marginRight: 8 }}>
                   <Text style={{ ...styles.optionChipText, ...(logCause === c.value ? { color: '#fff' } : {}) }}>{c.label}</Text>
                 </Pressable>
               ))}
             </ScrollView>
             <Text style={styles.fieldLabel}>Date (YYYY-MM-DD)</Text>
-            <TextInput style={styles.input} value={logDate} onChangeText={setLogDate} placeholder="2026-07-27" />
+            <TextInput accessibilityLabel="2026-07-27" style={styles.input} value={logDate} onChangeText={setLogDate} placeholder="2026-07-27" />
             <Text style={styles.fieldLabel}>Hours *</Text>
-            <TextInput style={styles.input} value={logHours} onChangeText={setLogHours} placeholder="3.5" keyboardType="decimal-pad" />
+            <TextInput accessibilityLabel="3.5" style={styles.input} value={logHours} onChangeText={setLogHours} placeholder="3.5" keyboardType="decimal-pad" />
             <Text style={styles.fieldLabel}>Description</Text>
-            <TextInput style={{ ...styles.input, height: 72 }} value={logDesc} onChangeText={setLogDesc} placeholder="What did you do?" multiline />
+            <TextInput accessibilityLabel="What did you do?" style={{ ...styles.input, height: 72 }} value={logDesc} onChangeText={setLogDesc} placeholder="What did you do?" multiline />
             <Text style={styles.fieldLabel}>Supervisor / Contact</Text>
-            <TextInput style={styles.input} value={logSupervisor} onChangeText={setLogSupervisor} placeholder="Name of supervisor" />
+            <TextInput accessibilityLabel="Name of supervisor" style={styles.input} value={logSupervisor} onChangeText={setLogSupervisor} placeholder="Name of supervisor" />
             <View style={styles.switchRow}>
               <Text style={styles.fieldLabel}>Officially Verified</Text>
               <Switch value={logVerified} onValueChange={setLogVerified} trackColor={{ true: colors.success }} />
@@ -396,13 +396,13 @@ export function VolunteerTrackerScreen({ navigation: _navigation }: any) {
             <Text style={styles.fieldLabel}>Family Member</Text>
             <View style={styles.optionRow}>
               {MEMBERS.map((m) => (
-                <Pressable key={m.id} onPress={() => { setGoalMemberId(m.id); setGoalMemberName(m.name); }} style={{ ...styles.optionChip, ...(goalMemberId === m.id ? { backgroundColor: m.color } : {}) }}>
+                <Pressable accessibilityRole="button" key={m.id} onPress={() => { setGoalMemberId(m.id); setGoalMemberName(m.name); }} style={{ ...styles.optionChip, ...(goalMemberId === m.id ? { backgroundColor: m.color } : {}) }}>
                   <Text style={{ ...styles.optionChipText, ...(goalMemberId === m.id ? { color: '#fff' } : {}) }}>{m.name}</Text>
                 </Pressable>
               ))}
             </View>
             <Text style={styles.fieldLabel}>Annual Hours Goal for {CURRENT_YEAR}</Text>
-            <TextInput style={styles.input} value={goalHours} onChangeText={setGoalHours} placeholder="50" keyboardType="number-pad" />
+            <TextInput accessibilityLabel="50" style={styles.input} value={goalHours} onChangeText={setGoalHours} placeholder="50" keyboardType="number-pad" />
             <View style={styles.modalButtons}>
               <Button title="Cancel" variant="ghost" onPress={() => { setGoalHours(''); setShowSetGoal(false); }} />
               <Button title="Save Goal" onPress={handleSetGoal} disabled={!goalHours.trim()} />

@@ -332,7 +332,7 @@ export function UtilityTrackerScreen({ navigation }: any) {
                   <Badge label="UNPAID" variant="danger" />
                 )}
                 {!bill.isPaid && (
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     style={styles.markPaidBtn}
                     onPress={() => handleMarkPaid(bill.id, bill.provider)}
                   >
@@ -340,10 +340,10 @@ export function UtilityTrackerScreen({ navigation }: any) {
                   </Pressable>
                 )}
                 <View style={styles.billActions}>
-                  <Pressable style={styles.billEditBtn} onPress={() => handleEditBill(bill)}>
+                  <Pressable accessibilityRole="button" style={styles.billEditBtn} onPress={() => handleEditBill(bill)}>
                     <Ionicons name="create-outline" size={15} color={colors.primary} />
                   </Pressable>
-                  <Pressable style={styles.billDeleteBtn} onPress={() => handleDelete(bill.id, bill.provider)}>
+                  <Pressable accessibilityRole="button" style={styles.billDeleteBtn} onPress={() => handleDelete(bill.id, bill.provider)}>
                     <Ionicons name="trash-outline" size={15} color={colors.danger} />
                   </Pressable>
                 </View>
@@ -442,11 +442,11 @@ export function UtilityTrackerScreen({ navigation }: any) {
         style={{ paddingTop: insets.top + 6, paddingBottom: 8, paddingHorizontal: 20 }}
       >
         <View style={styles.headerTop}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </Pressable>
           <Text style={styles.headerTitle}>{t('utility.title')}</Text>
-          <Pressable
+          <Pressable accessibilityRole="button"
             onPress={() => {
               loadDetectedUtilities();
               setShowImportModal(true);
@@ -455,7 +455,7 @@ export function UtilityTrackerScreen({ navigation }: any) {
           >
             <Ionicons name="cloud-download-outline" size={20} color="#fff" />
           </Pressable>
-          <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
+          <Pressable accessibilityRole="button" onPress={() => setShowAddModal(true)} style={styles.addBtn}>
             <Ionicons name="add" size={26} color="#fff" />
           </Pressable>
         </View>
@@ -491,7 +491,7 @@ export function UtilityTrackerScreen({ navigation }: any) {
       start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
       style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
     >
-      <Pressable onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </Pressable>
       <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>Utilities</Text>
@@ -509,7 +509,7 @@ export function UtilityTrackerScreen({ navigation }: any) {
 
           <View style={styles.tabBar}>
         {(['This Month', 'Trends', 'By Type'] as const).map((tab) => (
-          <Pressable
+          <Pressable accessibilityRole="button"
             key={tab}
             onPress={() => setActiveTab(tab)}
             style={{ ...styles.tabItem, ...(activeTab === tab && styles.tabItemActive) }}
@@ -531,7 +531,7 @@ export function UtilityTrackerScreen({ navigation }: any) {
           <View style={styles.modalSheet}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Import from Bank</Text>
-              <Pressable onPress={() => setShowImportModal(false)}>
+              <Pressable accessibilityRole="button" onPress={() => setShowImportModal(false)}>
                 <Ionicons name="close" size={24} color={colors.text} />
               </Pressable>
             </View>
@@ -556,7 +556,7 @@ export function UtilityTrackerScreen({ navigation }: any) {
                       <Text style={styles.importDate}>{du.date}</Text>
                     </View>
                     <Text style={styles.importAmount}>${du.amount.toFixed(2)}</Text>
-                    <Pressable style={styles.importOneBtn} onPress={() => handleImportOne(du)}>
+                    <Pressable accessibilityRole="button" style={styles.importOneBtn} onPress={() => handleImportOne(du)}>
                       <Text style={styles.importOneBtnText}>Import</Text>
                     </Pressable>
                   </View>
@@ -565,7 +565,7 @@ export function UtilityTrackerScreen({ navigation }: any) {
             )}
 
             {!detectedLoading && detectedUtilities.length > 0 && (
-              <Pressable style={styles.importAllBtn} onPress={handleImportAll}>
+              <Pressable accessibilityRole="button" style={styles.importAllBtn} onPress={handleImportAll}>
                 <Ionicons name="cloud-download" size={18} color="#fff" />
                 <Text style={styles.importAllBtnText}>Import All ({detectedUtilities.length})</Text>
               </Pressable>
@@ -580,7 +580,7 @@ export function UtilityTrackerScreen({ navigation }: any) {
           <ScrollView style={styles.modalSheet} contentContainerStyle={{ paddingBottom: 40 }}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{editingBill ? 'Edit Utility Bill' : 'Add Utility Bill'}</Text>
-              <Pressable onPress={() => { setEditingBill(null); setShowAddModal(false); }}>
+              <Pressable accessibilityRole="button" onPress={() => { setEditingBill(null); setShowAddModal(false); }}>
                 <Ionicons name="close" size={24} color={colors.text} />
               </Pressable>
             </View>
@@ -593,7 +593,7 @@ export function UtilityTrackerScreen({ navigation }: any) {
                 </Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }}>
                   {currentMonthChips.map((du, i) => (
-                    <Pressable key={i} style={styles.bankChip} onPress={() => prefillFromDetected(du)}>
+                    <Pressable accessibilityRole="button" key={i} style={styles.bankChip} onPress={() => prefillFromDetected(du)}>
                       <Ionicons name={UTILITY_ICONS[inferUtilityType(du.type)] as any} size={12} color="#006064" />
                       <Text style={styles.bankChipText}>{du.merchantName}</Text>
                       <Text style={styles.bankChipAmount}>${du.amount.toFixed(0)}</Text>
@@ -606,7 +606,7 @@ export function UtilityTrackerScreen({ navigation }: any) {
             <Text style={styles.modalLabel}>Utility Type *</Text>
             <View style={styles.typeIconGrid}>
               {UTILITY_TYPES.map((t) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={t}
                   onPress={() => setNewType(t)}
                   style={{ ...styles.typeIconBtn, ...(newType === t && { borderColor: UTILITY_COLORS[t], backgroundColor: UTILITY_COLORS[t] + '22' }) }}
@@ -624,7 +624,7 @@ export function UtilityTrackerScreen({ navigation }: any) {
             </View>
 
             <Text style={styles.modalLabel}>Provider *</Text>
-            <TextInput
+            <TextInput accessibilityLabel="e.g. Xfinity, AEP"
               style={styles.modalInput}
               value={newProvider}
               onChangeText={setNewProvider}
@@ -633,7 +633,7 @@ export function UtilityTrackerScreen({ navigation }: any) {
             />
 
             <Text style={styles.modalLabel}>Month (YYYY-MM) *</Text>
-            <TextInput
+            <TextInput accessibilityLabel="2026-06"
               style={styles.modalInput}
               value={newMonth}
               onChangeText={setNewMonth}
@@ -642,7 +642,7 @@ export function UtilityTrackerScreen({ navigation }: any) {
             />
 
             <Text style={styles.modalLabel}>Amount ($) *</Text>
-            <TextInput
+            <TextInput accessibilityLabel="0.00"
               style={styles.modalInput}
               value={newAmount}
               onChangeText={setNewAmount}
@@ -653,7 +653,7 @@ export function UtilityTrackerScreen({ navigation }: any) {
 
             <Text style={styles.modalLabel}>Usage (Optional)</Text>
             <View style={styles.usageRow}>
-              <TextInput
+              <TextInput accessibilityLabel="0"
                 style={[styles.modalInput, { flex: 1, marginRight: 8 }]}
                 value={newUsage}
                 onChangeText={setNewUsage}
@@ -661,7 +661,7 @@ export function UtilityTrackerScreen({ navigation }: any) {
                 placeholderTextColor={colors.textMuted}
                 keyboardType="decimal-pad"
               />
-              <TextInput
+              <TextInput accessibilityLabel="kWh, gallons..."
                 style={[styles.modalInput, { flex: 1 }]}
                 value={newUsageUnit}
                 onChangeText={setNewUsageUnit}
@@ -679,7 +679,7 @@ export function UtilityTrackerScreen({ navigation }: any) {
               />
             </View>
 
-            <Pressable
+            <Pressable accessibilityRole="button"
               onPress={handleAddBill}
               style={[styles.submitBtn, (!newProvider.trim() || !newAmount) && styles.submitBtnDisabled]}
             >

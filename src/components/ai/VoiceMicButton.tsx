@@ -43,7 +43,7 @@ export function VoiceMicButton({
   const color = isListening ? activeColor : idleColor;
 
   return (
-    <Pressable onPress={onPress} hitSlop={8} style={[styles.wrapper, { width: size, height: size }]}>
+    <Pressable accessibilityRole="button" onPress={onPress} hitSlop={8} style={[styles.wrapper, { width: size, height: size }]}>
       {/* Pulse ring */}
       <Animated.View
         style={[

@@ -51,7 +51,7 @@ export function SubscriptionGate({ children, requiredTier, featureName, descript
       <Text style={styles.subtitle}>
         {description ?? t('screens.shared.upgradeIncludedInPlan', { tier: TIER_LABELS[requiredTier] })}
       </Text>
-      <Pressable style={styles.upgradeBtn} onPress={() => setShowUpgrade(true)}>
+      <Pressable accessibilityRole="button" style={styles.upgradeBtn} onPress={() => setShowUpgrade(true)}>
         <LinearGradient colors={['#F5A623', '#FF8C42']} style={styles.upgradeBtnGradient}>
           <Text style={styles.upgradeBtnText}>
             {t('screens.shared.upgradeToTierWithPrice', { tier: TIER_LABELS[requiredTier], price: TIER_PRICES[requiredTier] })}

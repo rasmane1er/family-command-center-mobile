@@ -77,7 +77,7 @@ function RecordCard({ record, onDelete }: { record: MedicalRecord; onDelete: () 
             <Text style={styles.followUpText}>Follow-up: {record.followUpDate}</Text>
           ) : null}
         </View>
-        <Pressable onPress={onDelete} style={styles.deleteBtn}>
+        <Pressable accessibilityRole="button" onPress={onDelete} style={styles.deleteBtn}>
           <Ionicons name={'trash-outline' as any} size={18} color={colors.textMuted} />
         </Pressable>
       </View>
@@ -166,7 +166,7 @@ export function MedicalRecordsScreen({ navigation }: any) {
 
       {/* Header */}
       <LinearGradient colors={['#1A237E', '#283593']} style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name={'arrow-back' as any} size={24} color="#fff" />
         </Pressable>
         <View style={styles.headerText}>
@@ -179,7 +179,7 @@ export function MedicalRecordsScreen({ navigation }: any) {
       {/* Tabs */}
       <View style={styles.tabRow}>
         {(['records', 'doctors', 'critical'] as const).map((tab) => (
-          <Pressable
+          <Pressable accessibilityRole="button"
             key={tab}
             style={[styles.tabBtn, activeTab === tab && styles.tabBtnActive]}
             onPress={() => setActiveTab(tab)}
@@ -198,14 +198,14 @@ export function MedicalRecordsScreen({ navigation }: any) {
           <>
             {/* Member filter chips */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll} contentContainerStyle={styles.filterScrollContent}>
-              <Pressable
+              <Pressable accessibilityRole="button"
                 style={[styles.filterChip, memberFilter === null && styles.filterChipActive]}
                 onPress={() => setMemberFilter(null)}
               >
                 <Text style={[styles.filterChipText, memberFilter === null && styles.filterChipTextActive]}>All</Text>
               </Pressable>
               {MEMBERS.map((m) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={m.id}
                   style={[styles.filterChip, memberFilter === m.id && { backgroundColor: m.color, borderColor: m.color }]}
                   onPress={() => setMemberFilter(memberFilter === m.id ? null : m.id)}
@@ -217,7 +217,7 @@ export function MedicalRecordsScreen({ navigation }: any) {
 
             {/* Type filter */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll} contentContainerStyle={styles.filterScrollContent}>
-              <Pressable
+              <Pressable accessibilityRole="button"
                 style={[styles.filterChip, typeFilter === null && styles.filterChipActive]}
                 onPress={() => setTypeFilter(null)}
               >
@@ -226,7 +226,7 @@ export function MedicalRecordsScreen({ navigation }: any) {
               {RECORD_TYPES.map((t) => {
                 const cfg = RECORD_CONFIG[t];
                 return (
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     key={t}
                     style={[styles.filterChip, typeFilter === t && { backgroundColor: cfg.color, borderColor: cfg.color }]}
                     onPress={() => setTypeFilter(typeFilter === t ? null : t)}
@@ -281,12 +281,12 @@ export function MedicalRecordsScreen({ navigation }: any) {
                           </View>
                         )}
                       </View>
-                      <Pressable onPress={() => removeDoctor(doc.id)} style={styles.deleteBtn}>
+                      <Pressable accessibilityRole="button" onPress={() => removeDoctor(doc.id)} style={styles.deleteBtn}>
                         <Ionicons name={'trash-outline' as any} size={18} color={colors.textMuted} />
                       </Pressable>
                     </View>
                     {doc.phone ? (
-                      <Pressable
+                      <Pressable accessibilityRole="button"
                         style={styles.doctorContact}
                         onPress={() => Linking.openURL(`tel:${doc.phone}`)}
                       >
@@ -334,7 +334,7 @@ export function MedicalRecordsScreen({ navigation }: any) {
       </ScrollView>
 
       {/* FAB */}
-      <Pressable
+      <Pressable accessibilityRole="button"
         style={styles.fab}
         onPress={activeTab === 'doctors' ? openDoctorModal : openRecordModal}
       >
@@ -350,7 +350,7 @@ export function MedicalRecordsScreen({ navigation }: any) {
             <View style={{ width: 40, height: 4, backgroundColor: '#ccc', borderRadius: 2, alignSelf: 'center', marginBottom: 16 }} />
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Add Medical Record</Text>
-              <Pressable onPress={() => setShowRecordModal(false)}>
+              <Pressable accessibilityRole="button" onPress={() => setShowRecordModal(false)}>
                 <Ionicons name={'close' as any} size={24} color={colors.text} />
               </Pressable>
             </View>
@@ -359,7 +359,7 @@ export function MedicalRecordsScreen({ navigation }: any) {
               <Text style={styles.fieldLabel}>Member</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 {MEMBERS.map((m) => (
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     key={m.id}
                     style={[styles.chipBtn, rMemberId === m.id && { backgroundColor: m.color, borderColor: m.color }]}
                     onPress={() => setRMemberId(m.id)}
@@ -374,7 +374,7 @@ export function MedicalRecordsScreen({ navigation }: any) {
                 {RECORD_TYPES.map((t) => {
                   const cfg = RECORD_CONFIG[t];
                   return (
-                    <Pressable
+                    <Pressable accessibilityRole="button"
                       key={t}
                       style={[styles.chipBtn, rType === t && { backgroundColor: cfg.color, borderColor: cfg.color }]}
                       onPress={() => setRType(t)}
@@ -387,22 +387,22 @@ export function MedicalRecordsScreen({ navigation }: any) {
               </View>
 
               <Text style={styles.fieldLabel}>Title *</Text>
-              <TextInput style={styles.textInput} value={rTitle} onChangeText={setRTitle} placeholder="e.g. Annual checkup" placeholderTextColor={colors.textMuted} />
+              <TextInput accessibilityLabel="e.g. Annual checkup" style={styles.textInput} value={rTitle} onChangeText={setRTitle} placeholder="e.g. Annual checkup" placeholderTextColor={colors.textMuted} />
 
               <Text style={styles.fieldLabel}>Provider / Clinic</Text>
-              <TextInput style={styles.textInput} value={rProvider} onChangeText={setRProvider} placeholder="Doctor or clinic name" placeholderTextColor={colors.textMuted} />
+              <TextInput accessibilityLabel="Doctor or clinic name" style={styles.textInput} value={rProvider} onChangeText={setRProvider} placeholder="Doctor or clinic name" placeholderTextColor={colors.textMuted} />
 
               <Text style={styles.fieldLabel}>Date (YYYY-MM-DD)</Text>
-              <TextInput style={styles.textInput} value={rDate} onChangeText={setRDate} placeholder="2025-07-01" placeholderTextColor={colors.textMuted} />
+              <TextInput accessibilityLabel="2025-07-01" style={styles.textInput} value={rDate} onChangeText={setRDate} placeholder="2025-07-01" placeholderTextColor={colors.textMuted} />
 
               <Text style={styles.fieldLabel}>Notes</Text>
-              <TextInput style={[styles.textInput, styles.textInputMultiline]} value={rNotes} onChangeText={setRNotes} placeholder="Observations, symptoms..." placeholderTextColor={colors.textMuted} multiline />
+              <TextInput accessibilityLabel="Observations, symptoms..." style={[styles.textInput, styles.textInputMultiline]} value={rNotes} onChangeText={setRNotes} placeholder="Observations, symptoms..." placeholderTextColor={colors.textMuted} multiline />
 
               <Text style={styles.fieldLabel}>Results / Findings</Text>
-              <TextInput style={[styles.textInput, styles.textInputMultiline]} value={rResults} onChangeText={setRResults} placeholder="Lab results, diagnosis..." placeholderTextColor={colors.textMuted} multiline />
+              <TextInput accessibilityLabel="Lab results, diagnosis..." style={[styles.textInput, styles.textInputMultiline]} value={rResults} onChangeText={setRResults} placeholder="Lab results, diagnosis..." placeholderTextColor={colors.textMuted} multiline />
 
               <Text style={styles.fieldLabel}>Follow-Up Date (optional)</Text>
-              <TextInput style={styles.textInput} value={rFollowUp} onChangeText={setRFollowUp} placeholder="YYYY-MM-DD" placeholderTextColor={colors.textMuted} />
+              <TextInput accessibilityLabel="YYYY-MM-DD" style={styles.textInput} value={rFollowUp} onChangeText={setRFollowUp} placeholder="YYYY-MM-DD" placeholderTextColor={colors.textMuted} />
 
               <View style={styles.criticalToggleRow}>
                 <View style={styles.criticalToggleInfo}>
@@ -417,7 +417,7 @@ export function MedicalRecordsScreen({ navigation }: any) {
                 />
               </View>
 
-              <Pressable style={styles.saveBtn} onPress={handleAddRecord}>
+              <Pressable accessibilityRole="button" style={styles.saveBtn} onPress={handleAddRecord}>
                 <LinearGradient colors={['#283593', '#1A237E']} style={styles.saveBtnGradient}>
                   <Ionicons name={'checkmark-circle' as any} size={20} color="#fff" />
                   <Text style={styles.saveBtnText}>Save Record</Text>
@@ -435,7 +435,7 @@ export function MedicalRecordsScreen({ navigation }: any) {
             <View style={{ width: 40, height: 4, backgroundColor: '#ccc', borderRadius: 2, alignSelf: 'center', marginBottom: 16 }} />
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Add Doctor</Text>
-              <Pressable onPress={() => setShowDoctorModal(false)}>
+              <Pressable accessibilityRole="button" onPress={() => setShowDoctorModal(false)}>
                 <Ionicons name={'close' as any} size={24} color={colors.text} />
               </Pressable>
             </View>
@@ -444,7 +444,7 @@ export function MedicalRecordsScreen({ navigation }: any) {
               <Text style={styles.fieldLabel}>Primary Patient</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 {MEMBERS.map((m) => (
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     key={m.id}
                     style={[styles.chipBtn, dMemberId === m.id && { backgroundColor: m.color, borderColor: m.color }]}
                     onPress={() => setDMemberId(m.id)}
@@ -455,18 +455,18 @@ export function MedicalRecordsScreen({ navigation }: any) {
               </ScrollView>
 
               <Text style={styles.fieldLabel}>Doctor Name *</Text>
-              <TextInput style={styles.textInput} value={dName} onChangeText={setDName} placeholder="Dr. Jane Smith" placeholderTextColor={colors.textMuted} />
+              <TextInput accessibilityLabel="Dr. Jane Smith" style={styles.textInput} value={dName} onChangeText={setDName} placeholder="Dr. Jane Smith" placeholderTextColor={colors.textMuted} />
 
               <Text style={styles.fieldLabel}>Specialty</Text>
-              <TextInput style={styles.textInput} value={dSpecialty} onChangeText={setDSpecialty} placeholder="e.g. Family Medicine" placeholderTextColor={colors.textMuted} />
+              <TextInput accessibilityLabel="e.g. Family Medicine" style={styles.textInput} value={dSpecialty} onChangeText={setDSpecialty} placeholder="e.g. Family Medicine" placeholderTextColor={colors.textMuted} />
 
               <Text style={styles.fieldLabel}>Phone</Text>
-              <TextInput style={styles.textInput} value={dPhone} onChangeText={setDPhone} placeholder="(555) 123-4567" placeholderTextColor={colors.textMuted} keyboardType="phone-pad" />
+              <TextInput accessibilityLabel="(555) 123-4567" style={styles.textInput} value={dPhone} onChangeText={setDPhone} placeholder="(555) 123-4567" placeholderTextColor={colors.textMuted} keyboardType="phone-pad" />
 
               <Text style={styles.fieldLabel}>Address</Text>
-              <TextInput style={[styles.textInput, styles.textInputMultiline]} value={dAddress} onChangeText={setDAddress} placeholder="123 Main St, City, State 12345" placeholderTextColor={colors.textMuted} multiline />
+              <TextInput accessibilityLabel="123 Main St, City, State 12345" style={[styles.textInput, styles.textInputMultiline]} value={dAddress} onChangeText={setDAddress} placeholder="123 Main St, City, State 12345" placeholderTextColor={colors.textMuted} multiline />
 
-              <Pressable style={styles.saveBtn} onPress={handleAddDoctor}>
+              <Pressable accessibilityRole="button" style={styles.saveBtn} onPress={handleAddDoctor}>
                 <LinearGradient colors={['#283593', '#1A237E']} style={styles.saveBtnGradient}>
                   <Ionicons name={'checkmark-circle' as any} size={20} color="#fff" />
                   <Text style={styles.saveBtnText}>Add Doctor</Text>

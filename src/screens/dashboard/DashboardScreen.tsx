@@ -540,7 +540,7 @@ export function DashboardScreen({ navigation }: any) {
                 <Text style={dynStyles.dateText}>{format(new Date(), 'EEEE, MMMM d')}</Text>
 
                 {(activeMember || authUser) && (
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     style={dynStyles.activeProfileBadge}
                     onPress={() =>
                       navigation.navigate('Family', {
@@ -564,11 +564,11 @@ export function DashboardScreen({ navigation }: any) {
               </View>
 
               <View style={dynStyles.headerActions}>
-                <Pressable style={dynStyles.headerIconBtn} onPress={() => navigation.navigate('Search')}>
+                <Pressable accessibilityRole="button" style={dynStyles.headerIconBtn} onPress={() => navigation.navigate('Search')}>
                   <Ionicons name="search-outline" size={20} color="#fff" />
                 </Pressable>
 
-                <Pressable style={dynStyles.headerIconBtn} onPress={() => navigation.navigate('Notifications')}>
+                <Pressable accessibilityRole="button" style={dynStyles.headerIconBtn} onPress={() => navigation.navigate('Notifications')}>
                   <Ionicons name="notifications-outline" size={20} color="#fff" />
                   {unreadNotifications > 0 && (
                     <View style={dynStyles.notifDot}>
@@ -577,7 +577,7 @@ export function DashboardScreen({ navigation }: any) {
                   )}
                 </Pressable>
 
-                <Pressable style={dynStyles.headerIconBtn} onPress={() => navigation.navigate('Settings')}>
+                <Pressable accessibilityRole="button" style={dynStyles.headerIconBtn} onPress={() => navigation.navigate('Settings')}>
                   <Ionicons name="settings-outline" size={20} color="#fff" />
                 </Pressable>
               </View>
@@ -618,7 +618,7 @@ export function DashboardScreen({ navigation }: any) {
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
           <View style={dynStyles.kpiGrid}>
             {kpiCards.map((item) => (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={item.label}
                 style={[dynStyles.kpiCard, shadows.sm]}
                 onPress={() => handleRoleActionPress(item.route)}
@@ -640,14 +640,14 @@ export function DashboardScreen({ navigation }: any) {
               <Text style={dynStyles.sectionTitle}>{t('dashboard.screens.main.actionCenterTitle')}</Text>
               <Text style={dynStyles.sectionSubtitle}>{t('dashboard.screens.main.actionCenterSubtitle')}</Text>
             </View>
-            <Pressable onPress={() => handleRoleActionPress('Tasks')} style={dynStyles.sectionButton}>
+            <Pressable accessibilityRole="button" onPress={() => handleRoleActionPress('Tasks')} style={dynStyles.sectionButton}>
               <Text style={dynStyles.sectionButtonText}>{t('dashboard.screens.main.review')}</Text>
             </Pressable>
           </View>
 
           <View style={dynStyles.actionStack}>
             {actionItems.map((item) => (
-              <Pressable key={item.id} onPress={() => handleRoleActionPress(item.route)} style={dynStyles.actionCard}>
+              <Pressable accessibilityRole="button" key={item.id} onPress={() => handleRoleActionPress(item.route)} style={dynStyles.actionCard}>
                 <View style={[dynStyles.actionIcon, { backgroundColor: item.tone + '16' }]}> 
                   <Ionicons name={item.icon as any} size={18} color={item.tone} />
                 </View>
@@ -665,7 +665,7 @@ export function DashboardScreen({ navigation }: any) {
               <Text style={dynStyles.sectionTitle}>{isChild ? t('dashboard.screens.main.myTimeline') : t('dashboard.screens.main.todayTimeline')}</Text>
               <Text style={dynStyles.sectionSubtitle}>{t('dashboard.screens.main.timelineSubtitle')}</Text>
             </View>
-            <Pressable onPress={() => handleRoleActionPress('Calendar')} style={dynStyles.sectionButton}>
+            <Pressable accessibilityRole="button" onPress={() => handleRoleActionPress('Calendar')} style={dynStyles.sectionButton}>
               <Text style={dynStyles.sectionButtonText}>{t('dashboard.screens.main.calendarButton')}</Text>
             </Pressable>
           </View>
@@ -673,7 +673,7 @@ export function DashboardScreen({ navigation }: any) {
           <View style={dynStyles.timelinePanel}>
             {timelineItems.length > 0 ? (
               timelineItems.map((event, index) => (
-                <Pressable key={event.id} onPress={() => handleRoleActionPress('Calendar')} style={dynStyles.timelineRow}>
+                <Pressable accessibilityRole="button" key={event.id} onPress={() => handleRoleActionPress('Calendar')} style={dynStyles.timelineRow}>
                   <View style={dynStyles.timelineLeft}>
                     <Text style={dynStyles.timelineTime}>{event.allDay ? t('dashboard.screens.main.allDay') : format(new Date(event.startDate), 'h:mm a')}</Text>
                     {index < timelineItems.length - 1 && <View style={dynStyles.timelineLine} />}
@@ -690,7 +690,7 @@ export function DashboardScreen({ navigation }: any) {
                 </Pressable>
               ))
             ) : (
-              <Pressable style={dynStyles.emptyPanel} onPress={() => handleRoleActionPress('Calendar')}>
+              <Pressable accessibilityRole="button" style={dynStyles.emptyPanel} onPress={() => handleRoleActionPress('Calendar')}>
                 <Ionicons name="calendar-clear-outline" size={28} color={colors.textMuted} />
                 <Text style={dynStyles.emptyTitle}>{t('dashboard.screens.main.noScheduledEventsTitle')}</Text>
                 <Text style={dynStyles.emptyText}>{t('dashboard.screens.main.noScheduledEventsDesc')}</Text>
@@ -703,7 +703,7 @@ export function DashboardScreen({ navigation }: any) {
               <Text style={dynStyles.sectionTitle}>{t('dashboard.screens.main.familyStatusBoardTitle')}</Text>
               <Text style={dynStyles.sectionSubtitle}>{t('dashboard.screens.main.familyStatusBoardSubtitle')}</Text>
             </View>
-            <Pressable onPress={openFamilyMembers} style={dynStyles.sectionButton}>
+            <Pressable accessibilityRole="button" onPress={openFamilyMembers} style={dynStyles.sectionButton}>
               <Text style={dynStyles.sectionButtonText}>{t('dashboard.screens.main.manageButton')}</Text>
             </Pressable>
           </View>
@@ -712,7 +712,7 @@ export function DashboardScreen({ navigation }: any) {
             {members.map((member) => {
               const memberTasks = visibleTasks.filter((task: any) => task.assignedTo?.includes(member.id) && task.status === 'pending').length;
               return (
-                <Pressable key={member.id} style={dynStyles.memberStatusCard} onPress={() => openMemberDetails(member.id)}>
+                <Pressable accessibilityRole="button" key={member.id} style={dynStyles.memberStatusCard} onPress={() => openMemberDetails(member.id)}>
                   <View style={dynStyles.memberTopRow}>
                     <Avatar
                       name={member.name}
@@ -736,7 +736,7 @@ export function DashboardScreen({ navigation }: any) {
             })}
 
             {isParent && (
-              <Pressable style={dynStyles.inviteCard} onPress={openInviteMember}>
+              <Pressable accessibilityRole="button" style={dynStyles.inviteCard} onPress={openInviteMember}>
                 <View style={dynStyles.inviteIcon}>
                   <Ionicons name="add" size={22} color={colors.primary} />
                 </View>
@@ -753,12 +753,12 @@ export function DashboardScreen({ navigation }: any) {
                   <Text style={dynStyles.sectionTitle}>{t('dashboard.screens.main.financeSnapshotTitle')}</Text>
                   <Text style={dynStyles.sectionSubtitle}>{t('dashboard.screens.main.financeSnapshotSubtitle')}</Text>
                 </View>
-                <Pressable onPress={() => handleRoleActionPress('Finance')} style={dynStyles.sectionButton}>
+                <Pressable accessibilityRole="button" onPress={() => handleRoleActionPress('Finance')} style={dynStyles.sectionButton}>
                   <Text style={dynStyles.sectionButtonText}>{t('dashboard.screens.main.openButton')}</Text>
                 </Pressable>
               </View>
 
-              <Pressable
+              <Pressable accessibilityRole="button"
                 style={dynStyles.financeCard}
                 onPress={() => (hasFinanceAccess ? handleRoleActionPress('Finance') : showPaywall('premium'))}
               >
@@ -828,12 +828,12 @@ export function DashboardScreen({ navigation }: any) {
               <Text style={dynStyles.sectionTitle}>{t('dashboard.screens.main.commanderAiTitle')}</Text>
               <Text style={dynStyles.sectionSubtitle}>{t('dashboard.screens.main.commanderAiSubtitle')}</Text>
             </View>
-            <Pressable onPress={() => handleRoleActionPress('AIAssistant')} style={dynStyles.sectionButton}>
+            <Pressable accessibilityRole="button" onPress={() => handleRoleActionPress('AIAssistant')} style={dynStyles.sectionButton}>
               <Text style={dynStyles.sectionButtonText}>{t('dashboard.screens.main.askAiButton')}</Text>
             </Pressable>
           </View>
 
-          <Pressable onPress={() => handleRoleActionPress('AIAssistant')} style={dynStyles.aiCard}>
+          <Pressable accessibilityRole="button" onPress={() => handleRoleActionPress('AIAssistant')} style={dynStyles.aiCard}>
             <LinearGradient colors={[COMMAND_COLORS.navy900, COMMAND_COLORS.navy700]} style={dynStyles.aiGradient}>
               <View style={dynStyles.aiTopRow}>
                 <View style={dynStyles.aiIconWrap}>
@@ -868,7 +868,7 @@ export function DashboardScreen({ navigation }: any) {
               <Text style={dynStyles.sectionTitle}>{t('dashboard.screens.main.weeklyProgressTitle')}</Text>
               <Text style={dynStyles.sectionSubtitle}>{t('dashboard.screens.main.weeklyProgressSubtitle')}</Text>
             </View>
-            <Pressable onPress={() => handleRoleActionPress('WeeklyReport')} style={dynStyles.sectionButton}>
+            <Pressable accessibilityRole="button" onPress={() => handleRoleActionPress('WeeklyReport')} style={dynStyles.sectionButton}>
               <Text style={dynStyles.sectionButtonText}>{t('dashboard.screens.main.reportButton')}</Text>
             </Pressable>
           </View>
@@ -900,7 +900,7 @@ export function DashboardScreen({ navigation }: any) {
             ...(isParent ? [{ label: t('dashboard.screens.main.fabAddExpense'), icon: 'wallet-outline', route: 'Budgeting' }] : []),
             { label: t('dashboard.screens.main.fabAskAi'), icon: 'sparkles-outline', route: 'AIAssistant' },
           ].map((item) => (
-            <Pressable key={item.label} style={dynStyles.fabMenuItem} onPress={() => handleQuickAction(item.route)}>
+            <Pressable accessibilityRole="button" key={item.label} style={dynStyles.fabMenuItem} onPress={() => handleQuickAction(item.route)}>
               <Text style={dynStyles.fabMenuLabel}>{item.label}</Text>
               <View style={dynStyles.fabMiniIcon}>
                 <Ionicons name={item.icon as any} size={17} color="#fff" />
@@ -910,7 +910,7 @@ export function DashboardScreen({ navigation }: any) {
         </View>
       )}
 
-      <Pressable style={[dynStyles.fab, { bottom: 24 + insets.bottom }]} onPress={() => setFabOpen((prev) => !prev)}>
+      <Pressable accessibilityRole="button" style={[dynStyles.fab, { bottom: 24 + insets.bottom }]} onPress={() => setFabOpen((prev) => !prev)}>
         <Ionicons name={fabOpen ? 'close' : 'add'} size={28} color="#fff" />
       </Pressable>
     </View>

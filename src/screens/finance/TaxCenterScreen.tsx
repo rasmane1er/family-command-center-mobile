@@ -254,14 +254,14 @@ export function TaxCenterScreen({ navigation }: any) {
   const screenHeader = (
     <LinearGradient colors={['#0F2952', '#1E4A8A']} style={{ paddingTop: insets.top + 6, paddingHorizontal: 20, paddingBottom: 16 }}>
       <View style={styles.headerRow}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <View style={{ flex: 1 }}>
           <Text style={styles.headerTitle}>{t('tax.title')}</Text>
           <Text style={styles.headerSub}>Summary & deduction tracker</Text>
         </View>
-        <Pressable
+        <Pressable accessibilityRole="button"
           onPress={handleExport}
           disabled={exporting}
           style={[styles.exportBtn, exporting && { opacity: 0.5 }]}
@@ -274,7 +274,7 @@ export function TaxCenterScreen({ navigation }: any) {
       {/* Year selector */}
       <View style={styles.yearRow}>
         {years.map((y) => (
-          <Pressable
+          <Pressable accessibilityRole="button"
             key={y}
             onPress={() => setSelectedYear(y)}
             style={[styles.yearChip, selectedYear === y && styles.yearChipActive]}
@@ -290,11 +290,11 @@ export function TaxCenterScreen({ navigation }: any) {
 
   const screenCompact = (
     <View style={{ backgroundColor: '#0F2952', paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={styles.headerTitle}>{t('tax.title')}</Text>
-      <Pressable
+      <Pressable accessibilityRole="button"
         onPress={handleExport}
         disabled={exporting}
         style={[styles.exportBtn, exporting && { opacity: 0.5 }]}

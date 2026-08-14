@@ -67,7 +67,7 @@ export function PairChildDeviceScreen({ navigation }: any) {
         style={styles.header}
       >
         <View style={styles.headerRow}>
-          <Pressable
+          <Pressable accessibilityRole="button"
             onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.getParent()?.navigate('Home')}
             style={styles.backBtn}
           >
@@ -93,7 +93,7 @@ export function PairChildDeviceScreen({ navigation }: any) {
             </Text>
           ) : (
             children.map((child) => (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={child.id}
                 style={[styles.memberRow, selectedId === child.id && styles.memberRowSelected]}
                 onPress={() => { setSelectedId(child.id); setCode(null); setError(null); }}
@@ -123,7 +123,7 @@ export function PairChildDeviceScreen({ navigation }: any) {
             {error && (
               <Text style={styles.errorText}>{error}</Text>
             )}
-            <Pressable
+            <Pressable accessibilityRole="button"
               style={[styles.generateBtn, loading && { opacity: 0.6 }]}
               onPress={generate}
               disabled={loading}
@@ -159,7 +159,7 @@ export function PairChildDeviceScreen({ navigation }: any) {
               </View>
             )}
 
-            <Pressable
+            <Pressable accessibilityRole="button"
               style={styles.regenerateBtn}
               onPress={() => { setCode(null); setError(null); }}
             >

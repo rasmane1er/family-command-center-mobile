@@ -180,18 +180,18 @@ export function SchoolCenterScreen({ navigation }: any) {
   const screenHeader = (
         <LinearGradient colors={['#1E4A8A', '#45B7D1']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
           <View style={styles.headerTop}>
-            <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+            <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
               <Ionicons name="arrow-back" size={24} color="#fff" />
             </Pressable>
             <Text style={styles.headerTitle}>School Center</Text>
-            <Pressable onPress={handleAddPress} style={styles.addBtn}>
+            <Pressable accessibilityRole="button" onPress={handleAddPress} style={styles.addBtn}>
               <Ionicons name="add" size={24} color="#fff" />
             </Pressable>
           </View>
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
             {children.map((child) => (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={child.id}
                 onPress={() => setSelectedChild(child.id)}
                 style={[styles.childChip, selectedChild === child.id && styles.childChipActive]}
@@ -237,7 +237,7 @@ export function SchoolCenterScreen({ navigation }: any) {
 
           <View style={styles.tabs}>
             {(['overview', 'grades', 'assignments'] as const).map((tab) => (
-              <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tabChip, activeTab === tab && styles.tabChipActive]}>
+              <Pressable accessibilityRole="button" key={tab} onPress={() => setActiveTab(tab)} style={[styles.tabChip, activeTab === tab && styles.tabChipActive]}>
                 <Text style={[styles.tabChipText, activeTab === tab && styles.tabChipTextActive]}>
                   {tab === 'overview' ? 'Overview' : tab === 'grades' ? 'Grades' : 'Assignments'}
                 </Text>
@@ -252,7 +252,7 @@ export function SchoolCenterScreen({ navigation }: any) {
       start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
       style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
     >
-      <Pressable onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </Pressable>
       <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>School Center</Text>
@@ -276,7 +276,7 @@ export function SchoolCenterScreen({ navigation }: any) {
               const avg = computeAverage(sub);
               const letter = scoreToLetter(avg);
               return (
-                <Pressable key={sub.id} onLongPress={() => handleDeleteSubject(sub)}>
+                <Pressable accessibilityRole="button" key={sub.id} onLongPress={() => handleDeleteSubject(sub)}>
                   <Card style={styles.subjectCard} variant="elevated">
                     <View style={styles.subjectRow}>
                       <View style={[styles.subjectColorBar, { backgroundColor: sub.color }]} />
@@ -313,10 +313,10 @@ export function SchoolCenterScreen({ navigation }: any) {
                 const cfg = STATUS_CONFIG[a.status];
                 const overdue = differenceInDays(new Date(a.dueDate), new Date()) < 0;
                 return (
-                  <Pressable key={a.id} onLongPress={() => handleDeleteAssignment(a)}>
+                  <Pressable accessibilityRole="button" key={a.id} onLongPress={() => handleDeleteAssignment(a)}>
                     <Card style={styles.assignmentCard} variant="elevated">
                       <View style={styles.assignmentRow}>
-                        <Pressable onPress={() => handleToggle(a.id)} style={[styles.statusIcon, { backgroundColor: cfg.bg }]}>
+                        <Pressable accessibilityRole="button" onPress={() => handleToggle(a.id)} style={[styles.statusIcon, { backgroundColor: cfg.bg }]}>
                           <Ionicons name={cfg.icon as any} size={20} color={cfg.color} />
                         </Pressable>
                         <View style={{ flex: 1, marginLeft: 10 }}>
@@ -344,7 +344,7 @@ export function SchoolCenterScreen({ navigation }: any) {
               const avg = computeAverage(sub);
               const letter = scoreToLetter(avg);
               return (
-                <Pressable key={sub.id} onLongPress={() => handleDeleteSubject(sub)}>
+                <Pressable accessibilityRole="button" key={sub.id} onLongPress={() => handleDeleteSubject(sub)}>
                   <Card style={styles.gradeCard} variant="elevated">
                     <View style={styles.gradeHeader}>
                       <View style={[styles.gradeColorBar, { backgroundColor: sub.color }]} />
@@ -357,7 +357,7 @@ export function SchoolCenterScreen({ navigation }: any) {
                         <ProgressBar progress={avg / 100} color={sub.color} height={6} style={{ marginTop: 6 }} />
                         <Text style={styles.gradeAvg}>{avg.toFixed(1)}% average • {sub.gradeEntries.length} grades</Text>
                       </View>
-                      <Pressable onPress={() => setGradeModalSubject(sub)} style={styles.addGradeBtn} hitSlop={8}>
+                      <Pressable accessibilityRole="button" onPress={() => setGradeModalSubject(sub)} style={styles.addGradeBtn} hitSlop={8}>
                         <Ionicons name="add-circle" size={26} color={sub.color} />
                       </Pressable>
                     </View>
@@ -402,10 +402,10 @@ export function SchoolCenterScreen({ navigation }: any) {
                 const cfg = STATUS_CONFIG[a.status];
                 const overdue = differenceInDays(new Date(a.dueDate), new Date()) < 0 && a.status !== 'completed';
                 return (
-                  <Pressable key={a.id} onLongPress={() => handleDeleteAssignment(a)}>
+                  <Pressable accessibilityRole="button" key={a.id} onLongPress={() => handleDeleteAssignment(a)}>
                     <Card style={styles.assignmentCard} variant="elevated">
                       <View style={styles.assignmentRow}>
-                        <Pressable onPress={() => handleToggle(a.id)} style={[styles.statusIcon, { backgroundColor: cfg.bg }]}>
+                        <Pressable accessibilityRole="button" onPress={() => handleToggle(a.id)} style={[styles.statusIcon, { backgroundColor: cfg.bg }]}>
                           <Ionicons name={cfg.icon as any} size={20} color={cfg.color} />
                         </Pressable>
                         <View style={{ flex: 1, marginLeft: 10 }}>
@@ -448,13 +448,13 @@ export function SchoolCenterScreen({ navigation }: any) {
           <View style={styles.modalSheet}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Add Assignment</Text>
-              <Pressable onPress={() => setShowAddModal(false)}>
+              <Pressable accessibilityRole="button" onPress={() => setShowAddModal(false)}>
                 <Ionicons name="close" size={24} color={colors.text} />
               </Pressable>
             </View>
 
             <Text style={styles.modalLabel}>Title</Text>
-            <TextInput
+            <TextInput accessibilityLabel="e.g. Math Chapter 10 Problems"
               style={styles.modalInput}
               value={newTitle}
               onChangeText={setNewTitle}
@@ -465,7 +465,7 @@ export function SchoolCenterScreen({ navigation }: any) {
             <Text style={styles.modalLabel}>Subject</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }}>
               {memberSubjects.map((s) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={s.id}
                   onPress={() => setNewSubject(s.name)}
                   style={[styles.subjectChip, newSubject === s.name && { backgroundColor: s.color, borderColor: s.color }]}
@@ -475,7 +475,7 @@ export function SchoolCenterScreen({ navigation }: any) {
               ))}
             </ScrollView>
             {newSubject === '' && (
-              <TextInput
+              <TextInput accessibilityLabel="Or type subject name"
                 style={[styles.modalInput, { marginTop: 0 }]}
                 value={newSubject}
                 onChangeText={setNewSubject}
@@ -485,7 +485,7 @@ export function SchoolCenterScreen({ navigation }: any) {
             )}
 
             <Text style={styles.modalLabel}>Due in (days)</Text>
-            <TextInput
+            <TextInput accessibilityLabel="7"
               style={styles.modalInput}
               value={newDays}
               onChangeText={setNewDays}
@@ -497,7 +497,7 @@ export function SchoolCenterScreen({ navigation }: any) {
             <Text style={styles.modalLabel}>Priority</Text>
             <View style={styles.priorityRow}>
               {(['low', 'medium', 'high'] as const).map((p) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={p}
                   onPress={() => setNewPriority(p)}
                   style={[styles.priorityBtn, newPriority === p && { backgroundColor: PRIORITY_CONFIG[p].color }]}
@@ -509,7 +509,7 @@ export function SchoolCenterScreen({ navigation }: any) {
               ))}
             </View>
 
-            <Pressable
+            <Pressable accessibilityRole="button"
               onPress={handleAddAssignment}
               style={[styles.modalSubmit, (!newTitle.trim() || !newSubject.trim()) && styles.modalSubmitDisabled]}
             >
@@ -526,13 +526,13 @@ export function SchoolCenterScreen({ navigation }: any) {
           <View style={styles.modalSheet}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Add Subject</Text>
-              <Pressable onPress={() => setShowAddSubject(false)}>
+              <Pressable accessibilityRole="button" onPress={() => setShowAddSubject(false)}>
                 <Ionicons name="close" size={24} color={colors.text} />
               </Pressable>
             </View>
 
             <Text style={styles.modalLabel}>Subject Name</Text>
-            <TextInput
+            <TextInput accessibilityLabel="e.g. Mathematics"
               style={styles.modalInput}
               value={newSubjectName}
               onChangeText={setNewSubjectName}
@@ -542,7 +542,7 @@ export function SchoolCenterScreen({ navigation }: any) {
             />
 
             <Text style={styles.modalLabel}>Teacher (optional)</Text>
-            <TextInput
+            <TextInput accessibilityLabel="e.g. Ms. Rodriguez"
               style={styles.modalInput}
               value={newTeacherName}
               onChangeText={setNewTeacherName}
@@ -553,7 +553,7 @@ export function SchoolCenterScreen({ navigation }: any) {
             <Text style={styles.modalLabel}>Icon</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }}>
               {SUBJECT_ICONS.map((icon) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={icon}
                   onPress={() => setNewSubjectIcon(icon)}
                   style={[styles.iconChip, newSubjectIcon === icon && { backgroundColor: newSubjectColor, borderColor: newSubjectColor }]}
@@ -566,11 +566,11 @@ export function SchoolCenterScreen({ navigation }: any) {
             <Text style={styles.modalLabel}>Color</Text>
             <View style={styles.colorRow}>
               {SUBJECT_COLORS.map((c) => (
-                <Pressable key={c} onPress={() => setNewSubjectColor(c)} style={[styles.colorSwatch, { backgroundColor: c }, newSubjectColor === c && styles.colorSwatchSelected]} />
+                <Pressable accessibilityRole="button" key={c} onPress={() => setNewSubjectColor(c)} style={[styles.colorSwatch, { backgroundColor: c }, newSubjectColor === c && styles.colorSwatchSelected]} />
               ))}
             </View>
 
-            <Pressable
+            <Pressable accessibilityRole="button"
               onPress={handleAddSubject}
               style={[styles.modalSubmit, !newSubjectName.trim() && styles.modalSubmitDisabled]}
             >
@@ -587,7 +587,7 @@ export function SchoolCenterScreen({ navigation }: any) {
           <View style={styles.modalSheet}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Add Grade{gradeModalSubject ? ` — ${gradeModalSubject.name}` : ''}</Text>
-              <Pressable onPress={() => setGradeModalSubject(null)}>
+              <Pressable accessibilityRole="button" onPress={() => setGradeModalSubject(null)}>
                 <Ionicons name="close" size={24} color={colors.text} />
               </Pressable>
             </View>
@@ -595,7 +595,7 @@ export function SchoolCenterScreen({ navigation }: any) {
             <Text style={styles.modalLabel}>Type</Text>
             <View style={styles.priorityRow}>
               {GRADE_TYPES.map((t) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={t}
                   onPress={() => setNewGradeType(t)}
                   style={[styles.priorityBtn, newGradeType === t && { backgroundColor: gradeModalSubject?.color ?? colors.primary }]}
@@ -610,7 +610,7 @@ export function SchoolCenterScreen({ navigation }: any) {
             <View style={{ flexDirection: 'row', gap: 12 }}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.modalLabel}>Score</Text>
-                <TextInput
+                <TextInput accessibilityLabel="92"
                   style={styles.modalInput}
                   value={newGradeScore}
                   onChangeText={setNewGradeScore}
@@ -621,7 +621,7 @@ export function SchoolCenterScreen({ navigation }: any) {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.modalLabel}>Out of</Text>
-                <TextInput
+                <TextInput accessibilityLabel="100"
                   style={styles.modalInput}
                   value={newGradeMax}
                   onChangeText={setNewGradeMax}
@@ -633,7 +633,7 @@ export function SchoolCenterScreen({ navigation }: any) {
             </View>
 
             <Text style={styles.modalLabel}>Notes (optional)</Text>
-            <TextInput
+            <TextInput accessibilityLabel="e.g. Chapter 5 test"
               style={styles.modalInput}
               value={newGradeNotes}
               onChangeText={setNewGradeNotes}
@@ -641,7 +641,7 @@ export function SchoolCenterScreen({ navigation }: any) {
               placeholderTextColor={colors.textMuted}
             />
 
-            <Pressable
+            <Pressable accessibilityRole="button"
               onPress={handleAddGrade}
               style={[styles.modalSubmit, !newGradeScore.trim() && styles.modalSubmitDisabled]}
             >

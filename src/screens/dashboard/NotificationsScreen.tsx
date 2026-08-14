@@ -97,7 +97,7 @@ export function NotificationsScreen({ navigation }: any) {
       style={[styles.header, { paddingTop: insets.top + 6 }]}
     >
       <View style={styles.headerRow}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
 
@@ -108,13 +108,13 @@ export function NotificationsScreen({ navigation }: any) {
 
         <View style={styles.headerActions}>
           {unreadCount > 0 && (
-            <Pressable onPress={markAllRead} style={styles.headerActionBtn}>
+            <Pressable accessibilityRole="button" onPress={markAllRead} style={styles.headerActionBtn}>
               <Ionicons name="checkmark-done" size={16} color="#fff" />
               <Text style={styles.headerActionText}>{t('notifications.markAllRead')}</Text>
             </Pressable>
           )}
           {roleNotifications.length > 0 && (
-            <Pressable
+            <Pressable accessibilityRole="button"
               onPress={() =>
                 Alert.alert(
                   'Clear All Notifications',
@@ -136,7 +136,7 @@ export function NotificationsScreen({ navigation }: any) {
 
       <View style={styles.filterRow}>
         {(['all', 'unread'] as const).map((f) => (
-          <Pressable
+          <Pressable accessibilityRole="button"
             key={f}
             onPress={() => setFilter(f)}
             style={[styles.filterChip, filter === f && styles.filterChipActive]}
@@ -164,7 +164,7 @@ export function NotificationsScreen({ navigation }: any) {
         justifyContent: 'space-between',
       }}
     >
-      <Pressable onPress={() => navigation.goBack()} style={{ marginRight: 12 }}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={{ marginRight: 12 }}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800', flex: 1 }}>{t('notifications.title')}</Text>
@@ -205,7 +205,7 @@ export function NotificationsScreen({ navigation }: any) {
             const cfg = TYPE_CONFIG[notif.type];
 
             return (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={notif.id}
                 onPress={() => handlePress(notif.id, notif.action?.route, notif.action?.params)}
                 onLongPress={() => handleDelete(notif.id)}

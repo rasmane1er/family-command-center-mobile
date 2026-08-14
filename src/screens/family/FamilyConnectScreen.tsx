@@ -82,11 +82,11 @@ const FeedPostCard = React.memo(function FeedPostCard({
           <Text style={styles.relationshipLabel}>{timeAgo(post.createdAt)}</Text>
         </View>
         {isOwn ? (
-          <Pressable onPress={() => onDeletePost(post)}>
+          <Pressable accessibilityRole="button" onPress={() => onDeletePost(post)}>
             <Ionicons name="trash-outline" size={18} color={colors.textMuted} />
           </Pressable>
         ) : (
-          <Pressable onPress={() => onReportPost(post)}>
+          <Pressable accessibilityRole="button" onPress={() => onReportPost(post)}>
             <Ionicons name="flag-outline" size={18} color={colors.textMuted} />
           </Pressable>
         )}
@@ -94,12 +94,12 @@ const FeedPostCard = React.memo(function FeedPostCard({
       {!!post.text && <Text style={styles.postText}>{post.text}</Text>}
 
       <View style={styles.postActions}>
-        <Pressable onPress={() => onToggleReaction(post.id)} style={styles.postActionBtn}>
+        <Pressable accessibilityRole="button" onPress={() => onToggleReaction(post.id)} style={styles.postActionBtn}>
           <Ionicons name={hasMyReaction ? 'heart' : 'heart-outline'} size={16} color={hasMyReaction ? colors.danger : colors.textSecondary} />
           <Text style={styles.postActionText}>{reactionCount > 0 ? reactionCount : 'Like'}</Text>
         </Pressable>
         {post.commentsEnabled && (
-          <Pressable onPress={() => onExpandPost(post)} style={styles.postActionBtn}>
+          <Pressable accessibilityRole="button" onPress={() => onExpandPost(post)} style={styles.postActionBtn}>
             <Ionicons name="chatbubble-outline" size={15} color={colors.textSecondary} />
             <Text style={styles.postActionText}>{commentCount > 0 ? commentCount : 'Comment'}</Text>
           </Pressable>
@@ -129,14 +129,14 @@ const FeedPostCard = React.memo(function FeedPostCard({
             );
           })}
           <View style={styles.commentInputRow}>
-            <TextInput
+            <TextInput accessibilityLabel="Write a comment…"
               style={styles.commentInput}
               placeholder="Write a comment…"
               placeholderTextColor={colors.textMuted}
               value={commentDraft}
               onChangeText={onCommentDraftChange}
             />
-            <Pressable onPress={() => onAddComment(post.id)} style={styles.commentSendBtn}>
+            <Pressable accessibilityRole="button" onPress={() => onAddComment(post.id)} style={styles.commentSendBtn}>
               <Ionicons name="send" size={16} color={colors.primary} />
             </Pressable>
           </View>
@@ -321,11 +321,11 @@ export function FamilyConnectScreen({ navigation }: any) {
   const screenHeader = (
     <LinearGradient colors={['#0F2952', '#1E4A8A']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
       <View style={styles.headerTop}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <Text style={styles.headerTitle}>Family Connect</Text>
-        <Pressable onPress={() => setShowSendModal(true)} style={styles.addBtn}>
+        <Pressable accessibilityRole="button" onPress={() => setShowSendModal(true)} style={styles.addBtn}>
           <Ionicons name="person-add" size={20} color="#fff" />
         </Pressable>
       </View>
@@ -338,7 +338,7 @@ export function FamilyConnectScreen({ navigation }: any) {
           { key: 'incoming', label: 'Incoming', count: incomingRequests.length },
           { key: 'outgoing', label: 'Sent', count: outgoingRequests.length },
         ] as const).map((tab) => (
-          <Pressable key={tab.key} onPress={() => setActiveTab(tab.key)} style={[styles.tab, activeTab === tab.key && styles.tabActive]}>
+          <Pressable accessibilityRole="button" key={tab.key} onPress={() => setActiveTab(tab.key)} style={[styles.tab, activeTab === tab.key && styles.tabActive]}>
             <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>
               {tab.label}{tab.count > 0 ? ` (${tab.count})` : ''}
             </Text>
@@ -350,11 +350,11 @@ export function FamilyConnectScreen({ navigation }: any) {
 
   const screenCompact = (
     <LinearGradient colors={['#0F2952', '#1E4A8A']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={styles.headerTitle}>Family Connect</Text>
-      <Pressable onPress={() => setShowSendModal(true)} style={styles.addBtn}>
+      <Pressable accessibilityRole="button" onPress={() => setShowSendModal(true)} style={styles.addBtn}>
         <Ionicons name="person-add" size={18} color="#fff" />
       </Pressable>
     </LinearGradient>
@@ -379,7 +379,7 @@ export function FamilyConnectScreen({ navigation }: any) {
                 keyExtractor={(post) => post.id}
                 ListHeaderComponent={
                   <Card style={styles.composeCard} variant="elevated">
-                    <TextInput
+                    <TextInput accessibilityLabel="Share an update with your connected households…"
                       style={styles.composeInput}
                       placeholder="Share an update with your connected households…"
                       placeholderTextColor={colors.textMuted}
@@ -433,11 +433,11 @@ export function FamilyConnectScreen({ navigation }: any) {
                         {c.status === 'LIMITED' && <Badge label="Limited" variant="warning" size="sm" />}
                       </View>
                       <View style={styles.rowActions}>
-                        <Pressable onPress={() => handleRemove(c)} style={styles.actionBtn}>
+                        <Pressable accessibilityRole="button" onPress={() => handleRemove(c)} style={styles.actionBtn}>
                           <Ionicons name="close-circle-outline" size={16} color={colors.textSecondary} />
                           <Text style={styles.actionBtnText}>Remove</Text>
                         </Pressable>
-                        <Pressable onPress={() => handleBlock(c)} style={styles.actionBtn}>
+                        <Pressable accessibilityRole="button" onPress={() => handleBlock(c)} style={styles.actionBtn}>
                           <Ionicons name="ban-outline" size={16} color={colors.danger} />
                           <Text style={[styles.actionBtnText, { color: colors.danger }]}>Block</Text>
                         </Pressable>
@@ -476,15 +476,15 @@ export function FamilyConnectScreen({ navigation }: any) {
                       </View>
                     </View>
                     <View style={styles.rowActions}>
-                      <Pressable onPress={() => handleAccept(r.id)} style={[styles.actionBtn, styles.acceptBtn]}>
+                      <Pressable accessibilityRole="button" onPress={() => handleAccept(r.id)} style={[styles.actionBtn, styles.acceptBtn]}>
                         <Ionicons name="checkmark" size={16} color="#fff" />
                         <Text style={[styles.actionBtnText, { color: '#fff' }]}>Accept</Text>
                       </Pressable>
-                      <Pressable onPress={() => handleAcceptLimited(r.id)} style={styles.actionBtn}>
+                      <Pressable accessibilityRole="button" onPress={() => handleAcceptLimited(r.id)} style={styles.actionBtn}>
                         <Ionicons name="shield-checkmark-outline" size={16} color={colors.textSecondary} />
                         <Text style={styles.actionBtnText}>Limited</Text>
                       </Pressable>
-                      <Pressable onPress={() => handleDecline(r.id)} style={styles.actionBtn}>
+                      <Pressable accessibilityRole="button" onPress={() => handleDecline(r.id)} style={styles.actionBtn}>
                         <Ionicons name="close" size={16} color={colors.danger} />
                         <Text style={[styles.actionBtnText, { color: colors.danger }]}>Decline</Text>
                       </Pressable>
@@ -534,7 +534,7 @@ export function FamilyConnectScreen({ navigation }: any) {
           </Text>
 
           <Text style={styles.modalLabel}>Email Address</Text>
-          <TextInput
+          <TextInput accessibilityLabel="grandma@example.com"
             style={styles.modalInput}
             placeholder="grandma@example.com"
             value={email}
@@ -547,7 +547,7 @@ export function FamilyConnectScreen({ navigation }: any) {
           <Text style={styles.modalLabel}>Relationship</Text>
           <View style={styles.chipRow}>
             {RELATIONSHIP_TYPES.map((rt) => (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={rt.value}
                 onPress={() => setRelationshipType(rt.value)}
                 style={[styles.chip, relationshipType === rt.value && styles.chipActive]}
@@ -559,7 +559,7 @@ export function FamilyConnectScreen({ navigation }: any) {
           </View>
 
           <Text style={styles.modalLabel}>Message (optional)</Text>
-          <TextInput
+          <TextInput accessibilityLabel="Hi! Let's connect our households on Family Command Center."
             style={[styles.modalInput, { height: 80, textAlignVertical: 'top' }]}
             placeholder="Hi! Let's connect our households on Family Command Center."
             value={message}

@@ -95,7 +95,7 @@ export function SOSAlertsScreen({ navigation }: any) {
       <View style={styles.headerGlow} />
 
       <View style={styles.headerRow}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </Pressable>
 
@@ -160,14 +160,14 @@ export function SOSAlertsScreen({ navigation }: any) {
       colors={['#3A0710', '#8B1E2D']}
       style={[styles.compactHeader, { paddingTop: insets.top }]}
     >
-      <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </Pressable>
 
       <Text style={styles.compactTitle}>SOS Alerts</Text>
 
       {resolvedCount > 0 && (
-        <Pressable onPress={handleClearAll} style={styles.clearBtn}>
+        <Pressable accessibilityRole="button" onPress={handleClearAll} style={styles.clearBtn}>
           <Ionicons name="trash-outline" size={16} color="rgba(255,255,255,0.8)" />
         </Pressable>
       )}
@@ -207,7 +207,7 @@ export function SOSAlertsScreen({ navigation }: any) {
             ]}
           >
             {resolvedCount > 0 && (
-              <Pressable style={styles.clearAllBar} onPress={handleClearAll}>
+              <Pressable accessibilityRole="button" style={styles.clearAllBar} onPress={handleClearAll}>
                 <Ionicons name="trash-outline" size={15} color={colors.danger} />
                 <Text style={styles.clearAllText}>Clear all {resolvedCount} resolved alert{resolvedCount > 1 ? 's' : ''}</Text>
               </Pressable>
@@ -332,7 +332,7 @@ export function SOSAlertsScreen({ navigation }: any) {
                   )}
 
                   {!alert.isResolved && (
-                    <Pressable
+                    <Pressable accessibilityRole="button"
                       style={styles.resolveBtn}
                       onPress={() => handleResolve(alert.id, memberName)}
                     >
@@ -342,7 +342,7 @@ export function SOSAlertsScreen({ navigation }: any) {
                   )}
 
                   {alert.isResolved && (
-                    <Pressable
+                    <Pressable accessibilityRole="button"
                       style={styles.deleteBtn}
                       onPress={() => handleDelete(alert.id)}
                     >

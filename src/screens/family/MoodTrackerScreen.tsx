@@ -73,7 +73,7 @@ export function MoodTrackerScreen({ navigation }: any) {
   const screenHeader = (
     <LinearGradient colors={['#E91E63', '#AD1457']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
       <View style={styles.headerRow}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <Text style={styles.headerTitle}>Family Mood Tracker</Text>
@@ -109,7 +109,7 @@ export function MoodTrackerScreen({ navigation }: any) {
 
   const screenCompact = (
     <View style={{ backgroundColor: '#E91E63', paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={styles.headerTitle}>Family Mood Tracker</Text>
@@ -120,7 +120,7 @@ export function MoodTrackerScreen({ navigation }: any) {
   const memberBar = (
     <View style={styles.memberBar}>
       {members.map((m) => (
-        <Pressable
+        <Pressable accessibilityRole="button"
           key={m.id}
           onPress={() => setSelectedMember(m.id)}
           style={[styles.memberChip, selectedMember === m.id || (!selectedMember && m.id === members[0]?.id) ? styles.memberChipActive : {}]}
@@ -157,7 +157,7 @@ export function MoodTrackerScreen({ navigation }: any) {
               {MOOD_CONFIG[todayMood.level].label}
             </Text>
             <Text style={styles.checkedTip}>{MOOD_TIPS[todayMood.level]}</Text>
-            <Pressable onPress={() => setIsUpdating(true)} style={styles.updateBtn}>
+            <Pressable accessibilityRole="button" onPress={() => setIsUpdating(true)} style={styles.updateBtn}>
               <Text style={[styles.updateBtnText, { color: MOOD_CONFIG[todayMood.level].color }]}>Update mood</Text>
             </Pressable>
           </Card>
@@ -168,14 +168,14 @@ export function MoodTrackerScreen({ navigation }: any) {
             </Text>
             <View style={styles.moodButtons}>
               {([1, 2, 3, 4, 5] as MoodLevel[]).map((level) => (
-                <Pressable key={level} onPress={() => handleSetMood(level)} style={styles.moodBtn}>
+                <Pressable accessibilityRole="button" key={level} onPress={() => handleSetMood(level)} style={styles.moodBtn}>
                   <Text style={styles.moodBtnEmoji}>{MOOD_CONFIG[level].emoji}</Text>
                   <Text style={styles.moodBtnLabel}>{MOOD_CONFIG[level].label}</Text>
                 </Pressable>
               ))}
             </View>
             {isUpdating && (
-              <Pressable onPress={() => setIsUpdating(false)} style={{ marginTop: 12, alignSelf: 'center' }}>
+              <Pressable accessibilityRole="button" onPress={() => setIsUpdating(false)} style={{ marginTop: 12, alignSelf: 'center' }}>
                 <Text style={{ fontSize: 13, color: colors.textMuted }}>Cancel</Text>
               </Pressable>
             )}
@@ -191,7 +191,7 @@ export function MoodTrackerScreen({ navigation }: any) {
               const isToday = date === today;
               const cfg = entry ? MOOD_CONFIG[entry.level] : null;
               return (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={date}
                   style={styles.historyDay}
                   onLongPress={() => {

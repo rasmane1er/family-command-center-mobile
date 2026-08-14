@@ -42,7 +42,7 @@ export function ChoreLeaderboardCard({ onPress }: { onPress?: () => void }) {
   const hasPoints = top.some((l) => l.points > 0);
 
   return (
-    <Pressable style={styles.card} onPress={onPress}>
+    <Pressable accessibilityRole="button" style={styles.card} onPress={onPress}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>

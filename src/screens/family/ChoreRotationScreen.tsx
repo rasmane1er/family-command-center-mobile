@@ -57,7 +57,7 @@ interface ChoreCardProps {
 const ChoreCard = React.memo(function ChoreCard({ chore, assignee, done, overdue, freqLabel, rotation, onComplete, onDelete }: ChoreCardProps) {
   const { t } = useTranslation('family');
   return (
-    <Pressable onLongPress={() => onDelete(chore)}>
+    <Pressable accessibilityRole="button" onLongPress={() => onDelete(chore)}>
       <Card
         style={{
           ...styles.choreCard,
@@ -109,7 +109,7 @@ const ChoreCard = React.memo(function ChoreCard({ chore, assignee, done, overdue
         </View>
 
         {!done && (
-          <Pressable
+          <Pressable accessibilityRole="button"
             style={[styles.doneBtn, { backgroundColor: chore.color }]}
             onPress={() => onComplete(chore)}
           >
@@ -248,14 +248,14 @@ export function ChoreRotationScreen({ navigation }: any) {
   const screenHeader = (
     <LinearGradient colors={['#1A3C34', '#16A085']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
       <View style={styles.headerRow}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <View style={{ flex: 1 }}>
           <Text style={styles.headerTitle}>{t('family.screens.choreRotation.headerTitle')}</Text>
           <Text style={styles.headerSub}>{t('family.screens.choreRotation.headerSub', { doneToday, overdueCount })}</Text>
         </View>
-        <Pressable onPress={() => setShowAdd(true)} style={styles.addBtn}>
+        <Pressable accessibilityRole="button" onPress={() => setShowAdd(true)} style={styles.addBtn}>
           <Ionicons name="add" size={22} color="#fff" />
         </Pressable>
       </View>
@@ -279,7 +279,7 @@ export function ChoreRotationScreen({ navigation }: any) {
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
         {FREQ_FILTERS.map((f) => (
-          <Pressable
+          <Pressable accessibilityRole="button"
             key={f.key}
             onPress={() => setFilter(f.key)}
             style={[styles.filterChip, filter === f.key && styles.filterChipActive]}
@@ -293,7 +293,7 @@ export function ChoreRotationScreen({ navigation }: any) {
 
   const screenCompact = (
     <LinearGradient colors={['#1A3C34', '#16A085']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>{t('family.screens.choreRotation.headerTitle')}</Text>
@@ -342,7 +342,7 @@ export function ChoreRotationScreen({ navigation }: any) {
         <View style={styles.modal}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{t('family.screens.choreRotation.newChoreTitle')}</Text>
-            <Pressable onPress={() => setShowAdd(false)}>
+            <Pressable accessibilityRole="button" onPress={() => setShowAdd(false)}>
               <Ionicons name="close" size={24} color={colors.text} />
             </Pressable>
           </View>
@@ -351,14 +351,14 @@ export function ChoreRotationScreen({ navigation }: any) {
             <Text style={styles.modalLabel}>{t('family.screens.choreRotation.emojiLabel')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, marginBottom: 20 }}>
               {['🧹', '🍽️', '🚿', '🛏️', '🗑️', '👕', '🌿', '✨', '🍳', '🚰'].map((e) => (
-                <Pressable key={e} onPress={() => setNewEmoji(e)} style={[styles.emojiBtn, newEmoji === e && styles.emojiBtnActive]}>
+                <Pressable accessibilityRole="button" key={e} onPress={() => setNewEmoji(e)} style={[styles.emojiBtn, newEmoji === e && styles.emojiBtnActive]}>
                   <Text style={{ fontSize: 20 }}>{e}</Text>
                 </Pressable>
               ))}
             </ScrollView>
 
             <Text style={styles.modalLabel}>{t('family.screens.choreRotation.choreNameLabel')}</Text>
-            <TextInput
+            <TextInput accessibilityLabel={t('family.screens.choreRotation.choreNamePlaceholder')}
               style={styles.modalInput}
               value={newName}
               onChangeText={setNewName}
@@ -369,7 +369,7 @@ export function ChoreRotationScreen({ navigation }: any) {
             <Text style={styles.modalLabel}>{t('family.screens.choreRotation.frequencyLabel')}</Text>
             <View style={styles.freqRow}>
               {(['daily', 'weekly', 'biweekly', 'monthly'] as ChoreFrequency[]).map((f) => (
-                <Pressable key={f} onPress={() => setNewFreq(f)} style={[styles.freqBtn, newFreq === f && styles.freqBtnActive]}>
+                <Pressable accessibilityRole="button" key={f} onPress={() => setNewFreq(f)} style={[styles.freqBtn, newFreq === f && styles.freqBtnActive]}>
                   <Text style={[styles.freqBtnText, newFreq === f && styles.freqBtnTextActive]}>
                     {FREQ_LABELS[f]}
                   </Text>
@@ -377,7 +377,7 @@ export function ChoreRotationScreen({ navigation }: any) {
               ))}
             </View>
 
-            <Pressable style={styles.saveBtn} onPress={handleAdd}>
+            <Pressable accessibilityRole="button" style={styles.saveBtn} onPress={handleAdd}>
               <Text style={styles.saveBtnText}>{t('family.screens.choreRotation.addChoreButton')}</Text>
             </Pressable>
           </ScrollView>

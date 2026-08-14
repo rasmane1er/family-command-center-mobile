@@ -192,10 +192,10 @@ export function AIMemoryScreen({ navigation }: any) {
               <Text style={dynStyles.memoryMember}>{getMemberName(mem.memberId)}</Text>
             )}
           </View>
-          <Pressable onPress={() => pinMemory(mem.id)} style={{ marginRight: 12 }}>
+          <Pressable accessibilityRole="button" onPress={() => pinMemory(mem.id)} style={{ marginRight: 12 }}>
             <Ionicons name={isPinnedSection ? 'pin' : 'pin-outline'} size={18} color={isPinnedSection ? colors.secondary : colors.textMuted} />
           </Pressable>
-          <Pressable
+          <Pressable accessibilityRole="button"
             onPress={() => {
               Alert.alert('Delete Memory', `Remove "${mem.title}"?`, [
                 { text: 'Cancel', style: 'cancel' },
@@ -226,17 +226,17 @@ export function AIMemoryScreen({ navigation }: any) {
   const screenHeader = (
     <LinearGradient colors={['#2D1B69', '#6A1B9A']} style={[dynStyles.header, { paddingTop: insets.top + 6 }]}>
       <View style={dynStyles.headerTop}>
-        <Pressable onPress={() => navigation.goBack()} style={dynStyles.back}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={dynStyles.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <View style={{ flex: 1 }}>
           <Text style={dynStyles.headerTitle}>{t('ai.memory')}</Text>
           <Text style={dynStyles.headerSub}>{memories.length} memories stored</Text>
         </View>
-        <Pressable style={dynStyles.aiBtn} onPress={() => setShowAIChat(true)}>
+        <Pressable accessibilityRole="button" style={dynStyles.aiBtn} onPress={() => setShowAIChat(true)}>
           <Ionicons name="sparkles" size={18} color="#fff" />
         </Pressable>
-        <Pressable style={dynStyles.addBtn} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowModal(true); }}>
+        <Pressable accessibilityRole="button" style={dynStyles.addBtn} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowModal(true); }}>
           <Ionicons name="add" size={24} color="#fff" />
         </Pressable>
         <AIResetMenu actions={[
@@ -246,7 +246,7 @@ export function AIMemoryScreen({ navigation }: any) {
       </View>
       <View style={dynStyles.searchBar}>
         <Ionicons name="search" size={16} color="rgba(255,255,255,0.6)" />
-        <TextInput
+        <TextInput accessibilityLabel="Search memories, tags..."
           style={dynStyles.searchInput}
           value={search}
           onChangeText={setSearch}
@@ -256,7 +256,7 @@ export function AIMemoryScreen({ navigation }: any) {
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={dynStyles.filterScroll}>
         {FILTER_TABS.map((tab) => (
-          <Pressable
+          <Pressable accessibilityRole="button"
             key={tab.key}
             onPress={() => setFilter(tab.key)}
             style={[dynStyles.filterChip, filter === tab.key && dynStyles.filterChipActive]}
@@ -270,14 +270,14 @@ export function AIMemoryScreen({ navigation }: any) {
 
   const screenCompact = (
     <View style={{ backgroundColor: '#2D1B69', paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => navigation.goBack()} style={dynStyles.back}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={dynStyles.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={[dynStyles.headerTitle, { flex: 1, marginLeft: 8 }]}>{t('ai.memory')}</Text>
-      <Pressable style={dynStyles.aiBtn} onPress={() => setShowAIChat(true)}>
+      <Pressable accessibilityRole="button" style={dynStyles.aiBtn} onPress={() => setShowAIChat(true)}>
         <Ionicons name="sparkles" size={18} color="#fff" />
       </Pressable>
-      <Pressable style={dynStyles.addBtn} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowModal(true); }}>
+      <Pressable accessibilityRole="button" style={dynStyles.addBtn} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowModal(true); }}>
         <Ionicons name="add" size={24} color="#fff" />
       </Pressable>
     </View>
@@ -341,7 +341,7 @@ export function AIMemoryScreen({ navigation }: any) {
             {(Object.keys(TYPE_CONFIG) as MemoryType[]).map((t) => {
               const cfg = TYPE_CONFIG[t];
               return (
-                <Pressable key={t} onPress={() => setNewType(t)} style={[dynStyles.typeChip, newType === t && { backgroundColor: cfg.color, borderColor: cfg.color }]}>
+                <Pressable accessibilityRole="button" key={t} onPress={() => setNewType(t)} style={[dynStyles.typeChip, newType === t && { backgroundColor: cfg.color, borderColor: cfg.color }]}>
                   <Ionicons name={cfg.icon as any} size={14} color={newType === t ? '#fff' : cfg.color} />
                   <Text style={[dynStyles.typeChipText, newType === t && { color: '#fff' }]}>{cfg.label}</Text>
                 </Pressable>
@@ -350,18 +350,18 @@ export function AIMemoryScreen({ navigation }: any) {
           </View>
 
           <Text style={dynStyles.modalLabel}>Title</Text>
-          <TextInput style={dynStyles.modalInput} value={newTitle} onChangeText={setNewTitle} placeholder="Give this memory a title..." placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="Give this memory a title..." style={dynStyles.modalInput} value={newTitle} onChangeText={setNewTitle} placeholder="Give this memory a title..." placeholderTextColor={colors.textMuted} />
 
           <Text style={dynStyles.modalLabel}>Content</Text>
-          <TextInput style={[dynStyles.modalInput, dynStyles.modalTextarea]} value={newContent} onChangeText={setNewContent} placeholder="What happened? What should be remembered?" placeholderTextColor={colors.textMuted} multiline numberOfLines={4} />
+          <TextInput accessibilityLabel="What happened? What should be remembered?" style={[dynStyles.modalInput, dynStyles.modalTextarea]} value={newContent} onChangeText={setNewContent} placeholder="What happened? What should be remembered?" placeholderTextColor={colors.textMuted} multiline numberOfLines={4} />
 
           <Text style={dynStyles.modalLabel}>Member (Optional)</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
-            <Pressable onPress={() => setNewMemberId('')} style={[dynStyles.memberChip, !newMemberId && dynStyles.memberChipActive]}>
+            <Pressable accessibilityRole="button" onPress={() => setNewMemberId('')} style={[dynStyles.memberChip, !newMemberId && dynStyles.memberChipActive]}>
               <Text style={[dynStyles.memberChipText, !newMemberId && dynStyles.memberChipTextActive]}>Family</Text>
             </Pressable>
             {members.map((m) => (
-              <Pressable key={m.id} onPress={() => setNewMemberId(m.id)} style={[dynStyles.memberChip, newMemberId === m.id && dynStyles.memberChipActive]}>
+              <Pressable accessibilityRole="button" key={m.id} onPress={() => setNewMemberId(m.id)} style={[dynStyles.memberChip, newMemberId === m.id && dynStyles.memberChipActive]}>
                 <View style={[dynStyles.memberDot, { backgroundColor: m.avatarColor }]} />
                 <Text style={[dynStyles.memberChipText, newMemberId === m.id && dynStyles.memberChipTextActive]}>{m.name.split(' ')[0]}</Text>
               </Pressable>
@@ -371,7 +371,7 @@ export function AIMemoryScreen({ navigation }: any) {
           <Text style={dynStyles.modalLabel}>Sentiment</Text>
           <View style={dynStyles.sentimentRow}>
             {(['positive', 'neutral', 'negative'] as const).map((s) => (
-              <Pressable key={s} onPress={() => setNewSentiment(s)} style={[dynStyles.sentimentChip, newSentiment === s && dynStyles.sentimentChipActive]}>
+              <Pressable accessibilityRole="button" key={s} onPress={() => setNewSentiment(s)} style={[dynStyles.sentimentChip, newSentiment === s && dynStyles.sentimentChipActive]}>
                 <Text style={[dynStyles.sentimentText, newSentiment === s && dynStyles.sentimentTextActive]}>
                   {s === 'positive' ? '😊 Positive' : s === 'neutral' ? '😐 Neutral' : '😔 Negative'}
                 </Text>
@@ -380,7 +380,7 @@ export function AIMemoryScreen({ navigation }: any) {
           </View>
 
           <Text style={dynStyles.modalLabel}>Tags (comma-separated)</Text>
-          <TextInput style={dynStyles.modalInput} value={newTags} onChangeText={setNewTags} placeholder="family, milestone, finance..." placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="family, milestone, finance..." style={dynStyles.modalInput} value={newTags} onChangeText={setNewTags} placeholder="family, milestone, finance..." placeholderTextColor={colors.textMuted} />
 
           <Button title="Save Memory" onPress={handleAddMemory} />
           <Button title="Cancel" onPress={() => setShowModal(false)} variant="ghost" style={{ marginTop: 8 }} />
@@ -392,7 +392,7 @@ export function AIMemoryScreen({ navigation }: any) {
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={dynStyles.aiModal}>
           <View style={dynStyles.aiModalHeader}>
             <Text style={dynStyles.aiModalTitle}>✨ Ask AI about your memories</Text>
-            <Pressable onPress={() => setShowAIChat(false)} style={dynStyles.aiModalClose}>
+            <Pressable accessibilityRole="button" onPress={() => setShowAIChat(false)} style={dynStyles.aiModalClose}>
               <Ionicons name="close" size={24} color={colors.text} />
             </Pressable>
           </View>
@@ -401,7 +401,7 @@ export function AIMemoryScreen({ navigation }: any) {
               <View style={dynStyles.chatEmpty}>
                 <Text style={dynStyles.chatEmptyDesc}>Ask the AI to search, analyze, or find patterns in your family memories</Text>
                 {['What are our biggest family milestones?', 'Find memories about our vacation', 'What habits has the family built?'].map((q) => (
-                  <Pressable key={q} style={dynStyles.chatStarter} onPress={() => handleAISend(q)}>
+                  <Pressable accessibilityRole="button" key={q} style={dynStyles.chatStarter} onPress={() => handleAISend(q)}>
                     <Text style={dynStyles.chatStarterText}>{q}</Text>
                     <Ionicons name="arrow-forward" size={14} color="#6A1B9A" />
                   </Pressable>
@@ -415,14 +415,14 @@ export function AIMemoryScreen({ navigation }: any) {
             ))}
             {aiLoading && <View style={dynStyles.chatBubbleAI}><ActivityIndicator size="small" color="#6A1B9A" /></View>}
             {aiSuggestions.map((s) => (
-              <Pressable key={s} style={dynStyles.chatSuggestion} onPress={() => handleAISend(s)}>
+              <Pressable accessibilityRole="button" key={s} style={dynStyles.chatSuggestion} onPress={() => handleAISend(s)}>
                 <Text style={dynStyles.chatSuggestionText}>{s}</Text>
               </Pressable>
             ))}
           </ScrollView>
           <View style={dynStyles.chatInputRow}>
-            <TextInput style={dynStyles.chatInput} value={aiInput} onChangeText={setAIInput} placeholder="Ask about your memories..." placeholderTextColor={colors.textMuted} onSubmitEditing={() => handleAISend()} returnKeyType="send" multiline />
-            <Pressable style={[dynStyles.chatSendBtn, !aiInput.trim() && { opacity: 0.4 }]} onPress={() => handleAISend()} disabled={!aiInput.trim()}>
+            <TextInput accessibilityLabel="Ask about your memories..." style={dynStyles.chatInput} value={aiInput} onChangeText={setAIInput} placeholder="Ask about your memories..." placeholderTextColor={colors.textMuted} onSubmitEditing={() => handleAISend()} returnKeyType="send" multiline />
+            <Pressable accessibilityRole="button" style={[dynStyles.chatSendBtn, !aiInput.trim() && { opacity: 0.4 }]} onPress={() => handleAISend()} disabled={!aiInput.trim()}>
               <Ionicons name="send" size={18} color="#fff" />
             </Pressable>
           </View>

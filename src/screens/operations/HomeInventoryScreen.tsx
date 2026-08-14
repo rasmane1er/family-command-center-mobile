@@ -275,7 +275,7 @@ export function HomeInventoryScreen({ navigation }: any) {
       ? new Date(item.warrantyExpiry) <= in60Days && new Date(item.warrantyExpiry) >= today
       : false;
     return (
-      <Pressable key={item.id} onPress={() => handleItemPress(item)}>
+      <Pressable accessibilityRole="button" key={item.id} onPress={() => handleItemPress(item)}>
         <Card style={styles.itemCard} variant="elevated">
           <View style={styles.itemRow}>
             <View style={[styles.itemIcon, { backgroundColor: CATEGORY_COLORS[item.category as ItemCategory] + '22' }]}>
@@ -328,7 +328,7 @@ export function HomeInventoryScreen({ navigation }: any) {
           const isExpanded = expandedRooms.has(room);
           return (
             <View key={room}>
-              <Pressable
+              <Pressable accessibilityRole="button"
                 onPress={() => toggleRoom(room)}
                 style={styles.roomHeader}
               >
@@ -357,7 +357,7 @@ export function HomeInventoryScreen({ navigation }: any) {
     const sorted = sortedFilteredItems;
     return (
       <View style={styles.tabContent}>
-        <TextInput
+        <TextInput accessibilityLabel="Search items..."
           style={styles.searchInput}
           value={searchQuery}
           onChangeText={setSearchQuery}
@@ -365,14 +365,14 @@ export function HomeInventoryScreen({ navigation }: any) {
           placeholderTextColor={colors.textMuted}
         />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
-          <Pressable
+          <Pressable accessibilityRole="button"
             onPress={() => setFilterCategory('all')}
             style={{ ...styles.filterChip, ...(filterCategory === 'all' && styles.filterChipActive) }}
           >
             <Text style={{ ...styles.filterChipText, ...(filterCategory === 'all' && styles.filterChipTextActive) }}>All</Text>
           </Pressable>
           {ALL_CATEGORIES.map((cat) => (
-            <Pressable
+            <Pressable accessibilityRole="button"
               key={cat}
               onPress={() => setFilterCategory(cat)}
               style={{ ...styles.filterChip, ...(filterCategory === cat && styles.filterChipActive) }}
@@ -440,11 +440,11 @@ export function HomeInventoryScreen({ navigation }: any) {
       style={{ paddingTop: insets.top + 6, paddingBottom: 8, paddingHorizontal: 20 }}
     >
       <View style={styles.headerTop}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <Text style={styles.headerTitle}>{t('homeInventory.title')}</Text>
-        <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
+        <Pressable accessibilityRole="button" onPress={() => setShowAddModal(true)} style={styles.addBtn}>
           <Ionicons name="add" size={26} color="#fff" />
         </Pressable>
       </View>
@@ -468,7 +468,7 @@ export function HomeInventoryScreen({ navigation }: any) {
     
     <View style={styles.tabBar}>
             {(['By Room', 'All Items', 'Value Report'] as const).map((tab) => (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={tab}
                 onPress={() => setActiveTab(tab)}
                 style={{ ...styles.tabItem, ...(activeTab === tab && styles.tabItemActive) }}
@@ -487,7 +487,7 @@ export function HomeInventoryScreen({ navigation }: any) {
       colors={['#212121', '#37474F']}
       style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center' }}
     >
-      <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={[styles.headerTitle, { flex: 1, textAlign: 'center' }]}>{t('homeInventory.title')}</Text>
@@ -513,7 +513,7 @@ export function HomeInventoryScreen({ navigation }: any) {
           >
             {retailPurchases.filter((p) => !dismissedPurchases.has(p.merchantName + p.date)).length > 0 && (
               <View style={styles.retailBanner}>
-                <Pressable onPress={() => setRetailBannerExpanded((v) => !v)} style={styles.retailBannerHeader}>
+                <Pressable accessibilityRole="button" onPress={() => setRetailBannerExpanded((v) => !v)} style={styles.retailBannerHeader}>
                   <Ionicons name="bag-handle-outline" size={16} color="#37474F" />
                   <Text style={styles.retailBannerTitle}>Recent purchases to add?</Text>
                   <Ionicons name={retailBannerExpanded ? 'chevron-up' : 'chevron-down'} size={16} color="#37474F" />
@@ -527,7 +527,7 @@ export function HomeInventoryScreen({ navigation }: any) {
                         <Text style={styles.retailMerchant}>{purchase.merchantName}</Text>
                         <Text style={styles.retailDetail}>${purchase.amount} · {purchase.date}</Text>
                       </View>
-                      <Pressable
+                      <Pressable accessibilityRole="button"
                         onPress={() => {
                           setNewName(purchase.merchantName);
                           setNewPurchaseDate(purchase.date);
@@ -541,7 +541,7 @@ export function HomeInventoryScreen({ navigation }: any) {
                         <Ionicons name="add" size={14} color="#fff" />
                         <Text style={styles.retailAddBtnText}>Add</Text>
                       </Pressable>
-                      <Pressable onPress={() => setDismissedPurchases((prev) => new Set([...prev, purchase.merchantName + purchase.date]))} style={styles.retailDismissBtn}>
+                      <Pressable accessibilityRole="button" onPress={() => setDismissedPurchases((prev) => new Set([...prev, purchase.merchantName + purchase.date]))} style={styles.retailDismissBtn}>
                         <Ionicons name="close" size={14} color={colors.textMuted} />
                       </Pressable>
                     </View>
@@ -563,7 +563,7 @@ export function HomeInventoryScreen({ navigation }: any) {
           <ScrollView style={styles.modalSheet} contentContainerStyle={{ paddingBottom: 40 }}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Add Item</Text>
-              <Pressable onPress={() => setShowAddModal(false)}>
+              <Pressable accessibilityRole="button" onPress={() => setShowAddModal(false)}>
                 <Ionicons name="close" size={24} color={colors.text} />
               </Pressable>
             </View>
@@ -572,7 +572,7 @@ export function HomeInventoryScreen({ navigation }: any) {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
               <View style={styles.roomPickerRow}>
                 {ALL_ROOMS.map((r) => (
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     key={r}
                     onPress={() => setNewRoom(r)}
                     style={{ ...styles.roomPickerBtn, ...(newRoom === r && styles.roomPickerBtnActive) }}
@@ -591,7 +591,7 @@ export function HomeInventoryScreen({ navigation }: any) {
             </ScrollView>
 
             <Text style={styles.modalLabel}>Name *</Text>
-            <TextInput
+            <TextInput accessibilityLabel="e.g. Samsung TV"
               style={styles.modalInput}
               value={newName}
               onChangeText={setNewName}
@@ -600,7 +600,7 @@ export function HomeInventoryScreen({ navigation }: any) {
             />
 
             <Text style={styles.modalLabel}>Brand</Text>
-            <TextInput
+            <TextInput accessibilityLabel="e.g. Samsung"
               style={styles.modalInput}
               value={newBrand}
               onChangeText={setNewBrand}
@@ -609,7 +609,7 @@ export function HomeInventoryScreen({ navigation }: any) {
             />
 
             <Text style={styles.modalLabel}>Model</Text>
-            <TextInput
+            <TextInput accessibilityLabel="e.g. QN65Q80C"
               style={styles.modalInput}
               value={newModel}
               onChangeText={setNewModel}
@@ -618,7 +618,7 @@ export function HomeInventoryScreen({ navigation }: any) {
             />
 
             <Text style={styles.modalLabel}>Serial Number</Text>
-            <TextInput
+            <TextInput accessibilityLabel="e.g. SN-12345"
               style={styles.modalInput}
               value={newSerial}
               onChangeText={setNewSerial}
@@ -629,7 +629,7 @@ export function HomeInventoryScreen({ navigation }: any) {
             <Text style={styles.modalLabel}>Category *</Text>
             <View style={styles.chipGrid}>
               {ALL_CATEGORIES.map((cat) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={cat}
                   onPress={() => setNewCategory(cat)}
                   style={{ ...styles.chip, ...(newCategory === cat && { backgroundColor: CATEGORY_COLORS[cat], borderColor: CATEGORY_COLORS[cat] }) }}
@@ -649,7 +649,7 @@ export function HomeInventoryScreen({ navigation }: any) {
             <Text style={styles.modalLabel}>Condition *</Text>
             <View style={styles.chipGrid}>
               {ALL_CONDITIONS.map((cond) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={cond}
                   onPress={() => setNewCondition(cond)}
                   style={{ ...styles.chip, ...(newCondition === cond && { backgroundColor: CONDITION_COLORS[cond], borderColor: CONDITION_COLORS[cond] }) }}
@@ -662,7 +662,7 @@ export function HomeInventoryScreen({ navigation }: any) {
             </View>
 
             <Text style={styles.modalLabel}>Purchase Date (YYYY-MM-DD)</Text>
-            <TextInput
+            <TextInput accessibilityLabel="2023-01-15"
               style={styles.modalInput}
               value={newPurchaseDate}
               onChangeText={setNewPurchaseDate}
@@ -671,7 +671,7 @@ export function HomeInventoryScreen({ navigation }: any) {
             />
 
             <Text style={styles.modalLabel}>Purchase Price ($)</Text>
-            <TextInput
+            <TextInput accessibilityLabel="0"
               style={styles.modalInput}
               value={newPurchasePrice}
               onChangeText={setNewPurchasePrice}
@@ -681,7 +681,7 @@ export function HomeInventoryScreen({ navigation }: any) {
             />
 
             <Text style={styles.modalLabel}>Current Value ($)</Text>
-            <TextInput
+            <TextInput accessibilityLabel="0"
               style={styles.modalInput}
               value={newCurrentValue}
               onChangeText={setNewCurrentValue}
@@ -691,7 +691,7 @@ export function HomeInventoryScreen({ navigation }: any) {
             />
 
             <Text style={styles.modalLabel}>Warranty Expiry (YYYY-MM-DD)</Text>
-            <TextInput
+            <TextInput accessibilityLabel="2026-01-15"
               style={styles.modalInput}
               value={newWarrantyExpiry}
               onChangeText={setNewWarrantyExpiry}
@@ -700,7 +700,7 @@ export function HomeInventoryScreen({ navigation }: any) {
             />
 
             <Text style={styles.modalLabel}>Notes</Text>
-            <TextInput
+            <TextInput accessibilityLabel="Any additional notes..."
               style={[styles.modalInput, { height: 72 }]}
               value={newNotes}
               onChangeText={setNewNotes}
@@ -709,7 +709,7 @@ export function HomeInventoryScreen({ navigation }: any) {
               multiline
             />
 
-            <Pressable
+            <Pressable accessibilityRole="button"
               onPress={handleAddItem}
               style={[styles.submitBtn, !newName.trim() && styles.submitBtnDisabled]}
             >

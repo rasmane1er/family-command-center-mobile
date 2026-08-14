@@ -105,7 +105,7 @@ export function JoinRequestsScreen({ navigation, route }: any) {
 
   const screenHeader = (
     <View style={[styles.header, { backgroundColor: '#0F2952', paddingTop: insets.top + 6 }]}>
-      <Pressable onPress={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()} style={styles.backBtnHeader}>
+      <Pressable accessibilityRole="button" onPress={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()} style={styles.backBtnHeader}>
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </Pressable>
       <View style={styles.headerIcon}>
@@ -118,7 +118,7 @@ export function JoinRequestsScreen({ navigation, route }: any) {
 
   const screenCompact = (
     <View style={{ backgroundColor: '#0F2952', paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()} style={styles.backBtnHeader}>
+      <Pressable accessibilityRole="button" onPress={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()} style={styles.backBtnHeader}>
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </Pressable>
       <Text style={{ fontSize: 16, fontWeight: '700', color: '#fff' }}>{t('family.screens.joinRequests.title')}</Text>
@@ -148,7 +148,7 @@ export function JoinRequestsScreen({ navigation, route }: any) {
                 : t('family.screens.joinRequests.filterRejected', { count: counts[item] });
 
           return (
-            <Pressable
+            <Pressable accessibilityRole="button"
               key={item}
               onPress={() => setFilter(item)}
               style={[styles.filterChip, active && styles.filterChipActive]}

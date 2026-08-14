@@ -85,11 +85,11 @@ export function ConflictResolverScreen({ navigation }: any) {
   const screenHeader = (
         <LinearGradient colors={['#922B21', '#E74C3C']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
           <View style={styles.headerTop}>
-            <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+            <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
               <Ionicons name="arrow-back" size={24} color="#fff" />
             </Pressable>
             <Text style={styles.headerTitle}>{t('family.screens.conflictResolver.headerTitle')}</Text>
-            <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
+            <Pressable accessibilityRole="button" onPress={() => setShowModal(true)} style={styles.addBtn}>
               <Ionicons name="add" size={24} color="#fff" />
             </Pressable>
           </View>
@@ -111,7 +111,7 @@ export function ConflictResolverScreen({ navigation }: any) {
 
   <View style={styles.tabs}>
           {(['active', 'tools', 'framework'] as const).map((tab) => (
-            <Pressable key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
+            <Pressable accessibilityRole="button" key={tab} onPress={() => setActiveTab(tab)} style={[styles.tab, activeTab === tab && styles.tabActive]}>
               <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
                 {tab === 'active' ? t('family.screens.conflictResolver.tabConflicts') : tab === 'tools' ? t('family.screens.conflictResolver.tabTools') : t('family.screens.conflictResolver.tabFramework')}
               </Text>
@@ -126,7 +126,7 @@ export function ConflictResolverScreen({ navigation }: any) {
       start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
       style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
     >
-      <Pressable onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </Pressable>
       <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>{t('family.screens.conflictResolver.headerTitle')}</Text>
@@ -174,7 +174,7 @@ export function ConflictResolverScreen({ navigation }: any) {
                   </View>
                 )}
                 {conflict.status !== 'resolved' && (
-                  <Pressable onPress={() => handleResolve(conflict.id)} style={styles.resolveBtn}>
+                  <Pressable accessibilityRole="button" onPress={() => handleResolve(conflict.id)} style={styles.resolveBtn}>
                     <Ionicons name="checkmark-circle" size={16} color="#fff" />
                     <Text style={styles.resolveBtnText}>Mark Resolved</Text>
                   </Pressable>
@@ -191,7 +191,7 @@ export function ConflictResolverScreen({ navigation }: any) {
         )}
 
         {activeTab === 'tools' && CONFLICT_TOOLS.map((tool) => (
-          <Pressable key={tool.id} onPress={() => Alert.alert(tool.name, tool.desc)}>
+          <Pressable accessibilityRole="button" key={tool.id} onPress={() => Alert.alert(tool.name, tool.desc)}>
             <Card style={styles.toolCard} variant="elevated">
               <View style={[styles.toolIcon, { backgroundColor: tool.color + '15' }]}>
                 <Ionicons name={tool.icon as any} size={24} color={tool.color} />
@@ -234,15 +234,15 @@ export function ConflictResolverScreen({ navigation }: any) {
           <Text style={styles.modalTitle}>Report a Conflict</Text>
 
           <Text style={styles.modalLabel}>Title *</Text>
-          <TextInput style={styles.modalInput} placeholder="e.g. Disagreement about screen time" value={newTitle} onChangeText={setNewTitle} placeholderTextColor={colors.textMuted} autoFocus />
+          <TextInput accessibilityLabel="e.g. Disagreement about screen time" style={styles.modalInput} placeholder="e.g. Disagreement about screen time" value={newTitle} onChangeText={setNewTitle} placeholderTextColor={colors.textMuted} autoFocus />
 
           <Text style={styles.modalLabel}>Description</Text>
-          <TextInput style={[styles.modalInput, styles.modalTextarea]} placeholder="Describe what happened..." value={newDesc} onChangeText={setNewDesc} placeholderTextColor={colors.textMuted} multiline numberOfLines={4} />
+          <TextInput accessibilityLabel="Describe what happened..." style={[styles.modalInput, styles.modalTextarea]} placeholder="Describe what happened..." value={newDesc} onChangeText={setNewDesc} placeholderTextColor={colors.textMuted} multiline numberOfLines={4} />
 
           <Text style={styles.modalLabel}>Severity</Text>
           <View style={styles.severityRow}>
             {(['low', 'medium', 'high'] as const).map((s) => (
-              <Pressable key={s} onPress={() => setNewSeverity(s)} style={[styles.severityChip, newSeverity === s && { backgroundColor: s === 'high' ? colors.danger : s === 'medium' ? colors.warning : colors.success, borderColor: 'transparent' }]}>
+              <Pressable accessibilityRole="button" key={s} onPress={() => setNewSeverity(s)} style={[styles.severityChip, newSeverity === s && { backgroundColor: s === 'high' ? colors.danger : s === 'medium' ? colors.warning : colors.success, borderColor: 'transparent' }]}>
                 <Text style={[styles.severityText, newSeverity === s && { color: '#fff' }]}>{s.charAt(0).toUpperCase() + s.slice(1)}</Text>
               </Pressable>
             ))}
@@ -251,7 +251,7 @@ export function ConflictResolverScreen({ navigation }: any) {
           <Text style={styles.modalLabel}>Parties Involved</Text>
           <View style={styles.partiesGrid}>
             {members.map((m) => (
-              <Pressable key={m.id} onPress={() => setNewParties(newParties.includes(m.id) ? newParties.filter((id) => id !== m.id) : [...newParties, m.id])} style={[styles.partyBtn, newParties.includes(m.id) && styles.partyBtnActive]}>
+              <Pressable accessibilityRole="button" key={m.id} onPress={() => setNewParties(newParties.includes(m.id) ? newParties.filter((id) => id !== m.id) : [...newParties, m.id])} style={[styles.partyBtn, newParties.includes(m.id) && styles.partyBtnActive]}>
                 <Text style={[styles.partyBtnText, newParties.includes(m.id) && styles.partyBtnTextActive]}>{m.name}</Text>
               </Pressable>
             ))}

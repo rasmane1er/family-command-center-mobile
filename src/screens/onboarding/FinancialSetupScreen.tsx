@@ -60,10 +60,10 @@ export function FinancialSetupScreen({ navigation }: any) {
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <LinearGradient colors={['#0F2952', '#1E4A8A']} style={styles.header}>
           <View style={styles.headerTopRow}>
-            <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+            <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
               <Ionicons name="arrow-back" size={24} color="#fff" />
             </Pressable>
-            <Pressable onPress={handleNext} style={styles.skipBtn}>
+            <Pressable accessibilityRole="button" onPress={handleNext} style={styles.skipBtn}>
               <Text style={styles.skipBtnText}>{t('onboarding.screens.financialSetup.skipBadge')}</Text>
             </Pressable>
           </View>
@@ -78,7 +78,7 @@ export function FinancialSetupScreen({ navigation }: any) {
         <Input label={t('onboarding.screens.financialSetup.incomeLabel')} placeholder={t('onboarding.screens.financialSetup.incomePlaceholder')} value={monthlyIncome} onChangeText={setMonthlyIncome} leftIcon="cash-outline" keyboardType="numeric" />
         <Input label={t('onboarding.screens.financialSetup.expensesLabel')} placeholder={t('onboarding.screens.financialSetup.expensesPlaceholder')} value={monthlyExpenses} onChangeText={setMonthlyExpenses} leftIcon="trending-down-outline" keyboardType="numeric" />
 
-        <Pressable
+        <Pressable accessibilityRole="button"
           onPress={() => setHasEmergencyFund(!hasEmergencyFund)}
           style={[styles.emergencyToggle, hasEmergencyFund && styles.emergencyToggleActive]}
         >
@@ -91,7 +91,7 @@ export function FinancialSetupScreen({ navigation }: any) {
         <Text style={styles.sectionLabel}>{t('onboarding.screens.financialSetup.addAccountsLabel')}</Text>
         <View style={styles.typeRow}>
           {accountTypes.map((at) => (
-            <Pressable key={at.type} onPress={() => setSelectedType(at.type)} style={[styles.typeChip, selectedType === at.type && styles.typeChipActive]}>
+            <Pressable accessibilityRole="button" key={at.type} onPress={() => setSelectedType(at.type)} style={[styles.typeChip, selectedType === at.type && styles.typeChipActive]}>
               <Ionicons name={at.icon as any} size={16} color={selectedType === at.type ? '#fff' : colors.textSecondary} />
               <Text style={[styles.typeText, selectedType === at.type && styles.typeTextActive]}>{t(`onboarding.screens.financialSetup.${at.labelKey}`)}</Text>
             </Pressable>
@@ -102,7 +102,7 @@ export function FinancialSetupScreen({ navigation }: any) {
           <View key={i} style={styles.accountRow}>
             <Ionicons name="wallet-outline" size={20} color={colors.primary} />
             <Text style={styles.accountText}>{t('onboarding.screens.financialSetup.accountRowText', { name: a.name, balance: a.balance.toLocaleString() })}</Text>
-            <Pressable onPress={() => setAccounts(accounts.filter((_, ai) => ai !== i))}>
+            <Pressable accessibilityRole="button" onPress={() => setAccounts(accounts.filter((_, ai) => ai !== i))}>
               <Ionicons name="close-circle" size={20} color={colors.danger} />
             </Pressable>
           </View>
@@ -115,7 +115,7 @@ export function FinancialSetupScreen({ navigation }: any) {
 
         <Button title={t('onboarding.screens.financialSetup.addAccountButton')} onPress={addAccountLocal} variant="secondary" fullWidth disabled={!accountName.trim()} leftIcon={<Ionicons name="add-circle-outline" size={18} color={colors.primary} style={{ marginRight: 6 }} />} style={{ marginBottom: 16 }} />
         <Button title={t('onboarding.screens.financialSetup.nextButton')} onPress={handleNext} fullWidth size="lg" rightIcon={<Ionicons name="arrow-forward" size={18} color="#fff" style={{ marginLeft: 8 }} />} />
-        <Pressable onPress={handleNext} style={styles.skipButton}><Text style={styles.skipText}>{t('onboarding.screens.financialSetup.skipForNow')}</Text></Pressable>
+        <Pressable accessibilityRole="button" onPress={handleNext} style={styles.skipButton}><Text style={styles.skipText}>{t('onboarding.screens.financialSetup.skipForNow')}</Text></Pressable>
       </ScrollView>
     </View>
   );

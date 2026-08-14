@@ -120,7 +120,7 @@ export function EmailVerificationScreen({ navigation }: any) {
           <Text style={styles.pulseText}>Waiting for verification…</Text>
         </View>
 
-        <Pressable
+        <Pressable accessibilityRole="button"
           style={[styles.checkBtn, checking && styles.checkBtnDisabled]}
           onPress={handleCheckNow}
           disabled={checking}
@@ -130,7 +130,7 @@ export function EmailVerificationScreen({ navigation }: any) {
             : <Text style={styles.checkBtnText}>I've verified my email</Text>}
         </Pressable>
 
-        <Pressable
+        <Pressable accessibilityRole="button"
           style={styles.resendBtn}
           onPress={handleResend}
           disabled={resending}
@@ -142,7 +142,7 @@ export function EmailVerificationScreen({ navigation }: any) {
               </Text>}
         </Pressable>
 
-        <Pressable
+        <Pressable accessibilityRole="button"
           onPress={() => useAuthStore.setState({ pendingVerificationEmail: null })}
           style={styles.backBtn}
         >

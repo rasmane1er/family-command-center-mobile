@@ -148,11 +148,11 @@ export function SubscriptionsScreen({ navigation }: any) {
   const screenHeader = (
     <LinearGradient colors={['#8E44AD', '#9B59B6']} style={{ paddingTop: insets.top + 6, paddingHorizontal: 20, paddingBottom: 24 }}>
       <View style={styles.headerTop}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <Text style={styles.headerTitle}>{t('subscriptions.title')}</Text>
-        <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
+        <Pressable accessibilityRole="button" onPress={() => setShowModal(true)} style={styles.addBtn}>
           <Ionicons name="add" size={26} color="#fff" />
         </Pressable>
       </View>
@@ -178,11 +178,11 @@ export function SubscriptionsScreen({ navigation }: any) {
 
   const screenCompact = (
     <View style={{ backgroundColor: '#8E44AD', paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={styles.headerTitle}>{t('subscriptions.title')}</Text>
-      <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
+      <Pressable accessibilityRole="button" onPress={() => setShowModal(true)} style={styles.addBtn}>
         <Ionicons name="add" size={26} color="#fff" />
       </Pressable>
     </View>
@@ -254,10 +254,10 @@ export function SubscriptionsScreen({ navigation }: any) {
                     </View>
                   </View>
                   <View style={styles.detectedActions}>
-                    <Pressable onPress={() => handleDismissDetected(d.merchantKey)} style={styles.detectedDismiss}>
+                    <Pressable accessibilityRole="button" onPress={() => handleDismissDetected(d.merchantKey)} style={styles.detectedDismiss}>
                       <Ionicons name="close" size={18} color={colors.textMuted} />
                     </Pressable>
-                    <Pressable onPress={() => handleConfirmDetected(d)} style={styles.detectedAddBtn}>
+                    <Pressable accessibilityRole="button" onPress={() => handleConfirmDetected(d)} style={styles.detectedAddBtn}>
                       <Ionicons name="add" size={16} color="#fff" />
                       <Text style={styles.detectedAddText}>Add</Text>
                     </Pressable>
@@ -312,7 +312,7 @@ export function SubscriptionsScreen({ navigation }: any) {
                     </View>
                   </View>
                   <View style={styles.subActions}>
-                    <Pressable
+                    <Pressable accessibilityRole="button"
                       onPress={() => { updateSubscription(sub.id, { isActive: false }); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
                       style={styles.cancelBtn}
                     >
@@ -320,7 +320,7 @@ export function SubscriptionsScreen({ navigation }: any) {
                       <Text style={styles.cancelText}>Pause</Text>
                     </Pressable>
                     <Badge label={sub.billingCycle} variant="primary" size="sm" />
-                    <Pressable onPress={() => handleDelete(sub.id, sub.name)} style={styles.deleteBtn}>
+                    <Pressable accessibilityRole="button" onPress={() => handleDelete(sub.id, sub.name)} style={styles.deleteBtn}>
                       <Ionicons name="trash-outline" size={16} color={colors.danger} />
                     </Pressable>
                   </View>
@@ -347,15 +347,15 @@ export function SubscriptionsScreen({ navigation }: any) {
           <Text style={styles.modalTitle}>Add Subscription</Text>
 
           <Text style={styles.modalLabel}>Name *</Text>
-          <TextInput style={styles.modalInput} placeholder="e.g. Netflix, Spotify..." value={newName} onChangeText={setNewName} placeholderTextColor={colors.textMuted} autoFocus />
+          <TextInput accessibilityLabel="e.g. Netflix, Spotify..." style={styles.modalInput} placeholder="e.g. Netflix, Spotify..." value={newName} onChangeText={setNewName} placeholderTextColor={colors.textMuted} autoFocus />
 
           <Text style={styles.modalLabel}>Amount *</Text>
-          <TextInput style={styles.modalInput} placeholder="0.00" value={newAmount} onChangeText={setNewAmount} keyboardType="decimal-pad" placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="0.00" style={styles.modalInput} placeholder="0.00" value={newAmount} onChangeText={setNewAmount} keyboardType="decimal-pad" placeholderTextColor={colors.textMuted} />
 
           <Text style={styles.modalLabel}>Billing Cycle</Text>
           <View style={styles.cycleRow}>
             {BILLING_CYCLES.map((c) => (
-              <Pressable key={c} onPress={() => setNewCycle(c)} style={[styles.cycleChip, newCycle === c && styles.cycleChipActive]}>
+              <Pressable accessibilityRole="button" key={c} onPress={() => setNewCycle(c)} style={[styles.cycleChip, newCycle === c && styles.cycleChipActive]}>
                 <Text style={[styles.cycleChipText, newCycle === c && styles.cycleChipTextActive]}>
                   {c.charAt(0).toUpperCase() + c.slice(1)}
                 </Text>
@@ -366,7 +366,7 @@ export function SubscriptionsScreen({ navigation }: any) {
           <Text style={styles.modalLabel}>Category</Text>
           <View style={styles.catGrid}>
             {SUB_CATEGORIES.map((cat) => (
-              <Pressable key={cat} onPress={() => setNewCategory(cat)} style={[styles.catGridItem, newCategory === cat && { backgroundColor: (SUB_COLORS[cat] || colors.primary) + '20', borderColor: SUB_COLORS[cat] || colors.primary }]}>
+              <Pressable accessibilityRole="button" key={cat} onPress={() => setNewCategory(cat)} style={[styles.catGridItem, newCategory === cat && { backgroundColor: (SUB_COLORS[cat] || colors.primary) + '20', borderColor: SUB_COLORS[cat] || colors.primary }]}>
                 <Ionicons name={(SUB_ICONS[cat] || 'apps-outline') as any} size={20} color={newCategory === cat ? (SUB_COLORS[cat] || colors.primary) : colors.textSecondary} />
                 <Text style={[styles.catGridText, newCategory === cat && { color: SUB_COLORS[cat] || colors.primary }]}>{cat}</Text>
               </Pressable>
@@ -376,7 +376,7 @@ export function SubscriptionsScreen({ navigation }: any) {
           <Text style={styles.modalLabel}>Shared With</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 24 }}>
             {members.map((m) => (
-              <Pressable key={m.id} onPress={() => toggleMember(m.id)} style={[styles.memberChip, newSharedMembers.includes(m.id) && styles.memberChipActive]}>
+              <Pressable accessibilityRole="button" key={m.id} onPress={() => toggleMember(m.id)} style={[styles.memberChip, newSharedMembers.includes(m.id) && styles.memberChipActive]}>
                 <Avatar name={m.name} color={m.avatarColor} size={30} />
                 <Text style={styles.memberChipName}>{m.name.split(' ')[0]}</Text>
               </Pressable>

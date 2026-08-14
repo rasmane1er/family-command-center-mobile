@@ -335,7 +335,7 @@ export function ChildDeviceDetailScreen({ navigation, route }: any) {
       <View style={styles.headerGlow} />
 
       <View style={styles.headerRow}>
-        <Pressable onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.getParent()?.navigate('Home')} style={styles.backBtn}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.getParent()?.navigate('Home')} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </Pressable>
 
@@ -394,7 +394,7 @@ export function ChildDeviceDetailScreen({ navigation, route }: any) {
       colors={['#081B33', '#0F2952']}
       style={[styles.compactHeader, { paddingTop: insets.top }]}
     >
-      <Pressable onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.getParent()?.navigate('Home')} style={styles.backBtn}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.getParent()?.navigate('Home')} style={styles.backBtn}>
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </Pressable>
 
@@ -446,7 +446,7 @@ export function ChildDeviceDetailScreen({ navigation, route }: any) {
                     <Text style={[styles.coordSubText, { textAlign: 'center' }]}>
                       Open the Family Guardian app on the child device and enter this code.
                     </Text>
-                    <Pressable
+                    <Pressable accessibilityRole="button"
                       style={[styles.commandBtn, { alignSelf: 'center', marginTop: 8, paddingHorizontal: 20 }]}
                       onPress={() => setRepairCode(null)}
                     >
@@ -454,7 +454,7 @@ export function ChildDeviceDetailScreen({ navigation, route }: any) {
                     </Pressable>
                   </View>
                 ) : (
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     style={[styles.commandBtn, { alignSelf: 'flex-start', flexDirection: 'row', gap: 8 }]}
                     onPress={handleRepair}
                     disabled={repairing}
@@ -486,7 +486,7 @@ export function ChildDeviceDetailScreen({ navigation, route }: any) {
                   cmd: 'location_request' as const,
                 },
               ].map((item) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={item.cmd}
                   style={[styles.commandBtn, shadows.sm]}
                   onPress={() => handleCommand(item.cmd)}
@@ -529,7 +529,7 @@ export function ChildDeviceDetailScreen({ navigation, route }: any) {
                     {formatLastSeen(device.location.timestamp ?? '')}
                   </Text>
 
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     style={styles.refreshBtn}
                     onPress={() => handleCommand('location_request')}
                   >
@@ -548,7 +548,7 @@ export function ChildDeviceDetailScreen({ navigation, route }: any) {
                   />
                   <Text style={styles.noLocationText}>No location data</Text>
 
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     style={styles.refreshBtn}
                     onPress={() => handleCommand('location_request')}
                   >
@@ -564,7 +564,7 @@ export function ChildDeviceDetailScreen({ navigation, route }: any) {
                 <Ionicons name="time" size={18} color="#8E44AD" />
                 <Text style={styles.cardTitle}>Screen Time Today</Text>
 
-                <Pressable
+                <Pressable accessibilityRole="button"
                   onPress={() => navigation.navigate('ScreenTime')}
                   style={styles.cardAction}
                 >
@@ -664,7 +664,7 @@ export function ChildDeviceDetailScreen({ navigation, route }: any) {
                 />
                 <Text style={styles.cardTitle}>Active Rules</Text>
 
-                <Pressable
+                <Pressable accessibilityRole="button"
                   onPress={() => navigation.navigate('ScreenTime')}
                   style={styles.cardAction}
                 >
@@ -749,7 +749,7 @@ export function ChildDeviceDetailScreen({ navigation, route }: any) {
                     Apple's iOS sandbox prevents silent screen capture from third-party apps.
                     Use the Screen Time data above to monitor app usage.
                   </Text>
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     style={[styles.screenshotBtn, { marginTop: 12, alignSelf: 'stretch' }]}
                     onPress={() => sendCommand(device.id, 'open_app_picker')}
                   >
@@ -778,7 +778,7 @@ export function ChildDeviceDetailScreen({ navigation, route }: any) {
 
                   {/* Action buttons row */}
                   <View style={styles.screenshotActions}>
-                    <Pressable
+                    <Pressable accessibilityRole="button"
                       style={[styles.screenshotBtn, { flex: 1 }]}
                       onPress={handleTakeScreenshot}
                       disabled={screenshotLoading || liveViewActive}
@@ -792,7 +792,7 @@ export function ChildDeviceDetailScreen({ navigation, route }: any) {
                       </Text>
                     </Pressable>
 
-                    <Pressable
+                    <Pressable accessibilityRole="button"
                       style={[
                         styles.screenshotBtn,
                         { flex: 1, backgroundColor: liveViewActive ? colors.danger + '18' : colors.background },
@@ -810,7 +810,7 @@ export function ChildDeviceDetailScreen({ navigation, route }: any) {
                     </Pressable>
 
                     {screenshot && (
-                      <Pressable
+                      <Pressable accessibilityRole="button"
                         style={[styles.screenshotBtn, { flex: 1 }]}
                         onPress={handleSaveScreenshot}
                       >
@@ -835,7 +835,7 @@ export function ChildDeviceDetailScreen({ navigation, route }: any) {
                   : 'Blocks adult, gambling & violence sites at DNS level (works in all browsers).'}
               </Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                <Pressable
+                <Pressable accessibilityRole="button"
                   style={[
                     styles.screenshotBtn,
                     { flex: 1, backgroundColor: webFilterOn ? '#E8F5E9' : undefined },
@@ -869,7 +869,7 @@ export function ChildDeviceDetailScreen({ navigation, route }: any) {
               <View style={styles.cardHeader}>
                 <Ionicons name="notifications" size={18} color="#E67E22" />
                 <Text style={styles.cardTitle}>Recent Notifications</Text>
-                <Pressable style={styles.cardAction} onPress={fetchNotifications}>
+                <Pressable accessibilityRole="button" style={styles.cardAction} onPress={fetchNotifications}>
                   <Ionicons name="refresh" size={14} color={colors.primary} />
                 </Pressable>
               </View>
@@ -895,7 +895,7 @@ export function ChildDeviceDetailScreen({ navigation, route }: any) {
               )}
             </View>
 
-            <Pressable
+            <Pressable accessibilityRole="button"
               style={[styles.navRow, shadows.sm]}
               onPress={() => navigation.navigate('GuardianChat', { deviceId })}
             >
@@ -908,7 +908,7 @@ export function ChildDeviceDetailScreen({ navigation, route }: any) {
               />
             </Pressable>
 
-            <Pressable
+            <Pressable accessibilityRole="button"
               style={[styles.navRow, shadows.sm]}
               onPress={() => navigation.navigate('Geofence')}
             >
@@ -917,7 +917,7 @@ export function ChildDeviceDetailScreen({ navigation, route }: any) {
               <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
             </Pressable>
 
-            <Pressable
+            <Pressable accessibilityRole="button"
               style={[styles.navRow, shadows.sm]}
               onPress={() => navigation.navigate('BlockedSites', { deviceId })}
             >

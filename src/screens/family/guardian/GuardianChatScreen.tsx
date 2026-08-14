@@ -188,7 +188,7 @@ export function GuardianChatScreen({ navigation, route }: any) {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <LinearGradient colors={['#081B33', '#0F2952', '#1E4A8A']} style={styles.header}>
-        <Pressable
+        <Pressable accessibilityRole="button"
           onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.getParent()?.navigate('Home')}
           style={styles.backBtn}
         >
@@ -210,7 +210,7 @@ export function GuardianChatScreen({ navigation, route }: any) {
           </View>
         </View>
 
-        <Pressable style={styles.headerAction}>
+        <Pressable accessibilityRole="button" style={styles.headerAction}>
           <Ionicons name="ellipsis-vertical" size={20} color="rgba(255,255,255,0.7)" />
         </Pressable>
       </LinearGradient>
@@ -246,7 +246,7 @@ export function GuardianChatScreen({ navigation, route }: any) {
         keyboardVerticalOffset={insets.top}
       >
         <View style={[styles.inputBar, { paddingBottom: insets.bottom + 8 }]}>
-          <TextInput
+          <TextInput accessibilityLabel={`Message ${childName}…`}
             style={styles.input}
             value={inputText}
             onChangeText={setInputText}
@@ -257,7 +257,7 @@ export function GuardianChatScreen({ navigation, route }: any) {
             returnKeyType="send"
             onSubmitEditing={handleSend}
           />
-          <Pressable
+          <Pressable accessibilityRole="button"
             style={[styles.sendBtn, (!inputText.trim() || sending) && styles.sendBtnDisabled]}
             onPress={handleSend}
             disabled={!inputText.trim() || sending}

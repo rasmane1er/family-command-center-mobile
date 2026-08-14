@@ -190,7 +190,7 @@ export function BillsScreen({ navigation, route }: any) {
         onBack={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()}
         colors={['#0F2952', '#1E4A8A']}
         rightAction={
-          <Pressable onPress={() => setShowAddModal(true)} style={s.addBtn}>
+          <Pressable accessibilityRole="button" onPress={() => setShowAddModal(true)} style={s.addBtn}>
             <Ionicons name="add" size={26} color="#fff" />
           </Pressable>
         }
@@ -212,7 +212,7 @@ export function BillsScreen({ navigation, route }: any) {
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.filterScroll}>
           {['All', 'Overdue', 'Due Soon', 'Upcoming', 'Paid'].map((f) => (
-            <Pressable key={f} onPress={() => setFilter(f)} style={[s.filterChip, filter === f && s.filterChipActive]}>
+            <Pressable accessibilityRole="button" key={f} onPress={() => setFilter(f)} style={[s.filterChip, filter === f && s.filterChipActive]}>
               <Text style={[s.filterText, filter === f && s.filterTextActive]}>{f}</Text>
             </Pressable>
           ))}
@@ -225,7 +225,7 @@ export function BillsScreen({ navigation, route }: any) {
       start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
       style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
     >
-      <Pressable onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </Pressable>
       <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>Bills</Text>
@@ -246,7 +246,7 @@ export function BillsScreen({ navigation, route }: any) {
         {/* Smart Detection Banner */}
         {(detectedLoading || visibleDetectedBills.length > 0) && (
           <View style={s.smartBanner}>
-            <Pressable style={s.smartBannerHeader} onPress={() => setDetectedExpanded((v) => !v)}>
+            <Pressable accessibilityRole="button" style={s.smartBannerHeader} onPress={() => setDetectedExpanded((v) => !v)}>
               <View style={s.smartBannerLeft}>
                 <Ionicons name="sparkles" size={16} color="#4A90D9" />
                 <Text style={s.smartBannerTitle}>Smart Detection</Text>
@@ -272,13 +272,13 @@ export function BillsScreen({ navigation, route }: any) {
                   </Text>
                 </View>
                 <Text style={s.detectedAmount}>${d.amount.toFixed(2)}</Text>
-                <Pressable
+                <Pressable accessibilityRole="button"
                   style={s.dismissDetectedBtn}
                   onPress={() => { dismissDetectedBill(d.merchantKey); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
                 >
                   <Ionicons name="close" size={16} color={colors.textMuted} />
                 </Pressable>
-                <Pressable style={s.addDetectedBtn} onPress={() => handleAddDetectedBill(d)}>
+                <Pressable accessibilityRole="button" style={s.addDetectedBtn} onPress={() => handleAddDetectedBill(d)}>
                   <Ionicons name="add" size={14} color="#fff" />
                   <Text style={s.addDetectedBtnText}>Add</Text>
                 </Pressable>
@@ -332,10 +332,10 @@ export function BillsScreen({ navigation, route }: any) {
               {bill.status !== 'paid' && (
                 <View style={s.billActions}>
                   <Button title="Mark Paid" onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); markBillPaid(bill.id); }} variant="success" size="sm" />
-                  <Pressable onPress={() => handleEditBill(bill)} style={s.editBtn}>
+                  <Pressable accessibilityRole="button" onPress={() => handleEditBill(bill)} style={s.editBtn}>
                     <Ionicons name="create-outline" size={18} color={colors.primary} />
                   </Pressable>
-                  <Pressable onPress={() => handleDelete(bill.id, bill.name)} style={s.deleteBtn}>
+                  <Pressable accessibilityRole="button" onPress={() => handleDelete(bill.id, bill.name)} style={s.deleteBtn}>
                     <Ionicons name="trash-outline" size={18} color={colors.danger} />
                   </Pressable>
                 </View>
@@ -361,7 +361,7 @@ export function BillsScreen({ navigation, route }: any) {
           <ScrollView style={s.modalSheet} contentContainerStyle={{ paddingBottom: 40 }}>
             <View style={s.modalHeader}>
               <Text style={s.modalTitle}>{editingBill ? 'Edit Bill' : 'Add Bill'}</Text>
-              <Pressable onPress={() => { resetModal(); setEditingBill(null); setShowAddModal(false); }}>
+              <Pressable accessibilityRole="button" onPress={() => { resetModal(); setEditingBill(null); setShowAddModal(false); }}>
                 <Ionicons name="close" size={24} color={colors.text} />
               </Pressable>
             </View>
@@ -374,7 +374,7 @@ export function BillsScreen({ navigation, route }: any) {
                 </Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }}>
                   {visibleDetectedBills.map((d) => (
-                    <Pressable key={d.merchantKey} style={s.importChip} onPress={() => prefillFromDetected(d)}>
+                    <Pressable accessibilityRole="button" key={d.merchantKey} style={s.importChip} onPress={() => prefillFromDetected(d)}>
                       <Text style={s.importChipName}>{d.merchantName}</Text>
                       <Text style={s.importChipAmount}>${d.amount.toFixed(2)}</Text>
                     </Pressable>
@@ -384,7 +384,7 @@ export function BillsScreen({ navigation, route }: any) {
             )}
 
             <Text style={s.modalLabel}>Bill Name</Text>
-            <TextInput
+            <TextInput accessibilityLabel="e.g. Electric Bill"
               style={s.modalInput}
               value={newName}
               onChangeText={setNewName}
@@ -393,7 +393,7 @@ export function BillsScreen({ navigation, route }: any) {
             />
 
             <Text style={s.modalLabel}>Amount ($)</Text>
-            <TextInput
+            <TextInput accessibilityLabel="0.00"
               style={s.modalInput}
               value={newAmount}
               onChangeText={setNewAmount}
@@ -403,7 +403,7 @@ export function BillsScreen({ navigation, route }: any) {
             />
 
             <Text style={s.modalLabel}>Due in (days)</Text>
-            <TextInput
+            <TextInput accessibilityLabel="14"
               style={s.modalInput}
               value={newDueDays}
               onChangeText={setNewDueDays}
@@ -415,7 +415,7 @@ export function BillsScreen({ navigation, route }: any) {
             <Text style={s.modalLabel}>Category</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
               {CATEGORIES.map((c) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={c}
                   onPress={() => setNewCategory(c)}
                   style={[s.catChip, newCategory === c && s.catChipActive]}
@@ -439,7 +439,7 @@ export function BillsScreen({ navigation, route }: any) {
               />
             </View>
 
-            <Pressable
+            <Pressable accessibilityRole="button"
               onPress={handleAddBill}
               style={[s.modalSubmit, (!newName.trim() || !newAmount) && s.modalSubmitDisabled]}
             >

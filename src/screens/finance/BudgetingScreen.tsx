@@ -212,7 +212,7 @@ export function BudgetingScreen({ navigation, route }: any) {
           onBack={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()}
           colors={['#27AE60', '#1ABC9C']}
           rightAction={
-            <Pressable onPress={() => setShowAddModal(true)} style={s.addBtn}>
+            <Pressable accessibilityRole="button" onPress={() => setShowAddModal(true)} style={s.addBtn}>
               <Ionicons name="add" size={26} color="#fff" />
             </Pressable>
           }
@@ -243,7 +243,7 @@ export function BudgetingScreen({ navigation, route }: any) {
       start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
       style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
     >
-      <Pressable onPress={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
+      <Pressable accessibilityRole="button" onPress={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </Pressable>
       <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>Budget</Text>
@@ -300,10 +300,10 @@ export function BudgetingScreen({ navigation, route }: any) {
                     <Text style={s.budgetLimit}>of ${budget.monthlyLimit}/mo</Text>
                   </View>
                 </View>
-                <Pressable onPress={() => handleEditBudget(budget)} style={s.editBtn}>
+                <Pressable accessibilityRole="button" onPress={() => handleEditBudget(budget)} style={s.editBtn}>
                   <Ionicons name="create-outline" size={16} color={colors.primary} />
                 </Pressable>
-                <Pressable onPress={() => handleDelete(budget.id, budget.category)} style={s.deleteBtn}>
+                <Pressable accessibilityRole="button" onPress={() => handleDelete(budget.id, budget.category)} style={s.deleteBtn}>
                   <Ionicons name="trash-outline" size={16} color={colors.textMuted} />
                 </Pressable>
               </View>
@@ -356,7 +356,7 @@ export function BudgetingScreen({ navigation, route }: any) {
           <ScrollView style={s.modalSheet} contentContainerStyle={{ paddingBottom: 40 }}>
             <View style={s.modalHeader}>
               <Text style={s.modalTitle}>{editingBudget ? 'Edit Budget' : 'Add Budget Category'}</Text>
-              <Pressable onPress={() => { setEditingBudget(null); setShowAddModal(false); }}>
+              <Pressable accessibilityRole="button" onPress={() => { setEditingBudget(null); setShowAddModal(false); }}>
                 <Ionicons name="close" size={24} color={colors.text} />
               </Pressable>
             </View>
@@ -375,14 +375,14 @@ export function BudgetingScreen({ navigation, route }: any) {
                     const isOverBudget = existingBudget && sg.monthlyAverage > existingBudget.monthlyLimit;
                     return (
                       <View key={sg.category} style={[s.suggestionChip, isOverBudget && s.suggestionChipOver]}>
-                        <Pressable
+                        <Pressable accessibilityRole="button"
                           style={s.suggestionChipDismiss}
                           onPress={() => dismissSuggestion(sg.category)}
                           hitSlop={8}
                         >
                           <Ionicons name="close" size={12} color={colors.textMuted} />
                         </Pressable>
-                        <Pressable onPress={() => applySuggestion(sg)}>
+                        <Pressable accessibilityRole="button" onPress={() => applySuggestion(sg)}>
                           <Text style={[s.suggestionChipName, isOverBudget && s.suggestionChipNameOver]}>
                             {plaidCatToDisplay(sg.category)}
                           </Text>
@@ -401,7 +401,7 @@ export function BudgetingScreen({ navigation, route }: any) {
             )}
 
             <Text style={s.modalLabel}>Category Name</Text>
-            <TextInput
+            <TextInput accessibilityLabel="e.g. Dining Out"
               style={s.modalInput}
               value={newCategory}
               onChangeText={setNewCategory}
@@ -410,7 +410,7 @@ export function BudgetingScreen({ navigation, route }: any) {
             />
 
             <Text style={s.modalLabel}>Monthly Limit ($)</Text>
-            <TextInput
+            <TextInput accessibilityLabel="0"
               style={s.modalInput}
               value={newLimit}
               onChangeText={setNewLimit}
@@ -422,7 +422,7 @@ export function BudgetingScreen({ navigation, route }: any) {
             <Text style={s.modalLabel}>Icon</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
               {PRESET_ICONS.map((pi) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={pi.icon}
                   onPress={() => setNewIcon(pi.icon)}
                   style={[s.iconChip, newIcon === pi.icon && { backgroundColor: newColor, borderColor: newColor }]}
@@ -436,7 +436,7 @@ export function BudgetingScreen({ navigation, route }: any) {
             <Text style={s.modalLabel}>Color</Text>
             <View style={s.colorRow}>
               {PRESET_COLORS.map((c) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={c}
                   onPress={() => setNewColor(c)}
                   style={[s.colorSwatch, { backgroundColor: c }, newColor === c && s.colorSwatchActive]}
@@ -446,7 +446,7 @@ export function BudgetingScreen({ navigation, route }: any) {
               ))}
             </View>
 
-            <Pressable
+            <Pressable accessibilityRole="button"
               onPress={handleAddBudget}
               style={[s.modalSubmit, { backgroundColor: newColor }, (!newCategory.trim() || !newLimit) && s.modalSubmitDisabled]}
             >

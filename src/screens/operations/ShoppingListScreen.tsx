@@ -114,7 +114,7 @@ export function ShoppingListScreen({ navigation }: any) {
           colors={['#1A6B3C', '#27AE60']}
           onBack={() => navigation.goBack()}
           rightAction={
-            <Pressable onPress={() => clearChecked()} style={s.clearBtn}>
+            <Pressable accessibilityRole="button" onPress={() => clearChecked()} style={s.clearBtn}>
               <Ionicons name="checkmark-done" size={20} color="rgba(255,255,255,0.8)" />
             </Pressable>
           }
@@ -148,7 +148,7 @@ export function ShoppingListScreen({ navigation }: any) {
       start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
       style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
     >
-      <Pressable onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </Pressable>
       <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>Shopping List</Text>
@@ -175,7 +175,7 @@ export function ShoppingListScreen({ navigation }: any) {
             <Text style={s.suggestLabel}>⚠️ Running Low — Add to List?</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
               {lowStockSuggestions.map((p) => (
-                <Pressable key={p.id} onPress={() => handleAddFromPantry(p.name, p.unit)} style={s.suggestChip}>
+                <Pressable accessibilityRole="button" key={p.id} onPress={() => handleAddFromPantry(p.name, p.unit)} style={s.suggestChip}>
                   <Ionicons name="add-circle" size={16} color="#27AE60" />
                   <Text style={s.suggestChipText}>{p.name}</Text>
                 </Pressable>
@@ -197,12 +197,12 @@ export function ShoppingListScreen({ navigation }: any) {
                 <Text style={s.categoryCount}>{catItems.length}</Text>
               </View>
               {catItems.map((item) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={item.id}
                   onLongPress={() => handleDelete(item.id, item.name)}
                   style={s.itemRow}
                 >
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     onPress={() => handleToggle(item.id)}
                     style={[s.checkbox, { borderColor: cfg.color }]}
                   >
@@ -224,7 +224,7 @@ export function ShoppingListScreen({ navigation }: any) {
         {/* Checked items */}
         {checked.length > 0 && (
           <View style={s.categorySection}>
-            <Pressable onPress={() => setShowChecked(!showChecked)} style={s.categoryHeader}>
+            <Pressable accessibilityRole="button" onPress={() => setShowChecked(!showChecked)} style={s.categoryHeader}>
               <Ionicons name="checkmark-circle" size={16} color={colors.success} />
               <Text style={[s.categoryLabel, { color: colors.success, marginLeft: 6 }]}>
                 In Cart ({checked.length})
@@ -235,7 +235,7 @@ export function ShoppingListScreen({ navigation }: any) {
               <Ionicons name={showChecked ? 'chevron-up' : 'chevron-down'} size={14} color={colors.textMuted} style={{ marginLeft: 8 }} />
             </Pressable>
             {showChecked && checked.map((item) => (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={item.id}
                 onPress={() => handleToggle(item.id)}
                 onLongPress={() => handleDelete(item.id, item.name)}
@@ -263,7 +263,7 @@ export function ShoppingListScreen({ navigation }: any) {
       </CollapsibleHeader>
 
       {/* FAB */}
-      <Pressable onPress={() => setShowAdd(true)} style={[s.fab, { bottom: tabBarInset }]}>
+      <Pressable accessibilityRole="button" onPress={() => setShowAdd(true)} style={[s.fab, { bottom: tabBarInset }]}>
         <LinearGradient colors={['#1A6B3C', '#27AE60']} style={s.fabGrad}>
           <Ionicons name="add" size={28} color="#fff" />
         </LinearGradient>
@@ -275,13 +275,13 @@ export function ShoppingListScreen({ navigation }: any) {
           <View style={s.modal}>
             <View style={s.modalHeader}>
               <Text style={s.modalTitle}>Add Item</Text>
-              <Pressable onPress={() => setShowAdd(false)}>
+              <Pressable accessibilityRole="button" onPress={() => setShowAdd(false)}>
                 <Ionicons name="close" size={24} color={colors.text} />
               </Pressable>
             </View>
             <ScrollView contentContainerStyle={s.modalContent} keyboardShouldPersistTaps="handled">
               <Text style={s.modalLabel}>Item Name *</Text>
-              <TextInput
+              <TextInput accessibilityLabel="e.g. Almond Milk"
                 style={s.modalInput}
                 value={newName}
                 onChangeText={setNewName}
@@ -294,7 +294,7 @@ export function ShoppingListScreen({ navigation }: any) {
                 {CAT_ORDER.map((cat) => {
                   const cfg = SHOP_CAT_CONFIG[cat];
                   return (
-                    <Pressable
+                    <Pressable accessibilityRole="button"
                       key={cat}
                       onPress={() => setNewCat(cat)}
                       style={[s.catChip, newCat === cat && { backgroundColor: cfg.color }]}
@@ -308,7 +308,7 @@ export function ShoppingListScreen({ navigation }: any) {
               <View style={s.modalRow}>
                 <View style={{ flex: 1 }}>
                   <Text style={s.modalLabel}>Quantity</Text>
-                  <TextInput
+                  <TextInput accessibilityLabel="1"
                     style={s.modalInput}
                     value={newQty}
                     onChangeText={setNewQty}
@@ -323,7 +323,7 @@ export function ShoppingListScreen({ navigation }: any) {
                   <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                     <View style={{ flexDirection: 'row', gap: 6 }}>
                       {UNITS.slice(0, 8).map((u) => (
-                        <Pressable key={u} onPress={() => setNewUnit(u)} style={[s.unitChip, newUnit === u && s.unitChipActive]}>
+                        <Pressable accessibilityRole="button" key={u} onPress={() => setNewUnit(u)} style={[s.unitChip, newUnit === u && s.unitChipActive]}>
                           <Text style={[s.unitText, newUnit === u && s.unitTextActive]}>{u}</Text>
                         </Pressable>
                       ))}
@@ -332,7 +332,7 @@ export function ShoppingListScreen({ navigation }: any) {
                 </View>
               </View>
               <Text style={s.modalLabel}>Estimated Price ($)</Text>
-              <TextInput
+              <TextInput accessibilityLabel="0.00"
                 style={s.modalInput}
                 value={newPrice}
                 onChangeText={setNewPrice}
@@ -340,7 +340,7 @@ export function ShoppingListScreen({ navigation }: any) {
                 placeholder="0.00"
                 placeholderTextColor={colors.textMuted}
               />
-              <Pressable onPress={handleAddItem} style={[s.addBtn, !newName.trim() && s.addBtnDisabled]} disabled={!newName.trim()}>
+              <Pressable accessibilityRole="button" onPress={handleAddItem} style={[s.addBtn, !newName.trim() && s.addBtnDisabled]} disabled={!newName.trim()}>
                 <Ionicons name="add-circle" size={20} color="#fff" />
                 <Text style={s.addBtnText}>Add to List</Text>
               </Pressable>

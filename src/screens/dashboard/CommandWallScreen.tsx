@@ -83,7 +83,7 @@ const todayEvents = visibleEvents.filter(
   const screenHeader = (
     <LinearGradient colors={['#0D1B2A', '#0F2952', '#1E4A8A']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
       <View style={styles.headerTop}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <View style={{ flex: 1 }}>
@@ -111,7 +111,7 @@ const todayEvents = visibleEvents.filter(
         justifyContent: 'space-between',
       }}
     >
-      <Pressable onPress={() => navigation.goBack()} style={{ marginRight: 12 }}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={{ marginRight: 12 }}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800', flex: 1 }}>{t('dashboard.screens.commandWall.headerTitle')}</Text>
@@ -209,7 +209,7 @@ const todayEvents = visibleEvents.filter(
         {/* Widgets Grid */}
         <Text style={styles.sectionTitle}>{t('dashboard.screens.commandWall.liveWidgets')}</Text>
         <View style={styles.widgetsGrid}>
-          <Pressable onPress={() => navigation.navigate('Finance')} style={[styles.widget, styles.widgetLarge, { backgroundColor: WIDGET_COLORS.finance + '12' }]}>
+          <Pressable accessibilityRole="button" onPress={() => navigation.navigate('Finance')} style={[styles.widget, styles.widgetLarge, { backgroundColor: WIDGET_COLORS.finance + '12' }]}>
             <Ionicons name="trending-up" size={22} color={WIDGET_COLORS.finance} />
             <Text style={[styles.widgetVal, { color: WIDGET_COLORS.finance }]}>${netWorth > 0 ? (netWorth / 1000).toFixed(0) + 'k' : '0'}</Text>
             <Text style={styles.widgetLabel}>{t('dashboard.screens.commandWall.netWorth')}</Text>
@@ -279,7 +279,7 @@ const todayEvents = visibleEvents.filter(
             { label: t('dashboard.screens.commandWall.actionEmergency'), icon: 'alert-circle', color: '#E74C3C', tab: 'Operations', screen: 'Emergency' },
           ]
          ).map((action, i) => (
-            <Pressable key={i} onPress={() =>
+            <Pressable accessibilityRole="button" key={i} onPress={() =>
   navigation.navigate(
     action.tab,
     action.screen

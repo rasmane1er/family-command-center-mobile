@@ -54,7 +54,7 @@ function RecipeDetailModal({ recipe, isSuggestion, onClose, onFavorite, onSave, 
     <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={det.container}>
         <View style={det.headerRow}>
-          <Pressable onPress={onClose} style={det.closeBtn}>
+          <Pressable accessibilityRole="button" onPress={onClose} style={det.closeBtn}>
             <Ionicons name="close" size={24} color={colors.text} />
           </Pressable>
           {isSuggestion ? (
@@ -63,7 +63,7 @@ function RecipeDetailModal({ recipe, isSuggestion, onClose, onFavorite, onSave, 
               <Text style={det.aiBadgeText}>AI Suggestion</Text>
             </View>
           ) : (
-            <Pressable onPress={onFavorite} style={det.favBtn}>
+            <Pressable accessibilityRole="button" onPress={onFavorite} style={det.favBtn}>
               <Ionicons name={recipe.isFavorite ? 'heart' : 'heart-outline'} size={24} color={recipe.isFavorite ? '#E74C3C' : colors.textMuted} />
             </Pressable>
           )}
@@ -121,11 +121,11 @@ function RecipeDetailModal({ recipe, isSuggestion, onClose, onFavorite, onSave, 
 
           {isSuggestion && (
             <View style={det.suggestionActions}>
-              <Pressable onPress={onSave} style={det.saveBtn}>
+              <Pressable accessibilityRole="button" onPress={onSave} style={det.saveBtn}>
                 <Ionicons name="bookmark" size={16} color="#fff" />
                 <Text style={det.saveBtnText}>Save to My Recipes</Text>
               </Pressable>
-              <Pressable onPress={onDismiss} style={det.dismissBtn}>
+              <Pressable accessibilityRole="button" onPress={onDismiss} style={det.dismissBtn}>
                 <Text style={det.dismissBtnText}>Dismiss</Text>
               </Pressable>
             </View>
@@ -190,7 +190,7 @@ export function RecipesScreen({ navigation }: any) {
         >
           <View style={styles.searchBar}>
             <Ionicons name="search" size={16} color="rgba(255,255,255,0.6)" />
-            <TextInput
+            <TextInput accessibilityLabel="Search recipes..."
               style={styles.searchInput}
               value={search}
               onChangeText={setSearch}
@@ -198,7 +198,7 @@ export function RecipesScreen({ navigation }: any) {
               placeholderTextColor="rgba(255,255,255,0.5)"
             />
             {search.length > 0 && (
-              <Pressable onPress={() => setSearch('')}>
+              <Pressable accessibilityRole="button" onPress={() => setSearch('')}>
                 <Ionicons name="close-circle" size={16} color="rgba(255,255,255,0.6)" />
               </Pressable>
             )}
@@ -207,7 +207,7 @@ export function RecipesScreen({ navigation }: any) {
       {/* Category filters */}
       <View style={styles.filtersBar}>
         {CAT_FILTERS.map((f) => (
-          <Pressable
+          <Pressable accessibilityRole="button"
             key={f.key}
             onPress={() => { setFilter(f.key); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
             style={[styles.filterChip, filter === f.key && styles.filterChipActive]}
@@ -226,7 +226,7 @@ export function RecipesScreen({ navigation }: any) {
       start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
       style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
     >
-      <Pressable onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </Pressable>
       <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>Recipes</Text>
@@ -251,7 +251,7 @@ export function RecipesScreen({ navigation }: any) {
                   : 'Add pantry items for more tailored ideas'}
               </Text>
             </View>
-            <Pressable onPress={handleGenerateSuggestions} disabled={isSuggesting} style={styles.aiGenerateBtn}>
+            <Pressable accessibilityRole="button" onPress={handleGenerateSuggestions} disabled={isSuggesting} style={styles.aiGenerateBtn}>
               {isSuggesting ? (
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
@@ -270,18 +270,18 @@ export function RecipesScreen({ navigation }: any) {
           {suggestedRecipes.length > 0 && (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, marginTop: 12 }}>
               {suggestedRecipes.map((r) => (
-                <Pressable key={r.id} onPress={() => setSelected({ recipe: r, isSuggestion: true })} style={styles.suggestionCard}>
+                <Pressable accessibilityRole="button" key={r.id} onPress={() => setSelected({ recipe: r, isSuggestion: true })} style={styles.suggestionCard}>
                   <Text style={styles.suggestionEmoji}>{r.emoji}</Text>
                   <Text style={styles.suggestionName} numberOfLines={2}>{r.name}</Text>
                   <Text style={styles.suggestionMeta}>{r.prepTime + r.cookTime}m · {r.cuisine}</Text>
                   <View style={styles.suggestionActionsRow}>
-                    <Pressable
+                    <Pressable accessibilityRole="button"
                       onPress={() => { saveSuggestion(r.id); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); }}
                       style={styles.suggestionSaveBtn}
                     >
                       <Ionicons name="bookmark" size={14} color="#fff" />
                     </Pressable>
-                    <Pressable onPress={() => dismissSuggestion(r.id)} style={styles.suggestionDismissBtn}>
+                    <Pressable accessibilityRole="button" onPress={() => dismissSuggestion(r.id)} style={styles.suggestionDismissBtn}>
                       <Ionicons name="close" size={14} color={colors.textMuted} />
                     </Pressable>
                   </View>
@@ -300,7 +300,7 @@ export function RecipesScreen({ navigation }: any) {
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
               {cookTonightRecipes.map(({ recipe: r, pct }) => (
-                <Pressable key={r.id} onPress={() => setSelected({ recipe: r, isSuggestion: false })} style={styles.cookCard}>
+                <Pressable accessibilityRole="button" key={r.id} onPress={() => setSelected({ recipe: r, isSuggestion: false })} style={styles.cookCard}>
                   <Text style={styles.cookCardEmoji}>{r.emoji}</Text>
                   <Text style={styles.cookCardName} numberOfLines={2}>{r.name}</Text>
                   <View style={styles.cookCardBar}>
@@ -319,10 +319,10 @@ export function RecipesScreen({ navigation }: any) {
           {filtered.map((r) => {
             const diff = DIFF_CONFIG[r.difficulty];
             return (
-              <Pressable key={r.id} onPress={() => setSelected({ recipe: r, isSuggestion: false })} style={styles.recipeCard}>
+              <Pressable accessibilityRole="button" key={r.id} onPress={() => setSelected({ recipe: r, isSuggestion: false })} style={styles.recipeCard}>
                 <View style={styles.recipeCardTop}>
                   <Text style={styles.recipeEmoji}>{r.emoji}</Text>
-                  <Pressable onPress={() => { toggleFavorite(r.id); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} style={styles.favBtn}>
+                  <Pressable accessibilityRole="button" onPress={() => { toggleFavorite(r.id); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} style={styles.favBtn}>
                     <Ionicons name={r.isFavorite ? 'heart' : 'heart-outline'} size={18} color={r.isFavorite ? '#E74C3C' : colors.textMuted} />
                   </Pressable>
                 </View>

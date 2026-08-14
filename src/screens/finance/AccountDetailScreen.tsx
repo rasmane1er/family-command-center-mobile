@@ -104,7 +104,7 @@ export function AccountDetailScreen({ navigation, route }: Props) {
     return (
       <View style={styles.notFound}>
         <Text style={styles.notFoundText}>Account not found.</Text>
-        <Pressable onPress={() => navigation.goBack()}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()}>
           <Text style={styles.backLink}>Go Back</Text>
         </Pressable>
       </View>
@@ -221,7 +221,7 @@ export function AccountDetailScreen({ navigation, route }: Props) {
       style={[styles.header, { paddingTop: insets.top + 6 }]}
     >
       <View style={styles.headerTop}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <Text style={styles.headerTitle} numberOfLines={1}>{account.name}</Text>
@@ -248,7 +248,7 @@ export function AccountDetailScreen({ navigation, route }: Props) {
       start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
       style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
     >
-      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={styles.headerTitle} numberOfLines={1}>{account.name}</Text>
@@ -301,7 +301,7 @@ export function AccountDetailScreen({ navigation, route }: Props) {
         <View style={styles.card}>
           <View style={styles.cardHeaderRow}>
             <Text style={styles.cardTitle}>Recurring</Text>
-            <Pressable onPress={() => setShowAddRecurring(true)}>
+            <Pressable accessibilityRole="button" onPress={() => setShowAddRecurring(true)}>
               <Ionicons name="add-circle-outline" size={20} color={color} />
             </Pressable>
           </View>
@@ -309,7 +309,7 @@ export function AccountDetailScreen({ navigation, route }: Props) {
           {recurring.map((r) => {
             const due = r.isActive && new Date(r.nextDueDate) <= new Date();
             return (
-              <Pressable key={r.id} style={styles.recRow} onLongPress={() => handleDeleteRecurring(r.id, r.name)}>
+              <Pressable accessibilityRole="button" key={r.id} style={styles.recRow} onLongPress={() => handleDeleteRecurring(r.id, r.name)}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.recName}>{r.name}</Text>
                   <Text style={styles.recMeta}>
@@ -320,7 +320,7 @@ export function AccountDetailScreen({ navigation, route }: Props) {
                   {r.type === 'INCOME' ? '+' : '-'}${formatMoney(r.amount)}
                 </Text>
                 {due && (
-                  <Pressable style={[styles.confirmChip, { backgroundColor: color }]} onPress={() => handleConfirmRecurring(r.id, r.name)}>
+                  <Pressable accessibilityRole="button" style={[styles.confirmChip, { backgroundColor: color }]} onPress={() => handleConfirmRecurring(r.id, r.name)}>
                     <Text style={styles.confirmChipText}>Confirm</Text>
                   </Pressable>
                 )}
@@ -334,7 +334,7 @@ export function AccountDetailScreen({ navigation, route }: Props) {
           <Text style={styles.cardTitle}>Transactions</Text>
           {transactions.length === 0 && <Text style={styles.emptyText}>No transactions logged yet.</Text>}
           {transactions.map((t) => (
-            <Pressable
+            <Pressable accessibilityRole="button"
               key={t.id}
               style={styles.txRow}
               onLongPress={() => handleDeleteTransaction(t.id, t.merchant || t.category || t.type)}
@@ -361,7 +361,7 @@ export function AccountDetailScreen({ navigation, route }: Props) {
       </CollapsibleHeader>
 
       {/* FAB */}
-      <Pressable onPress={() => setShowAddTx(true)} style={[styles.fab, { bottom: tabBarInset, backgroundColor: color }]}>
+      <Pressable accessibilityRole="button" onPress={() => setShowAddTx(true)} style={[styles.fab, { bottom: tabBarInset, backgroundColor: color }]}>
         <Ionicons name="add" size={28} color="#fff" />
       </Pressable>
 
@@ -372,18 +372,18 @@ export function AccountDetailScreen({ navigation, route }: Props) {
             <Text style={styles.modalTitle}>Add Transaction</Text>
             <View style={styles.typeRow}>
               {TX_TYPES.map((t) => (
-                <Pressable key={t} onPress={() => setTxType(t)} style={[styles.typeChip, txType === t && { backgroundColor: color, borderColor: color }]}>
+                <Pressable accessibilityRole="button" key={t} onPress={() => setTxType(t)} style={[styles.typeChip, txType === t && { backgroundColor: color, borderColor: color }]}>
                   <Text style={[styles.typeChipText, txType === t && { color: '#fff' }]}>{t === 'INCOME' ? 'Income' : 'Expense'}</Text>
                 </Pressable>
               ))}
             </View>
             <Text style={styles.modalLabel}>Amount ($)</Text>
-            <TextInput style={styles.modalInput} placeholder="0.00" value={txAmount} onChangeText={setTxAmount} keyboardType="decimal-pad" placeholderTextColor={SUBTEXT} />
+            <TextInput accessibilityLabel="0.00" style={styles.modalInput} placeholder="0.00" value={txAmount} onChangeText={setTxAmount} keyboardType="decimal-pad" placeholderTextColor={SUBTEXT} />
             <Text style={styles.modalLabel}>Merchant</Text>
-            <TextInput style={styles.modalInput} placeholder="e.g. Whole Foods" value={txMerchant} onChangeText={setTxMerchant} placeholderTextColor={SUBTEXT} />
+            <TextInput accessibilityLabel="e.g. Whole Foods" style={styles.modalInput} placeholder="e.g. Whole Foods" value={txMerchant} onChangeText={setTxMerchant} placeholderTextColor={SUBTEXT} />
             <Text style={styles.modalLabel}>Category</Text>
-            <TextInput style={styles.modalInput} placeholder="e.g. Groceries" value={txCategory} onChangeText={setTxCategory} placeholderTextColor={SUBTEXT} />
-            <Pressable style={styles.pendingToggle} onPress={() => setTxPending((v) => !v)}>
+            <TextInput accessibilityLabel="e.g. Groceries" style={styles.modalInput} placeholder="e.g. Groceries" value={txCategory} onChangeText={setTxCategory} placeholderTextColor={SUBTEXT} />
+            <Pressable accessibilityRole="button" style={styles.pendingToggle} onPress={() => setTxPending((v) => !v)}>
               <Ionicons name={txPending ? 'checkbox' : 'square-outline'} size={20} color={color} />
               <Text style={styles.pendingToggleText}>Still pending (hasn't cleared yet)</Text>
             </Pressable>
@@ -399,20 +399,20 @@ export function AccountDetailScreen({ navigation, route }: Props) {
           <ScrollView style={styles.modal} contentContainerStyle={{ padding: 20 }}>
             <Text style={styles.modalTitle}>Add Recurring Transaction</Text>
             <Text style={styles.modalLabel}>Name</Text>
-            <TextInput style={styles.modalInput} placeholder="e.g. Paycheck, Rent" value={recName} onChangeText={setRecName} placeholderTextColor={SUBTEXT} />
+            <TextInput accessibilityLabel="e.g. Paycheck, Rent" style={styles.modalInput} placeholder="e.g. Paycheck, Rent" value={recName} onChangeText={setRecName} placeholderTextColor={SUBTEXT} />
             <View style={styles.typeRow}>
               {(['INCOME', 'EXPENSE'] as const).map((t) => (
-                <Pressable key={t} onPress={() => setRecType(t)} style={[styles.typeChip, recType === t && { backgroundColor: color, borderColor: color }]}>
+                <Pressable accessibilityRole="button" key={t} onPress={() => setRecType(t)} style={[styles.typeChip, recType === t && { backgroundColor: color, borderColor: color }]}>
                   <Text style={[styles.typeChipText, recType === t && { color: '#fff' }]}>{t === 'INCOME' ? 'Income' : 'Expense'}</Text>
                 </Pressable>
               ))}
             </View>
             <Text style={styles.modalLabel}>Amount ($)</Text>
-            <TextInput style={styles.modalInput} placeholder="0.00" value={recAmount} onChangeText={setRecAmount} keyboardType="decimal-pad" placeholderTextColor={SUBTEXT} />
+            <TextInput accessibilityLabel="0.00" style={styles.modalInput} placeholder="0.00" value={recAmount} onChangeText={setRecAmount} keyboardType="decimal-pad" placeholderTextColor={SUBTEXT} />
             <Text style={styles.modalLabel}>Frequency</Text>
             <View style={styles.typeRow}>
               {FREQUENCIES.map((f) => (
-                <Pressable key={f} onPress={() => setRecFrequency(f)} style={[styles.typeChip, recFrequency === f && { backgroundColor: color, borderColor: color }]}>
+                <Pressable accessibilityRole="button" key={f} onPress={() => setRecFrequency(f)} style={[styles.typeChip, recFrequency === f && { backgroundColor: color, borderColor: color }]}>
                   <Text style={[styles.typeChipText, recFrequency === f && { color: '#fff' }]}>{f.charAt(0) + f.slice(1).toLowerCase()}</Text>
                 </Pressable>
               ))}

@@ -78,7 +78,7 @@ export function EmergencyScreen({ navigation }: any) {
   const screenHeader = (
     <LinearGradient colors={['#C0392B', '#96281B']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
       <View style={styles.headerTop}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <Text style={styles.headerTitle}>Emergency Center</Text>
@@ -126,7 +126,7 @@ export function EmergencyScreen({ navigation }: any) {
         <Text style={styles.sectionTitle}>Emergency Numbers</Text>
         <View style={styles.emergencyGrid}>
           {EMERGENCY_NUMBERS.map((item) => (
-            <Pressable key={item.label} onPress={() => callNumber(item.number)} style={[styles.emergencyCard, { backgroundColor: item.bg }]}>
+            <Pressable accessibilityRole="button" key={item.label} onPress={() => callNumber(item.number)} style={[styles.emergencyCard, { backgroundColor: item.bg }]}>
               <Ionicons name={item.icon as any} size={26} color={item.color} />
               <Text style={[styles.emergencyNumber, { color: item.color }]}>{item.number}</Text>
               <Text style={styles.emergencyLabel}>{item.label}</Text>
@@ -179,7 +179,7 @@ export function EmergencyScreen({ navigation }: any) {
         <Text style={styles.sectionTitle}>First Aid Guides</Text>
         {FIRST_AID_STEPS.map((guide) => (
           <Card key={guide.title} style={styles.guideCard} variant="elevated">
-            <Pressable onPress={() => setExpandedGuide(expandedGuide === guide.title ? null : guide.title)}>
+            <Pressable accessibilityRole="button" onPress={() => setExpandedGuide(expandedGuide === guide.title ? null : guide.title)}>
               <View style={styles.guideHeader}>
                 <View style={styles.guideIconBg}>
                   <Ionicons name={guide.icon as any} size={20} color={colors.danger} />
@@ -211,7 +211,7 @@ export function EmergencyScreen({ navigation }: any) {
         <Text style={styles.sectionTitle}>Home Safety Checklist</Text>
         <Card style={styles.checklistCard} variant="elevated">
           {checklist.map((item, i) => (
-            <Pressable
+            <Pressable accessibilityRole="button"
               key={item.id}
               style={[styles.checkItem, i < checklist.length - 1 && styles.checkItemBorder]}
               onPress={() => toggleCheckItem(item.id)}

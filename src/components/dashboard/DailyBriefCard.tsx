@@ -64,7 +64,7 @@ export function DailyBriefCard() {
         style={styles.card}
       >
         {/* Header row */}
-        <Pressable style={styles.header} onPress={toggle}>
+        <Pressable accessibilityRole="button" style={styles.header} onPress={toggle}>
           <View style={styles.headerLeft}>
             <Text style={styles.headerIcon}>🌅</Text>
             <Text style={styles.headerTitle}>Daily Brief</Text>
@@ -76,7 +76,7 @@ export function DailyBriefCard() {
                 {weather.rainAfter ? `  🌧 after ${weather.rainAfter}` : ''}
               </Text>
             )}
-            <Pressable onPress={handleRefresh} hitSlop={8} style={{ marginLeft: 10 }}>
+            <Pressable accessibilityRole="button" onPress={handleRefresh} hitSlop={8} style={{ marginLeft: 10 }}>
               <Ionicons name="refresh" size={16} color="rgba(255,255,255,0.5)" />
             </Pressable>
             <Ionicons
@@ -127,7 +127,7 @@ export function DailyBriefCard() {
             )}
 
             {!brief && !isLoading && !error && (
-              <Pressable onPress={handleRefresh} style={styles.emptyRow}>
+              <Pressable accessibilityRole="button" onPress={handleRefresh} style={styles.emptyRow}>
                 <Text style={styles.emptyText}>Tap to generate your morning brief</Text>
               </Pressable>
             )}

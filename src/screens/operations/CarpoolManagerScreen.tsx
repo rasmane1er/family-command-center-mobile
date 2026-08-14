@@ -112,7 +112,7 @@ function RouteCard({
             variant={route.status === 'active' ? 'success' : route.status === 'paused' ? 'warning' : 'neutral'}
             size="sm"
           />
-          <Pressable onPress={onDelete} style={{ marginLeft: 8 }}>
+          <Pressable accessibilityRole="button" onPress={onDelete} style={{ marginLeft: 8 }}>
             <Ionicons name="trash-outline" size={18} color={colors.textMuted} />
           </Pressable>
         </View>
@@ -176,7 +176,7 @@ function RouteCard({
               </Text>
             </View>
           )}
-          <Pressable onPress={onAddParticipant} style={styles.addParticipantBtn}>
+          <Pressable accessibilityRole="button" onPress={onAddParticipant} style={styles.addParticipantBtn}>
             <Ionicons name="person-add-outline" size={14} color={colors.primary} />
           </Pressable>
         </View>
@@ -185,7 +185,7 @@ function RouteCard({
           <Text style={styles.routeNotes}>{route.notes}</Text>
         )}
 
-        <Pressable
+        <Pressable accessibilityRole="button"
           onPress={onAdvanceDriver}
           style={[styles.advanceBtn, { backgroundColor: route.color }]}
         >
@@ -350,13 +350,13 @@ function AddRouteModal({
         <View style={styles.modal}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>New Carpool Route</Text>
-            <Pressable onPress={onClose}>
+            <Pressable accessibilityRole="button" onPress={onClose}>
               <Ionicons name="close" size={24} color={colors.text} />
             </Pressable>
           </View>
           <ScrollView contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">
             <Text style={styles.fieldLabel}>Route Name *</Text>
-            <TextInput
+            <TextInput accessibilityLabel="e.g. School Morning Run"
               style={styles.input}
               value={name}
               onChangeText={setName}
@@ -366,7 +366,7 @@ function AddRouteModal({
             />
 
             <Text style={styles.fieldLabel}>Destination *</Text>
-            <TextInput
+            <TextInput accessibilityLabel="e.g. Lincoln Elementary"
               style={styles.input}
               value={destination}
               onChangeText={setDestination}
@@ -375,7 +375,7 @@ function AddRouteModal({
             />
 
             <Text style={styles.fieldLabel}>Pickup Time *</Text>
-            <TextInput
+            <TextInput accessibilityLabel="e.g. 7:45 AM"
               style={styles.input}
               value={pickupTime}
               onChangeText={setPickupTime}
@@ -384,7 +384,7 @@ function AddRouteModal({
             />
 
             <Text style={styles.fieldLabel}>Return Time (optional)</Text>
-            <TextInput
+            <TextInput accessibilityLabel="e.g. 3:20 PM"
               style={styles.input}
               value={returnTime}
               onChangeText={setReturnTime}
@@ -395,7 +395,7 @@ function AddRouteModal({
             <Text style={styles.fieldLabel}>Days of Week *</Text>
             <View style={styles.dayToggleRow}>
               {ALL_DAYS.map((d) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={d}
                   onPress={() => toggleDay(d)}
                   style={[
@@ -416,7 +416,7 @@ function AddRouteModal({
             <Text style={styles.fieldLabel}>Route Color</Text>
             <View style={styles.colorRow}>
               {ROUTE_COLORS.map((c) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={c}
                   onPress={() => setSelectedColor(c)}
                   style={[
@@ -431,7 +431,7 @@ function AddRouteModal({
             </View>
 
             <Text style={styles.fieldLabel}>Notes (optional)</Text>
-            <TextInput
+            <TextInput accessibilityLabel="Pickup instructions, contact info, etc."
               style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
               value={notes}
               onChangeText={setNotes}
@@ -440,7 +440,7 @@ function AddRouteModal({
               multiline
             />
 
-            <Pressable
+            <Pressable accessibilityRole="button"
               onPress={handleAdd}
               disabled={!name.trim() || !destination.trim() || !pickupTime.trim() || selectedDays.length === 0}
               style={[
@@ -515,14 +515,14 @@ export function CarpoolManagerScreen({ navigation }: any) {
       style={[styles.header, { paddingTop: insets.top + 6 }]}
     >
       <View style={styles.headerRow}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <View style={{ flex: 1 }}>
           <Text style={styles.headerTitle}>Carpool Manager 🚗</Text>
           <Text style={styles.headerSub}>School & activity rides</Text>
         </View>
-        <Pressable
+        <Pressable accessibilityRole="button"
           onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setShowAddRoute(true); }}
           style={styles.addBtn}
         >
@@ -545,7 +545,7 @@ export function CarpoolManagerScreen({ navigation }: any) {
     
     <View style={styles.tabs}>
             {(['routes', 'schedule', 'history'] as Tab[]).map((tab) => (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={tab}
                 onPress={() => setActiveTab(tab)}
                 style={[styles.tab, activeTab === tab && styles.tabActive]}
@@ -561,7 +561,7 @@ export function CarpoolManagerScreen({ navigation }: any) {
 
   const screenCompact = (
     <LinearGradient colors={['#0D47A1', '#1565C0']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={styles.headerTitle}>{t('carpool.title')}</Text>

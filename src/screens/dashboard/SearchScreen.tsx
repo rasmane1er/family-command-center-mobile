@@ -455,7 +455,7 @@ export function SearchScreen({ navigation: navProp }: any) {
     <View style={[dynStyles.header, { paddingTop: insets.top + 6 }]}>
       <View style={dynStyles.searchBar}>
         <Ionicons name="search" size={20} color={colors.textMuted} />
-        <TextInput
+        <TextInput accessibilityLabel={placeholder}
           style={dynStyles.searchInput}
           placeholder={placeholder}
           placeholderTextColor={colors.textMuted}
@@ -466,13 +466,13 @@ export function SearchScreen({ navigation: navProp }: any) {
         />
 
         {query.length > 0 && (
-          <Pressable onPress={() => setQuery('')}>
+          <Pressable accessibilityRole="button" onPress={() => setQuery('')}>
             <Ionicons name="close-circle" size={18} color={colors.textMuted} />
           </Pressable>
         )}
       </View>
 
-      <Pressable onPress={() => navigation.goBack()} style={dynStyles.cancelBtn}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={dynStyles.cancelBtn}>
         <Text style={dynStyles.cancelText}>{t('dashboard.screens.search.cancel')}</Text>
       </Pressable>
     </View>
@@ -499,7 +499,7 @@ export function SearchScreen({ navigation: navProp }: any) {
           {query || placeholder}
         </Text>
       </View>
-      <Pressable onPress={() => navigation.goBack()} style={dynStyles.cancelBtn}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={dynStyles.cancelBtn}>
         <Text style={dynStyles.cancelText}>{t('dashboard.screens.search.cancel')}</Text>
       </Pressable>
     </View>
@@ -526,7 +526,7 @@ export function SearchScreen({ navigation: navProp }: any) {
             {RECENT_SEARCH_KEYS.map((key) => {
               const label = t(`dashboard.screens.search.recentSearchSuggestions.${key}`);
               return (
-                <Pressable key={key} onPress={() => setQuery(label)} style={dynStyles.recentRow}>
+                <Pressable accessibilityRole="button" key={key} onPress={() => setQuery(label)} style={dynStyles.recentRow}>
                   <Ionicons name="time-outline" size={16} color={colors.textMuted} />
                   <Text style={dynStyles.recentText}>{label}</Text>
                   <Ionicons name="arrow-forward" size={14} color={colors.textMuted} />
@@ -538,7 +538,7 @@ export function SearchScreen({ navigation: navProp }: any) {
 
             <View style={dynStyles.browseGrid}>
               {browseSections.map((b) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={b.label}
                   onPress={() => navigation.navigate(b.route as string, (b as any).params)}
                   style={[dynStyles.browseCard, { backgroundColor: b.bg }]}
@@ -573,7 +573,7 @@ export function SearchScreen({ navigation: navProp }: any) {
                   </View>
 
                   {items.map((r) => (
-                    <Pressable key={`${r.category}-${r.id}`} onPress={() => handleResultPress(r)}>
+                    <Pressable accessibilityRole="button" key={`${r.category}-${r.id}`} onPress={() => handleResultPress(r)}>
                       <Card style={dynStyles.resultCard} variant="elevated">
                         <View style={dynStyles.resultRow}>
                           <View style={[dynStyles.resultIcon, { backgroundColor: r.color + '20' }]}>

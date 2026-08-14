@@ -64,10 +64,10 @@ export function GoalsSetupScreen({ navigation }: any) {
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <LinearGradient colors={['#0F2952', '#1E4A8A']} style={styles.header}>
           <View style={styles.headerTopRow}>
-            <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+            <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
               <Ionicons name="arrow-back" size={24} color="#fff" />
             </Pressable>
-            <Pressable onPress={handleFinish} style={styles.skipBtn}>
+            <Pressable accessibilityRole="button" onPress={handleFinish} style={styles.skipBtn}>
               <Text style={styles.skipBtnText}>{t('onboarding.screens.goalsSetup.skipBadge')}</Text>
             </Pressable>
           </View>
@@ -83,7 +83,7 @@ export function GoalsSetupScreen({ navigation }: any) {
 
         <View style={styles.goalsGrid}>
           {suggestedGoals.map((g) => (
-            <Pressable
+            <Pressable accessibilityRole="button"
               key={g.title}
               onPress={() => toggleGoal(g.title)}
               style={[styles.goalCard, selectedGoals.includes(g.title) && styles.goalCardActive]}

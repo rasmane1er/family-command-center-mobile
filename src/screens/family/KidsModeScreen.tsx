@@ -62,7 +62,7 @@ function PointsBurst({ show, points }: { show: boolean; points: number }) {
 // -> POST /guardian/sos), so it needs to be reachable but never accidental.
 function SOSButton({ onPress, sending }: { onPress: () => void; sending: boolean }) {
   return (
-    <Pressable onPress={onPress} disabled={sending} style={styles.sosBtn} hitSlop={6}>
+    <Pressable accessibilityRole="button" onPress={onPress} disabled={sending} style={styles.sosBtn} hitSlop={6}>
       <Ionicons name={sending ? 'hourglass-outline' : 'alert-circle-outline'} size={20} color="#fff" />
     </Pressable>
   );
@@ -192,7 +192,7 @@ export function KidsModeScreen({ navigation }: any) {
     : ['#2980B9', '#8E44AD'];
 
   const cornerButton = canGoBack ? (
-    <Pressable onPress={() => navigation.goBack()} style={styles.cornerBtn}>
+    <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.cornerBtn}>
       <Ionicons name="arrow-back" size={24} color="#fff" />
     </Pressable>
   ) : (
@@ -213,7 +213,7 @@ export function KidsModeScreen({ navigation }: any) {
       {kids.length > 1 && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, marginBottom: 16 }}>
           {kids.map((kid) => (
-            <Pressable
+            <Pressable accessibilityRole="button"
               key={kid.id}
               onPress={() => setSelectedKid(kid.id)}
               style={[styles.kidChip, (selectedKid === kid.id || (!selectedKid && kid.id === kids[0]?.id)) && styles.kidChipActive]}
@@ -285,7 +285,7 @@ export function KidsModeScreen({ navigation }: any) {
             <Text style={styles.moodQuestion}>How are you feeling today, {activeKid?.name.split(' ')[0]}? 👋</Text>
             <View style={styles.moodRow}>
               {([1, 2, 3, 4, 5] as MoodLevel[]).map((l) => (
-                <Pressable key={l} onPress={() => handleMood(l)} style={styles.moodBtn}>
+                <Pressable accessibilityRole="button" key={l} onPress={() => handleMood(l)} style={styles.moodBtn}>
                   <Text style={styles.moodEmoji}>{MOOD_CONFIG[l].emoji}</Text>
                   <Text style={styles.moodLabel}>{MOOD_CONFIG[l].label}</Text>
                 </Pressable>
@@ -330,7 +330,7 @@ export function KidsModeScreen({ navigation }: any) {
           const questColor = QUEST_COLORS[i % QUEST_COLORS.length];
           const awaitingApproval = task.status === 'pending_approval';
           return (
-            <Pressable key={task.id} onPress={() => handleQuestPress(task)} disabled={awaitingApproval} style={styles.questCard}>
+            <Pressable accessibilityRole="button" key={task.id} onPress={() => handleQuestPress(task)} disabled={awaitingApproval} style={styles.questCard}>
               <LinearGradient colors={awaitingApproval ? ['#F5A62315', '#F5A62308'] : [questColor + '15', questColor + '08']} style={styles.questGrad}>
                 <View style={[styles.questIcon, { backgroundColor: (awaitingApproval ? '#F5A623' : questColor) + '20' }]}>
                   <Ionicons
@@ -381,7 +381,7 @@ export function KidsModeScreen({ navigation }: any) {
               {myHabits.map((habit) => {
                 const done = isCompletedToday(habit.id);
                 return (
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     key={habit.id}
                     onPress={() => handleHabitToggle(habit.id)}
                     style={[styles.habitCard, done && { ...styles.habitCardDone, backgroundColor: habit.color + '20', borderColor: habit.color }]}
@@ -409,7 +409,7 @@ export function KidsModeScreen({ navigation }: any) {
             <View style={[styles.sectionAccent, { backgroundColor: '#F5A623' }]} />
             <Text style={styles.sectionTitle}>🏅 Trophies</Text>
           </View>
-          <Pressable onPress={() => navigation.navigate('Achievements')}>
+          <Pressable accessibilityRole="button" onPress={() => navigation.navigate('Achievements')}>
             <Text style={styles.seeAll}>View All</Text>
           </Pressable>
         </View>

@@ -155,7 +155,7 @@ export function EmergencyModeScreen({ navigation }: any) {
   const screenHeader = (
     <LinearGradient colors={['#7B0000', '#B71C1C', '#D32F2F']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
       <View style={styles.headerRow}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <Text style={styles.headerTitle}>{t('emergency.title')}</Text>
@@ -165,7 +165,7 @@ export function EmergencyModeScreen({ navigation }: any) {
       {/* SOS Button */}
       <View style={styles.sosCenter}>
         <Animated.View style={[styles.sosPulse, sosActive && { transform: [{ scale: pulseAnim }] }]}>
-          <Pressable onPress={handleSOS} style={[styles.sosBtn, sosActive && styles.sosBtnActive]}>
+          <Pressable accessibilityRole="button" onPress={handleSOS} style={[styles.sosBtn, sosActive && styles.sosBtnActive]}>
             {sosActive ? (
               <>
                 <Text style={styles.sosBtnText}>CANCEL</Text>
@@ -186,7 +186,7 @@ export function EmergencyModeScreen({ navigation }: any) {
     
     <View style={styles.tabs}>
             {(['protocols', 'contacts', 'kit'] as const).map((t) => (
-              <Pressable key={t} onPress={() => setTab(t)} style={[styles.tab, tab === t && styles.tabActive]}>
+              <Pressable accessibilityRole="button" key={t} onPress={() => setTab(t)} style={[styles.tab, tab === t && styles.tabActive]}>
                 <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
                   {t === 'protocols' ? '📋 Protocols' : t === 'contacts' ? '📞 Contacts' : '🎒 Kit'}
                 </Text>
@@ -201,7 +201,7 @@ export function EmergencyModeScreen({ navigation }: any) {
       colors={['#7B0000', '#B71C1C', '#D32F2F']}
       style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
     >
-      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={styles.headerTitle}>{t('emergency.title')}</Text>
@@ -229,7 +229,7 @@ export function EmergencyModeScreen({ navigation }: any) {
             <Text style={styles.sectionLabel}>Select Emergency Type</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.typeScroll} contentContainerStyle={{ gap: 10, paddingVertical: 4 }}>
               {EMERGENCY_TYPES.map((et) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={et.type}
                   onPress={() => setSelectedType(et.type)}
                   style={[styles.typeChip, selectedType === et.type && { backgroundColor: et.color }]}
@@ -269,7 +269,7 @@ export function EmergencyModeScreen({ navigation }: any) {
           <>
             <Text style={styles.sectionLabel}>Emergency Numbers</Text>
             {EMERGENCY_CONTACTS.map((contact, i) => (
-              <Pressable key={i} onPress={() => Alert.alert(t('common.callTitle', { name: contact.name }), t('common.callMsg', { name: contact.number }), [{ text: t('common.cancel'), style: 'cancel' }, { text: t('common.call'), style: 'destructive', onPress: () => Linking.openURL(`tel:${contact.number.replace(/-/g, '')}`) }])}>
+              <Pressable accessibilityRole="button" key={i} onPress={() => Alert.alert(t('common.callTitle', { name: contact.name }), t('common.callMsg', { name: contact.number }), [{ text: t('common.cancel'), style: 'cancel' }, { text: t('common.call'), style: 'destructive', onPress: () => Linking.openURL(`tel:${contact.number.replace(/-/g, '')}`) }])}>
                 <Card variant="elevated" style={styles.contactCard}>
                   <View style={styles.contactRow}>
                     <View style={[styles.contactIcon, { backgroundColor: contact.color + '20' }]}>

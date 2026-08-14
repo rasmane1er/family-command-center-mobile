@@ -122,11 +122,11 @@ export function BlockedSitesScreen({ route }: any) {
     <LinearGradient colors={['#0F2952', '#1E3A6E']} style={styles.header}>
       <SafeAreaView edges={['top']} style={styles.headerInner}>
         <View style={styles.topRow}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.7}>
+          <TouchableOpacity accessibilityRole="button" style={styles.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.7}>
             <Ionicons name="chevron-back" size={22} color="#fff" />
           </TouchableOpacity>
           {events.length > 0 && (
-            <TouchableOpacity style={styles.clearBtn} onPress={onClear} activeOpacity={0.7} disabled={clearing}>
+            <TouchableOpacity accessibilityRole="button" style={styles.clearBtn} onPress={onClear} activeOpacity={0.7} disabled={clearing}>
               {clearing
                 ? <ActivityIndicator size="small" color="#ff8080" />
                 : <Ionicons name="trash-outline" size={18} color="#ff8080" />
@@ -185,7 +185,7 @@ export function BlockedSitesScreen({ route }: any) {
           <Ionicons name="warning" size={40} color={colors.danger} />
           <Text style={styles.errorTitle}>Could not load</Text>
           <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryBtn} onPress={() => { setLoading(true); fetchEvents().finally(() => setLoading(false)); }}>
+          <TouchableOpacity accessibilityRole="button" style={styles.retryBtn} onPress={() => { setLoading(true); fetchEvents().finally(() => setLoading(false)); }}>
             <Text style={styles.retryText}>Try Again</Text>
           </TouchableOpacity>
         </View>

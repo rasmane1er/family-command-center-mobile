@@ -97,14 +97,14 @@ export function FamilyMeetingScreen({ navigation }: any) {
   const screenHeader = (
     <LinearGradient colors={['#1565C0', '#0D47A1']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
       <View style={styles.headerRow}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <View style={{ flex: 1 }}>
           <Text style={styles.headerTitle}>{t('family.screens.familyMeeting.headerTitle')}</Text>
           <Text style={styles.headerSub}>{t('family.screens.familyMeeting.headerSub')}</Text>
         </View>
-        <Pressable onPress={handleNewMeeting} style={styles.addBtn}>
+        <Pressable accessibilityRole="button" onPress={handleNewMeeting} style={styles.addBtn}>
           <Ionicons name="add" size={22} color="#fff" />
         </Pressable>
       </View>
@@ -128,11 +128,11 @@ export function FamilyMeetingScreen({ navigation }: any) {
 
   const screenCompact = (
     <LinearGradient colors={['#1565C0', '#0D47A1']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={styles.headerTitle}>{t('family.screens.familyMeeting.headerTitle')}</Text>
-      <Pressable onPress={handleNewMeeting} style={styles.addBtn}>
+      <Pressable accessibilityRole="button" onPress={handleNewMeeting} style={styles.addBtn}>
         <Ionicons name="add" size={22} color="#fff" />
       </Pressable>
     </LinearGradient>
@@ -171,7 +171,7 @@ export function FamilyMeetingScreen({ navigation }: any) {
 
           return (
             <Card key={meeting.id} variant="elevated" style={styles.meetingCard}>
-              <Pressable onPress={() => setExpandedId(isExpanded ? null : meeting.id)} onLongPress={() => handleDelete(meeting)}>
+              <Pressable accessibilityRole="button" onPress={() => setExpandedId(isExpanded ? null : meeting.id)} onLongPress={() => handleDelete(meeting)}>
                 <View style={styles.meetingHeader}>
                   <View style={styles.dateBadge}>
                     <Text style={styles.dateDay}>{format(new Date(meeting.date), 'd')}</Text>
@@ -212,7 +212,7 @@ export function FamilyMeetingScreen({ navigation }: any) {
 
                   <View style={styles.expandedLabelRow}>
                     <Text style={styles.expandedLabel}>👥 Attendees</Text>
-                    <Pressable onPress={() => setEditingAttendeesId(isEditingAttendees ? null : meeting.id)}>
+                    <Pressable accessibilityRole="button" onPress={() => setEditingAttendeesId(isEditingAttendees ? null : meeting.id)}>
                       <Text style={styles.editLink}>{isEditingAttendees ? 'Done' : 'Edit'}</Text>
                     </Pressable>
                   </View>
@@ -221,7 +221,7 @@ export function FamilyMeetingScreen({ navigation }: any) {
                       {members.map((m) => {
                         const selected = meeting.attendeeIds.includes(m.id);
                         return (
-                          <Pressable
+                          <Pressable accessibilityRole="button"
                             key={m.id}
                             onPress={() => setAttendees(
                               meeting.id,
@@ -240,7 +240,7 @@ export function FamilyMeetingScreen({ navigation }: any) {
 
                   <Text style={styles.expandedLabel}>📋 Agenda</Text>
                   {meeting.agenda.map((item) => (
-                    <Pressable key={item.id} style={styles.agendaItem} onPress={() => toggleAgendaItem(meeting.id, item.id)}>
+                    <Pressable accessibilityRole="button" key={item.id} style={styles.agendaItem} onPress={() => toggleAgendaItem(meeting.id, item.id)}>
                       <Ionicons
                         name={item.done ? 'checkmark-circle' : 'ellipse-outline'}
                         size={16}
@@ -251,7 +251,7 @@ export function FamilyMeetingScreen({ navigation }: any) {
                   ))}
 
                   <Text style={styles.expandedLabel}>📝 Notes</Text>
-                  <TextInput
+                  <TextInput accessibilityLabel="What did the family discuss?"
                     style={styles.notesInput}
                     multiline
                     placeholder="What did the family discuss?"
@@ -262,7 +262,7 @@ export function FamilyMeetingScreen({ navigation }: any) {
 
                   <Text style={styles.expandedLabel}>✅ Action Items</Text>
                   {meeting.actionItems.map((action) => (
-                    <Pressable key={action.id} style={styles.actionItem} onPress={() => toggleActionItem(meeting.id, action.id)}>
+                    <Pressable accessibilityRole="button" key={action.id} style={styles.actionItem} onPress={() => toggleActionItem(meeting.id, action.id)}>
                       <Ionicons
                         name={action.done ? 'checkmark-circle' : 'ellipse-outline'}
                         size={16}
@@ -273,20 +273,20 @@ export function FamilyMeetingScreen({ navigation }: any) {
                     </Pressable>
                   ))}
                   <View style={styles.addActionRow}>
-                    <TextInput
+                    <TextInput accessibilityLabel="New action item…"
                       style={styles.addActionInput}
                       placeholder="New action item…"
                       placeholderTextColor={colors.textMuted}
                       value={newActionText[meeting.id] ?? ''}
                       onChangeText={(text) => setNewActionText((s) => ({ ...s, [meeting.id]: text }))}
                     />
-                    <Pressable style={styles.addActionBtn} onPress={() => handleAddAction(meeting.id)}>
+                    <Pressable accessibilityRole="button" style={styles.addActionBtn} onPress={() => handleAddAction(meeting.id)}>
                       <Ionicons name="add" size={18} color="#fff" />
                     </Pressable>
                   </View>
                   <View style={styles.chipRow}>
                     {members.map((m) => (
-                      <Pressable
+                      <Pressable accessibilityRole="button"
                         key={m.id}
                         onPress={() => setNewActionAssignee((s) => ({ ...s, [meeting.id]: m.id }))}
                         style={[styles.memberChip, (newActionAssignee[meeting.id] ?? members[0]?.id) === m.id && { backgroundColor: m.avatarColor + '25', borderColor: m.avatarColor }]}
@@ -299,7 +299,7 @@ export function FamilyMeetingScreen({ navigation }: any) {
                   <Text style={styles.expandedLabel}>😊 Mood</Text>
                   <View style={styles.moodRow}>
                     {MOODS.map((emoji) => (
-                      <Pressable
+                      <Pressable accessibilityRole="button"
                         key={emoji}
                         onPress={() => setMood(meeting.id, emoji)}
                         style={[styles.moodBtn, meeting.mood === emoji && styles.moodBtnActive]}
@@ -312,7 +312,7 @@ export function FamilyMeetingScreen({ navigation }: any) {
                   <View style={styles.expandedLabelRow}>
                     <Text style={styles.expandedLabel}>⏱️ Duration (minutes)</Text>
                   </View>
-                  <TextInput
+                  <TextInput accessibilityLabel="e.g. 30"
                     style={styles.durationInput}
                     placeholder="e.g. 30"
                     placeholderTextColor={colors.textMuted}

@@ -43,7 +43,7 @@ function MoveChecklist({ move }: { move: PCSMove }) {
       {checklist.map((task) => {
         const overdue = !!task.dueDate && task.status !== 'completed' && isPast(new Date(task.dueDate));
         return (
-          <Pressable
+          <Pressable accessibilityRole="button"
             key={task.id}
             onPress={() => task.status !== 'completed' && completeTask(task.id, members[0]?.id ?? task.createdBy)}
             style={styles.checklistRow}
@@ -118,7 +118,7 @@ export function PCSMoveScreen({ navigation }: any) {
         onBack={() => navigation.goBack()}
         colors={['#0F2952', MILITARY_GREEN]}
         rightAction={
-          <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
+          <Pressable accessibilityRole="button" onPress={() => setShowModal(true)} style={styles.addBtn}>
             <Ionicons name="add" size={24} color="#fff" />
           </Pressable>
         }
@@ -139,7 +139,7 @@ export function PCSMoveScreen({ navigation }: any) {
           const expanded = expandedId === move.id;
           return (
             <Card key={move.id} style={styles.moveCard} variant="elevated">
-              <Pressable onPress={() => setExpandedId(expanded ? null : move.id)} style={styles.moveHeader}>
+              <Pressable accessibilityRole="button" onPress={() => setExpandedId(expanded ? null : move.id)} style={styles.moveHeader}>
                 <View style={styles.moveIcon}>
                   <Ionicons name="airplane-outline" size={22} color={MILITARY_GREEN} />
                 </View>
@@ -147,7 +147,7 @@ export function PCSMoveScreen({ navigation }: any) {
                   <Text style={styles.moveTitle}>{move.fromLocation} → {move.toLocation}</Text>
                   <Text style={styles.moveMeta}>Move date: {format(new Date(move.moveDate), 'MMM d, yyyy')}</Text>
                 </View>
-                <Pressable onPress={() => handleDelete(move)} style={styles.deleteIconBtn}>
+                <Pressable accessibilityRole="button" onPress={() => handleDelete(move)} style={styles.deleteIconBtn}>
                   <Ionicons name="trash-outline" size={16} color={colors.danger} />
                 </Pressable>
                 <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={18} color={colors.textMuted} />
@@ -169,13 +169,13 @@ export function PCSMoveScreen({ navigation }: any) {
           <Text style={styles.modalTitle}>New PCS Move</Text>
 
           <Text style={styles.fieldLabel}>Current Duty Station</Text>
-          <TextInput style={styles.input} placeholder="e.g. Fort Bragg, NC" value={fromLocation} onChangeText={setFromLocation} placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="e.g. Fort Bragg, NC" style={styles.input} placeholder="e.g. Fort Bragg, NC" value={fromLocation} onChangeText={setFromLocation} placeholderTextColor={colors.textMuted} />
 
           <Text style={styles.fieldLabel}>New Duty Station</Text>
-          <TextInput style={styles.input} placeholder="e.g. Joint Base Lewis-McChord, WA" value={toLocation} onChangeText={setToLocation} placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="e.g. Joint Base Lewis-McChord, WA" style={styles.input} placeholder="e.g. Joint Base Lewis-McChord, WA" value={toLocation} onChangeText={setToLocation} placeholderTextColor={colors.textMuted} />
 
           <Text style={styles.fieldLabel}>Move Date (YYYY-MM-DD)</Text>
-          <TextInput style={styles.input} placeholder="2026-09-01" value={moveDate} onChangeText={setMoveDate} placeholderTextColor={colors.textMuted} />
+          <TextInput accessibilityLabel="2026-09-01" style={styles.input} placeholder="2026-09-01" value={moveDate} onChangeText={setMoveDate} placeholderTextColor={colors.textMuted} />
 
           <Text style={styles.hint}>
             Adding this move creates a real checklist of tasks in your Tasks list, each due a set number of days before your move date.

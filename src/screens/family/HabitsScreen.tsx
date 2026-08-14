@@ -52,7 +52,7 @@ const HabitCard = React.memo(function HabitCard({ habit, done, member, today, la
   return (
     <Card style={{ ...styles.habitCard, ...(done ? styles.habitCardDone : {}) }} variant="elevated">
       <View style={styles.habitTop}>
-        <Pressable onPress={() => onToggle(habit.id)} style={[styles.habitIcon, { backgroundColor: done ? habit.color : habit.color + '20' }]}>
+        <Pressable accessibilityRole="button" onPress={() => onToggle(habit.id)} style={[styles.habitIcon, { backgroundColor: done ? habit.color : habit.color + '20' }]}>
           <Ionicons name={habit.icon as any} size={22} color={done ? '#fff' : habit.color} />
         </Pressable>
         <View style={{ flex: 1, marginLeft: 12 }}>
@@ -62,7 +62,7 @@ const HabitCard = React.memo(function HabitCard({ habit, done, member, today, la
           </View>
           <Text style={styles.habitDesc}>{habit.description}</Text>
         </View>
-        <Pressable onPress={() => onDelete(habit.id, habit.title)} style={styles.deleteBtn}>
+        <Pressable accessibilityRole="button" onPress={() => onDelete(habit.id, habit.title)} style={styles.deleteBtn}>
           <Ionicons name="trash-outline" size={14} color={colors.textMuted} />
         </Pressable>
       </View>
@@ -77,7 +77,7 @@ const HabitCard = React.memo(function HabitCard({ habit, done, member, today, la
               <Text style={[styles.historyDayLabel, isToday && styles.historyDayLabelToday]}>
                 {DAYS[new Date(dateStr + 'T12:00:00').getDay()]}
               </Text>
-              <Pressable
+              <Pressable accessibilityRole="button"
                 onPress={() => isToday ? onToggle(habit.id) : undefined}
                 style={[
                   styles.historyDot,
@@ -201,11 +201,11 @@ export function HabitsScreen({ navigation }: any) {
   const screenHeader = (
     <LinearGradient colors={['#E67E22', '#D35400']} style={{ paddingTop: insets.top + 6, paddingHorizontal: 20, paddingBottom: 16 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
-        <Pressable onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.getParent()?.navigate('Home')} style={{ marginRight: 12 }}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.getParent()?.navigate('Home')} style={{ marginRight: 12 }}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <Text style={{ flex: 1, fontSize: 18, fontWeight: '800', color: '#fff' }}>{t('family.screens.habits.headerTitle')}</Text>
-        <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
+        <Pressable accessibilityRole="button" onPress={() => setShowModal(true)} style={styles.addBtn}>
           <Ionicons name="add" size={22} color="#fff" />
         </Pressable>
       </View>
@@ -233,7 +233,7 @@ export function HabitsScreen({ navigation }: any) {
     
     <View style={styles.tabs}>
             {(['family', 'personal'] as const).map((t) => (
-              <Pressable key={t} onPress={() => setTab(t)} style={[styles.tab, tab === t && styles.tabActive]}>
+              <Pressable accessibilityRole="button" key={t} onPress={() => setTab(t)} style={[styles.tab, tab === t && styles.tabActive]}>
                 <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
                   {t === 'family' ? '👨‍👩‍👧‍👦 Family Habits' : '👤 Personal'}
                 </Text>
@@ -245,11 +245,11 @@ export function HabitsScreen({ navigation }: any) {
 
   const screenCompact = (
     <LinearGradient colors={['#E67E22', '#D35400']} style={{ paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => navigation.goBack()}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>Family Habits</Text>
-      <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
+      <Pressable accessibilityRole="button" onPress={() => setShowModal(true)} style={styles.addBtn}>
         <Ionicons name="add" size={22} color="#fff" />
       </Pressable>
     </LinearGradient>
@@ -303,7 +303,7 @@ export function HabitsScreen({ navigation }: any) {
           <View style={styles.modalHandle} />
           <Text style={styles.modalTitle}>{t('habits.addHabit')}</Text>
 
-          <TextInput
+          <TextInput accessibilityLabel="Habit name..."
             style={styles.modalInput}
             placeholder="Habit name..."
             value={newTitle}
@@ -311,7 +311,7 @@ export function HabitsScreen({ navigation }: any) {
             placeholderTextColor={colors.textMuted}
             autoFocus
           />
-          <TextInput
+          <TextInput accessibilityLabel="Description (optional)"
             style={styles.modalInput}
             placeholder="Description (optional)"
             value={newDesc}
@@ -322,7 +322,7 @@ export function HabitsScreen({ navigation }: any) {
           <Text style={styles.modalLabel}>Frequency</Text>
           <View style={styles.freqRow}>
             {(['daily', 'weekly'] as const).map((f) => (
-              <Pressable key={f} onPress={() => setNewFrequency(f)} style={[styles.freqChip, newFrequency === f && styles.freqChipActive]}>
+              <Pressable accessibilityRole="button" key={f} onPress={() => setNewFrequency(f)} style={[styles.freqChip, newFrequency === f && styles.freqChipActive]}>
                 <Text style={[styles.freqChipText, newFrequency === f && styles.freqChipTextActive]}>
                   {f === 'daily' ? '📅 Daily' : '📆 Weekly'}
                 </Text>
@@ -333,7 +333,7 @@ export function HabitsScreen({ navigation }: any) {
           <Text style={styles.modalLabel}>Icon</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
             {HABIT_ICONS.map((icon) => (
-              <Pressable key={icon} onPress={() => setNewIcon(icon)} style={[styles.iconPick, newIcon === icon && { backgroundColor: newColor + '30', borderColor: newColor }]}>
+              <Pressable accessibilityRole="button" key={icon} onPress={() => setNewIcon(icon)} style={[styles.iconPick, newIcon === icon && { backgroundColor: newColor + '30', borderColor: newColor }]}>
                 <Ionicons name={icon as any} size={24} color={newIcon === icon ? newColor : colors.textMuted} />
               </Pressable>
             ))}
@@ -342,17 +342,17 @@ export function HabitsScreen({ navigation }: any) {
           <Text style={styles.modalLabel}>Color</Text>
           <View style={styles.colorRow}>
             {HABIT_COLORS.map((c) => (
-              <Pressable key={c} onPress={() => setNewColor(c)} style={[styles.colorSwatch, { backgroundColor: c }, newColor === c && styles.colorSwatchSelected]} />
+              <Pressable accessibilityRole="button" key={c} onPress={() => setNewColor(c)} style={[styles.colorSwatch, { backgroundColor: c }, newColor === c && styles.colorSwatchSelected]} />
             ))}
           </View>
 
           <Text style={styles.modalLabel}>Assign To (Personal)</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 24 }}>
-            <Pressable onPress={() => setNewMemberId(null)} style={[styles.assignChip, !newMemberId && styles.assignChipActive]}>
+            <Pressable accessibilityRole="button" onPress={() => setNewMemberId(null)} style={[styles.assignChip, !newMemberId && styles.assignChipActive]}>
               <Text style={styles.assignChipLabel}>Family</Text>
             </Pressable>
             {members.map((m) => (
-              <Pressable key={m.id} onPress={() => setNewMemberId(m.id)} style={[styles.assignChip, newMemberId === m.id && styles.assignChipActive]}>
+              <Pressable accessibilityRole="button" key={m.id} onPress={() => setNewMemberId(m.id)} style={[styles.assignChip, newMemberId === m.id && styles.assignChipActive]}>
                 <Avatar name={m.name} color={m.avatarColor} size={28} />
                 <Text style={styles.assignChipLabel}>{m.name.split(' ')[0]}</Text>
               </Pressable>

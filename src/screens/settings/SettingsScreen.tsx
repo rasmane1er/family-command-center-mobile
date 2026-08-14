@@ -445,13 +445,13 @@ export function SettingsScreen({ navigation }: any) {
   const screenHeader = (
     <LinearGradient colors={['#0F2952', '#16476E']} style={[s.header, { paddingTop: insets.top + 12 }]}>
       <View style={s.headerTop}>
-        <Pressable onPress={() => navigation.goBack()} style={s.back}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={s.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <Text style={s.headerTitle}>{t('settings.title')}</Text>
         <View style={{ width: 40 }} />
       </View>
-      <Pressable style={s.profileRow} onPress={() => navigation.navigate('Profile')}>
+      <Pressable accessibilityRole="button" style={s.profileRow} onPress={() => navigation.navigate('Profile')}>
         <View style={s.profileAvatar}>
           <Ionicons name={isChild ? 'school' : isGrandparent ? 'heart' : 'home'} size={24} color="#fff" />
         </View>
@@ -467,7 +467,7 @@ export function SettingsScreen({ navigation }: any) {
 
   const screenCompact = (
     <View style={{ backgroundColor: '#0F2952', paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => navigation.goBack()} style={s.back}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={s.back}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={[s.headerTitle, { flex: 1, marginLeft: 12 }]}>{t('settings.title')}</Text>
@@ -515,7 +515,7 @@ export function SettingsScreen({ navigation }: any) {
                 <View style={{ flex: 1, marginLeft: 12 }}>
                   <Text style={s.roleNoticeTitle}>{t('settings.overlappingSubsTitle')}</Text>
                   <Text style={s.roleNoticeText}>{t('settings.overlappingSubsDesc')}</Text>
-                  <Pressable onPress={handleManageSubscription} style={{ marginTop: 8 }}>
+                  <Pressable accessibilityRole="button" onPress={handleManageSubscription} style={{ marginTop: 8 }}>
                     <Text style={{ color: colors.primary, fontWeight: '600' }}>{t('settings.overlappingSubsAction')}</Text>
                   </Pressable>
                 </View>
@@ -539,7 +539,7 @@ export function SettingsScreen({ navigation }: any) {
                           const isSelected = getSelectedPeriod(tier.key as SubscriptionTier) === period;
                           const isNoOpTap = tier.key === currentTier && period === currentPeriod;
                           return (
-                            <Pressable
+                            <Pressable accessibilityRole="button"
                               key={period}
                               disabled={purchasingTier !== null || isNoOpTap}
                               onPress={() => {
@@ -575,11 +575,11 @@ export function SettingsScreen({ navigation }: any) {
                       <Text style={[s.currentBadgeText, { color: colors.success }]}>Current Plan</Text>
                     </View>
                   ) : TIER_ORDER.indexOf(tier.key as SubscriptionTier) < TIER_ORDER.indexOf(currentTier) ? (
-                    <Pressable style={s.downgradeBtnSmall} onPress={() => handleUpgrade(tier.key as SubscriptionTier)}>
+                    <Pressable accessibilityRole="button" style={s.downgradeBtnSmall} onPress={() => handleUpgrade(tier.key as SubscriptionTier)}>
                       <Text style={[s.downgradeBtnText, { color: colors.textMuted }]}>Downgrade</Text>
                     </Pressable>
                   ) : (
-                    <Pressable
+                    <Pressable accessibilityRole="button"
                       style={[s.upgradeBtn, { backgroundColor: colors[tier.colorKey as keyof typeof colors] as string }, purchasingTier === tier.key && s.upgradeBtnDisabled]}
                       disabled={purchasingTier !== null}
                       onPress={() => handleUpgrade(tier.key as SubscriptionTier, getSelectedPeriod(tier.key as SubscriptionTier))}
@@ -601,7 +601,7 @@ export function SettingsScreen({ navigation }: any) {
               </Card>
             ))}
 
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button"
               style={s.restoreBtn}
               activeOpacity={0.7}
               disabled={isRestoring}
@@ -654,7 +654,7 @@ export function SettingsScreen({ navigation }: any) {
             />
           </View>
 
-          <Pressable style={[s.toggleRow, isParent ? s.toggleRowBorder : undefined]} onPress={() => setShowLanguageModal(true)}>
+          <Pressable accessibilityRole="button" style={[s.toggleRow, isParent ? s.toggleRowBorder : undefined]} onPress={() => setShowLanguageModal(true)}>
             <Text style={s.flagIcon}>{currentLanguage.flag}</Text>
             <View style={{ flex: 1, marginLeft: 12 }}>
               <Text style={s.toggleLabel}>{t('settings.language')}</Text>
@@ -685,7 +685,7 @@ export function SettingsScreen({ navigation }: any) {
           )}
 
           {isParent && militaryMode && (
-            <Pressable style={s.toggleRow} onPress={() => navigation.navigate('MilitaryHub')}>
+            <Pressable accessibilityRole="button" style={s.toggleRow} onPress={() => navigation.navigate('MilitaryHub')}>
               <Ionicons name="ribbon-outline" size={20} color="#4A7C59" />
               <View style={{ flex: 1, marginLeft: 12 }}>
                 <Text style={s.toggleLabel}>Military Hub</Text>
@@ -712,7 +712,7 @@ export function SettingsScreen({ navigation }: any) {
           </View>
 
           {!isChild && (
-            <Pressable style={[s.toggleRow, s.toggleRowBorder]} onPress={() => navigation.navigate('MfaSettings')}>
+            <Pressable accessibilityRole="button" style={[s.toggleRow, s.toggleRowBorder]} onPress={() => navigation.navigate('MfaSettings')}>
               <Ionicons name="shield-checkmark-outline" size={20} color={mfaEnabled ? '#34C759' : colors.primary} />
               <View style={{ flex: 1, marginLeft: 12 }}>
                 <Text style={s.toggleLabel}>Two-Factor Authentication</Text>
@@ -723,7 +723,7 @@ export function SettingsScreen({ navigation }: any) {
           )}
 
           {!isChild && (
-            <Pressable style={[s.toggleRow, s.toggleRowBorder]} onPress={handleExportData} disabled={exportingData}>
+            <Pressable accessibilityRole="button" style={[s.toggleRow, s.toggleRowBorder]} onPress={handleExportData} disabled={exportingData}>
               <Ionicons name="download-outline" size={20} color={colors.primary} />
               <View style={{ flex: 1, marginLeft: 12 }}>
                 <Text style={s.toggleLabel}>Export My Data</Text>
@@ -757,7 +757,7 @@ export function SettingsScreen({ navigation }: any) {
         </Card>
 
         {/* ── REFER & EARN ── */}
-        <Pressable
+        <Pressable accessibilityRole="button"
           style={({ pressed }) => [s.referBanner, { opacity: pressed ? 0.88 : 1 }]}
           onPress={() => navigation.navigate('ReferAndEarn')}
         >
@@ -784,7 +784,7 @@ export function SettingsScreen({ navigation }: any) {
             { icon: 'star-outline' as const, label: t('settings.rateApp'), onPress: handleRateApp },
             { icon: 'share-outline' as const, label: t('settings.shareApp'), onPress: handleShareApp },
           ].map((item, index, arr) => (
-            <Pressable key={item.label} style={[s.toggleRow, index < arr.length - 1 && s.toggleRowBorder]} onPress={item.onPress}>
+            <Pressable accessibilityRole="button" key={item.label} style={[s.toggleRow, index < arr.length - 1 && s.toggleRowBorder]} onPress={item.onPress}>
               <Ionicons name={item.icon} size={20} color={colors.primary} />
               <Text style={[s.toggleLabel, { marginLeft: 12, flex: 1 }]}>{item.label}</Text>
               <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
@@ -796,7 +796,7 @@ export function SettingsScreen({ navigation }: any) {
         <Text style={s.sectionTitle}>Account</Text>
         {currentTier !== 'free' && (
           <Card style={s.settingCard} variant="elevated">
-            <Pressable onPress={handleManageSubscription} style={s.toggleRow}>
+            <Pressable accessibilityRole="button" onPress={handleManageSubscription} style={s.toggleRow}>
               <Ionicons name="card-outline" size={20} color={colors.primary} />
               <Text style={[s.toggleLabel, { marginLeft: 12, flex: 1 }]}>{t('settings.manageSubscription')}</Text>
               <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
@@ -804,14 +804,14 @@ export function SettingsScreen({ navigation }: any) {
           </Card>
         )}
         <Card style={s.settingCard} variant="elevated">
-          <Pressable onPress={handleSignOut} style={s.toggleRow}>
+          <Pressable accessibilityRole="button" onPress={handleSignOut} style={s.toggleRow}>
             <Ionicons name="log-out-outline" size={20} color={colors.danger} />
             <Text style={[s.toggleLabel, { marginLeft: 12, flex: 1, color: colors.danger }]}>Sign Out</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </Pressable>
         </Card>
         <Card style={s.settingCard} variant="elevated">
-          <Pressable onPress={handleDeleteAccount} style={s.toggleRow} disabled={isDeletingAccount}>
+          <Pressable accessibilityRole="button" onPress={handleDeleteAccount} style={s.toggleRow} disabled={isDeletingAccount}>
             {isDeletingAccount ? (
               <ActivityIndicator size="small" color={colors.danger} />
             ) : (
@@ -835,7 +835,7 @@ export function SettingsScreen({ navigation }: any) {
         <View style={s.modalContainer}>
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>{t('settings.selectLanguage')}</Text>
-            <Pressable onPress={() => setShowLanguageModal(false)} style={s.modalClose}>
+            <Pressable accessibilityRole="button" onPress={() => setShowLanguageModal(false)} style={s.modalClose}>
               <Ionicons name="close" size={24} color={colors.text} />
             </Pressable>
           </View>
@@ -843,7 +843,7 @@ export function SettingsScreen({ navigation }: any) {
             {LANGUAGES.map((lang) => {
               const isSelected = (settings.language || 'en') === lang.code;
               return (
-                <TouchableOpacity key={lang.code}
+                <TouchableOpacity accessibilityRole="button" key={lang.code}
                   style={[s.languageRow, isSelected && s.languageRowActive]}
                   onPress={() => handleSelectLanguage(lang.code)} activeOpacity={0.7}>
                   <Text style={s.languageFlag}>{lang.flag}</Text>

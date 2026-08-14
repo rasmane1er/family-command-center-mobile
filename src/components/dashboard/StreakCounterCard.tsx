@@ -24,7 +24,7 @@ export function StreakCounterCard({ onPress }: { onPress?: () => void }) {
   const flameColor = best.streak >= 14 ? '#ef4444' : best.streak >= 7 ? '#f97316' : '#fbbf24';
 
   return (
-    <Pressable style={styles.card} onPress={onPress}>
+    <Pressable accessibilityRole="button" style={styles.card} onPress={onPress}>
       {/* Flame + streak count */}
       <View style={[styles.flameBadge, { backgroundColor: flameColor + '18' }]}>
         <Text style={styles.flameEmoji}>🔥</Text>

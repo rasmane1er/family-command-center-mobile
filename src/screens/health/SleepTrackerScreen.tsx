@@ -175,7 +175,7 @@ export function SleepTrackerScreen({ navigation: navProp }: any) {
         onBack={() => navigation.goBack()}
         colors={['#1A1A2E', '#16213E', '#0F3460']}
         rightAction={
-          <Pressable
+          <Pressable accessibilityRole="button"
             onPress={() => {
               setModalMemberId(selectedMemberId);
               setShowModal(true);
@@ -213,7 +213,7 @@ export function SleepTrackerScreen({ navigation: navProp }: any) {
           const avg = getAverageSleep(m.id);
           const isActive = m.id === selectedMemberId;
           return (
-            <Pressable
+            <Pressable accessibilityRole="button"
               key={m.id}
               onPress={() => setSelectedMemberId(m.id)}
               style={[s.memberTab, isActive && s.memberTabActive]}
@@ -234,11 +234,11 @@ export function SleepTrackerScreen({ navigation: navProp }: any) {
 
   const screenCompact = (
     <View style={{ backgroundColor: '#1A1A2E', paddingTop: insets.top, paddingBottom: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => navigation.goBack()} style={s.addBtn}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={s.addBtn}>
         <Ionicons name="arrow-back" size={20} color="#fff" />
       </Pressable>
       <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700', flex: 1, marginLeft: 8 }}>{t('sleep.title')}</Text>
-      <Pressable onPress={() => { setModalMemberId(selectedMemberId); setShowModal(true); }} style={s.addBtn}>
+      <Pressable accessibilityRole="button" onPress={() => { setModalMemberId(selectedMemberId); setShowModal(true); }} style={s.addBtn}>
         <Ionicons name="add" size={22} color="#fff" />
       </Pressable>
     </View>
@@ -374,7 +374,7 @@ export function SleepTrackerScreen({ navigation: navProp }: any) {
                       size="sm"
                     />
                     <Text style={[s.logQualityLabel, { color: qc.color }]}>{t(`health.screens.sleepTracker.${qc.labelKey}`)}</Text>
-                    <Pressable onPress={() => handleDelete(log.id)} style={s.deleteBtn}>
+                    <Pressable accessibilityRole="button" onPress={() => handleDelete(log.id)} style={s.deleteBtn}>
                       <Ionicons name="trash-outline" size={14} color={colors.textMuted} />
                     </Pressable>
                   </View>
@@ -392,7 +392,7 @@ export function SleepTrackerScreen({ navigation: navProp }: any) {
         <View style={s.modalContainer}>
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>{t('health.screens.sleepTracker.logSleepTitle')}</Text>
-            <Pressable onPress={() => setShowModal(false)}>
+            <Pressable accessibilityRole="button" onPress={() => setShowModal(false)}>
               <Ionicons name="close" size={24} color={colors.text} />
             </Pressable>
           </View>
@@ -400,7 +400,7 @@ export function SleepTrackerScreen({ navigation: navProp }: any) {
             <Text style={s.fieldLabel}>{t('health.screens.sleepTracker.familyMemberLabel')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.modalMemberScroll}>
               {members.map((m) => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={m.id}
                   onPress={() => setModalMemberId(m.id)}
                   style={[
@@ -417,7 +417,7 @@ export function SleepTrackerScreen({ navigation: navProp }: any) {
             </ScrollView>
 
             <Text style={s.fieldLabel}>{t('health.screens.sleepTracker.dateLabel')}</Text>
-            <TextInput
+            <TextInput accessibilityLabel={t('health.screens.sleepTracker.datePlaceholder')}
               style={s.textInput}
               value={modalDate}
               onChangeText={setModalDate}
@@ -426,7 +426,7 @@ export function SleepTrackerScreen({ navigation: navProp }: any) {
             />
 
             <Text style={s.fieldLabel}>{t('health.screens.sleepTracker.bedtimeLabel')}</Text>
-            <TextInput
+            <TextInput accessibilityLabel={t('health.screens.sleepTracker.bedtimePlaceholder')}
               style={s.textInput}
               value={modalBedtime}
               onChangeText={setModalBedtime}
@@ -436,7 +436,7 @@ export function SleepTrackerScreen({ navigation: navProp }: any) {
             />
 
             <Text style={s.fieldLabel}>{t('health.screens.sleepTracker.wakeTimeLabel')}</Text>
-            <TextInput
+            <TextInput accessibilityLabel={t('health.screens.sleepTracker.wakeTimePlaceholder')}
               style={s.textInput}
               value={modalWakeTime}
               onChangeText={setModalWakeTime}
@@ -459,7 +459,7 @@ export function SleepTrackerScreen({ navigation: navProp }: any) {
               {([1, 2, 3, 4, 5] as SleepQuality[]).map((q) => {
                 const qc = QUALITY_CONFIG[q];
                 return (
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     key={q}
                     onPress={() => setModalQuality(q)}
                     style={[
@@ -477,7 +477,7 @@ export function SleepTrackerScreen({ navigation: navProp }: any) {
             </View>
 
             <Text style={s.fieldLabel}>{t('health.screens.sleepTracker.notesLabel')}</Text>
-            <TextInput
+            <TextInput accessibilityLabel={t('health.screens.sleepTracker.notesPlaceholder')}
               style={[s.textInput, s.textInputMultiline]}
               value={modalNotes}
               onChangeText={setModalNotes}
@@ -487,7 +487,7 @@ export function SleepTrackerScreen({ navigation: navProp }: any) {
               numberOfLines={3}
             />
 
-            <Pressable style={s.saveBtn} onPress={handleAddLog}>
+            <Pressable accessibilityRole="button" style={s.saveBtn} onPress={handleAddLog}>
               <LinearGradient
                 colors={['#1A1A2E', '#0F3460']}
                 style={s.saveBtnGradient}

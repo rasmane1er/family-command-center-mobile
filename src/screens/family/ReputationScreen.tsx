@@ -50,7 +50,7 @@ export function ReputationScreen({ navigation }: any) {
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 }]}>
         <LinearGradient colors={['#0D47A1', '#1565C0']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
           <View style={styles.headerTop}>
-            <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+            <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
               <Ionicons name="arrow-back" size={24} color="#fff" />
             </Pressable>
             <Text style={styles.headerTitle}>Family Reputation Score</Text>
@@ -65,7 +65,7 @@ export function ReputationScreen({ navigation }: any) {
               if (!member) return null;
               const isSelected = (selectedMember ?? sorted[0].memberId) === score.memberId;
               return (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={score.memberId}
                   onPress={() => setSelectedMember(score.memberId)}
                   style={[styles.memberChip, isSelected && styles.memberChipActive]}

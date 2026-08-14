@@ -79,7 +79,7 @@ export function WeeklyReportScreen({ navigation: navProp }: any) {
   const screenHeader = (
     <LinearGradient colors={['#0D1B2A', '#0F2952', '#1E4A8A']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
       <View style={styles.headerRow}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.back}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <View style={{ flex: 1 }}>
@@ -89,10 +89,10 @@ export function WeeklyReportScreen({ navigation: navProp }: any) {
           </Text>
         </View>
         <View style={styles.weekNav}>
-          <Pressable onPress={() => setWeekOffset(weekOffset + 1)} style={styles.weekBtn}>
+          <Pressable accessibilityRole="button" onPress={() => setWeekOffset(weekOffset + 1)} style={styles.weekBtn}>
             <Ionicons name="chevron-back" size={18} color="rgba(255,255,255,0.7)" />
           </Pressable>
-          <Pressable onPress={() => setWeekOffset(Math.max(0, weekOffset - 1))} style={styles.weekBtn}>
+          <Pressable accessibilityRole="button" onPress={() => setWeekOffset(Math.max(0, weekOffset - 1))} style={styles.weekBtn}>
             <Ionicons name="chevron-forward" size={18} color={weekOffset === 0 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.7)'} />
           </Pressable>
         </View>
@@ -139,7 +139,7 @@ export function WeeklyReportScreen({ navigation: navProp }: any) {
         justifyContent: 'space-between',
       }}
     >
-      <Pressable onPress={() => navigation.goBack()} style={{ marginRight: 12 }}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={{ marginRight: 12 }}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </Pressable>
       <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800', flex: 1 }}>Weekly Report</Text>
@@ -352,7 +352,7 @@ export function WeeklyReportScreen({ navigation: navProp }: any) {
           ))}
         </Card>
 
-        <Pressable
+        <Pressable accessibilityRole="button"
           onPress={() => Alert.alert('Share Weekly Report', `Family Health Score: ${healthScore.overall}/100\nTasks Completed: ${completedTasks}\nSavings Rate: ${Math.round(savingsRate * 100)}%\n\nShare this week's family report with members?`, [
             { text: 'Cancel', style: 'cancel' },
             { text: 'Share', onPress: () => Alert.alert('Shared!', 'Weekly report has been shared with your family.') },
