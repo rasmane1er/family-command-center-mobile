@@ -2,15 +2,22 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { useAppStore } from '../store/useAppStore';
+import { useAuthStore } from '../store/useAuthStore';
 
 // Matches the "Auto-Lock" setting's subtitle ("Lock app after 5 minutes of
 // inactivity"). Only meaningful when biometricLock is also on — see below.
 const AUTO_LOCK_DELAY_MS = 5 * 60 * 1000;
 
 export function useBiometricLock() {
-  const biometricLock = useAppStore((s) => s.settings.biometricLock);
+  const biometricLockSetting = useAppStore((s) => s.settings.biometricLock);
   // Defaults to true, matching useAppStore's defaultSettings.
   const autoLock = useAppStore((s) => s.settings.autoLock ?? true);
+  // The setting persists across sign-out (it lives in useAppStore, not
+  // useAuthStore), so without this a signed-out device — e.g. someone else's
+  // Face ID enrolled, about to sign into their own account — would be locked
+  // out of the sign-in screen itself, which has no session to protect.
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const biometricLock = biometricLockSetting && isAuthenticated;
   const [isLocked, setIsLocked] = useState(false);
   const appState = useRef<AppStateStatus>(AppState.currentState);
   const authenticating = useRef(false);
