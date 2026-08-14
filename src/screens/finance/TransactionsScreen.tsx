@@ -190,11 +190,21 @@ export function TransactionsScreen({ navigation }: { navigation: any }) {
   return (
     <View style={s.container}>
       <View style={s.header}>
-        <Pressable onPress={() => navigation.goBack()} style={s.backBtn}>
+        <Pressable
+          onPress={() => navigation.goBack()}
+          style={s.backBtn}
+          accessibilityRole="button"
+          accessibilityLabel={t('common.back')}
+        >
           <Ionicons name="chevron-back" size={22} color="#1E3A5F" />
         </Pressable>
         <Text style={s.headerTitle}>{t('transactions.title')}</Text>
-        <Pressable onPress={() => navigation.navigate('ReceiptScanner')} style={s.cameraBtn}>
+        <Pressable
+          onPress={() => navigation.navigate('ReceiptScanner')}
+          style={s.cameraBtn}
+          accessibilityRole="button"
+          accessibilityLabel={t('transactions.scanReceipt')}
+        >
           <Ionicons name="camera-outline" size={22} color="#1E3A5F" />
         </Pressable>
       </View>

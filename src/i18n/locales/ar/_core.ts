@@ -2446,6 +2446,7 @@ export default {
     income: 'دخل',
     noTransactions: 'لا توجد معاملات بعد',
     searchTransactions: 'ابحث في المعاملات…',
+    scanReceipt: 'مسح الإيصال',
     title: 'المعاملات',
   },
   bills: {
@@ -2544,6 +2545,9 @@ export default {
       lastUpdated: 'آخر تحديث {{date}}',
       maybeLater: 'ربما لاحقاً',
       permissionNeededPhotoMsg: 'اسمح بالوصول إلى الصور لتحديد صورة الملف الشخصي.',
+      changePhoto: 'تغيير صورة الملف الشخصي',
+      showPassword: 'إظهار كلمة المرور',
+      hidePassword: 'إخفاء كلمة المرور',
       permissionNeededTitle: 'الإذن مطلوب',
       plaidConnectBank: 'ربط حساب بنكي',
       plaidConnectedMsg: 'تم ربط {{institutionName}} بنجاح. جارٍ مزامنة المعاملات…',

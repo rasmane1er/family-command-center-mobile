@@ -640,6 +640,7 @@ export default {
     income: '収入', expense: '支出', amount: '金額', description: '説明',
     category: 'カテゴリー', date: '日付', filter: 'フィルター', all: 'すべて',
     searchTransactions: '取引を検索…',
+    scanReceipt: '領収書をスキャン',
   },
   subscriptions: {
     title: 'サブスクリプション', addSubscription: 'サブスクリプションを追加', noSubscriptions: 'サブスクリプションなし',
@@ -1503,6 +1504,9 @@ export default {
       maybeLater: 'あとで',
       permissionNeededTitle: '許可が必要です',
       permissionNeededPhotoMsg: 'プロフィール写真を設定するには、写真へのアクセスを許可してください。',
+      changePhoto: 'プロフィール写真を変更',
+      showPassword: 'パスワードを表示',
+      hidePassword: 'パスワードを非表示',
       errorBoundaryTitle: '問題が発生しました',
       errorBoundaryMsg: '予期しないエラーが発生しました。下をタップして再試行してください。',
       tryAgain: '再試行',

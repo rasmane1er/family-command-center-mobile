@@ -76,7 +76,12 @@ const GoalCard = React.memo(function GoalCard({
         <View style={{ flex: 1, marginLeft: 12 }}>
           <View style={styles.goalTitleRow}>
             <Text style={styles.goalTitle}>{goal.title}</Text>
-            <Pressable onPress={() => onDelete(goal.id, goal.title)} style={styles.deleteBtn}>
+            <Pressable
+              onPress={() => onDelete(goal.id, goal.title)}
+              style={styles.deleteBtn}
+              accessibilityRole="button"
+              accessibilityLabel={`${t('common.delete')} ${goal.title}`}
+            >
               <Ionicons name="trash-outline" size={15} color={colors.danger} />
             </Pressable>
           </View>
@@ -127,6 +132,9 @@ const GoalCard = React.memo(function GoalCard({
                 onToggleMilestone(goal.id, milestone.id);
               }}
               style={styles.milestoneRow}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: milestone.isDone }}
+              accessibilityLabel={milestone.text}
             >
               <View style={[styles.milestoneCheckbox, milestone.isDone && { backgroundColor: goal.color, borderColor: goal.color }]}>
                 {milestone.isDone && <Ionicons name="checkmark" size={12} color="#fff" />}
@@ -141,7 +149,12 @@ const GoalCard = React.memo(function GoalCard({
 
       {/* Complete button when 100% */}
       {goal.progress >= 100 && !goal.isCompleted && showComplete && (
-        <Pressable onPress={() => onComplete(goal)} style={[styles.completeBtn, { backgroundColor: goal.color }]}>
+        <Pressable
+          onPress={() => onComplete(goal)}
+          style={[styles.completeBtn, { backgroundColor: goal.color }]}
+          accessibilityRole="button"
+          accessibilityLabel={t('family.screens.familyGoals.markComplete')}
+        >
           <Ionicons name="trophy" size={16} color="#fff" />
           <Text style={styles.completeBtnText}>{t('family.screens.familyGoals.markComplete')}</Text>
         </Pressable>

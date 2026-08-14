@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, TextInput, Text, StyleSheet, ViewStyle, TextInputProps, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
 
@@ -11,11 +12,15 @@ interface Props extends TextInputProps {
   leftIcon?: keyof typeof Ionicons.glyphMap;
   rightIcon?: keyof typeof Ionicons.glyphMap;
   onRightIconPress?: () => void;
+  /** Screen-reader label for the rightIcon button — its meaning varies per
+   * call site (clear, calendar picker, etc.), so there's no safe default. */
+  rightIconAccessibilityLabel?: string;
   containerStyle?: ViewStyle;
   isPassword?: boolean;
 }
 
-export function Input({ label, error, hint, leftIcon, rightIcon, onRightIconPress, containerStyle, isPassword, style, ...props }: Props) {
+export function Input({ label, error, hint, leftIcon, rightIcon, onRightIconPress, rightIconAccessibilityLabel, containerStyle, isPassword, style, ...props }: Props) {
+  const { t } = useTranslation();
   const [focused, setFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -36,6 +41,7 @@ export function Input({ label, error, hint, leftIcon, rightIcon, onRightIconPres
           secureTextEntry={isPassword && !showPassword}
           onFocus={(e) => { setFocused(true); props.onFocus?.(e); }}
           onBlur={(e) => { setFocused(false); props.onBlur?.(e); }}
+          accessibilityLabel={label ?? props.placeholder}
           style={[
             styles.input,
             leftIcon ? styles.inputWithLeft : null,
@@ -45,11 +51,21 @@ export function Input({ label, error, hint, leftIcon, rightIcon, onRightIconPres
           placeholderTextColor={colors.textMuted}
         />
         {isPassword ? (
-          <Pressable onPress={() => setShowPassword(!showPassword)} style={styles.rightIcon}>
+          <Pressable
+            onPress={() => setShowPassword(!showPassword)}
+            style={styles.rightIcon}
+            accessibilityRole="button"
+            accessibilityLabel={showPassword ? t('screens.shared.hidePassword') : t('screens.shared.showPassword')}
+          >
             <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={colors.textMuted} />
           </Pressable>
         ) : rightIcon ? (
-          <Pressable onPress={onRightIconPress} style={styles.rightIcon}>
+          <Pressable
+            onPress={onRightIconPress}
+            style={styles.rightIcon}
+            accessibilityRole="button"
+            accessibilityLabel={rightIconAccessibilityLabel}
+          >
             <Ionicons name={rightIcon} size={20} color={colors.textMuted} />
           </Pressable>
         ) : null}

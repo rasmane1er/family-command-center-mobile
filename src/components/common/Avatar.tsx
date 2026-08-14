@@ -111,7 +111,12 @@ export function Avatar({
   return (
     <View style={[styles.wrapper, style]}>
       {isEditable ? (
-        <TouchableOpacity onPress={handlePress} activeOpacity={0.8}>
+        <TouchableOpacity
+          onPress={handlePress}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel={t('screens.shared.changePhoto')}
+        >
           {inner}
         </TouchableOpacity>
       ) : (

@@ -98,7 +98,7 @@ export function WelcomeScreen({ navigation }: any) {
 
         <View style={styles.ctaArea}>
           <Button title={t('onboarding.screens.welcome.setupButton')} onPress={handleStartSetup} fullWidth size="lg" />
-          <Pressable onPress={handleJoinFamily} style={[styles.demoButton, styles.joinButton]}>
+          <Pressable onPress={handleJoinFamily} style={[styles.demoButton, styles.joinButton]} accessibilityRole="button">
             <Ionicons name="people-outline" size={20} color={colors.primary} />
             <Text style={styles.demoText}>Join an Existing Family</Text>
           </Pressable>
@@ -107,7 +107,7 @@ export function WelcomeScreen({ navigation }: any) {
             <Text style={styles.dividerText}>{t('onboarding.screens.welcome.orDivider')}</Text>
             <View style={styles.dividerLine} />
           </View>
-          <Pressable onPress={handleDemoMode} style={styles.demoButton}>
+          <Pressable onPress={handleDemoMode} style={styles.demoButton} accessibilityRole="button">
             <Ionicons name="play-circle-outline" size={20} color={colors.primary} />
             <Text style={styles.demoText}>{t('onboarding.screens.welcome.demoButton')}</Text>
           </Pressable>

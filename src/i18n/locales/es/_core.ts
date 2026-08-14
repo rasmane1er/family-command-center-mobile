@@ -606,6 +606,7 @@ export default {
     income: 'Ingresos', expense: 'Gasto', amount: 'Monto', description: 'Descripción',
     category: 'Categoría', date: 'Fecha', filter: 'Filtrar', all: 'Todos',
     searchTransactions: 'Buscar transacciones…',
+    scanReceipt: 'Escanear recibo',
   },
   subscriptions: {
     title: 'Suscripciones', addSubscription: 'Agregar suscripción', noSubscriptions: 'Sin suscripciones',
@@ -1433,6 +1434,9 @@ export default {
       maybeLater: 'Quizás después',
       permissionNeededTitle: 'Permiso necesario',
       permissionNeededPhotoMsg: 'Permite el acceso a fotos para establecer una foto de perfil.',
+      changePhoto: 'Cambiar foto de perfil',
+      showPassword: 'Mostrar contraseña',
+      hidePassword: 'Ocultar contraseña',
       errorBoundaryTitle: 'Algo salió mal',
       errorBoundaryMsg: 'Ocurrió un error inesperado. Toca abajo para volver a intentarlo.',
       tryAgain: 'Reintentar',

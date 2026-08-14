@@ -44,6 +44,7 @@ export default {
     income: 'Income', expense: 'Expense', amount: 'Amount', description: 'Description',
     category: 'Category', date: 'Date', filter: 'Filter', all: 'All',
     searchTransactions: 'Search transactions…',
+    scanReceipt: 'Scan receipt',
   },
   subscriptions: {
     title: 'Subscriptions', addSubscription: 'Add Subscription', noSubscriptions: 'No subscriptions yet',

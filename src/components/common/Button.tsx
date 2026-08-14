@@ -58,6 +58,9 @@ export function Button({
       <Pressable
         onPress={onPress}
         disabled={disabled || loading}
+        accessibilityRole="button"
+        accessibilityLabel={title}
+        accessibilityState={{ disabled: disabled || loading, busy: loading }}
         style={({ pressed }) => [
           styles.pressable,
           fullWidth && styles.fullWidth,
@@ -104,6 +107,9 @@ export function Button({
       <Pressable
         onPress={onPress}
         disabled={disabled || loading}
+        accessibilityRole="button"
+        accessibilityLabel={title}
+        accessibilityState={{ disabled: disabled || loading, busy: loading }}
         style={({ pressed }) => [
           styles.pressable,
           styles.secondaryBg,
@@ -146,6 +152,9 @@ export function Button({
     <Pressable
       onPress={onPress}
       disabled={disabled || loading}
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      accessibilityState={{ disabled: disabled || loading, busy: loading }}
       style={({ pressed }) => [
         styles.pressable,
         sizeStyle,

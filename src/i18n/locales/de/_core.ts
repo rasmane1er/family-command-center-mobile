@@ -640,6 +640,7 @@ export default {
     income: 'Einkommen', expense: 'Ausgabe', amount: 'Betrag', description: 'Beschreibung',
     category: 'Kategorie', date: 'Datum', filter: 'Filtern', all: 'Alle',
     searchTransactions: 'Transaktionen suchen…',
+    scanReceipt: 'Beleg scannen',
   },
   subscriptions: {
     title: 'Abonnements', addSubscription: 'Abonnement hinzufügen', noSubscriptions: 'Keine Abonnements',
@@ -1429,6 +1430,9 @@ export default {
       maybeLater: 'Vielleicht später',
       permissionNeededTitle: 'Berechtigung erforderlich',
       permissionNeededPhotoMsg: 'Erlauben Sie den Fotozugriff, um ein Profilbild festzulegen.',
+      changePhoto: 'Profilbild ändern',
+      showPassword: 'Passwort anzeigen',
+      hidePassword: 'Passwort ausblenden',
       errorBoundaryTitle: 'Etwas ist schiefgelaufen',
       errorBoundaryMsg: 'Ein unerwarteter Fehler ist aufgetreten. Tippen Sie unten, um es erneut zu versuchen.',
       tryAgain: 'Erneut versuchen',

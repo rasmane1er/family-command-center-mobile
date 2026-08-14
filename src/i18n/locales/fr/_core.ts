@@ -619,6 +619,7 @@ export default {
     income: 'Revenus', expense: 'Dépense', amount: 'Montant', description: 'Description',
     category: 'Catégorie', date: 'Date', filter: 'Filtrer', all: 'Tout',
     searchTransactions: 'Rechercher des transactions…',
+    scanReceipt: 'Scanner le reçu',
   },
   subscriptions: {
     title: 'Abonnements', addSubscription: 'Ajouter un abonnement', noSubscriptions: 'Aucun abonnement',
@@ -1483,6 +1484,9 @@ export default {
       maybeLater: 'Peut-être plus tard',
       permissionNeededTitle: 'Autorisation requise',
       permissionNeededPhotoMsg: "Autorisez l'accès aux photos pour définir une photo de profil.",
+      changePhoto: 'Changer la photo de profil',
+      showPassword: 'Afficher le mot de passe',
+      hidePassword: 'Masquer le mot de passe',
       errorBoundaryTitle: "Une erreur s'est produite",
       errorBoundaryMsg: "Une erreur inattendue s'est produite. Appuyez ci-dessous pour réessayer.",
       tryAgain: 'Réessayer',

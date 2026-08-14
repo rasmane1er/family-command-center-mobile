@@ -640,6 +640,7 @@ export default {
     income: 'Receita', expense: 'Despesa', amount: 'Valor', description: 'Descrição',
     category: 'Categoria', date: 'Data', filter: 'Filtrar', all: 'Todos',
     searchTransactions: 'Pesquisar transações…',
+    scanReceipt: 'Digitalizar recibo',
   },
   subscriptions: {
     title: 'Assinaturas', addSubscription: 'Adicionar assinatura', noSubscriptions: 'Nenhuma assinatura',
@@ -1429,6 +1430,9 @@ export default {
       maybeLater: 'Talvez depois',
       permissionNeededTitle: 'Permissão necessária',
       permissionNeededPhotoMsg: 'Permita o acesso a fotos para definir uma foto de perfil.',
+      changePhoto: 'Alterar foto de perfil',
+      showPassword: 'Mostrar senha',
+      hidePassword: 'Ocultar senha',
       errorBoundaryTitle: 'Algo deu errado',
       errorBoundaryMsg: 'Ocorreu um erro inesperado. Toque abaixo para tentar novamente.',
       tryAgain: 'Tentar novamente',

@@ -614,6 +614,7 @@ export default {
     income: 'Entrate', expense: 'Spesa', amount: 'Importo', description: 'Descrizione',
     category: 'Categoria', date: 'Data', filter: 'Filtra', all: 'Tutto',
     searchTransactions: 'Cerca transazioni…',
+    scanReceipt: 'Scansiona scontrino',
   },
   subscriptions: {
     title: 'Abbonamenti', addSubscription: 'Aggiungi abbonamento', noSubscriptions: 'Nessun abbonamento',
@@ -1450,6 +1451,9 @@ export default {
       maybeLater: 'Forse più tardi',
       permissionNeededTitle: 'Autorizzazione necessaria',
       permissionNeededPhotoMsg: "Consenti l'accesso alle foto per impostare un'immagine del profilo.",
+      changePhoto: 'Cambia foto profilo',
+      showPassword: 'Mostra password',
+      hidePassword: 'Nascondi password',
       errorBoundaryTitle: 'Qualcosa è andato storto',
       errorBoundaryMsg: 'Si è verificato un errore imprevisto. Tocca sotto per riprovare.',
       tryAgain: 'Riprova',

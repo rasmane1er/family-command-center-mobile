@@ -605,6 +605,7 @@ export default {
     income: '수입', expense: '지출', amount: '금액', description: '설명',
     category: '카테고리', date: '날짜', filter: '필터', all: '전체',
     searchTransactions: '거래 검색…',
+    scanReceipt: '영수증 스캔',
   },
   subscriptions: {
     title: '구독', addSubscription: '구독 추가', noSubscriptions: '구독 없음',
@@ -1431,6 +1432,9 @@ export default {
       maybeLater: '나중에',
       permissionNeededTitle: '권한이 필요합니다',
       permissionNeededPhotoMsg: '프로필 사진을 설정하려면 사진 접근을 허용하세요.',
+      changePhoto: '프로필 사진 변경',
+      showPassword: '비밀번호 표시',
+      hidePassword: '비밀번호 숨기기',
       errorBoundaryTitle: '문제가 발생했습니다',
       errorBoundaryMsg: '예기치 않은 오류가 발생했습니다. 아래를 눌러 다시 시도하세요.',
       tryAgain: '다시 시도',

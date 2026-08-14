@@ -2035,6 +2035,9 @@ export default {
       lastUpdated: '最后更新于 {{date}}',
       maybeLater: '暂不需要',
       permissionNeededPhotoMsg: '请允许访问照片以设置头像。',
+      changePhoto: '更改头像',
+      showPassword: '显示密码',
+      hidePassword: '隐藏密码',
       permissionNeededTitle: '需要权限',
       plaidConnectBank: '连接银行账户',
       plaidConnectedMsg: '{{institutionName}} 已成功关联，正在同步交易记录…',
@@ -2108,6 +2111,7 @@ export default {
     income: '收入',
     noTransactions: '还没有交易记录',
     searchTransactions: '搜索交易记录…',
+    scanReceipt: '扫描收据',
     title: '交易记录',
   },
   weeklyReport: {
