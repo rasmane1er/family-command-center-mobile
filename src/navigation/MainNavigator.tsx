@@ -10,6 +10,7 @@ import HelpSupportScreen from '../screens/settings/HelpSupportScreen';
 import { LiveChatScreen } from '../screens/settings/LiveChatScreen';
 import { PrivacyPolicyScreen } from '../screens/settings/PrivacyPolicyScreen';
 import { TermsOfServiceScreen } from '../screens/settings/TermsOfServiceScreen';
+import { MfaSettingsScreen } from '../screens/settings/MfaSettingsScreen';
 import { ReferAndEarnScreen } from '../screens/settings/ReferAndEarnScreen';
 import { HealthHubScreen } from '../screens/health/HealthHubScreen';
 import { MedicationManagerScreen } from '../screens/health/MedicationManagerScreen';
@@ -199,6 +200,12 @@ export function MainNavigator() {
         name="TermsOfService"
         component={withScreenErrorBoundary(TermsOfServiceScreen)}
         options={{ animation: 'slide_from_right' }}
+      />
+
+      <Stack.Screen
+        name="MfaSettings"
+        component={withScreenErrorBoundary(MfaSettingsScreen)}
+        options={{ headerShown: false, animation: 'slide_from_right' }}
       />
 
       {/* Full-screen map screens — no tab bar */}

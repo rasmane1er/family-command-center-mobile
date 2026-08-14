@@ -8,7 +8,12 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://10.0.0.230:3001"
+        "EXPO_PUBLIC_API_URL": "http://10.0.0.230:3001",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "908895908238-qhah0te4q0sde11co45g7onh43nk52hi.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "908895908238-36h6slllf01ruhl668cfagcv2dl65kdf.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "908895908238-6l7sjfjaj5lji4rh2b38o7r1euam8arl.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_MAPS_IOS_KEY": "AIzaSyCXf-KFuYmIAvNOGmQ3WgnmvCbqjMQoMYs",
+        "EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_KEY": "AIzaSyDhNVbWQT2Sd4EE6rfJFUuf9-cn3f7PQh4"
       }
     },
     "preview": {
@@ -16,7 +21,12 @@
       "channel": "preview",
       "env": {
         "EXPO_PUBLIC_API_URL": "https://REPLACE_WITH_STAGING_API_DOMAIN",
-        "EXPO_PUBLIC_SENTRY_DSN": "https://33a4b674382cbded0ce1de0cfe36cc75@o4511719557496832.ingest.us.sentry.io/4511727955738624"
+        "EXPO_PUBLIC_SENTRY_DSN": "https://33a4b674382cbded0ce1de0cfe36cc75@o4511719557496832.ingest.us.sentry.io/4511727955738624",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "908895908238-qhah0te4q0sde11co45g7onh43nk52hi.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "908895908238-36h6slllf01ruhl668cfagcv2dl65kdf.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "908895908238-6l7sjfjaj5lji4rh2b38o7r1euam8arl.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_MAPS_IOS_KEY": "AIzaSyCXf-KFuYmIAvNOGmQ3WgnmvCbqjMQoMYs",
+        "EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_KEY": "AIzaSyDhNVbWQT2Sd4EE6rfJFUuf9-cn3f7PQh4"
       }
     },
     "production": {
@@ -28,7 +38,12 @@
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://api.myfamilycommandcenter.com",
-        "EXPO_PUBLIC_SENTRY_DSN": "https://33a4b674382cbded0ce1de0cfe36cc75@o4511719557496832.ingest.us.sentry.io/4511727955738624"
+        "EXPO_PUBLIC_SENTRY_DSN": "https://33a4b674382cbded0ce1de0cfe36cc75@o4511719557496832.ingest.us.sentry.io/4511727955738624",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "908895908238-qhah0te4q0sde11co45g7onh43nk52hi.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "908895908238-36h6slllf01ruhl668cfagcv2dl65kdf.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "908895908238-6l7sjfjaj5lji4rh2b38o7r1euam8arl.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_MAPS_IOS_KEY": "AIzaSyCXf-KFuYmIAvNOGmQ3WgnmvCbqjMQoMYs",
+        "EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_KEY": "AIzaSyDhNVbWQT2Sd4EE6rfJFUuf9-cn3f7PQh4"
       }
     }
   },

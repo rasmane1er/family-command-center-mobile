@@ -2,7 +2,7 @@ import React from 'react';
 import { LegalDocumentLayout, LegalSection } from '../../components/common/LegalDocumentLayout';
 import { useTranslation } from 'react-i18next';
 
-const LAST_UPDATED = 'July 3, 2026';
+const LAST_UPDATED = 'August 14, 2026';
 
 const SECTIONS: LegalSection[] = [
   {
@@ -21,7 +21,9 @@ const SECTIONS: LegalSection[] = [
       'Voice input: audio is processed by your device\'s speech-recognition service to convert speech to text for the AI Assistant. We do not store audio recordings.',
       'AI Assistant conversations: the questions you ask and the family context needed to answer them (e.g. upcoming bills, tasks) are sent to our AI provider (Google Gemini or Anthropic, depending on configuration) to generate a response.',
       'Support messages: anything you submit through Help & Support tickets or Live Chat, so our support team can respond to you.',
-      'Push notification tokens: used only to deliver notifications you\'ve enabled (bill reminders, task alerts, etc.).',
+      'Push notification tokens: used only to deliver notifications you\'ve enabled (bill reminders, task alerts, Guardian alerts, etc.).',
+      'Household connections: if you connect with another household through Family Connect, or grant/receive co-parent access to a shared custody calendar, we share the specific profile, calendar, and post information needed to make that connection work with the members of that other household.',
+      'Sign-up verification signals: when you create an account, Cloudflare Turnstile checks device and browser signals to confirm you\'re not a bot. We only receive a pass/fail result — we don\'t see or store the underlying signals ourselves.',
     ],
   },
   {
@@ -34,12 +36,14 @@ const SECTIONS: LegalSection[] = [
       'To send the notifications you\'ve turned on in Settings.',
       'To respond to support tickets and Live Chat messages.',
       'To process subscription purchases through the Apple App Store or Google Play (via RevenueCat) — we never see or store your card number.',
+      'To share the relevant profile, calendar, or post information with a connected household or co-parent, only if and when you choose to connect with them.',
+      'To protect sign-up from bots and automated abuse.',
     ],
   },
   {
     heading: 'Where Your Data Is Stored',
     body: [
-      'Your family\'s data is stored on our backend servers so it can sync in real time across your devices and power the app\'s features. Some data is also cached locally on your device for offline access and performance.',
+      'Your family\'s data is stored on our backend servers so it can sync in real time across your devices and power the app\'s features — this is true for account, family, task, calendar, finance, and other core data, not just optional features. Some data is also cached locally on your device for offline access and performance. Photos and documents you upload are stored in encrypted cloud storage.',
     ],
   },
   {
@@ -51,7 +55,9 @@ const SECTIONS: LegalSection[] = [
       'Plaid, Inc. — to securely connect and read your linked bank accounts.',
       'RevenueCat and the Apple App Store / Google Play — to process and manage subscription purchases.',
       'Google (Gemini) or Anthropic — to generate AI Assistant responses.',
-      'Our hosting and database providers — to store and back up your account data securely.',
+      'Cloudflare — to protect sign-up from bots (Turnstile) and to store uploaded photos and documents securely (R2 storage).',
+      'Railway and our database provider — to host and back up your account data securely.',
+      'Members of a household you\'ve connected with (Family Connect) or granted co-parent access to — only the specific data covered by that connection, and only after you set it up.',
     ],
   },
   {
@@ -61,14 +67,21 @@ const SECTIONS: LegalSection[] = [
     ],
   },
   {
+    heading: 'Family Connect and Co-Parent Sharing',
+    body: [
+      'Family Connect lets you link your household with another household to share posts, updates, and select calendar information; Co-Parent Access lets a parent outside your household see a shared custody calendar. Both are entirely opt-in — connections are only created when you send or accept an invitation, and only the specific information covered by that connection is shared with the other household. You can review and revoke any connection or co-parent grant at any time from Settings.',
+    ],
+  },
+  {
     heading: 'Your Choices and Controls',
     body: ['You stay in control of your family\'s data:'],
     bullets: [
       'Notification preferences can be turned on or off individually in Settings.',
       'Bank accounts can be disconnected at any time from Finance settings.',
       'Location features (geofencing, Guardian tracking) are opt-in and can be disabled at any time.',
+      'Household connections and co-parent access can be reviewed and revoked at any time from Settings.',
       'You can reset all local data and start fresh from Settings → Developer → Reset Local Data.',
-      'You can request deletion of your account and associated server-side data by contacting us through Help & Support.',
+      'You can permanently delete your account and associated server-side data yourself at any time from Settings → Account → Delete Account, or by contacting us through Help & Support.',
     ],
   },
   {

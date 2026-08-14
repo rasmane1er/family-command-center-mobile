@@ -63,8 +63,25 @@ interface AuthState {
   // should treat null as "not yet backend-linked" rather than an error.
   familyId: string | null;
   backendUserId: string | null;
+  // Best-known MFA status for the signed-in account — set from the actual
+  // login path taken (mfa/challenge succeeded vs. plain login succeeded) and
+  // kept in sync by mfaEnable/mfaDisable. Not fetched from a dedicated
+  // status endpoint, so a stale value only self-corrects on the next login.
+  mfaEnabled: boolean;
+  // Set by signIn() when the backend responds mfaRequired instead of real
+  // tokens — AuthNavigator renders MfaChallengeScreen while this is non-null,
+  // same pattern as pendingVerificationEmail below.
+  mfaChallenge: { mfaToken: string } | null;
 
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  // Redeems the mfaChallenge token + a TOTP/backup code for a real session,
+  // identical outcome to a successful signIn().
+  completeMfaChallenge: (code: string) => Promise<{ success: boolean; error?: string }>;
+  cancelMfaChallenge: () => void;
+  mfaSetup: () => Promise<{ success: boolean; secret?: string; qrCodeDataUrl?: string; error?: string }>;
+  mfaEnable: (token: string) => Promise<{ success: boolean; backupCodes?: string[]; error?: string }>;
+  mfaDisable: (password: string, token: string) => Promise<{ success: boolean; error?: string }>;
+  exportMyData: () => Promise<{ success: boolean; data?: unknown; error?: string }>;
   signUp: (data: SignUpData) => Promise<{ success: boolean; error?: string }>;
   // idToken is a Firebase ID token obtained by exchanging the native
   // Google/Apple credential via @react-native-firebase/auth — the backend
@@ -151,6 +168,7 @@ async function persistBackendSession(result: BackendAuthResult): Promise<{ famil
 type LoginResult =
   | ({ ok: true } & { familyId: string; backendUserId: string })
   | { ok: false; needsVerification: true }
+  | { ok: false; mfaRequired: true; mfaToken: string }
   | { ok: false; error: string };
 
 // The backend (real bcrypt-verified account) is now the sole source of
@@ -182,6 +200,31 @@ async function loginWithBackend(email: string, password: string): Promise<LoginR
       return { ok: false, error: typeof body?.message === 'string' ? body.message : 'Could not sign in. Please try again.' };
     }
 
+    if (body?.mfaRequired && typeof body?.mfaToken === 'string') {
+      return { ok: false, mfaRequired: true, mfaToken: body.mfaToken };
+    }
+
+    const data = body as BackendAuthResult;
+    const session = await persistBackendSession(data);
+    return { ok: true, ...session };
+  } catch {
+    return { ok: false, error: 'Could not reach the server. Check your connection and try again.' };
+  }
+}
+
+// Shared by /auth/login's mfaRequired branch and /auth/mfa/challenge — both
+// return the exact same BackendAuthResult shape once a real session starts.
+async function mfaChallengeWithBackend(mfaToken: string, code: string): Promise<LoginResult> {
+  try {
+    const res = await fetch(`${awsConfig.apiBaseUrl}/auth/mfa/challenge`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mfaToken, code }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      return { ok: false, error: typeof body?.error === 'string' ? body.error : 'Invalid code. Please try again.' };
+    }
     const data = body as BackendAuthResult;
     const session = await persistBackendSession(data);
     return { ok: true, ...session };
@@ -251,11 +294,48 @@ async function syncSocialWithBackend(params: {
   }
 }
 
+// Shared by signIn's plain-login success path and completeMfaChallenge's
+// post-challenge success path — both end up in the exact same authenticated
+// state, just via a different number of steps to get there.
+function applySuccessfulAuth(
+  get: () => AuthState,
+  set: (partial: Partial<AuthState>) => void,
+  email: string,
+  backendUserId: string,
+  familyId: string,
+  viaMfaChallenge: boolean,
+): void {
+  const existing = get().user;
+  const user: AuthUser = {
+    id: backendUserId,
+    email,
+    displayName: existing?.email === email && existing.displayName ? existing.displayName : email.split('@')[0],
+    avatarColor: existing?.email === email ? existing.avatarColor : '#4A8FD9',
+    familyRole: existing?.email === email ? existing.familyRole : 'parent',
+    provider: 'email',
+    createdAt: existing?.email === email ? existing.createdAt : new Date().toISOString(),
+  };
+
+  set({
+    isAuthenticated: true,
+    pendingVerificationEmail: null,
+    user,
+    familyId,
+    backendUserId,
+    // Reaching this point via a plain login (no MFA branch taken) means MFA
+    // is off; reaching it via the challenge endpoint means it's on.
+    mfaEnabled: viaMfaChallenge,
+  });
+  fetchFamilyAfterSignIn();
+}
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       isAuthenticated: false,
       pendingVerificationEmail: null,
+      mfaEnabled: false,
+      mfaChallenge: null,
       user: null,
       familyId: null,
       backendUserId: null,
@@ -363,33 +443,73 @@ export const useAuthStore = create<AuthState>()(
             set({ pendingVerificationEmail: normalizedEmail });
             return { success: false, error: 'email_not_verified' };
           }
+          if ('mfaRequired' in result) {
+            set({ mfaChallenge: { mfaToken: result.mfaToken } });
+            return { success: false, error: 'mfa_required' };
+          }
           return { success: false, error: result.error };
         }
 
-        const existing = get().user;
-        const user: AuthUser = {
-          id: result.backendUserId,
-          email: normalizedEmail,
-          // The real name lives on the FamilyMember row, hydrated into
-          // useFamilyStore right below via fetchFamilyAfterSignIn() — this
-          // is only a placeholder until that resolves (or the same value
-          // already persisted locally from a previous session on this device).
-          displayName: existing?.email === normalizedEmail && existing.displayName ? existing.displayName : normalizedEmail.split('@')[0],
-          avatarColor: existing?.email === normalizedEmail ? existing.avatarColor : '#4A8FD9',
-          familyRole: existing?.email === normalizedEmail ? existing.familyRole : 'parent',
-          provider: 'email',
-          createdAt: existing?.email === normalizedEmail ? existing.createdAt : new Date().toISOString(),
-        };
-
-        set({
-          isAuthenticated: true,
-          pendingVerificationEmail: null,
-          user,
-          familyId: result.familyId,
-          backendUserId: result.backendUserId,
-        });
-        fetchFamilyAfterSignIn();
+        applySuccessfulAuth(get, set, normalizedEmail, result.backendUserId, result.familyId, false);
         return { success: true };
+      },
+
+      completeMfaChallenge: async (code) => {
+        const challenge = get().mfaChallenge;
+        if (!challenge) return { success: false, error: 'No pending MFA challenge.' };
+
+        const result = await mfaChallengeWithBackend(challenge.mfaToken, code.trim());
+        if (!result.ok) {
+          return { success: false, error: 'error' in result ? result.error : 'Invalid code. Please try again.' };
+        }
+
+        const email = get().user?.email ?? '';
+        applySuccessfulAuth(get, set, email, result.backendUserId, result.familyId, true);
+        set({ mfaChallenge: null });
+        return { success: true };
+      },
+
+      cancelMfaChallenge: () => set({ mfaChallenge: null }),
+
+      mfaSetup: async () => {
+        try {
+          const res = await apiRequest<{ secret: string; qrCodeDataUrl: string }>('/auth/mfa/setup', { method: 'POST' });
+          return { success: true, secret: res.secret, qrCodeDataUrl: res.qrCodeDataUrl };
+        } catch (err) {
+          return { success: false, error: err instanceof Error ? err.message : 'Could not start MFA setup.' };
+        }
+      },
+
+      mfaEnable: async (token) => {
+        try {
+          const res = await apiRequest<{ enabled: boolean; backupCodes: string[] }>('/auth/mfa/enable', {
+            method: 'POST',
+            body: JSON.stringify({ token }),
+          });
+          set({ mfaEnabled: true });
+          return { success: true, backupCodes: res.backupCodes };
+        } catch {
+          return { success: false, error: 'Invalid code. Please try again.' };
+        }
+      },
+
+      mfaDisable: async (password, token) => {
+        try {
+          await apiRequest('/auth/mfa/disable', { method: 'POST', body: JSON.stringify({ password, token }) });
+          set({ mfaEnabled: false });
+          return { success: true };
+        } catch {
+          return { success: false, error: 'Could not disable MFA — check your password and code.' };
+        }
+      },
+
+      exportMyData: async () => {
+        try {
+          const data = await apiRequest('/auth/export-data');
+          return { success: true, data };
+        } catch {
+          return { success: false, error: 'Could not export your data. Please try again.' };
+        }
       },
 
       signInWithSocial: async (userData, idToken) => {
@@ -538,6 +658,7 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
         familyId: state.familyId,
         backendUserId: state.backendUserId,
+        mfaEnabled: state.mfaEnabled,
       }),
     }
   )

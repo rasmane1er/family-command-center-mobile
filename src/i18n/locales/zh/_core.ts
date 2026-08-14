@@ -1396,6 +1396,8 @@ export default {
       },
       signIn: {
         appleNativeBuildMsg: 'Apple登录需要原生构建',
+        appleAndroidUnsupportedTitle: 'Android上暂不可用',
+        appleAndroidUnsupportedMsg: 'Apple登录目前在Android上不可用。请改用电子邮件或Google登录。',
         appleSignInFailedMsg: 'Apple登录失败',
         appleSignInFailedTitle: 'Apple登录失败',
         biometricButton: '使用Face ID / Touch ID',

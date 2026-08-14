@@ -1030,6 +1030,8 @@ export default {
         ok: 'OK',
         googleNativeBuildMsg: 'Googleログインにはネイティブビルドが必要です',
         appleNativeBuildMsg: 'Appleログインにはネイティブビルドが必要です',
+        appleAndroidUnsupportedTitle: 'Androidでは利用できません',
+        appleAndroidUnsupportedMsg: 'Appleでのサインインは現在Androidでは利用できません。メールまたはGoogleをご利用ください。',
         googleProfileErrorMsg: 'Googleプロフィールを取得できませんでした',
         appleSignInFailedMsg: 'Appleログインに失敗しました',
         nativeBuildRequiredTitle: 'ネイティブビルドが必要',

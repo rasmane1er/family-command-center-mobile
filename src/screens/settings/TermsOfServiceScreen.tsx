@@ -2,7 +2,7 @@ import React from 'react';
 import { LegalDocumentLayout, LegalSection } from '../../components/common/LegalDocumentLayout';
 import { useTranslation } from 'react-i18next';
 
-const LAST_UPDATED = 'July 3, 2026';
+const LAST_UPDATED = 'August 14, 2026';
 
 const SECTIONS: LegalSection[] = [
   {
@@ -49,6 +49,12 @@ const SECTIONS: LegalSection[] = [
     ],
   },
   {
+    heading: 'Family Connect and Household Connections',
+    body: [
+      'Family Connect and Co-Parent Access let you share posts, updates, or a custody calendar with another household you choose to connect with. You\'re responsible for only connecting with people you trust and for what you choose to share with a connected household — once shared, that household\'s members can see it under their own account. We aren\'t responsible for how a connected household uses information you\'ve chosen to share with them. You can revoke a connection at any time, which stops future sharing but does not retroactively remove information already visible to that household.',
+    ],
+  },
+  {
     heading: 'Your Content',
     body: [
       'You retain ownership of the content you add to the app — family data, photos, documents, journal entries, and so on. By using features like the AI Assistant or support chat, you\'re allowing us to process that content as needed to provide the feature (for example, sending relevant family context to our AI provider to generate a response).',
@@ -61,12 +67,13 @@ const SECTIONS: LegalSection[] = [
       'Use the app for any unlawful purpose, or to monitor or track a family member without their knowledge where that would be illegal in your jurisdiction (for example, tracking an adult\'s device without their consent).',
       'Attempt to reverse-engineer, disrupt, or gain unauthorized access to the app or its backend services.',
       'Upload content that infringes someone else\'s rights or that you don\'t have the right to share.',
+      'Use Family Connect or Co-Parent Access to connect with, or share family data with, anyone outside your trusted circle of family and co-parents.',
     ],
   },
   {
     heading: 'Termination',
     body: [
-      'You can stop using the app and delete your account at any time by contacting us through Help & Support. We may suspend or terminate accounts that violate these terms or that we believe are being used fraudulently or unlawfully.',
+      'You can stop using the app and permanently delete your account at any time from Settings → Account → Delete Account, or by contacting us through Help & Support. We may suspend or terminate accounts that violate these terms or that we believe are being used fraudulently or unlawfully.',
     ],
   },
   {

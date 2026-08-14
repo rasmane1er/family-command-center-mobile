@@ -10,6 +10,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import * as StoreReview from 'expo-store-review';
 import * as LocalAuthentication from 'expo-local-authentication';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { i18n } from '../../i18n';
 
@@ -70,7 +72,7 @@ export function SettingsScreen({ navigation }: any) {
 
   const { settings, updateSettings, toggleMilitaryMode } = useAppStore();
   const { tier: currentTier, canAccess } = useSubscription();
-  const { user, signOut, deleteAccount } = useAuthStore();
+  const { user, signOut, deleteAccount, mfaEnabled, exportMyData } = useAuthStore();
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const militaryMode = settings?.militaryMode || false;
 
@@ -348,6 +350,32 @@ export function SettingsScreen({ navigation }: any) {
         [{ text: 'OK' }],
       );
     });
+  };
+
+  const [exportingData, setExportingData] = useState(false);
+
+  // Self-service GDPR/CCPA data export — writes the backend's JSON export to
+  // a temp file and hands it to the OS share sheet so the user can save it
+  // or send it wherever they like, rather than us guessing a destination.
+  const handleExportData = async () => {
+    setExportingData(true);
+    const result = await exportMyData();
+    setExportingData(false);
+    if (!result.success) {
+      Alert.alert(t('common.error'), result.error ?? 'Could not export your data.');
+      return;
+    }
+    try {
+      const path = `${FileSystem.cacheDirectory}family-command-center-export-${Date.now()}.json`;
+      await FileSystem.writeAsStringAsync(path, JSON.stringify(result.data, null, 2));
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(path, { mimeType: 'application/json', dialogTitle: 'Your Family Command Center data' });
+      } else {
+        Alert.alert('Export ready', `Saved to ${path}`);
+      }
+    } catch {
+      Alert.alert(t('common.error'), 'Could not save the export file.');
+    }
   };
 
   const handleShareApp = () => {
@@ -682,6 +710,28 @@ export function SettingsScreen({ navigation }: any) {
             <Switch value={biometricEnabled && biometricAvailable} onValueChange={handleBiometricToggle}
               trackColor={{ false: colors.border, true: colors.primary + '60' }} thumbColor={colors.primary} />
           </View>
+
+          {!isChild && (
+            <Pressable style={[s.toggleRow, s.toggleRowBorder]} onPress={() => navigation.navigate('MfaSettings')}>
+              <Ionicons name="shield-checkmark-outline" size={20} color={mfaEnabled ? '#34C759' : colors.primary} />
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={s.toggleLabel}>Two-Factor Authentication</Text>
+                <Text style={s.toggleDesc}>{mfaEnabled ? 'On — required at sign in' : 'Off — add an extra layer of security'}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+            </Pressable>
+          )}
+
+          {!isChild && (
+            <Pressable style={[s.toggleRow, s.toggleRowBorder]} onPress={handleExportData} disabled={exportingData}>
+              <Ionicons name="download-outline" size={20} color={colors.primary} />
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={s.toggleLabel}>Export My Data</Text>
+                <Text style={s.toggleDesc}>Download a copy of your account and family data</Text>
+              </View>
+              {exportingData ? <ActivityIndicator size="small" color={colors.primary} /> : <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />}
+            </Pressable>
+          )}
 
           {!isChild && (
             <View style={[s.toggleRow, s.toggleRowBorder]}>

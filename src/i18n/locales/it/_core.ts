@@ -1000,6 +1000,8 @@ export default {
         ok: 'OK',
         googleNativeBuildMsg: 'L\'accesso Google richiede una versione nativa',
         appleNativeBuildMsg: 'L\'accesso Apple richiede una versione nativa',
+        appleAndroidUnsupportedTitle: 'Non disponibile su Android',
+        appleAndroidUnsupportedMsg: 'L\'accesso con Apple non è ancora disponibile su Android. Usa invece l\'email o Google.',
         googleProfileErrorMsg: 'Impossibile recuperare il profilo Google',
         appleSignInFailedMsg: 'L\'accesso Apple è fallito',
         nativeBuildRequiredTitle: 'Versione nativa richiesta',

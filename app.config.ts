@@ -38,6 +38,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       NSAppTransportSecurity: { NSAllowsLocalNetworking: true },
       NSLocalNetworkUsageDescription:
         'Family Command Center connects to your Philips Hue Bridge on your home WiFi network to control your smart lights.',
+      // The app only uses standard HTTPS/TLS (via Plaid, Firebase, RevenueCat,
+      // etc.) — no proprietary/non-exempt encryption — so this is accurate and
+      // skips Apple's manual export-compliance prompt on every TestFlight build.
+      ITSAppUsesNonExemptEncryption: false,
     },
   },
   android: {

@@ -173,7 +173,7 @@ export function MemberDetailsScreen({ route, navigation: navProp }: any) {
   };
 
   const handleChangeRole = () => {
-    if (!member || !canManageFamily) return;
+    if (!member || !canManageFamily || member.id === activeMemberId) return;
     Alert.alert(
       'Change Role',
       `Select a new role for ${titleCase(member.name)}`,
@@ -233,12 +233,12 @@ export function MemberDetailsScreen({ route, navigation: navProp }: any) {
         <Text style={styles.name}>{titleCase(member.name)}</Text>
         <Pressable
           style={styles.rolePill}
-          onPress={canManageFamily ? handleChangeRole : undefined}
+          onPress={canManageFamily && member.id !== activeMemberId ? handleChangeRole : undefined}
           hitSlop={6}
         >
           <Ionicons name="people" size={14} color="#fff" style={{ marginRight: 6 }} />
           <Text style={styles.roleText}>{roleLabel}</Text>
-          {canManageFamily && <Ionicons name="chevron-down" size={14} color="#fff" style={{ marginLeft: 4 }} />}
+          {canManageFamily && member.id !== activeMemberId && <Ionicons name="chevron-down" size={14} color="#fff" style={{ marginLeft: 4 }} />}
         </Pressable>
 
         <View style={styles.statsRow}>

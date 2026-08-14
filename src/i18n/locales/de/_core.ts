@@ -956,6 +956,8 @@ export default {
         ok: 'OK',
         googleNativeBuildMsg: 'Google-Anmeldung erfordert nativen Build',
         appleNativeBuildMsg: 'Apple-Anmeldung erfordert nativen Build',
+        appleAndroidUnsupportedTitle: 'Auf Android nicht verfügbar',
+        appleAndroidUnsupportedMsg: 'Die Anmeldung mit Apple ist unter Android noch nicht verfügbar. Bitte verwenden Sie stattdessen E-Mail oder Google.',
         googleProfileErrorMsg: 'Google-Profil konnte nicht abgerufen werden',
         appleSignInFailedMsg: 'Apple-Anmeldung fehlgeschlagen',
         nativeBuildRequiredTitle: 'Nativer Build erforderlich',

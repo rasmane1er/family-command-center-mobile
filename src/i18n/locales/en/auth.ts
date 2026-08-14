@@ -6,6 +6,16 @@ export default {
     continueWith: 'Or continue with', name: 'Full Name', confirmPassword: 'Confirm Password',
     welcomeBack: 'Welcome back', createAccount: 'Create Account',
     screens: {
+      mfaChallenge: {
+        title: 'Two-Factor Verification',
+        subtitle: 'Enter the 6-digit code from your authenticator app, or one of your backup codes.',
+        placeholder: '000000',
+        verify: 'Verify',
+        invalidCode: 'Invalid code. Please try again.',
+        backupHint: 'Lost your device? Use one of the backup codes you saved when you turned on two-factor authentication.',
+        cancelTitle: 'Cancel sign in?',
+        cancelMessage: "You'll need to enter your email and password again.",
+      },
       forgotPassword: {
         title: 'Reset Password', subtitle: 'Enter your email and we\'ll send a reset link',
         emailLabel: 'Email address', emailPlaceholder: 'you@example.com',
@@ -32,6 +42,8 @@ export default {
         googleNotConfiguredTitle: 'Google Sign-In Not Set Up',
         googleNotConfiguredMsg: 'This build is missing its Google client IDs, so Google Sign-In can\'t be used yet.',
         appleNativeBuildMsg: 'Apple Sign-In requires a native build',
+        appleAndroidUnsupportedTitle: 'Not Available on Android',
+        appleAndroidUnsupportedMsg: 'Sign in with Apple isn\'t available on Android yet. Please use email or Google instead.',
         googleProfileErrorMsg: 'Could not retrieve Google profile',
         appleSignInFailedMsg: 'Apple Sign-In failed',
         nativeBuildRequiredTitle: 'Native Build Required',

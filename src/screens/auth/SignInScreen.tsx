@@ -181,6 +181,21 @@ export default function SignInScreen({ navigation }: Props) {
   };
 
   const handleAppleSignIn = async () => {
+    // Sign in with Apple has no native implementation on Android — Apple
+    // only ships the native module for iOS; expo-apple-authentication's
+    // signInAsync() throws there regardless of whether the module linked
+    // successfully, which used to surface as a generic, confusing "Apple
+    // Sign-In Failed" instead of an honest "not available on this platform".
+    // (A real Android path would need Apple's web/REST OAuth flow via a
+    // registered Services ID + redirect — not implemented here.)
+    if (Platform.OS !== 'ios') {
+      Alert.alert(
+        t('auth.screens.signIn.appleAndroidUnsupportedTitle'),
+        t('auth.screens.signIn.appleAndroidUnsupportedMsg'),
+        [{ text: t('auth.screens.signIn.ok') }],
+      );
+      return;
+    }
     if (!AppleAuthentication) {
       Alert.alert(
         t('auth.screens.signIn.nativeBuildRequiredTitle'),
@@ -322,6 +337,11 @@ export default function SignInScreen({ navigation }: Props) {
       if (result.error === 'email_not_verified') {
         // pendingVerificationEmail already set in the store — AuthNavigator
         // will automatically switch to EmailVerificationScreen.
+        return;
+      }
+      if (result.error === 'mfa_required') {
+        // mfaChallenge already set in the store — AuthNavigator will
+        // automatically switch to MfaChallengeScreen.
         return;
       }
       Alert.alert(t('auth.screens.signIn.signInFailedTitle'), result.error ?? t('auth.screens.signIn.genericError'));

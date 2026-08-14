@@ -353,7 +353,7 @@ const filteredTasks = visibleTasks
           </View>
 
           <Text style={styles.modalLabel}>Assign To</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 24 }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.assignScroll} contentContainerStyle={styles.assignScrollContent}>
             {members.map((m) => (
               <Pressable key={m.id} onPress={() => setSelectedMember(selectedMember === m.id ? null : m.id)} style={[styles.assignChip, selectedMember === m.id && styles.assignChipActive]}>
                 <Avatar name={m.name} color={m.avatarColor} size={32} />
@@ -427,6 +427,8 @@ const styles = StyleSheet.create({
   priorityRow: { flexDirection: 'row', gap: 8, marginBottom: 20 },
   priorityChip: { flex: 1, paddingVertical: 10, borderRadius: 10, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.card, alignItems: 'center' },
   priorityText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary, textTransform: 'capitalize' },
+  assignScroll: { marginBottom: 24, maxHeight: 78 },
+  assignScrollContent: { alignItems: 'flex-start' },
   assignChip: { alignItems: 'center', marginRight: 12, padding: 10, borderRadius: 12, borderWidth: 1.5, borderColor: 'transparent' },
   assignChipActive: { borderColor: colors.primary, backgroundColor: '#E8EEF9' },
   assignName: { fontSize: 11, color: colors.textSecondary, marginTop: 4 },

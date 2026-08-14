@@ -987,6 +987,8 @@ export default {
         ok: 'OK',
         googleNativeBuildMsg: 'Google Sign-In requiere una versión nativa',
         appleNativeBuildMsg: 'Apple Sign-In requiere una versión nativa',
+        appleAndroidUnsupportedTitle: 'No disponible en Android',
+        appleAndroidUnsupportedMsg: 'Iniciar sesión con Apple aún no está disponible en Android. Usa el correo electrónico o Google en su lugar.',
         googleProfileErrorMsg: 'No se pudo recuperar el perfil de Google',
         appleSignInFailedMsg: 'Apple Sign-In falló',
         nativeBuildRequiredTitle: 'Versión nativa requerida',
