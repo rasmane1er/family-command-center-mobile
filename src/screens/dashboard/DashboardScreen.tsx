@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
-  Dimensions,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -20,6 +19,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { useFinancialHealth } from '../../hooks/useFinancialHealth';
 import { useSubscription } from '../../hooks/useSubscription';
 import { usePurchases } from '../../hooks/usePurchases';
+import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { Avatar } from '../../components/common/Avatar';
 import { Card } from '../../components/common/Card';
 import { ProgressBar } from '../../components/common/ProgressBar';
@@ -40,8 +40,6 @@ import { MemoryOfTheDayCard } from '../../components/dashboard/MemoryOfTheDayCar
 import { ChoreLeaderboardCard } from '../../components/dashboard/ChoreLeaderboardCard';
 import { StreakCounterCard } from '../../components/dashboard/StreakCounterCard';
 
-const { width } = Dimensions.get('window');
-
 const COMMAND_COLORS = {
   navy900: '#081120',
   navy800: '#0E1E36',
@@ -58,6 +56,8 @@ export function DashboardScreen({ navigation }: any) {
   const { t } = useTranslation('dashboard');
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  const { contentWidth, gridColumns } = useResponsiveLayout();
+  const kpiColumns = gridColumns(2, 150, 12);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(12)).current;
   const [fabOpen, setFabOpen] = useState(false);
@@ -508,7 +508,7 @@ export function DashboardScreen({ navigation }: any) {
     handleRoleActionPress(route);
   };
 
-  const dynStyles = makeStyles(colors);
+  const dynStyles = makeStyles(colors, kpiColumns, contentWidth);
 
   return (
     <View style={dynStyles.container}>
@@ -917,8 +917,10 @@ export function DashboardScreen({ navigation }: any) {
   );
 }
 
-function makeStyles(colors: import('../../theme/ThemeContext').ThemeColors) {
-  const cardWidth = (width - 48) / 2;
+function makeStyles(colors: import('../../theme/ThemeContext').ThemeColors, kpiColumns: number, contentWidth: number) {
+  // 36 = the kpiGrid's paddingHorizontal (18 * 2); gaps between columns are
+  // 12pt each, and there's one fewer gap than there are columns.
+  const cardWidth = (contentWidth - 36 - (kpiColumns - 1) * 12) / kpiColumns;
 
   return StyleSheet.create({
     container: {
@@ -927,6 +929,12 @@ function makeStyles(colors: import('../../theme/ThemeContext').ThemeColors) {
     },
     scrollContent: {
       paddingBottom: 132,
+      // Centers and caps content width on tablets instead of stretching
+      // every card/row edge-to-edge across a 13" iPad — see
+      // useResponsiveLayout's MAX_CONTENT_WIDTH.
+      width: '100%',
+      maxWidth: contentWidth,
+      alignSelf: 'center',
     },
     header: {
       paddingHorizontal: 18,
