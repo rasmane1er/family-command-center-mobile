@@ -31,6 +31,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     bundleIdentifier: 'com.grasmane.familycommandcenter',
     googleServicesFile: './GoogleService-Info.plist',
     usesAppleSignIn: true,
+    entitlements: {
+      'com.apple.security.application-groups': ['group.com.grasmane.familycommandcenter'],
+    },
     config: {
       googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_IOS_KEY ?? '',
     },
@@ -140,6 +143,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     // minified bundle positions. SENTRY_AUTH_TOKEN is an EAS secret env var
     // (preview + production) — never put an auth token in this file.
     ['@sentry/react-native', { organization: 'opportunity-corridor', project: 'react-native' }],
+    '@bacons/apple-targets',
   ],
   extra: {
     eas: { projectId: '82729187-433d-4547-b35a-8b432f5a1a20' },

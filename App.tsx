@@ -24,6 +24,7 @@ import { useAppStateInterval } from './src/hooks/useAppStateInterval';
 import { useBiometricLock } from './src/hooks/useBiometricLock';
 import { usePlaidStore } from './src/store/usePlaidStore';
 import { useFeatureFlagStore } from './src/store/useFeatureFlagStore';
+import { syncWidgetData } from './src/services/widgetSync';
 import { BiometricLockScreen } from './src/components/common/BiometricLockScreen';
 import { ErrorBoundary } from './src/components/common/ErrorBoundary';
 import { i18n } from './src/i18n';
@@ -368,6 +369,17 @@ function AppInner() {
     if (!familyId) return;
     void useFeatureFlagStore.getState().fetchFlags();
   }, [familyId]);
+
+  // Keep the iOS home screen widget's App Group snapshot in sync with
+  // whatever tasks/events are already live in the store — no separate
+  // widget-specific fetch, just a projection of data the app already has.
+  const familyName = useFamilyStore((s) => s.family?.name);
+  const familyTasks = useFamilyStore((s) => s.tasks);
+  const familyEvents = useFamilyStore((s) => s.events);
+  useEffect(() => {
+    if (!familyId) return;
+    syncWidgetData(familyName ?? '', familyTasks, familyEvents);
+  }, [familyId, familyName, familyTasks, familyEvents]);
   const { isLocked, authenticate } = useBiometricLock();
 
   // Configure RevenueCat as soon as (and whenever) the account becomes

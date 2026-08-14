@@ -19,6 +19,11 @@
       "googleServicesFile": "./GoogleService-Info.plist",
       "usesAppleSignIn": true,
       "config": {},
+      "entitlements": {
+        "com.apple.security.application-groups": [
+          "group.com.grasmane.familycommandcenter"
+        ]
+      },
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsLocalNetworking": true
@@ -106,7 +111,8 @@
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
       "@react-native-firebase/messaging",
-      "@sentry/react-native"
+      "@sentry/react-native",
+      "@bacons/apple-targets"
     ],
     "extra": {
       "eas": {
