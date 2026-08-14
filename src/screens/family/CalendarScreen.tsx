@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuthStore } from '../../store/useAuthStore';
-import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions, Modal, TextInput, Switch, Alert, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Modal, TextInput, Switch, Alert, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, isToday } from 'date-fns';
 import * as Haptics from 'expo-haptics';
@@ -23,7 +23,6 @@ const EVENT_CATEGORIES = ['Family', 'School', 'Medical', 'Sports', 'Work', 'Soci
 const EVENT_COLORS = ['#E74C3C', '#E67E22', '#F1C40F', '#27AE60', '#2980B9', '#9B59B6', '#E91E63', '#00BCD4'];
 import { generateId } from '../../utils/generateId';
 
-const { width } = Dimensions.get('window');
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export function CalendarScreen({ navigation, route }: any) {

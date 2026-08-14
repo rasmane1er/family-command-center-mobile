@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -17,8 +17,7 @@ import { useAutomationStore } from '../../store/useAutomationStore';
 import { useWealthStore } from '../../store/useWealthStore';
 import { useTotalNetWorth } from '../../hooks/useTotalNetWorth';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
-
-const { width } = Dimensions.get('window');
+import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 
 const WIDGET_COLORS = {
   tasks: '#2980B9',
@@ -32,6 +31,11 @@ const WIDGET_COLORS = {
 export function CommandWallScreen({ navigation }: any) {
   const { t } = useTranslation('dashboard');
   const insets = useSafeAreaInsets();
+  const { contentWidth, gridColumns } = useResponsiveLayout();
+  const memberColumns = gridColumns(4, 70, 10);
+  const memberWidth = (contentWidth - 32 - (memberColumns - 1) * 10) / memberColumns;
+  const widgetColumns = gridColumns(2, 150, 10);
+  const widgetWidth = (contentWidth - 32 - (widgetColumns - 1) * 10) / widgetColumns;
   const family = useFamilyStore((s) => s.family);
   const members = useFamilyStore((s) => s.members);
   const activeMemberId = useFamilyStore((s) => s.activeMemberId);
@@ -128,7 +132,7 @@ const todayEvents = visibleEvents.filter(
       <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
         {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
         <ScrollView
-          contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+          contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop, width: '100%', maxWidth: contentWidth, alignSelf: 'center' }]}
           showsVerticalScrollIndicator={false}
           onScroll={onScroll}
           onScrollEndDrag={onScrollEndDrag}
@@ -177,7 +181,7 @@ const todayEvents = visibleEvents.filter(
           {members.map((m) => {
             const score = reputationScores.find((s) => s.memberId === m.id);
             return (
-              <Card key={m.id} style={styles.memberWidget} variant="elevated">
+              <Card key={m.id} style={{ ...styles.memberWidget, width: memberWidth }} variant="elevated">
                 <View style={[styles.memberAvatar, { backgroundColor: m.avatarColor + '20' }]}>
                   <Text style={[styles.memberInitial, { color: m.avatarColor }]}>{m.name.charAt(0)}</Text>
                 </View>
@@ -209,25 +213,25 @@ const todayEvents = visibleEvents.filter(
         {/* Widgets Grid */}
         <Text style={styles.sectionTitle}>{t('dashboard.screens.commandWall.liveWidgets')}</Text>
         <View style={styles.widgetsGrid}>
-          <Pressable accessibilityRole="button" onPress={() => navigation.navigate('Finance')} style={[styles.widget, styles.widgetLarge, { backgroundColor: WIDGET_COLORS.finance + '12' }]}>
+          <Pressable accessibilityRole="button" onPress={() => navigation.navigate('Finance')} style={[styles.widget, { width: widgetWidth, backgroundColor: WIDGET_COLORS.finance + '12' }]}>
             <Ionicons name="trending-up" size={22} color={WIDGET_COLORS.finance} />
             <Text style={[styles.widgetVal, { color: WIDGET_COLORS.finance }]}>${netWorth > 0 ? (netWorth / 1000).toFixed(0) + 'k' : '0'}</Text>
             <Text style={styles.widgetLabel}>{t('dashboard.screens.commandWall.netWorth')}</Text>
           </Pressable>
 
-          <View style={[styles.widget, { backgroundColor: WIDGET_COLORS.tasks + '12' }]}>
+          <View style={[styles.widget, { width: widgetWidth, backgroundColor: WIDGET_COLORS.tasks + '12' }]}>
             <Ionicons name="warning" size={20} color={overdueTasks > 0 ? colors.danger : WIDGET_COLORS.tasks} />
             <Text style={[styles.widgetVal, { color: overdueTasks > 0 ? colors.danger : WIDGET_COLORS.tasks }]}>{overdueTasks}</Text>
             <Text style={styles.widgetLabel}>{t('dashboard.screens.commandWall.overdue')}</Text>
           </View>
 
-          <View style={[styles.widget, { backgroundColor: '#E74C3C12' }]}>
+          <View style={[styles.widget, { width: widgetWidth, backgroundColor: '#E74C3C12' }]}>
             <Ionicons name="alert-circle" size={20} color={openConflicts > 0 ? colors.danger : colors.success} />
             <Text style={[styles.widgetVal, { color: openConflicts > 0 ? colors.danger : colors.success }]}>{openConflicts}</Text>
             <Text style={styles.widgetLabel}>{t('dashboard.screens.commandWall.conflicts')}</Text>
           </View>
 
-          <View style={[styles.widget, { backgroundColor: colors.secondary + '12' }]}>
+          <View style={[styles.widget, { width: widgetWidth, backgroundColor: colors.secondary + '12' }]}>
             <Ionicons name="storefront" size={20} color={colors.secondary} />
             <Text style={[styles.widgetVal, { color: colors.secondary }]}>{availableListings}</Text>
             <Text style={styles.widgetLabel}>{t('dashboard.screens.commandWall.marketplace')}</Text>
@@ -286,7 +290,7 @@ const todayEvents = visibleEvents.filter(
       ? { screen: action.screen, params: { memberId: activeMember?.id, role: activeMember?.role } }
       : undefined,
   )
-} style={[styles.actionBtn, { backgroundColor: action.color + '15' }]}>
+} style={[styles.actionBtn, { width: widgetWidth, backgroundColor: action.color + '15' }]}>
               <Ionicons name={action.icon as any} size={24} color={action.color} />
               <Text style={[styles.actionLabel, { color: action.color }]}>{action.label}</Text>
             </Pressable>
@@ -317,7 +321,7 @@ const styles = StyleSheet.create({
   qStatLabel: { fontSize: 10, color: colors.textMuted, fontWeight: '600' },
   sectionTitle: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10, marginTop: 4 },
   memberGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 16 },
-  memberWidget: { width: (width - 52) / 4, borderRadius: 12, alignItems: 'center', padding: 10, gap: 4 },
+  memberWidget: { borderRadius: 12, alignItems: 'center', padding: 10, gap: 4 },
   memberAvatar: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   memberInitial: { fontSize: 15, fontWeight: '800' },
   memberName: { fontSize: 10, fontWeight: '700', color: colors.text },
@@ -329,8 +333,7 @@ const styles = StyleSheet.create({
   eventTitle: { fontSize: 13, fontWeight: '700', color: colors.text },
   eventTime: { fontSize: 11, color: colors.textSecondary, marginTop: 2 },
   widgetsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 16 },
-  widget: { width: (width - 52) / 2, borderRadius: 14, padding: 16, alignItems: 'center', gap: 6 },
-  widgetLarge: { width: (width - 52) / 2 },
+  widget: { borderRadius: 14, padding: 16, alignItems: 'center', gap: 6 },
   widgetVal: { fontSize: 20, fontWeight: '900' },
   widgetLabel: { fontSize: 11, color: colors.textSecondary, fontWeight: '600' },
   starCard: { borderRadius: 14, overflow: 'hidden', marginBottom: 16 },
@@ -341,6 +344,6 @@ const styles = StyleSheet.create({
   starName: { fontSize: 15, fontWeight: '700', color: colors.text },
   starScore: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
   actionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  actionBtn: { width: (width - 52) / 2, borderRadius: 14, padding: 16, alignItems: 'center', gap: 8 },
+  actionBtn: { borderRadius: 14, padding: 16, alignItems: 'center', gap: 8 },
   actionLabel: { fontSize: 13, fontWeight: '700', textAlign: 'center' },
 });

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput, Dimensions, KeyboardAvoidingView, Platform,
+  View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,8 +22,6 @@ function isValidDateString(s: string): boolean {
   const d = new Date(s + 'T00:00:00');
   return !isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
 }
-
-const { width } = Dimensions.get('window');
 
 const STATUS_CONFIG = {
   planning: { label: 'Planning', color: '#F5A623', bg: '#FEF3E2', icon: 'map-outline' },

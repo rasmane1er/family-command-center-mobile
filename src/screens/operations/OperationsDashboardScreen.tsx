@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   Pressable,
-  Dimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,8 +14,7 @@ import { useOperationsStore } from '../../store/useOperationsStore';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
-
-const { width } = Dimensions.get('window');
+import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 
 const OPS_MODULES = [
   { key: 'Pantry', icon: 'basket', label: 'Pantry', color: '#22A447', bg: '#EAF8EE', desc: 'Food inventory', group: 'Home' },
@@ -49,6 +47,7 @@ const FILTERS = ['All', 'Home', 'Family', 'Mobility', 'Admin', 'Safety'];
 export function OperationsDashboardScreen({ navigation }: any) {
   const { t } = useTranslation('ops');
   const insets = useSafeAreaInsets();
+  const { contentWidth } = useResponsiveLayout();
   const { pantryItems, vehicles, documents } = useOperationsStore();
   const [activeFilter, setActiveFilter] = useState('All');
 
@@ -287,6 +286,9 @@ export function OperationsDashboardScreen({ navigation }: any) {
               {
                 paddingTop: contentPaddingTop + 14,
                 paddingBottom: 130,
+                width: '100%',
+                maxWidth: contentWidth,
+                alignSelf: 'center',
               },
             ]}
             onScroll={onScroll}
@@ -454,9 +456,13 @@ export function OperationsDashboardScreen({ navigation }: any) {
 }
 
 function QuickTile({ title, subtitle, icon, color, onPress }: any) {
+  const { contentWidth, gridColumns } = useResponsiveLayout();
+  const columns = gridColumns(2, 160, 14);
+  const tileWidth = (contentWidth - 38 - (columns - 1) * 14) / columns;
+
   return (
     // Shadow wrapper — must NOT have overflow:hidden so Android elevation is visible
-    <View style={[styles.quickTile, { shadowColor: color }]}>
+    <View style={[styles.quickTile, { width: tileWidth, shadowColor: color }]}>
       <Pressable accessibilityRole="button"
         onPress={onPress}
         style={({ pressed }) => [styles.quickTileInner, pressed && styles.pressed]}
@@ -498,8 +504,6 @@ function SnapshotItem({ icon, label, value, color }: any) {
     </View>
   );
 }
-
-const QUICK_WIDTH = (width - 52) / 2;
 
 const styles = StyleSheet.create({
   container: {
@@ -784,7 +788,6 @@ const styles = StyleSheet.create({
 
   // Shadow wrapper — no overflow:hidden so Android elevation renders
   quickTile: {
-    width: QUICK_WIDTH,
     borderRadius: 24,
     shadowOpacity: 0.25,
     shadowRadius: 14,

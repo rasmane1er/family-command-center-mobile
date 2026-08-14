@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions, Modal, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Modal, TextInput, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -21,8 +21,6 @@ import { useTranslation } from 'react-i18next';
 import { usePlaidAutoData } from '../../hooks/usePlaidAutoData';
 
 const WEALTH_CATEGORIES: WealthCategory[] = ['stocks', 'bonds', 'real_estate', 'crypto', 'savings', 'retirement', 'business', 'other'];
-
-const { width } = Dimensions.get('window');
 
 const CATEGORY_COLORS: Record<string, string> = {
   retirement: '#8E44AD',

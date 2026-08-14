@@ -7,7 +7,6 @@ import * as Contacts from 'expo-contacts';
 import { Alert } from 'react-native';
 import {
   ActivityIndicator,
-  Dimensions,
   Modal,
   Pressable,
   ScrollView,
@@ -36,8 +35,7 @@ import { shadows } from '../../theme/spacing';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import type { FamilyMember, MemberRole } from '../../types';
 import { defaultPermissionsForRole } from '../../types';
-
-const { width } = Dimensions.get('window');
+import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 
 const MEMBER_ROLES: MemberRole[] = ['parent', 'child', 'guardian', 'grandparent', 'caregiver'];
 
@@ -332,7 +330,9 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
       (task) => task.status === 'pending' && task.assignedTo?.includes(memberId)
     ).length;
 
-  const dynStyles = makeStyles(colors);
+  const { contentWidth, gridColumns } = useResponsiveLayout();
+  const quickNavColumns = gridColumns(2, 150, 10);
+  const dynStyles = makeStyles(colors, quickNavColumns, contentWidth);
 
   const familyToday = format(new Date(), 'EEEE, MMM d');
   const familyHour = new Date().getHours();
@@ -820,7 +820,11 @@ const CARD_SHADOW = {
   elevation: 4,
 };
 
-function makeStyles(colors: import('../../theme/ThemeContext').ThemeColors) {
+function makeStyles(
+  colors: import('../../theme/ThemeContext').ThemeColors,
+  quickNavColumns: number,
+  contentWidth: number
+) {
   return StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
 
@@ -957,6 +961,9 @@ function makeStyles(colors: import('../../theme/ThemeContext').ThemeColors) {
   // ── CONTENT ──
   content: {
     padding: 16,
+    width: '100%',
+    maxWidth: contentWidth,
+    alignSelf: 'center',
   },
 
   sectionTitle: {
@@ -1254,7 +1261,7 @@ function makeStyles(colors: import('../../theme/ThemeContext').ThemeColors) {
   },
 
   quickNavTile: {
-    width: (width - 42) / 2,
+    width: (contentWidth - 32 - (quickNavColumns - 1) * 10) / quickNavColumns,
     backgroundColor: '#fff',
     borderRadius: 16,
     padding: 14,

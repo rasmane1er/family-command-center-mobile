@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions, Modal, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Modal, TextInput, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -16,8 +16,6 @@ import { useFamilyStore } from '../../store/useFamilyStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import type { TimeBlockCategory } from '../../types';
 import { useTranslation } from 'react-i18next';
-
-const { width } = Dimensions.get('window');
 
 const CATEGORY_CONFIG: Record<string, { color: string; icon: string }> = {
   work: { color: '#2980B9', icon: 'briefcase' },

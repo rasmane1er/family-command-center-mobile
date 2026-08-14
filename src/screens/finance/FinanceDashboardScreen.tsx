@@ -26,12 +26,12 @@ import { getDetectedSubscriptions, confirmSubscription } from '../../services/su
 import type { DetectedSubscription } from '../../services/subscriptionDetectionService';
 import type { AccountType, PlaidAccount, Bill, Subscription, FinancialAccount, Asset } from '../../types';
 import { useTranslation } from 'react-i18next';
+import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 
 const { width } = Dimensions.get('window');
 import { generateId } from '../../utils/generateId';
 import { balanceFreshness, FRESHNESS_LABEL, FRESHNESS_COLOR } from '../../utils/accountFreshness';
 const CARD_W = width * 0.72;
-const TOOL_W = (width - 52) / 3;
 
 const ACCOUNT_TYPES: AccountType[] = ['checking', 'savings', 'investment', 'credit', 'cash'];
 const GOAL_COLORS = ['#2980B9', '#27AE60', '#F5A623', '#E74C3C', '#8E44AD', '#16A085'];
@@ -132,6 +132,9 @@ function BudgetRing({ ratio, color, size = 44 }: { ratio: number; color: string;
 export function FinanceDashboardScreen({ navigation }: any) {
   const { t } = useTranslation('finance');
   const insets = useSafeAreaInsets();
+  const { contentWidth, gridColumns } = useResponsiveLayout();
+  const toolColumns = gridColumns(3, 100, 10);
+  const toolWidth = (contentWidth - 32 - (toolColumns - 1) * 10) / toolColumns;
   const [activeTab, setActiveTab] = useState('overview');
   const [plaidAccounts, setPlaidAccounts] = useState<PlaidAccount[]>([]);
   const [showAccountModal, setShowAccountModal] = useState(false);
@@ -1097,7 +1100,7 @@ export function FinanceDashboardScreen({ navigation }: any) {
         <View style={s.toolsGrid}>
           {FINANCE_TOOLS.map((tool) => (
             <Pressable accessibilityRole="button" key={tool.key} onPress={() => navigation.navigate(tool.key)}
-              style={({ pressed }) => [s.toolCard, pressed && { opacity: 0.85, transform: [{ scale: 0.96 }] }]}>
+              style={({ pressed }) => [s.toolCard, { width: toolWidth }, pressed && { opacity: 0.85, transform: [{ scale: 0.96 }] }]}>
               <View style={[s.toolIconWrap, { backgroundColor: tool.bg }]}>
                 <Ionicons name={tool.icon as any} size={24} color={tool.color} />
               </View>
@@ -1829,7 +1832,7 @@ const s = StyleSheet.create({
   /* ── Tools ── */
   toolsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 16 },
   toolCard: {
-    width: TOOL_W, backgroundColor: '#fff', borderRadius: 18,
+    backgroundColor: '#fff', borderRadius: 18,
     padding: 16, alignItems: 'center', gap: 10, ...SHADOW,
   },
   toolIconWrap: { width: 52, height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
