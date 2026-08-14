@@ -23,6 +23,7 @@ import { useAutomationEngine } from './src/hooks/useAutomationEngine';
 import { useAppStateInterval } from './src/hooks/useAppStateInterval';
 import { useBiometricLock } from './src/hooks/useBiometricLock';
 import { usePlaidStore } from './src/store/usePlaidStore';
+import { useFeatureFlagStore } from './src/store/useFeatureFlagStore';
 import { BiometricLockScreen } from './src/components/common/BiometricLockScreen';
 import { ErrorBoundary } from './src/components/common/ErrorBoundary';
 import { i18n } from './src/i18n';
@@ -360,6 +361,13 @@ function AppInner() {
     if (!usePlaidStore.getState().isConnected) return;
     void usePlaidStore.getState().triggerSync();
   }, 15 * 60_000, !!familyId);
+
+  // Fetch feature flags on launch (persisted, so a cold-start render before
+  // this resolves still has last-known values instead of everything off).
+  useEffect(() => {
+    if (!familyId) return;
+    void useFeatureFlagStore.getState().fetchFlags();
+  }, [familyId]);
   const { isLocked, authenticate } = useBiometricLock();
 
   // Configure RevenueCat as soon as (and whenever) the account becomes
