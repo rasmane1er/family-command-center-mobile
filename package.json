@@ -8,6 +8,7 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "tsc --noEmit",
+    "lint:a11y": "eslint src --ext .tsx,.ts",
     "test": "jest",
     "postinstall": "patch-package"
   },
@@ -89,6 +90,9 @@
     "@testing-library/react-native": "^14.0.1",
     "@types/jest": "^30.0.0",
     "@types/react": "~19.0.10",
+    "@typescript-eslint/parser": "^7.18.0",
+    "eslint": "^8.57.1",
+    "eslint-plugin-react-native-a11y": "^3.5.1",
     "jest": "^29.7.0",
     "jest-expo": "~53.0.0",
     "patch-package": "^8.0.1",
