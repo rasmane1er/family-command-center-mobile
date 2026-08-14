@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -17,6 +17,17 @@ import { useFamilyStore } from '../../../store/useFamilyStore';
 import { colors } from '../../../theme/colors';
 import { shadows } from '../../../theme/spacing';
 
+// Plain-language summary of GUARDIAN_DATA_CATEGORIES from the API
+// (family-command-center-api/src/routes/guardian.ts) — keep in sync if that
+// list ever changes.
+const CONSENT_ITEMS = [
+  'Real-time and historical location',
+  'App usage and screen time',
+  'Ability to remotely lock the device',
+  'Web content filtering activity',
+  'Push notifications sent to the device',
+];
+
 // Parent-side screen: parent picks a child member, calls POST /guardian/devices/register
 // to get a 6-char pairing code, then shows it for the child to enter in the
 // Family Guardian child app (family-guardian-child).
@@ -25,6 +36,8 @@ export function PairChildDeviceScreen({ navigation }: any) {
   const members = useFamilyStore((s) => s.members);
   const family = useFamilyStore((s) => s.family);
   const generateChildPairingCode = useGuardianStore((s) => s.generateChildPairingCode);
+  const checkGuardianConsent = useGuardianStore((s) => s.checkGuardianConsent);
+  const grantGuardianConsent = useGuardianStore((s) => s.grantGuardianConsent);
 
   const children = members.filter((m) => m.role === 'child');
 
@@ -35,7 +48,49 @@ export function PairChildDeviceScreen({ navigation }: any) {
   const [code, setCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // COPPA: before this parent can generate a pairing code for a child, they
+  // must consent to the data collection Family Guardian will do once that
+  // child's device is paired — see POST /guardian/devices/register's
+  // server-side enforcement in the API, which rejects registration outright
+  // if no active GuardianConsent exists for the memberId.
+  const [consentStatus, setConsentStatus] = useState<'checking' | 'needed' | 'granted' | null>(null);
+  const [consenting, setConsenting] = useState(false);
+  const [consentError, setConsentError] = useState<string | null>(null);
+
   const selectedChild = children.find((m) => m.id === selectedId);
+
+  useEffect(() => {
+    if (!selectedId) {
+      setConsentStatus(null);
+      return;
+    }
+    let cancelled = false;
+    setConsentStatus('checking');
+    checkGuardianConsent(selectedId)
+      .then((hasConsent) => {
+        if (!cancelled) setConsentStatus(hasConsent ? 'granted' : 'needed');
+      })
+      .catch(() => {
+        // Fail closed — still require an explicit consent tap rather than
+        // silently treating a network error as "consent granted".
+        if (!cancelled) setConsentStatus('needed');
+      });
+    return () => { cancelled = true; };
+  }, [selectedId, checkGuardianConsent]);
+
+  const handleConsent = async () => {
+    if (!selectedId) return;
+    setConsenting(true);
+    setConsentError(null);
+    try {
+      await grantGuardianConsent(selectedId);
+      setConsentStatus('granted');
+    } catch {
+      setConsentError('Could not save your consent. Check your connection and try again.');
+    } finally {
+      setConsenting(false);
+    }
+  };
 
   const generate = async () => {
     if (!selectedId || !selectedChild) return;
@@ -112,10 +167,46 @@ export function PairChildDeviceScreen({ navigation }: any) {
           )}
         </View>
 
-        {/* Step 2: generate */}
-        {selectedChild && !code && (
+        {/* Step 2: COPPA consent — required before a pairing code can be generated */}
+        {selectedChild && consentStatus !== 'granted' && (
           <View style={[styles.card, shadows.card]}>
-            <Text style={styles.sectionTitle}>2. Generate Pairing Code</Text>
+            <Text style={styles.sectionTitle}>2. Data Collection Consent</Text>
+            <Text style={styles.hint}>
+              As {selectedChild.name}&apos;s parent or guardian, please review what Family
+              Guardian will collect once {selectedChild.name}&apos;s device is paired:
+            </Text>
+            <View style={styles.consentList}>
+              {CONSENT_ITEMS.map((item) => (
+                <View key={item} style={styles.consentItemRow}>
+                  <Ionicons name="checkmark-circle" size={16} color={colors.primary} />
+                  <Text style={styles.consentItemText}>{item}</Text>
+                </View>
+              ))}
+            </View>
+            {consentError && (
+              <Text style={styles.errorText}>{consentError}</Text>
+            )}
+            <Pressable accessibilityRole="button"
+              style={[styles.generateBtn, (consenting || consentStatus === 'checking') && { opacity: 0.6 }]}
+              onPress={handleConsent}
+              disabled={consenting || consentStatus === 'checking'}
+            >
+              {consenting || consentStatus === 'checking' ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <>
+                  <Ionicons name="shield-checkmark-outline" size={18} color="#fff" />
+                  <Text style={styles.generateBtnText}>I Consent — Continue</Text>
+                </>
+              )}
+            </Pressable>
+          </View>
+        )}
+
+        {/* Step 3: generate */}
+        {selectedChild && consentStatus === 'granted' && !code && (
+          <View style={[styles.card, shadows.card]}>
+            <Text style={styles.sectionTitle}>3. Generate Pairing Code</Text>
             <Text style={styles.hint}>
               A 6-character code will be created for {selectedChild.name}. Have them
               open the Family Guardian app on their device and enter it there.
@@ -140,10 +231,10 @@ export function PairChildDeviceScreen({ navigation }: any) {
           </View>
         )}
 
-        {/* Step 3: show code */}
+        {/* Step 4: show code */}
         {code && (
           <View style={[styles.card, shadows.card, { alignItems: 'center' }]}>
-            <Text style={styles.sectionTitle}>3. Share This Code</Text>
+            <Text style={styles.sectionTitle}>4. Share This Code</Text>
             <Text style={styles.hint}>
               Have {selectedChild?.name} open the Family Guardian app and enter this code:
             </Text>
@@ -300,6 +391,24 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.danger,
     marginBottom: 12,
+  },
+
+  consentList: {
+    gap: 10,
+    marginBottom: 18,
+  },
+
+  consentItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+
+  consentItemText: {
+    flex: 1,
+    fontSize: 13,
+    color: colors.text,
+    lineHeight: 18,
   },
 
   generateBtn: {

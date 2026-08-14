@@ -99,6 +99,12 @@ interface GuardianStore {
   generateChildPairingCode: (input: { deviceName: string; platform: 'ios' | 'android'; memberId: string }) => Promise<string>;
   pairWithCode: (pairingCode: string) => Promise<string>;
 
+  // COPPA consent — gates generateChildPairingCode's underlying register
+  // call server-side too (see POST /guardian/devices/register); these are
+  // the client-side calls into that same check/grant flow.
+  checkGuardianConsent: (memberId: string) => Promise<boolean>;
+  grantGuardianConsent: (memberId: string) => Promise<void>;
+
   // Geofence CRUD
   addGeofenceZone: (zone: GeofenceZone) => void;
   updateGeofenceZone: (id: string, updates: Partial<GeofenceZone>) => void;
@@ -255,6 +261,15 @@ export const useGuardianStore = create<GuardianStore>()(
         const { device, pairingCode } = await guardianService.registerDevice({ deviceName, platform, memberId });
         set((s) => ({ devices: [...s.devices, device] }));
         return pairingCode;
+      },
+
+      checkGuardianConsent: async (memberId) => {
+        const { hasConsent } = await guardianService.getConsentStatus(memberId);
+        return hasConsent;
+      },
+
+      grantGuardianConsent: async (memberId) => {
+        await guardianService.grantConsent(memberId);
       },
 
       pairWithCode: async (pairingCode) => {

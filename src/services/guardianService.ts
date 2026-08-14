@@ -40,6 +40,37 @@ export function fetchInstalledApps(deviceId: string): Promise<{ apps: { packageN
   return apiRequest(`/guardian/devices/${deviceId}/installed-apps`);
 }
 
+export interface GuardianConsent {
+  id: string;
+  familyId: string;
+  memberId: string;
+  deviceId: string | null;
+  consentedByUserId: string;
+  consentedByEmail: string;
+  policyVersion: string;
+  dataCategories: string[];
+  consentedAt: string;
+  revokedAt: string | null;
+}
+
+export function getConsentStatus(memberId: string): Promise<{
+  hasConsent: boolean;
+  consent: GuardianConsent | null;
+}> {
+  return apiRequest(`/guardian/consent/${memberId}`);
+}
+
+export function grantConsent(memberId: string): Promise<{ consent: GuardianConsent }> {
+  return apiRequest('/guardian/consent', {
+    method: 'POST',
+    body: JSON.stringify({ memberId }),
+  });
+}
+
+export function revokeConsent(memberId: string): Promise<void> {
+  return apiRequest(`/guardian/consent/${memberId}/revoke`, { method: 'POST' });
+}
+
 export function registerDevice(input: {
   deviceName: string;
   platform: 'ios' | 'android';
