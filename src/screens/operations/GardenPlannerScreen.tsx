@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
+import { useTabBarInset } from '../../hooks/useTabBarInset';
 import {
   useGardenStore,
   PlantType,
@@ -94,6 +95,7 @@ type Tab = 'Garden' | 'Tasks' | 'Schedule';
 
 export function GardenPlannerScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
+  const tabBarInset = useTabBarInset();
   const {
     plants,
     tasks,
@@ -505,7 +507,7 @@ export function GardenPlannerScreen({ navigation }: any) {
 
       {/* FAB */}
       <Pressable accessibilityRole="button"
-        style={styles.fab}
+        style={[styles.fab, { bottom: tabBarInset }]}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           if (activeTab === 'Tasks') setShowAddTaskModal(true);
@@ -832,7 +834,6 @@ const styles = StyleSheet.create({
   schedPlantMeta: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
   fab: {
     position: 'absolute',
-    bottom: 90,
     right: 20,
     width: 56,
     height: 56,

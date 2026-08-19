@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
+import { useTabBarInset } from '../../hooks/useTabBarInset';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
@@ -95,6 +96,7 @@ function getMondayOfWeek(dateStr: string): string {
 
 export function MealPrepScreen({ navigation: _navigation }: any) {
   const insets = useSafeAreaInsets();
+  const tabBarInset = useTabBarInset();
   const store = useMealPrepStore();
 
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
@@ -412,7 +414,7 @@ export function MealPrepScreen({ navigation: _navigation }: any) {
         {sessionTab !== 'overview' && (
           <Pressable accessibilityRole="button"
             onPress={() => { if (sessionTab === 'items') setShowAddItem(true); else setShowAddIngredient(true); }}
-            style={styles.fab}
+            style={[styles.fab, { bottom: tabBarInset }]}
           >
             <LinearGradient colors={['#004D40', '#00695C']} style={styles.fabGradient}>
               <Ionicons name={'add' as any} size={28} color="#fff" />
@@ -570,7 +572,7 @@ export function MealPrepScreen({ navigation: _navigation }: any) {
       </Modal>
 
       {/* FAB */}
-      <Pressable accessibilityRole="button" onPress={() => setShowAddSession(true)} style={styles.fab}>
+      <Pressable accessibilityRole="button" onPress={() => setShowAddSession(true)} style={[styles.fab, { bottom: tabBarInset }]}>
         <LinearGradient colors={['#004D40', '#00695C']} style={styles.fabGradient}>
           <Ionicons name={'add' as any} size={28} color="#fff" />
         </LinearGradient>
@@ -597,7 +599,7 @@ const styles = StyleSheet.create({
   emptyState: { alignItems: 'center', paddingTop: 60, paddingBottom: 40 },
   emptyText: { fontSize: 18, fontWeight: '600', color: colors.textSecondary, marginTop: 12 },
   emptySubText: { fontSize: 14, color: colors.textMuted, marginTop: 4 },
-  fab: { position: 'absolute', bottom: 90, right: 20 },
+  fab: { position: 'absolute', right: 20 },
   fabGradient: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', ...shadows.md },
   // Detail view
   backRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 10 },

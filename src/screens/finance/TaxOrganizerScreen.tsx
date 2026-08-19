@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
+import { useTabBarInset } from '../../hooks/useTabBarInset';
 import { Card } from '../../components/common/Card';
 import {
   useTaxStore,
@@ -65,6 +66,7 @@ type DocFilter = 'All' | DocumentStatus;
 
 export function TaxOrganizerScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
+  const tabBarInset = useTabBarInset();
   const {
     documents,
     deductions,
@@ -412,7 +414,7 @@ export function TaxOrganizerScreen({ navigation }: any) {
 
       {/* FAB */}
       <Pressable accessibilityRole="button"
-        style={styles.fab}
+        style={[styles.fab, { bottom: tabBarInset }]}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           if (activeTab === 'Documents') setShowAddDocModal(true);
@@ -723,7 +725,6 @@ const styles = StyleSheet.create({
   refundSub: { fontSize: 12, color: colors.textMuted, marginTop: 6, textAlign: 'center' },
   fab: {
     position: 'absolute',
-    bottom: 90,
     right: 20,
     width: 56,
     height: 56,

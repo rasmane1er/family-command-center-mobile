@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
+import { useTabBarInset } from '../../hooks/useTabBarInset';
 import { useNutritionStore, MealType, NutritionGoal } from '../../store/useNutritionStore';
 
 const MEAL_CONFIG: Record<MealType, { icon: string; color: string; label: string }> = {
@@ -71,6 +72,7 @@ function MacroBar({ value, max, color }: { value: number; max: number; color: st
 
 export function NutritionTrackerScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
+  const tabBarInset = useTabBarInset();
   const { entries, goals, addEntry, removeEntry, setGoal, getEntriesForDay, getDayTotals } = useNutritionStore();
 
   const [activeTab, setActiveTab] = useState<'today' | 'members' | 'goals'>('today');
@@ -388,7 +390,7 @@ export function NutritionTrackerScreen({ navigation }: any) {
 
       {/* FAB */}
       {activeTab === 'today' && (
-        <Pressable accessibilityRole="button" style={styles.fab} onPress={openAddModal}>
+        <Pressable accessibilityRole="button" style={[styles.fab, { bottom: tabBarInset }]} onPress={openAddModal}>
           <LinearGradient colors={['#2E7D32', '#1B5E20']} style={styles.fabGradient}>
             <Ionicons name={'add' as any} size={32} color="#fff" />
           </LinearGradient>
@@ -683,7 +685,6 @@ const styles = StyleSheet.create({
   noGoalText: { fontSize: 13, color: colors.textMuted, fontStyle: 'italic', textAlign: 'center', paddingVertical: 8 },
   fab: {
     position: 'absolute',
-    bottom: 90,
     right: 20,
     width: 56,
     height: 56,

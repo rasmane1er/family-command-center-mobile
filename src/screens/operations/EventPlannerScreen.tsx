@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
+import { useTabBarInset } from '../../hooks/useTabBarInset';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
@@ -105,6 +106,7 @@ const NEW_EVENT_QUICKFILL_FIELDS: QuickFillField[] = [
 
 export function EventPlannerScreen({ navigation: _navigation }: any) {
   const insets = useSafeAreaInsets();
+  const tabBarInset = useTabBarInset();
   const store = useEventPlannerStore();
 
   const [viewTab, setViewTab] = useState<ViewTab>('upcoming');
@@ -631,7 +633,7 @@ export function EventPlannerScreen({ navigation: _navigation }: any) {
       {/* FAB */}
       <Pressable accessibilityRole="button"
         onPress={() => setShowAddEvent(true)}
-        style={styles.fab}
+        style={[styles.fab, { bottom: tabBarInset }]}
       >
         <LinearGradient colors={['#880E4F', '#AD1457']} style={styles.fabGradient}>
           <Ionicons name={'add' as any} size={28} color="#fff" />
@@ -672,7 +674,7 @@ const styles = StyleSheet.create({
   emptyState: { alignItems: 'center', paddingTop: 60, paddingBottom: 40 },
   emptyText: { fontSize: 18, fontWeight: '600', color: colors.textSecondary, marginTop: 12 },
   emptySubText: { fontSize: 14, color: colors.textMuted, marginTop: 4 },
-  fab: { position: 'absolute', bottom: 90, right: 20 },
+  fab: { position: 'absolute', right: 20 },
   fabGradient: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', ...shadows.md },
   // Detail view
   backRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 12 },

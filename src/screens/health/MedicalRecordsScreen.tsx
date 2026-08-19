@@ -20,6 +20,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
+import { useTabBarInset } from '../../hooks/useTabBarInset';
 import { useMedicalRecordsStore, RecordType, MedicalRecord } from '../../store/useMedicalRecordsStore';
 import { AIVoiceQuickFillButton } from '../../components/ai/AIVoiceQuickFillButton';
 import type { QuickFillField, QuickFillResult } from '../../services/aiService';
@@ -98,6 +99,7 @@ function RecordCard({ record, onDelete }: { record: MedicalRecord; onDelete: () 
 
 export function MedicalRecordsScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
+  const tabBarInset = useTabBarInset();
   const { records, doctors, addRecord, removeRecord, addDoctor, removeDoctor, getRecordsForMember, getCriticalRecords } = useMedicalRecordsStore();
 
   const [activeTab, setActiveTab] = useState<'records' | 'doctors' | 'critical'>('records');
@@ -357,7 +359,7 @@ export function MedicalRecordsScreen({ navigation }: any) {
 
       {/* FAB */}
       <Pressable accessibilityRole="button"
-        style={styles.fab}
+        style={[styles.fab, { bottom: tabBarInset }]}
         onPress={activeTab === 'doctors' ? openDoctorModal : openRecordModal}
       >
         <LinearGradient colors={['#283593', '#1A237E']} style={styles.fabGradient}>
@@ -637,7 +639,6 @@ const styles = StyleSheet.create({
   emptySubtitle: { fontSize: 14, color: colors.textSecondary, textAlign: 'center' },
   fab: {
     position: 'absolute',
-    bottom: 90,
     right: 20,
     width: 56,
     height: 56,

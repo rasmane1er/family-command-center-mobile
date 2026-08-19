@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
+import { useTabBarInset } from '../../hooks/useTabBarInset';
 import { useReadingStore, ReadingStatus, Book } from '../../store/useReadingStore';
 
 const STATUS_CONFIG: Record<ReadingStatus, { color: string; label: string; icon: string }> = {
@@ -135,6 +136,7 @@ function BookCard({ book, onDelete, onUpdatePages, onComplete }: {
 
 export function ReadingTrackerScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
+  const tabBarInset = useTabBarInset();
   const {
     books,
     challenges,
@@ -436,7 +438,7 @@ export function ReadingTrackerScreen({ navigation }: any) {
       </ScrollView>
 
       {/* FAB */}
-      <Pressable accessibilityRole="button" style={styles.fab} onPress={openAddBook}>
+      <Pressable accessibilityRole="button" style={[styles.fab, { bottom: tabBarInset }]} onPress={openAddBook}>
         <LinearGradient colors={['#6A1B9A', '#4A148C']} style={styles.fabGradient}>
           <Ionicons name={'add' as any} size={32} color="#fff" />
         </LinearGradient>
@@ -722,7 +724,6 @@ const styles = StyleSheet.create({
   emptySubtitle: { fontSize: 14, color: colors.textSecondary, textAlign: 'center' },
   fab: {
     position: 'absolute',
-    bottom: 90,
     right: 20,
     width: 56,
     height: 56,

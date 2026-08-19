@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
+import { useTabBarInset } from '../../hooks/useTabBarInset';
 import {
   useHOAStore,
   DuesStatus,
@@ -69,6 +70,7 @@ type Tab = 'Dues' | 'Rules' | 'Community';
 
 export function HOAManagerScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
+  const tabBarInset = useTabBarInset();
   const {
     dues,
     rules,
@@ -449,7 +451,7 @@ export function HOAManagerScreen({ navigation }: any) {
       {/* FAB */}
       {(activeTab === 'Dues' || activeTab === 'Community') && (
         <Pressable accessibilityRole="button"
-          style={styles.fab}
+          style={[styles.fab, { bottom: tabBarInset }]}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             if (activeTab === 'Dues') setShowAddDuesModal(true);
@@ -757,7 +759,6 @@ const styles = StyleSheet.create({
   meetingNoMinutes: { fontSize: 12, color: colors.textMuted, marginTop: 4, fontStyle: 'italic' },
   fab: {
     position: 'absolute',
-    bottom: 90,
     right: 20,
     width: 56,
     height: 56,

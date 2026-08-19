@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
+import { useTabBarInset } from '../../hooks/useTabBarInset';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
@@ -67,6 +68,7 @@ const CURRENT_YEAR = new Date().getFullYear();
 
 export function VolunteerTrackerScreen({ navigation: _navigation }: any) {
   const insets = useSafeAreaInsets();
+  const tabBarInset = useTabBarInset();
   const store = useVolunteerStore();
 
   const [activeTab, setActiveTab] = useState<MainTab>('log');
@@ -337,7 +339,7 @@ export function VolunteerTrackerScreen({ navigation: _navigation }: any) {
       </ScrollView>
 
       {/* FAB */}
-      <Pressable accessibilityRole="button" onPress={() => setShowAddLog(true)} style={styles.fab}>
+      <Pressable accessibilityRole="button" onPress={() => setShowAddLog(true)} style={[styles.fab, { bottom: tabBarInset }]}>
         <LinearGradient colors={['#E65100', '#F57C00']} style={styles.fabGradient}>
           <Ionicons name={'add' as any} size={28} color="#fff" />
         </LinearGradient>
@@ -475,7 +477,7 @@ const styles = StyleSheet.create({
   causeBarBg: { height: 6, backgroundColor: colors.border, borderRadius: 3 },
   causeBarFill: { height: 6, borderRadius: 3 },
   causeHrs: { fontSize: 16, fontWeight: '700', color: colors.text, minWidth: 36, textAlign: 'right' },
-  fab: { position: 'absolute', bottom: 90, right: 20 },
+  fab: { position: 'absolute', right: 20 },
   fabGradient: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', ...shadows.md },
   modal: { flex: 1, backgroundColor: colors.background },
   modalTitle: { fontSize: 22, fontWeight: '700', color: colors.text, marginBottom: 20 },
