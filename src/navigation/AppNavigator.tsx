@@ -7,6 +7,7 @@ import { AuthNavigator } from './AuthNavigator';
 import { OnboardingNavigator } from './OnboardingNavigator';
 import { MainNavigator } from './MainNavigator';
 import { withScreenErrorBoundary } from './withScreenErrorBoundary';
+import { navigationIntegration } from '../config/sentry';
 
 const Stack = createNativeStackNavigator();
 
@@ -15,7 +16,12 @@ export function AppNavigator({ navigationRef }: { navigationRef?: React.RefObjec
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   return (
-    <NavigationContainer ref={navigationRef}>
+    <NavigationContainer
+      ref={navigationRef}
+      onReady={() => {
+        if (navigationRef) navigationIntegration.registerNavigationContainer(navigationRef);
+      }}
+    >
       <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
         {!isAuthenticated ? (
           <Stack.Screen name="Auth" component={withScreenErrorBoundary(AuthNavigator)} />
