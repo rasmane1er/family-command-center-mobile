@@ -279,10 +279,18 @@ export function TransactionsScreen({ navigation }: { navigation: any }) {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           onEndReached={onEndReached}
           onEndReachedThreshold={0.3}
+          // insets.bottom + 100 (the convention used elsewhere in this app)
+          // numerically equals what this screen already had before this fix
+          // (s.listContent.paddingBottom was 100) — so that clearance was
+          // never actually the bug. The floating CustomTabBar's real
+          // footprint (its own height plus the safe-area gap built into its
+          // own positioning) runs closer to ~140-160pt, which is why its
+          // last rows were sitting underneath the tab bar. Matches the same
+          // generous clearance verified working on EmergencyModeScreen.
           contentContainerStyle={
             transactions.length === 0
               ? s.emptyContent
-              : [s.listContent, { paddingBottom: s.listContent.paddingBottom + insets.bottom }]
+              : [s.listContent, { paddingBottom: insets.bottom + 140 }]
           }
           ListEmptyComponent={
             <View style={s.emptyState}>
