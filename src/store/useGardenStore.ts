@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import { mmkvStorage } from '../storage/mmkvStorage';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -31,6 +33,10 @@ export interface GardenTask {
   completed: boolean;
   category: 'watering' | 'fertilizing' | 'pruning' | 'harvesting' | 'planting' | 'pest-control' | 'other';
   createdAt: string;
+  // True for a watering reminder derived live from a plant's own watering
+  // schedule, rather than something the family typed in manually — see
+  // getAutoWateringTasks(). Never persisted; regenerated on every read.
+  auto?: boolean;
 }
 
 interface GardenState {
@@ -45,6 +51,12 @@ interface GardenState {
   removeTask: (id: string) => void;
   getPlantsNeedingWater: () => Plant[];
   getTasksDueToday: () => GardenTask[];
+  // Auto-generates a "Water {plant}" reminder for every plant whose
+  // schedule says it's due, so the Tasks tab surfaces watering without the
+  // family having to separately duplicate it as a manual task — that's the
+  // "automated" half of the watering flow. Skips any plant that already has
+  // its own incomplete manually-created watering task, so nothing doubles up.
+  getAutoWateringTasks: () => GardenTask[];
 }
 
 function calcNextWatering(freq: WateringFrequency, from: Date): string {
@@ -60,166 +72,16 @@ function calcNextWatering(freq: WateringFrequency, from: Date): string {
   return d.toISOString();
 }
 
-const today = new Date();
-const daysAgo = (n: number) => new Date(today.getTime() - n * 86400000).toISOString();
-const daysAhead = (n: number) => new Date(today.getTime() + n * 86400000).toISOString();
-
-const DEMO_PLANTS: Plant[] = [
-  {
-    id: generateId(),
-    name: 'Cherry Tomatoes',
-    type: 'vegetable',
-    location: 'Backyard Raised Bed',
-    status: 'growing',
-    plantedDate: daysAgo(45),
-    harvestDate: daysAhead(30),
-    wateringFrequency: 'every-2-days',
-    lastWatered: daysAgo(3),
-    nextWatering: daysAgo(1),
-    sunlight: 'full-sun',
-    notes: 'Yellow variety, staked at 12 inches',
-    emoji: '🍅',
-    createdAt: daysAgo(45),
-  },
-  {
-    id: generateId(),
-    name: 'Basil',
-    type: 'herb',
-    location: 'Kitchen Window',
-    status: 'growing',
-    plantedDate: daysAgo(30),
-    wateringFrequency: 'every-2-days',
-    lastWatered: daysAgo(1),
-    nextWatering: daysAhead(1),
-    sunlight: 'full-sun',
-    notes: 'Genovese variety, pinch flowers to extend harvest',
-    emoji: '🌿',
-    createdAt: daysAgo(30),
-  },
-  {
-    id: generateId(),
-    name: 'Sunflowers',
-    type: 'flower',
-    location: 'Front Bed',
-    status: 'flowering',
-    plantedDate: daysAgo(60),
-    wateringFrequency: 'every-3-days',
-    lastWatered: daysAgo(4),
-    nextWatering: daysAgo(1),
-    sunlight: 'full-sun',
-    notes: 'Mammoth variety, 8 feet tall',
-    emoji: '🌻',
-    createdAt: daysAgo(60),
-  },
-  {
-    id: generateId(),
-    name: 'Blueberry Bush',
-    type: 'shrub',
-    location: 'Side Yard',
-    status: 'harvesting',
-    plantedDate: daysAgo(365),
-    harvestDate: daysAhead(14),
-    wateringFrequency: 'weekly',
-    lastWatered: daysAgo(6),
-    nextWatering: daysAhead(1),
-    sunlight: 'full-sun',
-    notes: 'Acidify soil annually, bird netting needed',
-    emoji: '🫐',
-    createdAt: daysAgo(365),
-  },
-  {
-    id: generateId(),
-    name: 'Mint',
-    type: 'herb',
-    location: 'Back Porch Pots',
-    status: 'growing',
-    plantedDate: daysAgo(20),
-    wateringFrequency: 'every-2-days',
-    lastWatered: daysAgo(2),
-    nextWatering: today.toISOString(),
-    sunlight: 'partial-shade',
-    notes: 'Keep contained, spreads aggressively',
-    emoji: '🌱',
-    createdAt: daysAgo(20),
-  },
-  {
-    id: generateId(),
-    name: 'Lemon Tree',
-    type: 'tree',
-    location: 'Backyard',
-    status: 'growing',
-    plantedDate: daysAgo(180),
-    wateringFrequency: 'weekly',
-    lastWatered: daysAgo(8),
-    nextWatering: daysAgo(1),
-    sunlight: 'full-sun',
-    notes: 'Meyer lemon, fertilize monthly',
-    emoji: '🍋',
-    createdAt: daysAgo(180),
-  },
-  {
-    id: generateId(),
-    name: 'Snake Plant',
-    type: 'indoor',
-    location: 'Living Room',
-    status: 'growing',
-    plantedDate: daysAgo(200),
-    wateringFrequency: 'bi-weekly',
-    lastWatered: daysAgo(10),
-    nextWatering: daysAhead(4),
-    sunlight: 'partial-shade',
-    notes: 'Low maintenance, air purifier',
-    emoji: '🪴',
-    createdAt: daysAgo(200),
-  },
-];
-
-const DEMO_TASKS: GardenTask[] = [
-  {
-    id: generateId(),
-    title: 'Fertilize tomato plants',
-    dueDate: today.toISOString(),
-    completed: false,
-    category: 'fertilizing',
-    createdAt: daysAgo(2),
-  },
-  {
-    id: generateId(),
-    title: 'Harvest ripe blueberries',
-    dueDate: today.toISOString(),
-    completed: false,
-    category: 'harvesting',
-    createdAt: daysAgo(1),
-  },
-  {
-    id: generateId(),
-    title: 'Prune sunflower dead leaves',
-    dueDate: daysAhead(2),
-    completed: false,
-    category: 'pruning',
-    createdAt: daysAgo(3),
-  },
-  {
-    id: generateId(),
-    title: 'Apply neem oil for pests',
-    dueDate: daysAhead(3),
-    completed: false,
-    category: 'pest-control',
-    createdAt: daysAgo(1),
-  },
-  {
-    id: generateId(),
-    title: 'Plant fall garlic bulbs',
-    dueDate: daysAhead(7),
-    completed: false,
-    category: 'planting',
-    createdAt: daysAgo(0),
-  },
-];
-
-export const useGardenStore = create<GardenState>()((set, get) => ({
-  plants: DEMO_PLANTS,
-  tasks: DEMO_TASKS,
+export const useGardenStore = create<GardenState>()(
+  persist(
+    (set, get) => ({
+  // A fresh family's garden starts empty — GardenPlannerScreen already has
+  // a real "No plants yet, tap + to add" empty state for this. Shipping
+  // the same 7 hardcoded demo plants to every family regardless of what
+  // they actually planted was never real data, just a permanent fake
+  // default (same issue already fixed this way in useEmergencyStore).
+  plants: [],
+  tasks: [],
 
   addPlant: (plant) =>
     set((s) => ({
@@ -280,4 +142,29 @@ export const useGardenStore = create<GardenState>()((set, get) => ({
       (t) => !t.completed && new Date(t.dueDate).toDateString() === todayStr
     );
   },
-}));
+
+  getAutoWateringTasks: () => {
+    const { plants, tasks } = get();
+    const now = new Date();
+    return plants
+      .filter((p) => p.nextWatering && new Date(p.nextWatering) <= now)
+      .filter((p) => !tasks.some((t) => !t.completed && t.category === 'watering' && t.plantId === p.id))
+      .map((p) => ({
+        id: `auto-water-${p.id}`,
+        plantId: p.id,
+        title: `Water ${p.name}`,
+        dueDate: p.nextWatering!,
+        completed: false,
+        category: 'watering' as const,
+        createdAt: p.nextWatering!,
+        auto: true,
+      }));
+  },
+    }),
+    {
+      name: 'family-command-center-garden',
+      storage: createJSONStorage(() => mmkvStorage),
+      partialize: (state) => ({ plants: state.plants, tasks: state.tasks }),
+    }
+  )
+);

@@ -108,6 +108,7 @@ export function GardenPlannerScreen({ navigation }: any) {
     removeTask,
     getPlantsNeedingWater,
     getTasksDueToday,
+    getAutoWateringTasks,
   } = useGardenStore();
 
   const [activeTab, setActiveTab] = useState<Tab>('Garden');
@@ -143,7 +144,15 @@ export function GardenPlannerScreen({ navigation }: any) {
   const pendingTasks = tasks.filter((t) => !t.completed).sort((a, b) => a.dueDate.localeCompare(b.dueDate));
   const completedTasks = tasks.filter((t) => t.completed);
   const todayStr = new Date().toDateString();
-  const dueTodayTasks = pendingTasks.filter((t) => new Date(t.dueDate).toDateString() === todayStr);
+  // Auto-generated watering reminders always slot into "Due Today" — a
+  // plant's schedule doesn't care what date it says next, if it's overdue
+  // it needs water now. Completing one calls waterPlant() directly (there's
+  // no underlying task row to mark complete) rather than completeTask().
+  const autoWateringTasks = getAutoWateringTasks();
+  const dueTodayTasks = [
+    ...autoWateringTasks,
+    ...pendingTasks.filter((t) => new Date(t.dueDate).toDateString() === todayStr),
+  ];
   const upcomingTasks = pendingTasks.filter((t) => new Date(t.dueDate).toDateString() !== todayStr);
 
   // Schedule: 7-day week view
@@ -374,7 +383,11 @@ export function GardenPlannerScreen({ navigation }: any) {
                           )}
                         </View>
                         <Pressable accessibilityRole="button"
-                          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); completeTask(task.id); }}
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            if (task.auto && task.plantId) waterPlant(task.plantId);
+                            else completeTask(task.id);
+                          }}
                           style={styles.completeBtn}
                         >
                           <Ionicons name="checkmark-circle" size={24} color='#1B5E20' />
