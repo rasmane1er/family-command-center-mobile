@@ -228,8 +228,14 @@ export function EmergencyModeScreen({ navigation }: any) {
 
       <CollapsibleHeader fullHeader={screenHeader} compactHeader={screenCompact}>
         {({ onScroll, onScrollEndDrag, onMomentumScrollEnd, scrollEventThrottle, contentPaddingTop }) => (
+      // 160 rather than this screen family's usual 100 — the floating tab
+      // bar's footprint (~125pt: its own height plus the safe-area bottom
+      // inset) sits on top of the last ~25-60pt of content at max scroll,
+      // and unlike most other screens here, this one now has a real
+      // tappable control (the meeting-point editor) as its last element,
+      // not just a static info card that doesn't need to be reachable.
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+        contentContainerStyle={[styles.content, { paddingBottom: 160, paddingTop: contentPaddingTop }]}
         onScroll={onScroll}
         onScrollEndDrag={onScrollEndDrag}
         onMomentumScrollEnd={onMomentumScrollEnd}
@@ -298,10 +304,16 @@ export function EmergencyModeScreen({ navigation }: any) {
                     </View>
                   </>
                 ) : (
-                  <Pressable accessibilityRole="button" onPress={() => { setMeetingPointDraft(meetingPoint); setEditingMeetingPoint(true); }}>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => { setMeetingPointDraft(meetingPoint); setEditingMeetingPoint(true); }}
+                    hitSlop={10}
+                    style={({ pressed }) => [styles.meetingPointTap, pressed && { opacity: 0.6 }]}
+                  >
                     <Text style={styles.meetingPointAddr}>
                       {meetingPoint || 'Not set — tap to add your family\'s rally point'}
                     </Text>
+                    <Ionicons name="pencil" size={14} color={colors.textSecondary} />
                   </Pressable>
                 )}
               </View>
@@ -406,7 +418,8 @@ const styles = StyleSheet.create({
   stepAction: { fontSize: 13, color: colors.textSecondary, lineHeight: 19 },
   meetingPoint: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, backgroundColor: '#FDEDEC', borderRadius: 14, padding: 16, marginTop: 12 },
   meetingPointTitle: { fontSize: 13, fontWeight: '700', color: '#E74C3C', marginBottom: 4 },
-  meetingPointAddr: { fontSize: 13, color: colors.text, lineHeight: 19 },
+  meetingPointTap: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, paddingVertical: 6 },
+  meetingPointAddr: { flex: 1, fontSize: 13, color: colors.text, lineHeight: 19 },
   meetingPointInput: { fontSize: 13, color: colors.text, lineHeight: 19, borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 8, backgroundColor: colors.card, minHeight: 40 },
   meetingPointActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 16, marginTop: 8 },
   meetingPointCancel: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
