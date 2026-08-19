@@ -48,7 +48,10 @@ export async function populateFromSignUp(user: AuthUser) {
     militaryMode: false,
     premiumTier: 'free',
     createdAt: now,
-    ...(user.city ? { homeAddress: user.city } : {}),
+    ...(user.streetAddress ? { streetAddress: user.streetAddress } : {}),
+    ...(user.city ? { city: user.city } : {}),
+    ...(user.state ? { state: user.state } : {}),
+    ...(user.zipCode ? { zipCode: user.zipCode } : {}),
   };
 
   const member: FamilyMember = {

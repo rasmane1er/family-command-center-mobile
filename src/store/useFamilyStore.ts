@@ -96,6 +96,11 @@ interface FamilyState {
   // Child onboarding: look up a family by its 6-char invite code and
   // set the local family state so the child can access the family.
   joinWithCode: (code: string) => Promise<void>;
+  // Emergency SOS broadcast (EmergencyModeScreen) — pushes to every other
+  // family member with a registered push token. Resolves with the number of
+  // recipients notified, so the caller can tell the user "no one else is
+  // reachable" instead of a false "sent" if nobody has a push token.
+  sendSOS: (message?: string) => Promise<number>;
 }
 
 import { generateId } from '../utils/generateId';
@@ -473,6 +478,14 @@ export const useFamilyStore = create<FamilyState>()(
     // Auto-select the first child member (most likely the one the code was for)
     const childMember = result.members.find((m) => m.role === 'child');
     if (childMember) set({ activeMemberId: childMember.id });
+  },
+
+  sendSOS: async (message?: string) => {
+    const result = await apiRequest<{ sent: number }>('/family/sos', {
+      method: 'POST',
+      body: JSON.stringify(message ? { message } : {}),
+    });
+    return result.sent;
   },
     }),
     {

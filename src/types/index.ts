@@ -112,7 +112,10 @@ export interface Family {
   id: string;
   name: string;
   motto?: string;
-  homeAddress?: string;
+  streetAddress?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
   timezone: string;
   currency: string;
   militaryMode: boolean;

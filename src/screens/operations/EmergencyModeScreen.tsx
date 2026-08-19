@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Animated, Linking } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Animated, Linking, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
 import { Card } from '../../components/common/Card';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { useEmergencyStore } from '../../store/useEmergencyStore';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { useTranslation } from 'react-i18next';
 
@@ -66,21 +67,6 @@ const PROTOCOLS: Record<EmergencyType, { step: string; action: string }[]> = {
   ],
 };
 
-const EMERGENCY_KIT = [
-  { item: 'Water (1 gallon/person/day × 3 days)', done: true },
-  { item: 'Non-perishable food (3-day supply)', done: true },
-  { item: 'First aid kit & manual', done: true },
-  { item: 'Flashlights + extra batteries', done: true },
-  { item: 'Battery/crank radio', done: false },
-  { item: 'Whistle to signal for help', done: false },
-  { item: 'Dust masks', done: false },
-  { item: 'Wrench/pliers to shut off utilities', done: true },
-  { item: 'Manual can opener', done: true },
-  { item: 'Local maps (paper)', done: false },
-  { item: 'Copies of important documents', done: true },
-  { item: 'Extra medications (7-day supply)', done: false },
-];
-
 export function EmergencyModeScreen({ navigation }: any) {
   const { t } = useTranslation('ops');
   const insets = useSafeAreaInsets();
@@ -90,6 +76,13 @@ export function EmergencyModeScreen({ navigation }: any) {
   const [tab, setTab] = useState<'protocols' | 'contacts' | 'kit'>('protocols');
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const members = useFamilyStore((s) => s.members);
+  const sendSOS = useFamilyStore((s) => s.sendSOS);
+  const kit = useEmergencyStore((s) => s.kit);
+  const toggleKitItem = useEmergencyStore((s) => s.toggleKitItem);
+  const meetingPoint = useEmergencyStore((s) => s.meetingPoint);
+  const setMeetingPoint = useEmergencyStore((s) => s.setMeetingPoint);
+  const [editingMeetingPoint, setEditingMeetingPoint] = useState(false);
+  const [meetingPointDraft, setMeetingPointDraft] = useState(meetingPoint);
 
   useEffect(() => {
     if (sosActive) {
@@ -106,7 +99,25 @@ export function EmergencyModeScreen({ navigation }: any) {
             clearInterval(timer);
             setSosActive(false);
             setSosCountdown(5);
-            Alert.alert('🚨 SOS SENT', 'Emergency alert sent to all family members. 911 notification prepared.');
+            // Fire-and-report rather than awaited inline — this callback is
+            // the setState updater for the countdown itself, not an async
+            // context, and the SOS send shouldn't block the countdown UI
+            // from resetting immediately.
+            sendSOS()
+              .then((sent) => {
+                Alert.alert(
+                  sent > 0 ? '🚨 SOS Sent' : '🚨 SOS Sent — No One Reachable',
+                  sent > 0
+                    ? `Emergency alert sent to ${sent} family member${sent === 1 ? '' : 's'}.`
+                    : 'No other family members have notifications enabled right now. Call 911 directly if this is a real emergency.',
+                );
+              })
+              .catch(() => {
+                Alert.alert(
+                  '🚨 SOS Not Sent',
+                  'Could not reach the server to alert your family. Call 911 directly if this is a real emergency.',
+                );
+              });
             return 5;
           }
           return c - 1;
@@ -136,7 +147,7 @@ export function EmergencyModeScreen({ navigation }: any) {
   };
 
   const selectedProtocol = PROTOCOLS[selectedType];
-  const kitDone = EMERGENCY_KIT.filter((k) => k.done).length;
+  const kitDone = kit.filter((k) => k.done).length;
 
   const EMERGENCY_CONTACTS = [
     { name: 'Emergency Services', number: '911', icon: 'call', color: '#E74C3C', type: 'police/fire/medical' },
@@ -180,7 +191,7 @@ export function EmergencyModeScreen({ navigation }: any) {
           </Pressable>
         </Animated.View>
         <Text style={styles.sosHint}>
-          {sosActive ? 'Sending SOS to all family members...' : 'Hold to activate emergency SOS'}
+          {sosActive ? `Sending in ${sosCountdown}s — tap to cancel` : 'Tap to activate emergency SOS'}
         </Text>
       </View>
     
@@ -259,7 +270,40 @@ export function EmergencyModeScreen({ navigation }: any) {
               <Ionicons name="location" size={18} color="#E74C3C" />
               <View style={{ flex: 1, marginLeft: 10 }}>
                 <Text style={styles.meetingPointTitle}>Family Meeting Point</Text>
-                <Text style={styles.meetingPointAddr}>Corner of Oak Street & Main Ave (in front of Johnson's house)</Text>
+                {editingMeetingPoint ? (
+                  <>
+                    <TextInput
+                      accessibilityLabel="Family meeting point"
+                      style={styles.meetingPointInput}
+                      value={meetingPointDraft}
+                      onChangeText={setMeetingPointDraft}
+                      placeholder="e.g. Corner of Oak & Main, in front of the Johnsons'"
+                      placeholderTextColor={colors.textMuted}
+                      multiline
+                      autoFocus
+                    />
+                    <View style={styles.meetingPointActions}>
+                      <Pressable
+                        accessibilityRole="button"
+                        onPress={() => { setMeetingPointDraft(meetingPoint); setEditingMeetingPoint(false); }}
+                      >
+                        <Text style={styles.meetingPointCancel}>Cancel</Text>
+                      </Pressable>
+                      <Pressable
+                        accessibilityRole="button"
+                        onPress={() => { setMeetingPoint(meetingPointDraft.trim()); setEditingMeetingPoint(false); }}
+                      >
+                        <Text style={styles.meetingPointSave}>Save</Text>
+                      </Pressable>
+                    </View>
+                  </>
+                ) : (
+                  <Pressable accessibilityRole="button" onPress={() => { setMeetingPointDraft(meetingPoint); setEditingMeetingPoint(true); }}>
+                    <Text style={styles.meetingPointAddr}>
+                      {meetingPoint || 'Not set — tap to add your family\'s rally point'}
+                    </Text>
+                  </Pressable>
+                )}
               </View>
             </View>
           </>
@@ -293,26 +337,28 @@ export function EmergencyModeScreen({ navigation }: any) {
         {tab === 'kit' && (
           <>
             <View style={styles.kitHeader}>
-              <Text style={styles.kitProgress}>{kitDone}/{EMERGENCY_KIT.length} items ready</Text>
+              <Text style={styles.kitProgress}>{kitDone}/{kit.length} items ready</Text>
               <View style={styles.kitBar}>
-                <View style={[styles.kitFill, { width: `${(kitDone / EMERGENCY_KIT.length) * 100}%` }]} />
+                <View style={[styles.kitFill, { width: `${(kitDone / kit.length) * 100}%` }]} />
               </View>
               <Text style={styles.kitStatus}>
-                {kitDone === EMERGENCY_KIT.length ? '✅ Your kit is ready!' : `⚠️ ${EMERGENCY_KIT.length - kitDone} items still needed`}
+                {kitDone === kit.length ? '✅ Your kit is ready!' : `⚠️ ${kit.length - kitDone} items still needed`}
               </Text>
             </View>
 
-            {EMERGENCY_KIT.map((item, i) => (
-              <Card key={i} variant="elevated" style={styles.kitItem}>
-                <View style={styles.kitRow}>
-                  <Ionicons
-                    name={item.done ? 'checkmark-circle' : 'ellipse-outline'}
-                    size={20}
-                    color={item.done ? colors.success : colors.textMuted}
-                  />
-                  <Text style={[styles.kitItemText, item.done && styles.kitItemDone]}>{item.item}</Text>
-                </View>
-              </Card>
+            {kit.map((item) => (
+              <Pressable accessibilityRole="button" key={item.id} onPress={() => toggleKitItem(item.id)}>
+                <Card variant="elevated" style={styles.kitItem}>
+                  <View style={styles.kitRow}>
+                    <Ionicons
+                      name={item.done ? 'checkmark-circle' : 'ellipse-outline'}
+                      size={20}
+                      color={item.done ? colors.success : colors.textMuted}
+                    />
+                    <Text style={[styles.kitItemText, item.done && styles.kitItemDone]}>{item.label}</Text>
+                  </View>
+                </Card>
+              </Pressable>
             ))}
 
             <Card variant="elevated" style={styles.storageCard}>
@@ -361,6 +407,10 @@ const styles = StyleSheet.create({
   meetingPoint: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, backgroundColor: '#FDEDEC', borderRadius: 14, padding: 16, marginTop: 12 },
   meetingPointTitle: { fontSize: 13, fontWeight: '700', color: '#E74C3C', marginBottom: 4 },
   meetingPointAddr: { fontSize: 13, color: colors.text, lineHeight: 19 },
+  meetingPointInput: { fontSize: 13, color: colors.text, lineHeight: 19, borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 8, backgroundColor: colors.card, minHeight: 40 },
+  meetingPointActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 16, marginTop: 8 },
+  meetingPointCancel: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  meetingPointSave: { fontSize: 13, fontWeight: '700', color: '#E74C3C' },
   contactCard: { marginBottom: 8, borderRadius: 14 },
   contactRow: { flexDirection: 'row', alignItems: 'center' },
   contactIcon: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },

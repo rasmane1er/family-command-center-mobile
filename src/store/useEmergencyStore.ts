@@ -17,9 +17,36 @@ export const DEFAULT_CHECKLIST: SafetyCheckItem[] = [
   { id: 'evacuation-route', label: 'Evacuation route practiced', done: false },
 ];
 
+// The 12-item supply checklist shown on EmergencyModeScreen's Kit tab —
+// distinct from DEFAULT_CHECKLIST above (that's broad household-readiness
+// tasks; this is the physical go-bag contents). Same id/label/done shape,
+// same reasoning for defaulting every item to false: a fresh family hasn't
+// actually stocked any of this yet.
+export const DEFAULT_KIT: SafetyCheckItem[] = [
+  { id: 'water', label: 'Water (1 gallon/person/day × 3 days)', done: false },
+  { id: 'food', label: 'Non-perishable food (3-day supply)', done: false },
+  { id: 'first-aid', label: 'First aid kit & manual', done: false },
+  { id: 'flashlights', label: 'Flashlights + extra batteries', done: false },
+  { id: 'radio', label: 'Battery/crank radio', done: false },
+  { id: 'whistle', label: 'Whistle to signal for help', done: false },
+  { id: 'masks', label: 'Dust masks', done: false },
+  { id: 'shutoff-tools', label: 'Wrench/pliers to shut off utilities', done: false },
+  { id: 'can-opener', label: 'Manual can opener', done: false },
+  { id: 'maps', label: 'Local maps (paper)', done: false },
+  { id: 'documents', label: 'Copies of important documents', done: false },
+  { id: 'medications', label: 'Extra medications (7-day supply)', done: false },
+];
+
 interface EmergencyState {
   checklist: SafetyCheckItem[];
   toggleCheckItem: (id: string) => void;
+  kit: SafetyCheckItem[];
+  toggleKitItem: (id: string) => void;
+  // Free text, not a structured address — a rally point ("corner of Oak &
+  // Main, in front of the Johnsons'") is conceptually distinct from the
+  // family's home address and doesn't need to resolve to one.
+  meetingPoint: string;
+  setMeetingPoint: (text: string) => void;
 }
 
 // This is a safety feature — the checklist previously had hardcoded
@@ -35,11 +62,18 @@ export const useEmergencyStore = create<EmergencyState>()(
         set((s) => ({
           checklist: s.checklist.map((c) => (c.id === id ? { ...c, done: !c.done } : c)),
         })),
+      kit: DEFAULT_KIT,
+      toggleKitItem: (id) =>
+        set((s) => ({
+          kit: s.kit.map((c) => (c.id === id ? { ...c, done: !c.done } : c)),
+        })),
+      meetingPoint: '',
+      setMeetingPoint: (text) => set({ meetingPoint: text }),
     }),
     {
       name: 'family-command-center-emergency',
       storage: createJSONStorage(() => mmkvStorage),
-      partialize: (state) => ({ checklist: state.checklist }),
+      partialize: (state) => ({ checklist: state.checklist, kit: state.kit, meetingPoint: state.meetingPoint }),
     }
   )
 );
