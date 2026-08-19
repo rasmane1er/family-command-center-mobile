@@ -1,4 +1,3 @@
-import { enqueueSync } from '../sync/enqueueSync';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { mmkvStorage } from '../storage/mmkvStorage';
@@ -8,6 +7,7 @@ import type {
 } from '../types';
 import * as financeAccountService from '../services/financeAccountService';
 import type { CreateAccountTransactionInput, CreateRecurringInput } from '../services/financeAccountService';
+import * as manualTransactionService from '../services/manualTransactionService';
 import * as budgetService from '../services/budgetService';
 import * as billService from '../services/billService';
 import * as financeSubscriptionService from '../services/financeSubscriptionService';
@@ -239,18 +239,24 @@ export const useFinanceStore = create<FinanceState>()(
   },
 
   addTransaction: (t) => {
+    const prev = get().transactions;
     set((s) => {
       const transactions = [t, ...s.transactions].slice(0, MAX_TRANSACTIONS);
       return { transactions, ...calcDerived(s.accounts, transactions) };
     });
-    enqueueSync({ entity: 'finance', action: 'create', payload: { type: 'transaction', data: t } });
+    manualTransactionService.createManualTransaction(t).catch(() => {
+      set((s) => ({ transactions: prev, ...calcDerived(s.accounts, prev) }));
+    });
   },
   deleteTransaction: (id) => {
+    const prev = get().transactions;
     set((s) => {
       const transactions = s.transactions.filter((tx) => tx.id !== id);
       return { transactions, ...calcDerived(s.accounts, transactions) };
     });
-    enqueueSync({ entity: 'finance', action: 'delete', payload: { type: 'transaction', id } });
+    manualTransactionService.deleteManualTransactionRemote(id).catch(() => {
+      set((s) => ({ transactions: prev, ...calcDerived(s.accounts, prev) }));
+    });
   },
 
   // ─── Budgets ────────────────────────────────────────────────────────────
@@ -393,7 +399,7 @@ export const useFinanceStore = create<FinanceState>()(
     const st = get();
     if (
       !st.localAdoptedAt &&
-      (st.budgets.length || st.bills.length || st.subscriptions.length || st.financialGoals.length || st.debts.length)
+      (st.budgets.length || st.bills.length || st.subscriptions.length || st.financialGoals.length || st.debts.length || st.transactions.length)
     ) {
       try {
         await financeAdoptService.adoptLocal({
@@ -402,6 +408,7 @@ export const useFinanceStore = create<FinanceState>()(
           subscriptions: st.subscriptions,
           financialGoals: st.financialGoals,
           debts: st.debts,
+          transactions: st.transactions,
         });
         set({ localAdoptedAt: new Date().toISOString() });
       } catch {
@@ -409,7 +416,7 @@ export const useFinanceStore = create<FinanceState>()(
       }
     }
 
-    const [accountsRes, debtsRes, budgetsRes, billsRes, subscriptionsRes, goalsRes, summaryRes] = await Promise.allSettled([
+    const [accountsRes, debtsRes, budgetsRes, billsRes, subscriptionsRes, goalsRes, summaryRes, transactionsRes] = await Promise.allSettled([
       financeAccountService.fetchAccounts(),
       debtService.fetchDebts(),
       budgetService.fetchBudgets(),
@@ -417,6 +424,7 @@ export const useFinanceStore = create<FinanceState>()(
       financeSubscriptionService.fetchSubscriptions(),
       financialGoalService.fetchFinancialGoals(),
       financeSummaryService.fetchFinanceSummary(),
+      manualTransactionService.fetchManualTransactions(),
     ]);
 
     set((s) => {
@@ -426,6 +434,7 @@ export const useFinanceStore = create<FinanceState>()(
       const bills = billsRes.status === 'fulfilled' ? billsRes.value.bills : s.bills;
       const subscriptions = subscriptionsRes.status === 'fulfilled' ? subscriptionsRes.value.subscriptions : s.subscriptions;
       const financialGoals = goalsRes.status === 'fulfilled' ? goalsRes.value.goals : s.financialGoals;
+      const transactions = transactionsRes.status === 'fulfilled' ? transactionsRes.value.transactions : s.transactions;
       // totalNetWorth still comes from calcDerived (accounts-based, already
       // correct) — only monthlyIncome/monthlyExpenses/monthlySavings are
       // overridden here, with the real server-computed figures from Plaid +
@@ -433,14 +442,14 @@ export const useFinanceStore = create<FinanceState>()(
       // (which come from the local `transactions` array — see
       // financeSummaryService.ts for why that array doesn't reflect real
       // bank activity).
-      const derived = calcDerived(accounts, s.transactions);
+      const derived = calcDerived(accounts, transactions);
       if (summaryRes.status === 'fulfilled') {
         derived.monthlyIncome = summaryRes.value.monthlyIncome;
         derived.monthlyExpenses = summaryRes.value.monthlyExpenses;
         derived.monthlySavings = summaryRes.value.monthlySavings;
       }
       return {
-        accounts, debts, budgets, bills, subscriptions, financialGoals,
+        accounts, debts, budgets, bills, subscriptions, financialGoals, transactions,
         isLoaded: true,
         ...derived,
       };

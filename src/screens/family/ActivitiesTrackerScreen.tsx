@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -74,7 +74,16 @@ export function ActivitiesTrackerScreen({ navigation }: any) {
     toggleActive,
     deleteActivity,
     getTotalMonthlyCost,
+    fetchFromServer,
   } = useActivitiesStore();
+
+  // Always re-fetch on mount (not gated on isLoaded, which is stale/true
+  // from before activities were backend-synced on existing installs) —
+  // see AssetsScreen.tsx's identical comment for why this can't be gated.
+  useEffect(() => {
+    fetchFromServer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [selectedMemberId, setSelectedMemberId] = useState<string | 'all'>('all');
   const [activeTab, setActiveTab] = useState<'schedule' | 'activities' | 'costs'>('activities');

@@ -1,7 +1,7 @@
-import { enqueueSync } from '../sync/enqueueSync';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { mmkvStorage } from '../storage/mmkvStorage';
+import * as activityService from '../services/activityService';
 
 export type ActivityType = 'sport' | 'music' | 'art' | 'academic' | 'social' | 'religious' | 'other';
 export type DayOfWeek = 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri' | 'Sat' | 'Sun';
@@ -44,52 +44,47 @@ export const useActivitiesStore = create<ActivitiesState>()(
   isLoaded: false,
 
   addActivity: (a) => {
-  const activity = { ...a, id: generateId() };
-
-  set((s) => ({ activities: [...s.activities, activity] }));
-
-  enqueueSync({
-    entity: 'activities',
-    action: 'create',
-    payload: { type: 'activity', data: activity },
-  });
-},
+    const activity = { ...a, id: generateId() };
+    set((s) => ({ activities: [...s.activities, activity] }));
+    activityService.createActivity(activity).catch(() => {
+      set((s) => ({ activities: s.activities.filter((x) => x.id !== activity.id) }));
+    });
+  },
 
   toggleActive: (id) => {
-  let updatedIsActive = false;
+    const prev = get().activities;
+    let updatedIsActive = false;
 
-  set((s) => ({
-    activities: s.activities.map((a) => {
-      if (a.id !== id) return a;
+    set((s) => ({
+      activities: s.activities.map((a) => {
+        if (a.id !== id) return a;
+        updatedIsActive = !a.isActive;
+        return { ...a, isActive: updatedIsActive };
+      }),
+    }));
 
-      updatedIsActive = !a.isActive;
-      return { ...a, isActive: updatedIsActive };
-    }),
-  }));
-
-  enqueueSync({
-    entity: 'activities',
-    action: 'update',
-    payload: { type: 'activity', id, updates: { isActive: updatedIsActive } },
-  });
-},
+    activityService.updateActivityRemote(id, { isActive: updatedIsActive }).catch(() => { set({ activities: prev }); });
+  },
 
   deleteActivity: (id) => {
-  set((s) => ({ activities: s.activities.filter((a) => a.id !== id) }));
-
-  enqueueSync({
-    entity: 'activities',
-    action: 'delete',
-    payload: { type: 'activity', id },
-  });
-},
+    const prev = get().activities;
+    set((s) => ({ activities: s.activities.filter((a) => a.id !== id) }));
+    activityService.deleteActivityRemote(id).catch(() => { set({ activities: prev }); });
+  },
 
   getTotalMonthlyCost: () =>
     get()
       .activities.filter((a) => a.isActive)
       .reduce((sum, a) => sum + (a.monthlyCost ?? 0), 0),
 
-  fetchFromServer: async () => { set({ isLoaded: true }); },
+  fetchFromServer: async () => {
+    try {
+      const { activities } = await activityService.fetchActivities();
+      set({ activities, isLoaded: true });
+    } catch {
+      set({ isLoaded: true });
+    }
+  },
     }),
     {
       name: 'family-command-center-activities',

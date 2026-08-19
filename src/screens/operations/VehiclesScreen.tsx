@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Modal,
   TextInput, Alert, KeyboardAvoidingView, Platform,
@@ -73,7 +73,15 @@ export function VehiclesScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const s = makeStyles(colors);
 
-  const { vehicles, addVehicle, updateVehicle, deleteVehicle, documents } = useOperationsStore();
+  const { vehicles, addVehicle, updateVehicle, deleteVehicle, documents, fetchFromServer } = useOperationsStore();
+
+  // Always re-fetch on mount (not gated on isLoaded, which is stale/true
+  // from before vehicles were backend-synced on existing installs) — see
+  // AssetsScreen.tsx's identical comment for why this can't be gated.
+  useEffect(() => {
+    fetchFromServer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const members = useFamilyStore((s) => s.members);
   const family  = useFamilyStore((s) => s.family);
   const { addTask: addMaintenanceTask } = useHomeMaintenanceStore();

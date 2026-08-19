@@ -1,10 +1,11 @@
-import { enqueueSync } from '../sync/enqueueSync';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { mmkvStorage } from '../storage/mmkvStorage';
 import type { PantryItem, ShoppingList, MealPlan, Asset, Vehicle, Document } from '../types';
 import * as assetService from '../services/assetService';
 import * as pantryService from '../services/pantryService';
+import * as vehicleService from '../services/vehicleService';
+import * as documentService from '../services/documentService';
 import { apiRequest } from '../api/client';
 
 interface OperationsState {
@@ -108,40 +109,50 @@ export const useOperationsStore = create<OperationsState>()(
     assetService.deleteAssetRemote(id).catch(() => { set({ assets: prev }); });
   },
   addVehicle: (v) => {
-  set((s) => ({ vehicles: [...s.vehicles, v] }));
-
-  enqueueSync({
-    entity: 'operations',
-    action: 'create',
-    payload: { type: 'vehicle', data: v },
-  });
-},
-  updateVehicle: (id, updates) =>
-    set((s) => ({ vehicles: s.vehicles.map((v) => (v.id === id ? { ...v, ...updates } : v)) })),
-  deleteVehicle: (id) => set((s) => ({ vehicles: s.vehicles.filter((v) => v.id !== id) })),
+    set((s) => ({ vehicles: [...s.vehicles, v] }));
+    vehicleService.createVehicle(v).catch(() => {
+      set((s) => ({ vehicles: s.vehicles.filter((x) => x.id !== v.id) }));
+    });
+  },
+  updateVehicle: (id, updates) => {
+    const prev = get().vehicles;
+    set((s) => ({ vehicles: s.vehicles.map((v) => (v.id === id ? { ...v, ...updates } : v)) }));
+    vehicleService.updateVehicleRemote(id, updates).catch(() => { set({ vehicles: prev }); });
+  },
+  deleteVehicle: (id) => {
+    const prev = get().vehicles;
+    set((s) => ({ vehicles: s.vehicles.filter((v) => v.id !== id) }));
+    vehicleService.deleteVehicleRemote(id).catch(() => { set({ vehicles: prev }); });
+  },
   addDocument: (d) => {
-  set((s) => ({ documents: [...s.documents, d] }));
-
-  enqueueSync({
-    entity: 'operations',
-    action: 'create',
-    payload: { type: 'document', data: d },
-  });
-},
-  updateDocument: (id, updates) =>
-    set((s) => ({ documents: s.documents.map((d) => (d.id === id ? { ...d, ...updates } : d)) })),
-  deleteDocument: (id) => set((s) => ({ documents: s.documents.filter((d) => d.id !== id) })),
+    set((s) => ({ documents: [...s.documents, d] }));
+    documentService.createDocument(d).catch(() => {
+      set((s) => ({ documents: s.documents.filter((x) => x.id !== d.id) }));
+    });
+  },
+  updateDocument: (id, updates) => {
+    const prev = get().documents;
+    set((s) => ({ documents: s.documents.map((d) => (d.id === id ? { ...d, ...updates } : d)) }));
+    documentService.updateDocumentRemote(id, updates).catch(() => { set({ documents: prev }); });
+  },
+  deleteDocument: (id) => {
+    const prev = get().documents;
+    set((s) => ({ documents: s.documents.filter((d) => d.id !== id) }));
+    documentService.deleteDocumentRemote(id).catch(() => { set({ documents: prev }); });
+  },
 
   fetchFromServer: async (familyId) => {
     try {
-      const [{ assets }, { items }, mealRes] = await Promise.all([
+      const [{ assets }, { items }, mealRes, { vehicles }, { documents }] = await Promise.all([
         assetService.fetchAssets(),
         pantryService.fetchPantryItems(),
         familyId
           ? apiRequest<{ mealPlans: MealPlan[] }>(`/meal-plans/${familyId}`).catch(() => ({ mealPlans: [] as MealPlan[] }))
           : Promise.resolve({ mealPlans: [] as MealPlan[] }),
+        vehicleService.fetchVehicles(),
+        documentService.fetchDocuments(),
       ]);
-      set({ assets, pantryItems: items, mealPlans: mealRes.mealPlans, isLoaded: true });
+      set({ assets, pantryItems: items, mealPlans: mealRes.mealPlans, vehicles, documents, isLoaded: true });
     } catch {
       set({ isLoaded: true });
     }

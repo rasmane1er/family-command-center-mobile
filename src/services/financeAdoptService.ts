@@ -1,5 +1,5 @@
 import { apiRequest } from '../api/client';
-import type { Budget, Bill, Subscription, FinancialGoal, Debt } from '../types';
+import type { Budget, Bill, Subscription, FinancialGoal, Debt, Transaction } from '../types';
 
 export interface AdoptLocalInput {
   budgets?: Budget[];
@@ -7,6 +7,7 @@ export interface AdoptLocalInput {
   subscriptions?: Subscription[];
   financialGoals?: FinancialGoal[];
   debts?: Debt[];
+  transactions?: Transaction[];
 }
 
 export interface AdoptLocalResult {
@@ -16,6 +17,7 @@ export interface AdoptLocalResult {
     subscriptions: number;
     financialGoals: number;
     debts: number;
+    transactions: number;
   };
 }
 

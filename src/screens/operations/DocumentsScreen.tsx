@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Modal,
   TextInput, Switch, Alert, ActivityIndicator, Platform,
@@ -99,7 +99,15 @@ export function DocumentsScreen({ navigation, route }: any) {
   const vehicleLabel: string | undefined = route?.params?.vehicleLabel;
 
   const [activeCategory, setActiveCategory] = useState<string>(vehicleFilter ? 'vehicle' : 'all');
-  const { documents, addDocument, updateDocument, deleteDocument } = useOperationsStore();
+  const { documents, addDocument, updateDocument, deleteDocument, fetchFromServer } = useOperationsStore();
+
+  // Always re-fetch on mount (not gated on isLoaded, which is stale/true
+  // from before documents were backend-synced on existing installs) — see
+  // AssetsScreen.tsx's identical comment for why this can't be gated.
+  useEffect(() => {
+    fetchFromServer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const members = useFamilyStore((s) => s.members);
   const family  = useFamilyStore((s) => s.family);
 
