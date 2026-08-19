@@ -22,7 +22,6 @@ import { colors } from '../../../theme/colors';
 import { shadows } from '../../../theme/spacing';
 import { CollapsibleHeader } from '../../../components/common/CollapsibleHeader';
 import type { ChildDeviceStatus } from '../../../types';
-import { GuardianNative, type NativeAppUsage } from '../../../native/GuardianNative';
 import { useTranslation } from 'react-i18next';
 
 const statusColors: Record<ChildDeviceStatus, string> = {
@@ -62,10 +61,13 @@ export function ChildDeviceDetailScreen({ navigation, route }: any) {
   const { deviceId } = route.params ?? {};
 
   const devices = useGuardianStore((s) => s.devices);
+  const devicesFetchError = useGuardianStore((s) => s.devicesFetchError);
   const appUsage = useGuardianStore((s) => s.appUsage);
   const screenTimeRules = useGuardianStore((s) => s.screenTimeRules);
   const sendCommand = useGuardianStore((s) => s.sendCommand);
+  const pendingCommands = useGuardianStore((s) => s.pendingCommands);
   const hydrate = useGuardianStore((s) => s.hydrate);
+  const removeDevice = useGuardianStore((s) => s.removeDevice);
   const streamingDeviceId = useGuardianStore((s) => s.streamingDeviceId);
   const setStreamingDeviceId = useGuardianStore((s) => s.setStreamingDeviceId);
 
@@ -226,24 +228,6 @@ export function ChildDeviceDetailScreen({ navigation, route }: any) {
     }
   }, [device?.webFilterEnabled]);
 
-  const [nativeUsage, setNativeUsage] = useState<NativeAppUsage[]>([]);
-
-  useEffect(() => {
-    const today = new Date().toISOString().split('T')[0];
-
-    GuardianNative.getUsageStats(today)
-      .then((stats) => {
-        if (stats && stats.length > 0) {
-          setNativeUsage(
-            stats
-              .sort((a, b) => b.usageMinutes - a.usageMinutes)
-              .slice(0, 5)
-          );
-        }
-      })
-      .catch(() => {});
-  }, []);
-
   if (!device) {
     return (
       <View style={[styles.container, styles.notFoundContainer]}>
@@ -322,6 +306,21 @@ export function ChildDeviceDetailScreen({ navigation, route }: any) {
   const activeStatusColor = statusColors[device.status];
   const activeStatusLabel = statusLabels[device.status];
 
+  // Most recent command sent to THIS device — previously there was no way
+  // for the guardian to tell whether a lock/unlock they just sent actually
+  // reached the child device; the store now polls each command's real
+  // status after sending (see pollCommandResolution in useGuardianStore.ts),
+  // so this reflects a real answer, not just "we asked the server to try."
+  const lastCommand = [...pendingCommands]
+    .filter((c) => c.deviceId === device.id)
+    .sort((a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime())[0];
+  const lastCommandAck = lastCommand && ({
+    pending: { icon: 'time-outline', label: 'Sending…', color: '#F59E0B' },
+    executed: { icon: 'checkmark-circle', label: 'Delivered', color: '#22C55E' },
+    failed: { icon: 'alert-circle', label: 'Not delivered', color: '#EF4444' },
+    expired: { icon: 'alert-circle', label: 'Not delivered', color: '#EF4444' },
+  } as const)[lastCommand.status];
+
   const platformLabel = device.platform === 'ios' ? 'iOS' : 'Android';
   const platformIcon = device.platform === 'ios' ? 'logo-apple' : 'logo-android';
 
@@ -385,6 +384,13 @@ export function ChildDeviceDetailScreen({ navigation, route }: any) {
             {Math.floor(totalUsageToday / 60)}h {totalUsageToday % 60}m today
           </Text>
         </View>
+
+        {lastCommandAck && (
+          <View style={styles.footerChip}>
+            <Ionicons name={lastCommandAck.icon as any} size={14} color={lastCommandAck.color} />
+            <Text style={styles.footerChipText}>{lastCommandAck.label}</Text>
+          </View>
+        )}
       </View>
     </LinearGradient>
   );
@@ -430,6 +436,27 @@ export function ChildDeviceDetailScreen({ navigation, route }: any) {
               },
             ]}
           >
+            {/* Sync-error banner — the parent app couldn't reach the server on the
+                last poll, which looks identical to "device really is offline"
+                (frozen stale data) unless called out explicitly. */}
+            {devicesFetchError && (
+              <View style={[styles.card, shadows.card, { marginBottom: 12, borderColor: colors.danger, borderWidth: 1 }]}>
+                <View style={styles.cardHeader}>
+                  <Ionicons name="cloud-offline-outline" size={18} color={colors.danger} />
+                  <Text style={[styles.cardTitle, { color: colors.danger }]}>Can&apos;t Reach Server</Text>
+                </View>
+                <Text style={styles.coordSubText}>
+                  The data below may be stale — the app couldn&apos;t refresh from the server on the last check: {devicesFetchError}
+                </Text>
+                <Pressable accessibilityRole="button"
+                  style={[styles.commandBtn, { alignSelf: 'flex-start', marginTop: 8 }]}
+                  onPress={() => hydrate()}
+                >
+                  <Text style={[styles.commandLabel, { color: colors.primary }]}>Retry</Text>
+                </Pressable>
+              </View>
+            )}
+
             {/* Reconnect banner — shown when device is offline */}
             {device.status === 'offline' && (
               <View style={[styles.card, shadows.card, { marginBottom: 12 }]}>
@@ -454,16 +481,41 @@ export function ChildDeviceDetailScreen({ navigation, route }: any) {
                     </Pressable>
                   </View>
                 ) : (
-                  <Pressable accessibilityRole="button"
-                    style={[styles.commandBtn, { alignSelf: 'flex-start', flexDirection: 'row', gap: 8 }]}
-                    onPress={handleRepair}
-                    disabled={repairing}
-                  >
-                    <Ionicons name="refresh-circle-outline" size={20} color={colors.primary} />
-                    <Text style={[styles.commandLabel, { color: colors.primary }]}>
-                      {repairing ? 'Generating code…' : 'Reconnect Device'}
-                    </Text>
-                  </Pressable>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+                    <Pressable accessibilityRole="button"
+                      style={[styles.commandBtn, { alignSelf: 'flex-start', flexDirection: 'row', gap: 8 }]}
+                      onPress={handleRepair}
+                      disabled={repairing}
+                    >
+                      <Ionicons name="refresh-circle-outline" size={20} color={colors.primary} />
+                      <Text style={[styles.commandLabel, { color: colors.primary }]}>
+                        {repairing ? 'Generating code…' : 'Reconnect Device'}
+                      </Text>
+                    </Pressable>
+                    <Pressable accessibilityRole="button"
+                      style={[styles.commandBtn, { alignSelf: 'flex-start', flexDirection: 'row', gap: 8 }]}
+                      onPress={() => {
+                        Alert.alert(
+                          'Remove Device',
+                          `Remove "${device.deviceName}"? This can't be undone — if this is still a real device, re-pair it from scratch instead of removing it.`,
+                          [
+                            { text: 'Cancel', style: 'cancel' },
+                            {
+                              text: 'Remove',
+                              style: 'destructive',
+                              onPress: () => {
+                                removeDevice(device.id);
+                                navigation.canGoBack() ? navigation.goBack() : navigation.getParent()?.navigate('Home');
+                              },
+                            },
+                          ],
+                        );
+                      }}
+                    >
+                      <Ionicons name="trash-outline" size={20} color={colors.danger} />
+                      <Text style={[styles.commandLabel, { color: colors.danger }]}>Remove Device</Text>
+                    </Pressable>
+                  </View>
                 )}
               </View>
             )}
@@ -606,52 +658,32 @@ export function ChildDeviceDetailScreen({ navigation, route }: any) {
               </View>
             </View>
 
-            {(nativeUsage.length > 0 || todayUsage.length > 0) && (
+            {todayUsage.length > 0 && (
               <View style={[styles.card, shadows.card]}>
                 <View style={styles.cardHeader}>
                   <Ionicons name="apps" size={18} color={colors.info} />
                   <Text style={styles.cardTitle}>Top Apps Today</Text>
                 </View>
 
-                {nativeUsage.length > 0
-                  ? nativeUsage.map((entry) => {
-                      const maxMins = nativeUsage[0].usageMinutes;
-                      const barWidth =
-                        maxMins > 0 ? (entry.usageMinutes / maxMins) * 100 : 0;
+                {todayUsage.map((entry) => {
+                  const maxMins = todayUsage[0].usageMinutes;
+                  const barWidth =
+                    maxMins > 0 ? (entry.usageMinutes / maxMins) * 100 : 0;
 
-                      return (
-                        <View key={entry.packageName} style={styles.appRow}>
-                          <Text style={styles.appName} numberOfLines={1}>
-                            {entry.appName}
-                          </Text>
+                  return (
+                    <View key={entry.id} style={styles.appRow}>
+                      <Text style={styles.appName} numberOfLines={1}>
+                        {entry.appName}
+                      </Text>
 
-                          <View style={styles.appBarContainer}>
-                            <View style={[styles.appBar, { width: `${barWidth}%` }]} />
-                          </View>
+                      <View style={styles.appBarContainer}>
+                        <View style={[styles.appBar, { width: `${barWidth}%` }]} />
+                      </View>
 
-                          <Text style={styles.appMins}>{entry.usageMinutes}m</Text>
-                        </View>
-                      );
-                    })
-                  : todayUsage.map((entry) => {
-                      const maxMins = todayUsage[0].usageMinutes;
-                      const barWidth =
-                        maxMins > 0 ? (entry.usageMinutes / maxMins) * 100 : 0;
-
-                      return (
-                        <View key={entry.id} style={styles.appRow}>
-                          <Text style={styles.appName} numberOfLines={1}>
-                            {entry.appName}
-                          </Text>
-
-                          <View style={styles.appBarContainer}>
-                            <View style={[styles.appBar, { width: `${barWidth}%` }]} />
-                          </View>
-
-                          <Text style={styles.appMins}>{entry.usageMinutes}m</Text>
-                        </View>
-                      );
-                    })}
+                      <Text style={styles.appMins}>{entry.usageMinutes}m</Text>
+                    </View>
+                  );
+                })}
               </View>
             )}
 

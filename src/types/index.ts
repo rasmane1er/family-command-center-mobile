@@ -1212,7 +1212,7 @@ export interface GuardianCommand {
   payload?: Record<string, unknown> | null;
   sentAt: string;
   executedAt?: string | null;
-  status: 'pending' | 'executed' | 'failed';
+  status: 'pending' | 'executed' | 'failed' | 'expired';
 }
 
 export interface FamilyHealthScore {

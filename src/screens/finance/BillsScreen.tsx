@@ -23,6 +23,8 @@ import { useTranslation } from 'react-i18next';
 import { usePlaidAutoData } from '../../hooks/usePlaidAutoData';
 import { useDetectionFilter } from '../../hooks/useDetectionFilter';
 import { normalizeMerchantKey } from '../../utils/merchantKey';
+import { AIQuickFillButton } from '../../components/ai/AIQuickFillButton';
+import type { QuickFillField, QuickFillResult } from '../../services/aiService';
 
 const statusBadge = { upcoming: 'neutral', due_soon: 'warning', overdue: 'danger', paid: 'success' } as const;
 const statusLabels = { upcoming: 'Upcoming', due_soon: 'Due Soon', overdue: 'OVERDUE', paid: 'Paid' };
@@ -32,6 +34,13 @@ const CATEGORY_ICONS: Record<string, string> = {
   Housing: 'home', Utilities: 'flash', Insurance: 'shield-checkmark', Internet: 'wifi',
   Phone: 'phone-portrait', Health: 'medical', Education: 'school', Subscriptions: 'reload', Other: 'receipt',
 };
+
+const ADD_BILL_QUICKFILL_FIELDS: QuickFillField[] = [
+  { name: 'name', type: 'string', description: 'Biller or merchant name, e.g. "Electric Bill" or the utility company name' },
+  { name: 'amount', type: 'number', description: 'Amount due, digits only (no currency symbol)' },
+  { name: 'dueDate', type: 'date', description: 'Payment due date printed on the bill, formatted MM/DD/YYYY' },
+  { name: 'category', type: 'string', description: `Best-fit category, one of exactly: ${CATEGORIES.join(', ')}` },
+];
 
 import { generateId } from '../../utils/generateId';
 
@@ -122,6 +131,18 @@ export function BillsScreen({ navigation, route }: any) {
     addBill(newBill);
     resetModal();
     setShowAddModal(false);
+  };
+
+  const handleBillQuickFill = (result: QuickFillResult) => {
+    if (typeof result.name === 'string') setNewName(result.name);
+    if (result.amount !== null && result.amount !== undefined) setNewAmount(String(result.amount));
+    if (typeof result.category === 'string' && CATEGORIES.includes(result.category)) setNewCategory(result.category);
+    if (typeof result.dueDate === 'string') {
+      const parsed = new Date(result.dueDate);
+      if (!isNaN(parsed.getTime())) {
+        setNewDueDays(String(Math.max(0, differenceInDays(parsed, new Date()))));
+      }
+    }
   };
 
   const resetModal = () => {
@@ -365,6 +386,15 @@ export function BillsScreen({ navigation, route }: any) {
                 <Ionicons name="close" size={24} color={colors.text} />
               </Pressable>
             </View>
+
+            {!editingBill && (
+              <AIQuickFillButton
+                fields={ADD_BILL_QUICKFILL_FIELDS}
+                context="This is a household bill being added to a family bill tracker."
+                onExtracted={handleBillQuickFill}
+                label="Scan bill or invoice"
+              />
+            )}
 
             {/* Import from detected section */}
             {visibleDetectedBills.length > 0 && (

@@ -21,6 +21,8 @@ import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
 import { useMedicalRecordsStore, RecordType, MedicalRecord } from '../../store/useMedicalRecordsStore';
+import { AIVoiceQuickFillButton } from '../../components/ai/AIVoiceQuickFillButton';
+import type { QuickFillField, QuickFillResult } from '../../services/aiService';
 
 const RECORD_CONFIG: Record<RecordType, { icon: string; color: string; label: string }> = {
   visit:        { icon: 'medical',             color: '#2980B9', label: 'Visit' },
@@ -34,6 +36,15 @@ const RECORD_CONFIG: Record<RecordType, { icon: string; color: string; label: st
   vision:       { icon: 'eye',                 color: '#1ABC9C', label: 'Vision' },
 };
 const RECORD_TYPES = Object.keys(RECORD_CONFIG) as RecordType[];
+
+const ADD_RECORD_QUICKFILL_FIELDS: QuickFillField[] = [
+  { name: 'title', type: 'string', description: 'Short title for the visit/record, e.g. "Annual checkup"' },
+  { name: 'type', type: 'string', description: `Record type, one of exactly: ${RECORD_TYPES.join(', ')}` },
+  { name: 'provider', type: 'string', description: 'Doctor or clinic name' },
+  { name: 'date', type: 'date', description: 'Visit/record date, formatted YYYY-MM-DD' },
+  { name: 'results', type: 'string', description: 'Findings, diagnosis, or lab results mentioned' },
+  { name: 'followUpDate', type: 'date', description: 'Follow-up appointment date if mentioned, formatted YYYY-MM-DD' },
+];
 
 const MEMBERS = [
   { id: 'member-1', name: 'Dad',  color: '#2980B9' },
@@ -138,6 +149,17 @@ export function MedicalRecordsScreen({ navigation }: any) {
     });
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setShowRecordModal(false);
+  };
+
+  const handleRecordQuickFill = (result: QuickFillResult) => {
+    if (typeof result.title === 'string') setRTitle(result.title);
+    if (typeof result.type === 'string' && RECORD_TYPES.includes(result.type as RecordType)) {
+      setRType(result.type as RecordType);
+    }
+    if (typeof result.provider === 'string') setRProvider(result.provider);
+    if (typeof result.date === 'string') setRDate(result.date);
+    if (typeof result.results === 'string') setRResults(result.results);
+    if (typeof result.followUpDate === 'string') setRFollowUp(result.followUpDate);
   };
 
   const openDoctorModal = () => {
@@ -355,6 +377,13 @@ export function MedicalRecordsScreen({ navigation }: any) {
               </Pressable>
             </View>
             <ScrollView style={styles.modalScroll} contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">
+
+              <AIVoiceQuickFillButton
+                fields={ADD_RECORD_QUICKFILL_FIELDS}
+                context="This is a family member's medical visit being logged in a household medical records tracker."
+                onExtracted={handleRecordQuickFill}
+                prompt="Hold to dictate visit summary"
+              />
 
               <Text style={styles.fieldLabel}>Member</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>

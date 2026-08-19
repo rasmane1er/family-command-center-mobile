@@ -46,7 +46,12 @@ const safeCall = async <T>(
 ): Promise<T> => {
   try {
     if (!fn) return fallback;
-    return await fn();
+    // An optional-chained call into a native module that isn't linked in the
+    // current binary (e.g. a stale local build predating a new module)
+    // resolves to `undefined` rather than throwing, so the try/catch alone
+    // doesn't catch it — fall back explicitly on a nullish result too.
+    const result = await fn();
+    return result ?? fallback;
   } catch {
     return fallback;
   }

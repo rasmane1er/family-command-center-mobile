@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useAuthStore } from '../../../store/useAuthStore';
 import {
   Alert,
@@ -22,6 +22,7 @@ import { useFamilyStore } from "../../../store/useFamilyStore";
 import { colors } from "../../../theme/colors";
 import { shadows } from "../../../theme/spacing";
 import type { GeofenceAction, GeofenceZone } from "../../../types";
+import { Avatar } from "../../../components/common/Avatar";
 
 const ZONE_COLORS = [
   "#E74C3C",
@@ -94,15 +95,61 @@ export function GeofenceScreen({ navigation }: any) {
   const childMembers = members.filter((m) => m.role === "child");
 
   const childMarkers = useMemo(() => {
-    return devices
+    // Re-pairing a child device (re-scanning the QR code, reinstalling, etc.)
+    // has been creating a NEW ChildDevice row instead of reusing the existing
+    // one for that member, so a member with 3 historical pairings shows up as
+    // 3 overlapping map markers. Dedupe to one marker per member — whichever
+    // device most recently reported in — until the pairing flow itself stops
+    // creating duplicates server-side.
+    const latestByMember = new Map<string, (typeof devices)[number]>();
+    for (const d of devices) {
+      const existing = latestByMember.get(d.memberId);
+      if (!existing || new Date(d.lastSeen).getTime() > new Date(existing.lastSeen).getTime()) {
+        latestByMember.set(d.memberId, d);
+      }
+    }
+    return Array.from(latestByMember.values())
       .map((d) => {
         const loc = d.location ?? (d.lat != null && d.lng != null ? { lat: d.lat, lng: d.lng } : null);
         if (!loc) return null;
         const member = members.find((m) => m.id === d.memberId);
-        return { deviceId: d.id, lat: loc.lat, lng: loc.lng, member };
+        const address = d.location?.address ?? d.address ?? null;
+        return { deviceId: d.id, lat: loc.lat, lng: loc.lng, member, address };
       })
-      .filter((x): x is { deviceId: string; lat: number; lng: number; member: (typeof members)[number] | undefined } => x !== null);
+      .filter((x): x is { deviceId: string; lat: number; lng: number; member: (typeof members)[number] | undefined; address: string | null } => x !== null);
   }, [devices, members]);
+
+  // The backend's `address` field is only ever populated if the child app
+  // sends one (it never does — no reverse-geocoding exists there), so it's
+  // always empty in practice. Resolve it client-side instead: cheap, works
+  // immediately without touching the child app or backend, and only re-runs
+  // per device when its rounded position actually changes.
+  const [resolvedAddresses, setResolvedAddresses] = useState<Record<string, string>>({});
+  const geocodedPositionRef = useRef<Record<string, string>>({});
+
+  useEffect(() => {
+    childMarkers.forEach(({ deviceId, lat, lng, address }) => {
+      if (address) return;
+      const posKey = `${lat.toFixed(4)},${lng.toFixed(4)}`;
+      if (geocodedPositionRef.current[deviceId] === posKey) return;
+      geocodedPositionRef.current[deviceId] = posKey;
+      Location.reverseGeocodeAsync({ latitude: lat, longitude: lng })
+        .then((results) => {
+          const r = results[0];
+          if (!r) return;
+          // r.street is just the road name — the house number is a separate
+          // streetNumber field, so without it every address was missing its
+          // number (e.g. "Woodlands Green Rd" instead of "7005 Woodlands
+          // Green Rd").
+          const streetLine = [r.streetNumber, r.street ?? r.name].filter(Boolean).join(" ");
+          const formatted = [streetLine, r.city].filter(Boolean).join(", ");
+          if (formatted) {
+            setResolvedAddresses((prev) => ({ ...prev, [deviceId]: formatted }));
+          }
+        })
+        .catch(() => { /* offline or rate-limited — leave blank */ });
+    });
+  }, [childMarkers]);
 
   const initialRegion = useMemo<Region>(() => {
     const points = [
@@ -290,14 +337,24 @@ export function GeofenceScreen({ navigation }: any) {
           </React.Fragment>
         ))}
 
-        {childMarkers.map(({ deviceId, lat, lng, member }) => (
-          <Marker key={deviceId} coordinate={{ latitude: lat, longitude: lng }} zIndex={10}>
-            <View style={[styles.childMarker, { borderColor: member?.avatarColor ?? colors.primary }]}>
-              <Text style={styles.childMarkerText}>{(member?.name ?? "?").charAt(0)}</Text>
-            </View>
-            <Text style={styles.childMarkerLabel}>{member?.name ?? "Unknown"}</Text>
-          </Marker>
-        ))}
+        {childMarkers.map(({ deviceId, lat, lng, member, address }) => {
+          const displayAddress = address ?? resolvedAddresses[deviceId];
+          return (
+            <Marker key={deviceId} coordinate={{ latitude: lat, longitude: lng }} zIndex={10}>
+              <View style={[styles.childMarkerRing, { borderColor: member?.avatarColor ?? colors.primary }]}>
+                <Avatar name={member?.name ?? "?"} color={member?.avatarColor} imageUri={member?.avatar} size={40} />
+              </View>
+              <View style={styles.childMarkerLabelWrap}>
+                <Text style={styles.childMarkerLabel}>{member?.name ?? "Unknown"}</Text>
+                {displayAddress && (
+                  <Text style={styles.childMarkerAddress} numberOfLines={1}>
+                    {displayAddress}
+                  </Text>
+                )}
+              </View>
+            </Marker>
+          );
+        })}
 
         {draftZone && (
           <>
@@ -614,29 +671,38 @@ const styles = StyleSheet.create({
 
   zoneMarkerDraft: { borderColor: "#fff", borderWidth: 3 },
 
-  childMarker: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.card,
+  childMarkerRing: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 3,
+    alignSelf: "center",
   },
 
-  childMarkerText: { fontSize: 15, fontWeight: "800", color: colors.text },
+  childMarkerLabelWrap: {
+    marginTop: 2,
+    backgroundColor: "#fff",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    alignItems: "center",
+    maxWidth: 140,
+  },
 
   childMarkerLabel: {
     fontSize: 10,
     fontWeight: "700",
     color: colors.text,
-    backgroundColor: "#fff",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-    marginTop: 2,
     textAlign: "center",
-    overflow: "hidden",
+  },
+
+  childMarkerAddress: {
+    fontSize: 9,
+    fontWeight: "500",
+    color: colors.textMuted,
+    textAlign: "center",
   },
 
   sheetHandle: {

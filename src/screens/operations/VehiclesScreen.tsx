@@ -22,8 +22,23 @@ import { useFamilyStore } from '../../store/useFamilyStore';
 import { useHomeMaintenanceStore } from '../../store/useHomeMaintenanceStore';
 import type { Vehicle } from '../../types';
 import { useTranslation } from 'react-i18next';
+import { AIQuickFillButton } from '../../components/ai/AIQuickFillButton';
+import type { QuickFillField, QuickFillResult } from '../../services/aiService';
 
 const FUEL_TYPES = ['Gasoline', 'Diesel', 'Hybrid', 'Electric', 'Plug-in Hybrid'];
+
+const ADD_VEHICLE_QUICKFILL_FIELDS: QuickFillField[] = [
+  { name: 'make', type: 'string', description: 'Vehicle manufacturer, e.g. Toyota' },
+  { name: 'model', type: 'string', description: 'Vehicle model, e.g. Camry' },
+  { name: 'year', type: 'number', description: 'Model year, 4 digits' },
+  { name: 'color', type: 'string', description: 'Exterior color' },
+  { name: 'licensePlate', type: 'string', description: 'License plate number' },
+  { name: 'mileage', type: 'number', description: 'Odometer reading in miles, digits only' },
+  { name: 'vin', type: 'string', description: 'Vehicle Identification Number, 17 characters' },
+  { name: 'fuelType', type: 'string', description: `One of exactly: ${FUEL_TYPES.join(', ')}` },
+  { name: 'insuranceExpiry', type: 'date', description: 'Insurance policy expiration date, formatted MM/DD/YYYY' },
+  { name: 'registrationExpiry', type: 'date', description: 'Vehicle registration expiration date, formatted MM/DD/YYYY' },
+];
 const SERVICE_TYPES = ['Oil Change', 'Tire Rotation', 'Brake Service', 'Air Filter', 'Transmission', 'Inspection', 'Detailing', 'Other'];
 
 import { generateId } from '../../utils/generateId';
@@ -90,6 +105,19 @@ export function VehiclesScreen({ navigation }: any) {
   const [historyVehicle, setHistoryVehicle] = useState<Vehicle | null>(null);
 
   // ── add vehicle ────────────────────────────────────────────────────────────
+
+  const handleVehicleQuickFill = (result: QuickFillResult) => {
+    if (typeof result.make === 'string') setNewMake(result.make);
+    if (typeof result.model === 'string') setNewModel(result.model);
+    if (result.year !== null && result.year !== undefined) setNewYear(String(result.year));
+    if (typeof result.color === 'string') setNewColor(result.color);
+    if (typeof result.licensePlate === 'string') setNewPlate(result.licensePlate);
+    if (result.mileage !== null && result.mileage !== undefined) setNewMileage(String(result.mileage));
+    if (typeof result.vin === 'string') setNewVin(result.vin);
+    if (typeof result.fuelType === 'string' && FUEL_TYPES.includes(result.fuelType)) setNewFuelType(result.fuelType);
+    if (typeof result.insuranceExpiry === 'string') setNewInsuranceExp(result.insuranceExpiry);
+    if (typeof result.registrationExpiry === 'string') setNewRegExp(result.registrationExpiry);
+  };
 
   const handleAdd = () => {
     if (!newMake.trim() || !newModel.trim()) {
@@ -437,6 +465,13 @@ export function VehiclesScreen({ navigation }: any) {
           <ScrollView style={s.modal} contentContainerStyle={{ paddingBottom: 48 }}>
             <View style={s.modalHandle} />
             <Text style={s.modalTitle}>Add Vehicle</Text>
+
+            <AIQuickFillButton
+              fields={ADD_VEHICLE_QUICKFILL_FIELDS}
+              context="This is a family vehicle being added to a household vehicle tracker."
+              onExtracted={handleVehicleQuickFill}
+              label="Scan registration or VIN"
+            />
 
             <Text style={s.modalLabel}>Make *</Text>
             <TextInput accessibilityLabel="e.g. Toyota" style={s.modalInput} placeholder="e.g. Toyota" value={newMake} onChangeText={setNewMake} placeholderTextColor={colors.textMuted} autoFocus />

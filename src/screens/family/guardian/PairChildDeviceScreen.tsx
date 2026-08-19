@@ -14,6 +14,7 @@ import QRCode from 'react-native-qrcode-svg';
 
 import { useGuardianStore } from '../../../store/useGuardianStore';
 import { useFamilyStore } from '../../../store/useFamilyStore';
+import { useAppStateInterval } from '../../../hooks/useAppStateInterval';
 import { colors } from '../../../theme/colors';
 import { shadows } from '../../../theme/spacing';
 
@@ -38,6 +39,8 @@ export function PairChildDeviceScreen({ navigation }: any) {
   const generateChildPairingCode = useGuardianStore((s) => s.generateChildPairingCode);
   const checkGuardianConsent = useGuardianStore((s) => s.checkGuardianConsent);
   const grantGuardianConsent = useGuardianStore((s) => s.grantGuardianConsent);
+  const refreshDevices = useGuardianStore((s) => s.refreshDevices);
+  const devices = useGuardianStore((s) => s.devices);
 
   const children = members.filter((m) => m.role === 'child');
 
@@ -47,6 +50,24 @@ export function PairChildDeviceScreen({ navigation }: any) {
   const [loading, setLoading] = useState(false);
   const [code, setCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [pendingDeviceId, setPendingDeviceId] = useState<string | null>(null);
+  const [paired, setPaired] = useState(false);
+
+  // Poll for the child redeeming the code — the child app's POST
+  // /guardian/devices/pair flips ChildDevice.isPaired server-side with no
+  // push/websocket back to the parent, so this is the only way the parent
+  // finds out. Stops once paired (enabled=false) or the code is cleared.
+  useAppStateInterval(
+    () => { refreshDevices().catch(() => {}); },
+    3000,
+    !!pendingDeviceId && !paired,
+  );
+
+  useEffect(() => {
+    if (!pendingDeviceId || paired) return;
+    const device = devices.find((d) => d.id === pendingDeviceId);
+    if (device?.isPaired) setPaired(true);
+  }, [devices, pendingDeviceId, paired]);
 
   // COPPA: before this parent can generate a pairing code for a child, they
   // must consent to the data collection Family Guardian will do once that
@@ -98,12 +119,14 @@ export function PairChildDeviceScreen({ navigation }: any) {
     setError(null);
     try {
       const deviceName = `${selectedChild.name}'s Phone`;
-      const generated = await generateChildPairingCode({
+      const { pairingCode, deviceId } = await generateChildPairingCode({
         deviceName,
         platform: 'ios',
         memberId: selectedId,
       });
-      setCode(generated);
+      setCode(pairingCode);
+      setPendingDeviceId(deviceId);
+      setPaired(false);
     } catch {
       setError('Could not generate a pairing code. Check your connection and try again.');
     } finally {
@@ -151,7 +174,7 @@ export function PairChildDeviceScreen({ navigation }: any) {
               <Pressable accessibilityRole="button"
                 key={child.id}
                 style={[styles.memberRow, selectedId === child.id && styles.memberRowSelected]}
-                onPress={() => { setSelectedId(child.id); setCode(null); setError(null); }}
+                onPress={() => { setSelectedId(child.id); setCode(null); setError(null); setPendingDeviceId(null); setPaired(false); }}
               >
                 <View style={[styles.avatar, { backgroundColor: child.avatarColor ?? colors.primary }]}>
                   <Text style={styles.avatarText}>
@@ -231,8 +254,24 @@ export function PairChildDeviceScreen({ navigation }: any) {
           </View>
         )}
 
-        {/* Step 4: show code */}
-        {code && (
+        {/* Step 4: show code, or success once the child redeems it */}
+        {code && paired && (
+          <View style={[styles.card, shadows.card, styles.pairedCard]}>
+            <Ionicons name="checkmark-circle" size={48} color={colors.success} />
+            <Text style={styles.pairedTitle}>{selectedChild?.name}&apos;s device is paired!</Text>
+            <Text style={styles.hint}>
+              It will now appear in your Guardian Dashboard.
+            </Text>
+            <Pressable accessibilityRole="button"
+              style={styles.generateBtn}
+              onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.getParent()?.navigate('Home')}
+            >
+              <Text style={styles.generateBtnText}>Done</Text>
+            </Pressable>
+          </View>
+        )}
+
+        {code && !paired && (
           <View style={[styles.card, shadows.card, { alignItems: 'center' }]}>
             <Text style={styles.sectionTitle}>4. Share This Code</Text>
             <Text style={styles.hint}>
@@ -250,9 +289,14 @@ export function PairChildDeviceScreen({ navigation }: any) {
               </View>
             )}
 
+            <View style={styles.waitingRow}>
+              <ActivityIndicator size="small" color={colors.textMuted} />
+              <Text style={styles.waitingText}>Waiting for {selectedChild?.name} to enter the code&hellip;</Text>
+            </View>
+
             <Pressable accessibilityRole="button"
               style={styles.regenerateBtn}
-              onPress={() => { setCode(null); setError(null); }}
+              onPress={() => { setCode(null); setError(null); setPendingDeviceId(null); setPaired(false); }}
             >
               <Ionicons name="refresh" size={15} color={colors.primary} />
               <Text style={styles.regenerateBtnText}>Generate New Code</Text>
@@ -456,6 +500,31 @@ const styles = StyleSheet.create({
   qrHint: {
     fontSize: 12,
     color: colors.textMuted,
+  },
+
+  waitingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 16,
+  },
+
+  waitingText: {
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+
+  pairedCard: {
+    alignItems: 'center',
+    gap: 8,
+  },
+
+  pairedTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: colors.text,
+    textAlign: 'center',
+    marginTop: 4,
   },
 
   regenerateBtn: {

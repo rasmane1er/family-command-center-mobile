@@ -28,6 +28,8 @@ import {
   EventType,
   RSVPStatus,
 } from '../../store/useEventPlannerStore';
+import { AIVoiceQuickFillButton } from '../../components/ai/AIVoiceQuickFillButton';
+import type { QuickFillField, QuickFillResult } from '../../services/aiService';
 
 const EVENT_TYPES: { value: EventType; label: string }[] = [
   { value: 'birthday', label: 'Birthday' },
@@ -89,6 +91,17 @@ function getCategoryIcon(cat: string): string {
 
 type DetailTab = 'guests' | 'tasks' | 'budget';
 type ViewTab = 'upcoming' | 'past';
+
+const NEW_EVENT_QUICKFILL_FIELDS: QuickFillField[] = [
+  { name: 'title', type: 'string', description: 'Event name/title' },
+  { name: 'type', type: 'string', description: `Event type, one of exactly: ${EVENT_TYPES.map((t) => t.value).join(', ')}` },
+  { name: 'date', type: 'date', description: 'Event date, formatted YYYY-MM-DD' },
+  { name: 'time', type: 'string', description: 'Event time, e.g. "3:00 PM"' },
+  { name: 'location', type: 'string', description: 'Venue or address' },
+  { name: 'budget', type: 'number', description: 'Budget amount, digits only' },
+  { name: 'host', type: 'string', description: 'Name of the family member hosting' },
+  { name: 'description', type: 'string', description: 'Short description of the occasion' },
+];
 
 export function EventPlannerScreen({ navigation: _navigation }: any) {
   const insets = useSafeAreaInsets();
@@ -154,6 +167,19 @@ export function EventPlannerScreen({ navigation: _navigation }: any) {
   };
   const resetTaskForm = () => { setTkTitle(''); setTkCategory('other'); setTkDue(''); setTkAssigned(''); };
   const resetExpenseForm = () => { setExCategory(''); setExDesc(''); setExAmount(''); setExPaid(false); };
+
+  const handleEventQuickFill = (result: QuickFillResult) => {
+    if (typeof result.title === 'string') setEvTitle(result.title);
+    if (typeof result.type === 'string' && EVENT_TYPES.some((t) => t.value === result.type)) {
+      setEvType(result.type as EventType);
+    }
+    if (typeof result.date === 'string') setEvDate(result.date);
+    if (typeof result.time === 'string') setEvTime(result.time);
+    if (typeof result.location === 'string') setEvLocation(result.location);
+    if (result.budget !== null && result.budget !== undefined) setEvBudget(String(result.budget));
+    if (typeof result.host === 'string') setEvHost(result.host);
+    if (typeof result.description === 'string') setEvDesc(result.description);
+  };
 
   const handleAddEvent = () => {
     if (!evTitle.trim()) return;
@@ -558,6 +584,12 @@ export function EventPlannerScreen({ navigation: _navigation }: any) {
           <ScrollView style={styles.modal} contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
             <View style={{ width: 40, height: 4, backgroundColor: '#ccc', borderRadius: 2, alignSelf: 'center', marginBottom: 16 }} />
             <Text style={styles.modalTitle}>New Event</Text>
+            <AIVoiceQuickFillButton
+              fields={NEW_EVENT_QUICKFILL_FIELDS}
+              context="This is a family event being planned in a household event planner."
+              onExtracted={handleEventQuickFill}
+              prompt="Hold to dictate event details"
+            />
             <Text style={styles.fieldLabel}>Title *</Text>
             <TextInput accessibilityLabel="Event name" style={styles.input} value={evTitle} onChangeText={setEvTitle} placeholder="Event name" />
             <Text style={styles.fieldLabel}>Event Type</Text>

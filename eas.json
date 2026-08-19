@@ -12,8 +12,8 @@
         "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "908895908238-qhah0te4q0sde11co45g7onh43nk52hi.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "908895908238-36h6slllf01ruhl668cfagcv2dl65kdf.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "908895908238-6l7sjfjaj5lji4rh2b38o7r1euam8arl.apps.googleusercontent.com",
-        "EXPO_PUBLIC_GOOGLE_MAPS_IOS_KEY": "AIzaSyCXf-KFuYmIAvNOGmQ3WgnmvCbqjMQoMYs",
-        "EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_KEY": "AIzaSyDhNVbWQT2Sd4EE6rfJFUuf9-cn3f7PQh4"
+        "EXPO_PUBLIC_GOOGLE_MAPS_IOS_KEY": "AIzaSyB6QAFHeXkF0jd1JH5bWhV-Xkbx3BUSe7A",
+        "EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_KEY": "AIzaSyB6QAFHeXkF0jd1JH5bWhV-Xkbx3BUSe7A"
       }
     },
     "preview": {
@@ -25,8 +25,8 @@
         "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "908895908238-qhah0te4q0sde11co45g7onh43nk52hi.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "908895908238-36h6slllf01ruhl668cfagcv2dl65kdf.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "908895908238-6l7sjfjaj5lji4rh2b38o7r1euam8arl.apps.googleusercontent.com",
-        "EXPO_PUBLIC_GOOGLE_MAPS_IOS_KEY": "AIzaSyCXf-KFuYmIAvNOGmQ3WgnmvCbqjMQoMYs",
-        "EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_KEY": "AIzaSyDhNVbWQT2Sd4EE6rfJFUuf9-cn3f7PQh4"
+        "EXPO_PUBLIC_GOOGLE_MAPS_IOS_KEY": "AIzaSyB6QAFHeXkF0jd1JH5bWhV-Xkbx3BUSe7A",
+        "EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_KEY": "AIzaSyB6QAFHeXkF0jd1JH5bWhV-Xkbx3BUSe7A"
       }
     },
     "production": {
@@ -42,8 +42,8 @@
         "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "908895908238-qhah0te4q0sde11co45g7onh43nk52hi.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "908895908238-36h6slllf01ruhl668cfagcv2dl65kdf.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "908895908238-6l7sjfjaj5lji4rh2b38o7r1euam8arl.apps.googleusercontent.com",
-        "EXPO_PUBLIC_GOOGLE_MAPS_IOS_KEY": "AIzaSyCXf-KFuYmIAvNOGmQ3WgnmvCbqjMQoMYs",
-        "EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_KEY": "AIzaSyDhNVbWQT2Sd4EE6rfJFUuf9-cn3f7PQh4"
+        "EXPO_PUBLIC_GOOGLE_MAPS_IOS_KEY": "AIzaSyB6QAFHeXkF0jd1JH5bWhV-Xkbx3BUSe7A",
+        "EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_KEY": "AIzaSyB6QAFHeXkF0jd1JH5bWhV-Xkbx3BUSe7A"
       }
     }
   },

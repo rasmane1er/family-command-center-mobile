@@ -21,6 +21,8 @@ import { getDetectedInsurance } from '../../services/autoFillService';
 import type { DetectedInsurance } from '../../services/autoFillService';
 import { useTranslation } from 'react-i18next';
 import { usePlaidAutoData } from '../../hooks/usePlaidAutoData';
+import { AIQuickFillButton } from '../../components/ai/AIQuickFillButton';
+import type { QuickFillField, QuickFillResult } from '../../services/aiService';
 
 import { generateId } from '../../utils/generateId';
 
@@ -58,6 +60,19 @@ const TYPE_LABELS: Record<InsuranceType, string> = {
 };
 
 const INSURANCE_TYPES: InsuranceType[] = ['health', 'auto', 'home', 'life', 'dental', 'vision', 'disability', 'other'];
+
+const ADD_POLICY_QUICKFILL_FIELDS: QuickFillField[] = [
+  { name: 'type', type: 'string', description: `Insurance type, one of exactly: ${INSURANCE_TYPES.join(', ')}` },
+  { name: 'provider', type: 'string', description: 'Insurance company / provider name' },
+  { name: 'policyNumber', type: 'string', description: 'Policy number' },
+  { name: 'premium', type: 'number', description: 'Premium amount, digits only' },
+  { name: 'frequency', type: 'string', description: 'Premium billing frequency, one of exactly: monthly, quarterly, annual' },
+  { name: 'renewalDate', type: 'date', description: 'Policy renewal/expiration date, formatted MM/DD/YYYY' },
+  { name: 'deductible', type: 'number', description: 'Deductible amount, digits only' },
+  { name: 'coverageAmount', type: 'number', description: 'Total coverage amount, digits only' },
+  { name: 'agentName', type: 'string', description: 'Agent or broker name, if listed' },
+  { name: 'agentPhone', type: 'string', description: 'Agent or broker phone number, if listed' },
+];
 const FREQUENCY_OPTIONS: PremiumFrequency[] = ['monthly', 'quarterly', 'annual'];
 const COLOR_PALETTE = ['#2980B9', '#E74C3C', '#27AE60', '#8E44AD', '#16A085', '#F5A623', '#E67E22', '#95A5A6'];
 
@@ -136,6 +151,25 @@ export function InsuranceManagerScreen({ navigation }: any) {
     setNewMembersInsured([]);
     setNewColor(TYPE_COLORS['health']);
     setEditingPolicy(null);
+  };
+
+  const handleInsuranceQuickFill = (result: QuickFillResult) => {
+    if (typeof result.type === 'string' && INSURANCE_TYPES.includes(result.type as InsuranceType)) {
+      const t = result.type as InsuranceType;
+      setNewType(t);
+      setNewColor(TYPE_COLORS[t]);
+    }
+    if (typeof result.provider === 'string') setNewProvider(result.provider);
+    if (typeof result.policyNumber === 'string') setNewPolicyNumber(result.policyNumber);
+    if (result.premium !== null && result.premium !== undefined) setNewPremium(String(result.premium));
+    if (typeof result.frequency === 'string' && ['monthly', 'quarterly', 'annual'].includes(result.frequency)) {
+      setNewFrequency(result.frequency as PremiumFrequency);
+    }
+    if (result.deductible !== null && result.deductible !== undefined) setNewDeductible(String(result.deductible));
+    if (result.coverageAmount !== null && result.coverageAmount !== undefined) setNewCoverageAmount(String(result.coverageAmount));
+    if (typeof result.renewalDate === 'string') setNewRenewalDate(result.renewalDate);
+    if (typeof result.agentName === 'string') setNewAgentName(result.agentName);
+    if (typeof result.agentPhone === 'string') setNewAgentPhone(result.agentPhone);
   };
 
   const handleEdit = (policy: typeof policies[number]) => {
@@ -554,6 +588,14 @@ export function InsuranceManagerScreen({ navigation }: any) {
           </View>
 
           <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
+            {!editingPolicy && (
+              <AIQuickFillButton
+                fields={ADD_POLICY_QUICKFILL_FIELDS}
+                context="This is a household insurance policy being added to a family insurance tracker."
+                onExtracted={handleInsuranceQuickFill}
+                label="Scan insurance card"
+              />
+            )}
             <Text style={styles.modalLabel}>Type</Text>
             <View style={styles.typeGrid}>
               {INSURANCE_TYPES.map((t) => (

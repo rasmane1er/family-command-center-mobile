@@ -21,6 +21,7 @@
       "config": {},
       "entitlements": {
         "com.apple.security.application-groups": [
+          "group.com.grasmane.familycommandcenter",
           "group.com.grasmane.familycommandcenter"
         ]
       },
@@ -28,18 +29,28 @@
         "NSAppTransportSecurity": {
           "NSAllowsLocalNetworking": true
         },
-        "NSLocalNetworkUsageDescription": "Family Command Center connects to your Philips Hue Bridge on your home WiFi network to control your smart lights."
+        "NSLocalNetworkUsageDescription": "Family Command Center connects to your Philips Hue Bridge on your home WiFi network to control your smart lights.",
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSSpeechRecognitionUsageDescription": "Allow Family Command Center to recognize your speech for voice input to the AI Assistant.",
+        "NSMicrophoneUsageDescription": "Allow Family Command Center to access the microphone for voice input to the AI Assistant."
       }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./src/assets/adaptive-icon.png",
+        "foregroundImage": "./src/assets/icon.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.familycommandcenter.app",
       "googleServicesFile": "./google-services.json",
       "config": {},
       "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_CONTACTS",
+        "android.permission.WRITE_CONTACTS",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT",
         "android.permission.RECORD_AUDIO",
         "android.permission.READ_CONTACTS",
         "android.permission.WRITE_CONTACTS",
@@ -119,6 +130,12 @@
         "projectId": "82729187-433d-4547-b35a-8b432f5a1a20"
       }
     },
-    "owner": "grasmane"
+    "owner": "grasmane",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/82729187-433d-4547-b35a-8b432f5a1a20"
+    }
   }
 }

@@ -179,3 +179,36 @@ export async function getFamilyInsights(context: string, token?: string): Promis
     return [];
   }
 }
+
+/* ── Generic AI quick-fill — camera/voice autofill for any "Add X" form ──
+   Unlike the chat helpers above, these deliberately let errors throw
+   instead of swallowing them into a fallback value: a quick-fill failure
+   needs to surface to the caller so the form can tell the user to just
+   type it in, rather than silently leaving every field blank. */
+export interface QuickFillField {
+  name: string;
+  type: 'string' | 'number' | 'date' | 'boolean';
+  description: string;
+}
+
+export type QuickFillResult = Record<string, string | number | boolean | null>;
+
+export function extractFieldsFromPhoto(
+  imageBase64: string,
+  fields: QuickFillField[],
+  context?: string,
+  token?: string,
+): Promise<QuickFillResult> {
+  return post<{ fields: QuickFillResult }>('/ai/extract-fields', { imageBase64, fields, context }, token)
+    .then((data) => data.fields);
+}
+
+export function parseFieldsFromText(
+  text: string,
+  fields: QuickFillField[],
+  context?: string,
+  token?: string,
+): Promise<QuickFillResult> {
+  return post<{ fields: QuickFillResult }>('/ai/parse-fields', { text, fields, context }, token)
+    .then((data) => data.fields);
+}

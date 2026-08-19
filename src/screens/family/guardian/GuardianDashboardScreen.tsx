@@ -73,6 +73,7 @@ export function GuardianDashboardScreen({ navigation }: any) {
   const { t } = useTranslation('family');
 
   const devices = useGuardianStore((s) => s.devices);
+  const devicesFetchError = useGuardianStore((s) => s.devicesFetchError);
   const sosAlerts = useGuardianStore((s) => s.sosAlerts);
   const approvalRequests = useGuardianStore((s) => s.approvalRequests);
   const sendCommand = useGuardianStore((s) => s.sendCommand);
@@ -370,6 +371,24 @@ export function GuardianDashboardScreen({ navigation }: any) {
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color={colors.primary} />
+              </Pressable>
+            )}
+
+            {devicesFetchError && (
+              <Pressable accessibilityRole="button"
+                style={[styles.childBanner, shadows.card, { backgroundColor: colors.danger + '18', borderColor: colors.danger, borderWidth: 1, marginBottom: 12 }]}
+                onPress={() => hydrate()}
+              >
+                <View style={[styles.childBannerIcon, { backgroundColor: colors.danger }]}>
+                  <Ionicons name="cloud-offline-outline" size={20} color="#fff" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.childBannerTitle, { color: colors.danger }]}>Can&apos;t reach server</Text>
+                  <Text style={styles.childBannerDesc}>
+                    Device status below may be stale. Tap to retry.
+                  </Text>
+                </View>
+                <Ionicons name="refresh" size={18} color={colors.danger} />
               </Pressable>
             )}
 

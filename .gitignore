@@ -11,3 +11,5 @@ android/
 .claude/
 credentials/
 *.p8
+*.apk
+*.aab

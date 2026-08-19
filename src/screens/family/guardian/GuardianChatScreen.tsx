@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   KeyboardAvoidingView,
   Platform,
@@ -22,6 +23,7 @@ import {
 import { useGuardianStore } from '../../../store/useGuardianStore';
 import { useFamilyStore } from '../../../store/useFamilyStore';
 import { colors } from '../../../theme/colors';
+import { captureError } from '../../../config/sentry';
 import * as Notifications from 'expo-notifications';
 
 const POLL_INTERVAL = 10_000;
@@ -101,9 +103,14 @@ export function GuardianChatScreen({ navigation, route }: any) {
     try {
       await sendMessage(deviceId, text, 'parent');
       await poll();
-    } catch {
+    } catch (err) {
+      // Previously failed silently — the optimistic bubble just vanished with
+      // no indication anything went wrong. Surface it so a real send failure
+      // is distinguishable from "it worked but hasn't synced yet."
       setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
       setInputText(text);
+      captureError(err instanceof Error ? err : new Error(String(err)), { deviceId, context: 'GuardianChatScreen sendMessage' });
+      Alert.alert('Send failed', 'Could not send your message. Check your connection and try again.');
     } finally {
       setSending(false);
     }

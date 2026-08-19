@@ -146,6 +146,13 @@ export function markCommandExecuted(commandId: string): Promise<{ command: Guard
   return apiRequest(`/guardian/commands/${commandId}/executed`, { method: 'PATCH' });
 }
 
+// Lets the parent app that ISSUED a command (via sendCommand above) poll for
+// its resolution — sendCommand's optimistic pendingCommands entry otherwise
+// never learns whether the child device actually executed it.
+export function fetchCommandStatus(commandId: string): Promise<{ command: GuardianCommand }> {
+  return apiRequest(`/guardian/commands/${commandId}`);
+}
+
 // ─── Geofences ──────────────────────────────────────────────────────────
 
 export function fetchGeofences(): Promise<{ zones: GeofenceZone[] }> {

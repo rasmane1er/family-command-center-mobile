@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { Alert } from 'react-native';
 import { mmkvStorage } from '../storage/mmkvStorage';
+import { captureError } from '../config/sentry';
 
 import type {
   ChildDevice,
@@ -27,6 +28,38 @@ function trimPendingCommands(commands: GuardianCommand[]): GuardianCommand[] {
   const resolved = commands.filter((c) => c.status !== 'pending');
   const keepResolved = resolved.slice(-Math.max(0, MAX_PENDING_COMMANDS - pending.length));
   return [...keepResolved, ...pending];
+}
+
+// Polls a just-sent command's real status until the child device resolves it
+// (or we give up), then reconciles the local pendingCommands entry. This is
+// the piece that was missing entirely: useGuardianCommandPolling.ts only
+// reconciles pendingCommands when THIS device is itself registered as a
+// child (thisDeviceId set), which is never true on the guardian's own
+// phone — so a command sent from ChildDeviceDetailScreen previously just
+// sat at status:'pending' in the UI forever, with zero visible feedback on
+// whether the child device actually got it.
+const COMMAND_POLL_INTERVAL_MS = 3000;
+const COMMAND_POLL_MAX_ATTEMPTS = 20; // ~60s — long enough to cover a normal poll/push round-trip
+async function pollCommandResolution(serverCommandId: string, localId: string): Promise<void> {
+  for (let attempt = 0; attempt < COMMAND_POLL_MAX_ATTEMPTS; attempt++) {
+    await new Promise((resolve) => setTimeout(resolve, COMMAND_POLL_INTERVAL_MS));
+    try {
+      const { command } = await guardianService.fetchCommandStatus(serverCommandId);
+      if (command.status === 'executed') {
+        useGuardianStore.getState().markCommandExecuted(localId);
+        return;
+      }
+      if (command.status === 'failed' || command.status === 'expired') {
+        useGuardianStore.getState().markCommandFailed(localId);
+        return;
+      }
+      // still 'pending' — keep polling
+    } catch {
+      // transient network/API error — keep trying until the attempt cap
+    }
+  }
+  // Gave up without a resolution — leave the entry as 'pending'. That's
+  // honest: the device may still be offline, not a definite failure.
 }
 
 // appUsage currently has no callers anywhere in the app (reporting-only,
@@ -86,6 +119,11 @@ interface GuardianStore {
   myPairingCode: string | null;
 
   isHydrating: boolean;
+  // Set when the devices fetch inside hydrate() fails — the UI otherwise has
+  // no way to distinguish "the child device really is offline" from "the
+  // parent app just can't reach the server," and those look identical
+  // (frozen, stale-looking data) without this.
+  devicesFetchError: string | null;
   hydrate: () => Promise<void>;
 
   // Device CRUD
@@ -93,10 +131,11 @@ interface GuardianStore {
   updateDevice: (id: string, updates: Partial<ChildDevice>) => void;
   removeDevice: (id: string) => void;
   updateDeviceStatus: (deviceId: string, partial: Partial<ChildDevice>) => void;
+  refreshDevices: () => Promise<void>;
 
   // Pairing
   registerThisDevice: (input: { deviceName: string; platform: 'ios' | 'android'; memberId: string }) => Promise<string>;
-  generateChildPairingCode: (input: { deviceName: string; platform: 'ios' | 'android'; memberId: string }) => Promise<string>;
+  generateChildPairingCode: (input: { deviceName: string; platform: 'ios' | 'android'; memberId: string }) => Promise<{ pairingCode: string; deviceId: string }>;
   pairWithCode: (pairingCode: string) => Promise<string>;
 
   // COPPA consent — gates generateChildPairingCode's underlying register
@@ -153,6 +192,7 @@ export const useGuardianStore = create<GuardianStore>()(
       thisDeviceId: null,
       myPairingCode: null,
       isHydrating: false,
+      devicesFetchError: null,
 
       hydrate: async () => {
         set({ isHydrating: true });
@@ -163,6 +203,21 @@ export const useGuardianStore = create<GuardianStore>()(
           guardianService.fetchSOSAlerts(),
           guardianService.fetchApprovals(),
         ]);
+
+        // Promise.allSettled means a rejected fetch here previously fell
+        // through completely silently — the UI just kept showing whatever was
+        // cached from the last successful hydrate(), forever, with nothing
+        // anywhere hinting that this poll is actually failing. That's
+        // indistinguishable from "the child device stopped syncing" from the
+        // parent's perspective, which is exactly the bug this was masking.
+        for (const [name, res] of [
+          ['devices', devicesRes], ['geofences', geofencesRes], ['screenTimeRules', screenTimeRes],
+          ['sosAlerts', sosRes], ['approvals', approvalsRes],
+        ] as const) {
+          if (res.status === 'rejected') {
+            captureError(res.reason instanceof Error ? res.reason : new Error(String(res.reason)), { context: 'useGuardianStore.hydrate', resource: name });
+          }
+        }
 
         const newDevices = devicesRes.status === 'fulfilled' ? devicesRes.value.devices : null;
 
@@ -209,6 +264,9 @@ export const useGuardianStore = create<GuardianStore>()(
             approvalRequests: approvalsRes.status === 'fulfilled' ? approvalsRes.value.approvals : s.approvalRequests,
             appUsage: mergedUsage.length > 0 ? mergedUsage : s.appUsage,
             isHydrating: false,
+            devicesFetchError: devicesRes.status === 'rejected'
+              ? (devicesRes.reason instanceof Error ? devicesRes.reason.message : String(devicesRes.reason))
+              : null,
           };
         });
       },
@@ -238,6 +296,11 @@ export const useGuardianStore = create<GuardianStore>()(
         devices: s.devices.map((d) => (d.id === deviceId ? { ...d, ...partial } : d)),
       })),
 
+      refreshDevices: async () => {
+        const { devices } = await guardianService.fetchDevices();
+        set({ devices });
+      },
+
       // Pairing
       registerThisDevice: async ({ deviceName, platform, memberId }) => {
         const { device, pairingCode } = await guardianService.registerDevice({ deviceName, platform, memberId });
@@ -260,7 +323,7 @@ export const useGuardianStore = create<GuardianStore>()(
       generateChildPairingCode: async ({ deviceName, platform, memberId }) => {
         const { device, pairingCode } = await guardianService.registerDevice({ deviceName, platform, memberId });
         set((s) => ({ devices: [...s.devices, device] }));
-        return pairingCode;
+        return { pairingCode, deviceId: device.id };
       },
 
       checkGuardianConsent: async (memberId) => {
@@ -358,6 +421,14 @@ export const useGuardianStore = create<GuardianStore>()(
           })
           .catch((err) => {
             set((s) => ({ screenTimeRules: s.screenTimeRules.filter((r) => r.id !== rule.id) }));
+            // Previously silent — the create failing wiped the whole rule
+            // (including any dailyLimitMinutes/downtime/blockedApps update
+            // layered on in the same tap, since updateScreenTimeRule fires
+            // synchronously right after ensureRule()) with zero indication
+            // anything went wrong. The user just saw their change flash and
+            // revert. Surface it so the real cause is diagnosable.
+            captureError(err instanceof Error ? err : new Error(String(err)), { memberId: rule.memberId, status: err?.status, body: err?.body, context: 'addScreenTimeRule' });
+            Alert.alert('Could not save', `Screen time settings weren't saved.\n\n${err?.status ? `Error ${err.status}` : (err?.message ?? 'Check your connection and try again.')}`);
             throw err;
           });
 
@@ -552,6 +623,15 @@ export const useGuardianStore = create<GuardianStore>()(
             set((s) => ({
               pendingCommands: s.pendingCommands.map((c) => (c.id === optimistic.id ? { ...command, id: c.id } : c)),
             }));
+            // useGuardianCommandPolling.ts only reconciles pendingCommands
+            // when THIS device is itself registered as a child
+            // (thisDeviceId set) — never true on the guardian's own phone.
+            // Without this, a command sent from here just sits at
+            // status:'pending' forever in the UI even after the child
+            // device executes it, with no way to tell "still pending" from
+            // "will never happen" apart from the device's own status
+            // eventually refreshing on its own poll cadence.
+            pollCommandResolution(command.id, optimistic.id);
           } catch (err: any) {
             // Roll back optimistic status
             if (optimisticStatus && previousStatus) {
@@ -578,6 +658,18 @@ export const useGuardianStore = create<GuardianStore>()(
               Alert.alert(
                 'Device Offline',
                 'This device is not reachable. The child app may have been uninstalled or the device is off.\n\nUse "Reconnect Device" to pair again.',
+                [{ text: 'OK' }],
+              );
+            } else {
+              // Any other failure (network error, auth, 5xx) previously failed
+              // completely silently — the button just did nothing with zero
+              // feedback, indistinguishable from the command actually working
+              // but not reaching the child. Always tell the guardian something
+              // went wrong instead of only handling the one 409 case.
+              captureError(err instanceof Error ? err : new Error(String(err?.message ?? err)), { deviceId, type, context: 'sendCommand' });
+              Alert.alert(
+                'Command Not Sent',
+                `Could not send "${type}" to the device.\n\n${err?.message ?? 'Check your connection and try again.'}`,
                 [{ text: 'OK' }],
               );
             }

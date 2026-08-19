@@ -60,11 +60,24 @@ export function useDailyBrief(): BriefState {
       }
     } catch (err) {
       lastFetchFailed.current = true;
-      setError(
-        err instanceof ApiRequestError && err.status === 429
-          ? 'Too many requests right now — try again in a few minutes.'
-          : 'Could not load your daily brief.',
-      );
+      let message = 'Could not load your daily brief.';
+      if (err instanceof ApiRequestError && err.status === 429) {
+        const body = err.body as { error?: string; limit?: number; resetsAt?: string } | undefined;
+        // /ai/daily-brief's 429 means one of two very different things: the
+        // family's monthly AI quota is exhausted (won't clear for potentially
+        // weeks — a plain "try again soon" is actively misleading here), or a
+        // genuine short-lived rate limit. Distinguish by the response body
+        // instead of collapsing both into the same message.
+        if (body?.error === 'ai_quota_exceeded') {
+          const resetDate = body.resetsAt
+            ? new Date(body.resetsAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+            : 'next month';
+          message = `You've used all ${body.limit ?? ''} AI queries for this month. Resets ${resetDate}, or upgrade your plan for more.`;
+        } else {
+          message = 'Too many requests right now — try again in a few minutes.';
+        }
+      }
+      setError(message);
     } finally {
       setLoading(false);
     }
