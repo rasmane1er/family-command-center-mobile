@@ -190,15 +190,7 @@ export function TransactionsScreen({ navigation }: { navigation: any }) {
   };
 
   return (
-    // paddingBottom here (not just on the FlatList's contentContainerStyle
-    // below) is what actually matters: content padding only extends how far
-    // you can scroll PAST the true end, it doesn't stop the list's own
-    // viewport from rendering behind the floating tab bar at every scroll
-    // position in between — which is what was making rows look permanently
-    // "collapsed" under the tab bar rather than just briefly passing behind
-    // it. Shrinking the container itself keeps the FlatList's rendered area
-    // entirely above the tab bar's floating footprint.
-    <View style={[s.container, { paddingBottom: tabBarInset }]}>
+    <View style={s.container}>
       <View style={s.header}>
         <Pressable
           onPress={() => navigation.goBack()}
@@ -283,6 +275,16 @@ export function TransactionsScreen({ navigation }: { navigation: any }) {
         </View>
       ) : (
         <FlatList
+          // flex:1 + paddingBottom on the FlatList's own outer box (not the
+          // screen's root container) is what actually constrains its
+          // rendered viewport to stop above the floating tab bar — scoping
+          // it here means it doesn't compete for space with the fixed-height
+          // siblings above (search bar, month row, category pills), which is
+          // exactly what happened when this was tried as padding on the
+          // shared root container: with less total space to go around, and
+          // those siblings' flexShrink defaulting to 1, the pills row got
+          // squeezed short and visibly clipped instead.
+          style={{ flex: 1, paddingBottom: tabBarInset }}
           data={grouped}
           keyExtractor={(item) => item.key}
           renderItem={renderItem}
@@ -324,7 +326,7 @@ const s = StyleSheet.create({
   monthRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, marginBottom: 8 },
   monthArrow: { width: 32, height: 32, borderRadius: 10, backgroundColor: '#F0F3F9', alignItems: 'center', justifyContent: 'center' },
   monthLabel: { fontSize: 15, fontWeight: '700', color: '#1A1A2E', minWidth: 130, textAlign: 'center' },
-  pillsScroll: { flexGrow: 0, marginBottom: 8 },
+  pillsScroll: { flexGrow: 0, flexShrink: 0, marginBottom: 8 },
   pillsContent: { paddingHorizontal: 16, gap: 8 },
   pill: { paddingVertical: 6, paddingHorizontal: 14, borderRadius: 20, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E7EB' },
   pillActive: { backgroundColor: '#1E3A5F', borderColor: '#1E3A5F' },
