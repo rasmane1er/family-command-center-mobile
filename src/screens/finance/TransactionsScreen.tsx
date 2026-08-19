@@ -10,6 +10,7 @@ import { getTransactions } from '../../services/plaidService';
 import type { PlaidTransaction } from '../../types';
 import { useTranslation } from 'react-i18next';
 import { usePlaidAutoData } from '../../hooks/usePlaidAutoData';
+import { useTabBarInset } from '../../hooks/useTabBarInset';
 
 const CATEGORIES = ['All', 'FOOD_AND_DRINK', 'SHOPPING', 'TRANSPORTATION', 'BILLS', 'INCOME', 'OTHER'];
 const CATEGORY_LABELS: Record<string, string> = {
@@ -67,6 +68,7 @@ const PAGE_SIZE = 30;
 export function TransactionsScreen({ navigation }: { navigation: any }) {
   const { t } = useTranslation('finance');
   const insets = useSafeAreaInsets();
+  const tabBarInset = useTabBarInset();
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [category, setCategory] = useState('All');
@@ -188,7 +190,15 @@ export function TransactionsScreen({ navigation }: { navigation: any }) {
   };
 
   return (
-    <View style={s.container}>
+    // paddingBottom here (not just on the FlatList's contentContainerStyle
+    // below) is what actually matters: content padding only extends how far
+    // you can scroll PAST the true end, it doesn't stop the list's own
+    // viewport from rendering behind the floating tab bar at every scroll
+    // position in between — which is what was making rows look permanently
+    // "collapsed" under the tab bar rather than just briefly passing behind
+    // it. Shrinking the container itself keeps the FlatList's rendered area
+    // entirely above the tab bar's floating footprint.
+    <View style={[s.container, { paddingBottom: tabBarInset }]}>
       <View style={s.header}>
         <Pressable
           onPress={() => navigation.goBack()}
@@ -279,18 +289,14 @@ export function TransactionsScreen({ navigation }: { navigation: any }) {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           onEndReached={onEndReached}
           onEndReachedThreshold={0.3}
-          // insets.bottom + 100 (the convention used elsewhere in this app)
-          // numerically equals what this screen already had before this fix
-          // (s.listContent.paddingBottom was 100) — so that clearance was
-          // never actually the bug. The floating CustomTabBar's real
-          // footprint (its own height plus the safe-area gap built into its
-          // own positioning) runs closer to ~140-160pt, which is why its
-          // last rows were sitting underneath the tab bar. Matches the same
-          // generous clearance verified working on EmergencyModeScreen.
+          // The container-level paddingBottom (tabBarInset, set above on the
+          // screen's root View) is what keeps rows from rendering behind the
+          // floating tab bar at all. This is just normal scroll breathing
+          // room past the true end of the list, same as everywhere else.
           contentContainerStyle={
             transactions.length === 0
               ? s.emptyContent
-              : [s.listContent, { paddingBottom: insets.bottom + 140 }]
+              : [s.listContent, { paddingBottom: insets.bottom + 24 }]
           }
           ListEmptyComponent={
             <View style={s.emptyState}>
