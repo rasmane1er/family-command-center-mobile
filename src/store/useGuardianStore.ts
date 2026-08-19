@@ -619,10 +619,21 @@ export const useGuardianStore = create<GuardianStore>()(
         (async () => {
           try {
             const serverDeviceId = await deviceIds.resolve(deviceId);
-            const { command } = await guardianService.sendCommand(serverDeviceId, type as guardianService.GuardianCommandType, payload);
+            const { command, deviceOffline } = await guardianService.sendCommand(serverDeviceId, type as guardianService.GuardianCommandType, payload);
             set((s) => ({
               pendingCommands: s.pendingCommands.map((c) => (c.id === optimistic.id ? { ...command, id: c.id } : c)),
             }));
+            // The command is queued server-side either way (48h TTL) and will
+            // reach the device on its next poll/push-wake, but the guardian
+            // should know delivery may be delayed rather than assume it landed
+            // instantly like a normal online command.
+            if (deviceOffline) {
+              Alert.alert(
+                'Device Not Reachable Right Now',
+                'This command has been queued and will apply as soon as the device reconnects.',
+                [{ text: 'OK' }],
+              );
+            }
             // useGuardianCommandPolling.ts only reconciles pendingCommands
             // when THIS device is itself registered as a child
             // (thisDeviceId set) — never true on the guardian's own phone.

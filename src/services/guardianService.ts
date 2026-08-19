@@ -131,7 +131,7 @@ export function sendCommand(
   deviceId: string,
   type: GuardianCommandType,
   payload?: Record<string, unknown>
-): Promise<{ command: GuardianCommand }> {
+): Promise<{ command: GuardianCommand; deviceOffline?: boolean }> {
   return apiRequest(`/guardian/devices/${deviceId}/command`, {
     method: 'POST',
     body: JSON.stringify(payload ? { type, payload } : { type }),
