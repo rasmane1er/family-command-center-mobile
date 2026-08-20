@@ -144,6 +144,30 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     // (preview + production) — never put an auth token in this file.
     ['@sentry/react-native', { organization: 'opportunity-corridor', project: 'react-native' }],
     '@bacons/apple-targets',
+    // Android counterpart to the iOS widget above — see src/widgets/.
+    // updatePeriodMillis is clamped to the library's own 30-minute floor
+    // regardless of the value here; the real refresh path is
+    // requestWidgetUpdate() firing on every syncWidgetData() call
+    // (src/services/widgetSync.ts), same as ExtensionStorage.reloadWidget()
+    // does for iOS — this is just the safety-net fallback.
+    [
+      'react-native-android-widget',
+      {
+        widgets: [
+          {
+            name: 'FamilyGlanceWidget',
+            label: 'Family Glance',
+            description: "Today's open tasks and next family event.",
+            minWidth: '180dp',
+            minHeight: '110dp',
+            targetCellWidth: 3,
+            targetCellHeight: 2,
+            resizeMode: 'horizontal|vertical',
+            updatePeriodMillis: 1800000,
+          },
+        ],
+      },
+    ],
   ],
   extra: {
     eas: { projectId: '82729187-433d-4547-b35a-8b432f5a1a20' },

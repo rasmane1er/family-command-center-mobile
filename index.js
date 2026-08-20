@@ -1,9 +1,26 @@
+import { Platform } from 'react-native';
 import { registerRootComponent } from 'expo';
 import messaging from '@react-native-firebase/messaging';
 import * as SecureStore from 'expo-secure-store';
 import { storage } from './src/storage/mmkvStorage';
 
 import App from './App';
+
+// Android home-screen widget's headless update task (src/widgets/) — must
+// be registered before registerRootComponent, same as the FCM background
+// handler below, so it exists whether or not the app's own JS ever
+// mounts a screen (e.g. a periodic widget refresh while the app is
+// killed). Guarded to Android: react-native-android-widget's native
+// module doesn't exist on iOS, and this codebase's own convention
+// (see src/services/widgetSync.ts) is to keep platform-specific widget
+// code from ever touching the other platform's build.
+if (Platform.OS === 'android') {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { registerWidgetTaskHandler } = require('react-native-android-widget');
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { widgetTaskHandler } = require('./src/widgets/widget-task-handler');
+  registerWidgetTaskHandler(widgetTaskHandler);
+}
 
 // Background FCM handler — fires when the child app is backgrounded/killed
 // and a push notification arrives. Uses raw storage reads (no React/Zustand)
