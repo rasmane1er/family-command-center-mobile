@@ -1,7 +1,7 @@
 import { registerRootComponent } from 'expo';
 import messaging from '@react-native-firebase/messaging';
 import * as SecureStore from 'expo-secure-store';
-import { MMKV } from 'react-native-mmkv';
+import { storage } from './src/storage/mmkvStorage';
 
 import App from './App';
 
@@ -20,7 +20,13 @@ messaging().setBackgroundMessageHandler(async (remoteMessage) => {
 
     // Read thisDeviceId from the Zustand-persisted MMKV guardian store.
     // The storage key matches the `name` field in the persist() call.
-    const storage = new MMKV({ id: 'family-command-center-storage', encryptionKey: 'fcc-store-v1' });
+    // Reuses the same singleton (and real per-device encryption key) as
+    // the main app — this used to construct its own MMKV instance with a
+    // hardcoded literal key, which silently broke this exact read the
+    // moment mmkvStorage.ts switched to a real per-device key: the two
+    // encryption keys stopped matching, so this always returned garbage
+    // and thisDeviceId was always null, going undetected because the
+    // catch below swallows the failure.
     const raw = storage.getString('guardian-store');
     if (!raw) return;
     const thisDeviceId = JSON.parse(raw)?.state?.thisDeviceId;
