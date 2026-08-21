@@ -143,6 +143,10 @@ interface GuardianStore {
   // the client-side calls into that same check/grant flow.
   checkGuardianConsent: (memberId: string) => Promise<boolean>;
   grantGuardianConsent: (memberId: string) => Promise<void>;
+  // Revoking consent cascades server-side to unpair the device and purge
+  // everything collected for it (see GuardianDataPrivacyScreen) — mirrors
+  // that locally so the removed device doesn't linger in the store.
+  revokeGuardianConsentAndUnpair: (memberId: string) => Promise<void>;
 
   // Geofence CRUD
   addGeofenceZone: (zone: GeofenceZone) => void;
@@ -333,6 +337,11 @@ export const useGuardianStore = create<GuardianStore>()(
 
       grantGuardianConsent: async (memberId) => {
         await guardianService.grantConsent(memberId);
+      },
+
+      revokeGuardianConsentAndUnpair: async (memberId) => {
+        await guardianService.revokeConsent(memberId);
+        set((s) => ({ devices: s.devices.filter((d) => d.memberId !== memberId) }));
       },
 
       pairWithCode: async (pairingCode) => {

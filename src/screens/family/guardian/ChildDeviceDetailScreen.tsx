@@ -957,6 +957,15 @@ export function ChildDeviceDetailScreen({ navigation, route }: any) {
               <Text style={styles.navRowText}>Web Filter Log</Text>
               <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
             </Pressable>
+
+            <Pressable accessibilityRole="button"
+              style={[styles.navRow, shadows.sm]}
+              onPress={() => navigation.navigate('GuardianDataPrivacy', { deviceId, memberId: device.memberId })}
+            >
+              <Ionicons name="lock-closed" size={20} color="#16A085" />
+              <Text style={styles.navRowText}>Data & Privacy</Text>
+              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+            </Pressable>
           </ScrollView>
         )}
       </CollapsibleHeader>

@@ -37,6 +37,7 @@ import { ReadingTrackerScreen } from '../screens/family/ReadingTrackerScreen';
 import { VolunteerTrackerScreen } from '../screens/family/VolunteerTrackerScreen';
 import { GuardianDashboardScreen } from '../screens/family/guardian/GuardianDashboardScreen';
 import { BlockedSitesScreen } from '../screens/family/guardian/BlockedSitesScreen';
+import { GuardianDataPrivacyScreen } from '../screens/family/guardian/GuardianDataPrivacyScreen';
 import { ChildDeviceDetailScreen } from '../screens/family/guardian/ChildDeviceDetailScreen';
 import { ScreenTimeScreen } from '../screens/family/guardian/ScreenTimeScreen';
 import { SOSAlertsScreen } from '../screens/family/guardian/SOSAlertsScreen';
@@ -320,6 +321,18 @@ export function FamilyNavigator() {
           <ErrorBoundary>
           <RoleGuard allowParent>
             <BlockedSitesScreen {...props} />
+          </RoleGuard>
+          </ErrorBoundary>
+        )}
+      </Stack.Screen>
+      <Stack.Screen
+        name="GuardianDataPrivacy"
+        options={{ headerShown: false }}
+      >
+        {(props) => (
+          <ErrorBoundary>
+          <RoleGuard allowParent>
+            <GuardianDataPrivacyScreen {...props} />
           </RoleGuard>
           </ErrorBoundary>
         )}
