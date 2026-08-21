@@ -4,7 +4,9 @@ import { Ionicons } from '@expo/vector-icons';
 
 interface Props {
   isListening: boolean;
-  onPress: () => void;
+  onPress?: () => void;
+  onPressIn?: () => void;
+  onPressOut?: () => void;
   size?: number;
   activeColor?: string;
   idleColor?: string;
@@ -13,6 +15,8 @@ interface Props {
 export function VoiceMicButton({
   isListening,
   onPress,
+  onPressIn,
+  onPressOut,
   size = 44,
   activeColor = '#EF4444',
   idleColor = '#6366F1',
@@ -43,7 +47,14 @@ export function VoiceMicButton({
   const color = isListening ? activeColor : idleColor;
 
   return (
-    <Pressable accessibilityRole="button" onPress={onPress} hitSlop={8} style={[styles.wrapper, { width: size, height: size }]}>
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}
+      hitSlop={8}
+      style={[styles.wrapper, { width: size, height: size }]}
+    >
       {/* Pulse ring */}
       <Animated.View
         style={[

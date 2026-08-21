@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
 import { useVoiceInput } from '../../hooks/useVoiceInput';
@@ -46,9 +46,7 @@ export function AIVoiceQuickFillButton({ fields, context, onExtracted, prompt = 
       {parsing ? (
         <ActivityIndicator size="small" color={colors.primary} />
       ) : (
-        <Pressable accessibilityRole="button" onPressIn={voice.start} onPressOut={voice.stop}>
-          <VoiceMicButton isListening={voice.isListening} onPress={() => {}} size={36} />
-        </Pressable>
+        <VoiceMicButton isListening={voice.isListening} onPressIn={voice.start} onPressOut={voice.stop} size={36} />
       )}
       <Text style={styles.label}>
         {parsing ? 'Filling in fields…' : voice.isListening ? (voice.partial || 'Listening…') : prompt}
