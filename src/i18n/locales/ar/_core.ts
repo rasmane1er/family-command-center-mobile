@@ -1535,8 +1535,6 @@ export default {
       },
       signIn: {
         appleNativeBuildMsg: 'تسجيل الدخول عبر Apple يتطلب نسخة أصلية من التطبيق',
-        appleAndroidUnsupportedTitle: 'غير متاح على Android',
-        appleAndroidUnsupportedMsg: 'تسجيل الدخول عبر Apple غير متاح على Android حتى الآن. يرجى استخدام البريد الإلكتروني أو Google بدلاً من ذلك.',
         appleSignInFailedMsg: 'فشل تسجيل الدخول عبر Apple',
         appleSignInFailedTitle: 'فشل تسجيل الدخول عبر Apple',
         biometricButton: 'استخدام Face ID / Touch ID',

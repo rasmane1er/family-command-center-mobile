@@ -987,8 +987,6 @@ export default {
         ok: '확인',
         googleNativeBuildMsg: 'Google 로그인은 네이티브 빌드가 필요합니다',
         appleNativeBuildMsg: 'Apple 로그인은 네이티브 빌드가 필요합니다',
-        appleAndroidUnsupportedTitle: 'Android에서는 사용할 수 없습니다',
-        appleAndroidUnsupportedMsg: 'Apple 로그인은 아직 Android에서 사용할 수 없습니다. 대신 이메일 또는 Google을 사용해 주세요.',
         googleProfileErrorMsg: 'Google 프로필을 가져올 수 없습니다',
         appleSignInFailedMsg: 'Apple 로그인 실패',
         nativeBuildRequiredTitle: '네이티브 빌드 필요',

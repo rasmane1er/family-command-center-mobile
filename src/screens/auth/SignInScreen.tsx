@@ -23,6 +23,7 @@ import * as SecureStore from 'expo-secure-store';
 import * as Crypto from 'expo-crypto';
 import { getAuth, GoogleAuthProvider, OAuthProvider, signInWithCredential, getIdToken } from '@react-native-firebase/auth';
 import { useAuthStore } from '../../store/useAuthStore';
+import { awsConfig } from '../../config/aws';
 import { useTranslation } from 'react-i18next';
 
 // Native social-auth modules are loaded lazily so the app works without a
@@ -30,10 +31,14 @@ import { useTranslation } from 'react-i18next';
 let AppleAuthentication: typeof import('expo-apple-authentication') | null = null;
 let WebBrowser: typeof import('expo-web-browser') | null = null;
 let Google: typeof import('expo-auth-session/providers/google') | null = null;
+let AuthSession: typeof import('expo-auth-session') | null = null;
+let QueryParamsUtil: typeof import('expo-auth-session/build/QueryParams') | null = null;
 try {
   AppleAuthentication = require('expo-apple-authentication');
   WebBrowser = require('expo-web-browser');
   Google = require('expo-auth-session/providers/google');
+  AuthSession = require('expo-auth-session');
+  QueryParamsUtil = require('expo-auth-session/build/QueryParams');
   WebBrowser?.maybeCompleteAuthSession?.();
 } catch {
   // Native modules not linked yet — social auth will show "run native build" prompt.
@@ -54,11 +59,14 @@ const SURFACE = '#F8FAFD';
 const BORDER = '#E4EAF2';
 const BG = '#F4F8FF';
 
-// Debug-only: pulls just the aud/iss claims out of a JWT payload, without a
-// full base64 API (Hermes doesn't reliably expose atob) and without logging
-// the whole bearer token. Used to diagnose Firebase's auth/internal-error,
-// which gives no detail on which audience it actually rejected.
-function decodeJwtClaims(jwt: string): { aud?: string; iss?: string } {
+// Decodes a JWT's payload without a full base64 API (Hermes doesn't
+// reliably expose atob) and without logging the whole bearer token.
+// Originally added to diagnose Firebase's auth/internal-error (which gives
+// no detail on which audience it actually rejected) by reading aud/iss; the
+// Android Apple sign-in flow below also uses it to read the id_token's own
+// sub/email claims client-side (Firebase still independently verifies the
+// token's signature server-side in signInWithCredential).
+function decodeJwtClaims(jwt: string): { aud?: string; iss?: string; sub?: string; email?: string } {
   try {
     const payload = jwt.split('.')[1];
     const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
@@ -82,7 +90,7 @@ function decodeJwtClaims(jwt: string): { aud?: string; iss?: string } {
       str.split('').map((c) => '%' + c.charCodeAt(0).toString(16).padStart(2, '0')).join(''),
     );
     const json = JSON.parse(decoded);
-    return { aud: json.aud, iss: json.iss };
+    return { aud: json.aud, iss: json.iss, sub: json.sub, email: json.email };
   } catch {
     return {};
   }
@@ -119,6 +127,9 @@ export default function SignInScreen({ navigation }: Props) {
   const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
   const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
   const googleConfigured = Boolean(googleAndroidClientId && googleIosClientId && googleWebClientId);
+  // Services ID for Apple's web/REST OAuth flow, used only on Android (see
+  // handleAppleSignInAndroid below) — iOS uses the native module instead.
+  const appleServicesId = process.env.EXPO_PUBLIC_APPLE_SERVICES_ID;
   // useIdTokenAuthRequest (vs. plain useAuthRequest) is what makes the SDK
   // exchange the auth code for an id_token alongside the access_token on
   // native — that id_token is what gets handed to Firebase below.
@@ -208,22 +219,43 @@ export default function SignInScreen({ navigation }: Props) {
     (promptGoogleAsync as () => void)();
   };
 
-  const handleAppleSignIn = async () => {
-    // Sign in with Apple has no native implementation on Android — Apple
-    // only ships the native module for iOS; expo-apple-authentication's
-    // signInAsync() throws there regardless of whether the module linked
-    // successfully, which used to surface as a generic, confusing "Apple
-    // Sign-In Failed" instead of an honest "not available on this platform".
-    // (A real Android path would need Apple's web/REST OAuth flow via a
-    // registered Services ID + redirect — not implemented here.)
-    if (Platform.OS !== 'ios') {
-      Alert.alert(
-        t('auth.screens.signIn.appleAndroidUnsupportedTitle'),
-        t('auth.screens.signIn.appleAndroidUnsupportedMsg'),
-        [{ text: t('auth.screens.signIn.ok') }],
-      );
-      return;
+  // Shared tail end of both the iOS (native) and Android (web/REST) Apple
+  // flows below — once either one has produced Apple's identityToken + the
+  // raw nonce that was hashed into it, signing into Firebase and syncing
+  // with the backend is identical either way.
+  const finishAppleSignIn = async (identityToken: string, rawNonce: string, appleUserId: string, email: string | null, fullName: string) => {
+    const emailAddr = email ?? `${appleUserId}@privaterelay.appleid.com`;
+    const fallbackName = email ? emailAddr.split('@')[0] : 'Apple User';
+
+    const appleFirebaseCredential = new OAuthProvider('apple.com').credential({
+      idToken: identityToken,
+      rawNonce,
+    });
+    const userCredential = await signInWithCredential(getAuth(), appleFirebaseCredential);
+    const firebaseIdToken = await getIdToken(userCredential.user);
+
+    await signInWithSocial(
+      {
+        id: appleUserId,
+        email: emailAddr,
+        displayName: fullName || fallbackName,
+        avatarColor: '#000000',
+        provider: 'apple',
+      },
+      firebaseIdToken,
+    );
+    const { user } = useAuthStore.getState();
+    if (user) {
+      const { useFamilyStore } = require('../../store/useFamilyStore');
+      if (!useFamilyStore.getState().family) {
+        const { populateFromSignUp } = require('../../utils/populateFromSignUp');
+        await populateFromSignUp(user);
+      }
     }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const handleAppleSignInIOS = async () => {
     if (!AppleAuthentication) {
       Alert.alert(
         t('auth.screens.signIn.nativeBuildRequiredTitle'),
@@ -254,53 +286,127 @@ export default function SignInScreen({ navigation }: Props) {
         Alert.alert(t('auth.screens.signIn.appleSignInFailedTitle'), t('auth.screens.signIn.appleSignInFailedMsg'));
         return;
       }
-      const emailAddr = credential.email ?? `${credential.user}@privaterelay.appleid.com`;
       // Apple only ever discloses the real name on the very first
       // authorization for this app+Apple ID pair — every sign-in after that
       // (even a first *successful* one, if an earlier attempt got this far
-      // before failing downstream) gets an empty fullName. Falling back to
-      // the email's local part (like the email/password signIn() flow does)
-      // is wrong here specifically: when Apple also withholds the real email,
-      // emailAddr becomes `${credential.user}@privaterelay.appleid.com`, so
-      // splitting on '@' just hands back credential.user — Apple's opaque
-      // per-app-per-user id — verbatim as the person's displayed "name".
-      // Only use the email-derived fallback when it's a real user email.
+      // before failing downstream) gets an empty fullName.
       const name = credential.fullName
         ? `${credential.fullName.givenName ?? ''} ${credential.fullName.familyName ?? ''}`.trim()
         : '';
-      const fallbackName = credential.email ? emailAddr.split('@')[0] : 'Apple User';
-
-      const appleFirebaseCredential = new OAuthProvider('apple.com').credential({
-        idToken: credential.identityToken,
-        rawNonce,
-      });
-      const userCredential = await signInWithCredential(getAuth(), appleFirebaseCredential);
-      const firebaseIdToken = await getIdToken(userCredential.user);
-
-      await signInWithSocial(
-        {
-          id: credential.user,
-          email: emailAddr,
-          displayName: name || fallbackName,
-          avatarColor: '#000000',
-          provider: 'apple',
-        },
-        firebaseIdToken,
-      );
-      const { user } = useAuthStore.getState();
-      if (user) {
-        const { useFamilyStore } = require('../../store/useFamilyStore');
-        if (!useFamilyStore.getState().family) {
-          const { populateFromSignUp } = require('../../utils/populateFromSignUp');
-          await populateFromSignUp(user);
-        }
-      }
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      await finishAppleSignIn(credential.identityToken, rawNonce, credential.user, credential.email, name);
     } catch (e: any) {
       if (e.code !== 'ERR_REQUEST_CANCELED') {
         console.error('[auth] Apple sign-in failed', e);
         Alert.alert(t('auth.screens.signIn.appleSignInFailedTitle'), t('auth.screens.signIn.appleSignInFailedMsg'));
       }
+    }
+  };
+
+  // Apple ships no native Sign in with Apple SDK for Android — only iOS/
+  // macOS — so this drives Apple's own web/REST OAuth flow instead:
+  // 1. Open Apple's /authorize endpoint in a Custom Tab (WebBrowser), asking
+  //    for response_type=code+id_token so Apple hands back an identityToken
+  //    directly, with no server-side token exchange (and no need to touch
+  //    the Sign in with Apple private key) required at all.
+  // 2. Apple can only redirect to a real https:// URL, and (since name/email
+  //    are requested) must use response_mode=form_post — so the redirect
+  //    target is a small backend route (POST /auth/apple/callback) whose
+  //    only job is bouncing those params into the app via its own custom
+  //    URL scheme, which WebBrowser.openAuthSessionAsync is watching for.
+  // 3. From there it's identical to the iOS path: build the same Firebase
+  //    OAuthProvider('apple.com') credential and hand off to
+  //    finishAppleSignIn.
+  const handleAppleSignInAndroid = async () => {
+    if (!WebBrowser || !AuthSession || !QueryParamsUtil) {
+      Alert.alert(
+        t('auth.screens.signIn.nativeBuildRequiredTitle'),
+        t('auth.screens.signIn.appleNativeBuildMsg'),
+        [{ text: t('auth.screens.signIn.ok') }],
+      );
+      return;
+    }
+    if (!appleServicesId) {
+      Alert.alert(t('auth.screens.signIn.appleSignInFailedTitle'), t('auth.screens.signIn.appleSignInFailedMsg'));
+      return;
+    }
+    try {
+      const rawNonce = Array.from(await Crypto.getRandomBytesAsync(16))
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('');
+      const hashedNonce = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, rawNonce);
+      const state = Array.from(await Crypto.getRandomBytesAsync(8))
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('');
+
+      const appRedirectUri = AuthSession.makeRedirectUri({ scheme: 'familycommandcenter', path: 'apple-auth' });
+      const backendCallbackUrl = `${awsConfig.apiBaseUrl}/auth/apple/callback`;
+      const authorizeParams = new URLSearchParams({
+        client_id: appleServicesId,
+        redirect_uri: backendCallbackUrl,
+        response_type: 'code id_token',
+        response_mode: 'form_post',
+        scope: 'name email',
+        state,
+        nonce: hashedNonce,
+      });
+
+      const result = await WebBrowser.openAuthSessionAsync(
+        `https://appleid.apple.com/auth/authorize?${authorizeParams.toString()}`,
+        appRedirectUri,
+      );
+      if (result.type !== 'success') return; // user cancelled/dismissed — not an error
+
+      const { params } = QueryParamsUtil.getQueryParams(result.url);
+      if (params.error) {
+        if (params.error !== 'user_cancelled_authorize') {
+          Alert.alert(t('auth.screens.signIn.appleSignInFailedTitle'), t('auth.screens.signIn.appleSignInFailedMsg'));
+        }
+        return;
+      }
+      if (params.state !== state) {
+        console.error('[auth] Apple sign-in failed: state mismatch');
+        Alert.alert(t('auth.screens.signIn.appleSignInFailedTitle'), t('auth.screens.signIn.appleSignInFailedMsg'));
+        return;
+      }
+      if (!params.id_token) {
+        Alert.alert(t('auth.screens.signIn.appleSignInFailedTitle'), t('auth.screens.signIn.appleSignInFailedMsg'));
+        return;
+      }
+
+      // Apple's id_token 'sub' claim is the stable per-app-per-user id
+      // (same value AppleAuthentication.signInAsync calls `user` on iOS);
+      // decoding it client-side here is fine — Firebase independently
+      // verifies the token's signature server-side in signInWithCredential.
+      const claims = decodeJwtClaims(params.id_token);
+      const appleUserId = typeof claims.sub === 'string' ? claims.sub : '';
+      // Apple only includes name/email in `user` on the very first
+      // authorization for this app+Apple ID pair, as a JSON string.
+      let name = '';
+      let email: string | null = typeof claims.email === 'string' ? claims.email : null;
+      if (params.user) {
+        try {
+          const parsedUser = JSON.parse(params.user);
+          if (parsedUser.name) {
+            name = `${parsedUser.name.firstName ?? ''} ${parsedUser.name.lastName ?? ''}`.trim();
+          }
+          if (!email && parsedUser.email) email = parsedUser.email;
+        } catch {
+          // malformed 'user' param — fall back to id_token claims only
+        }
+      }
+
+      await finishAppleSignIn(params.id_token, rawNonce, appleUserId, email, name);
+    } catch (e: any) {
+      console.error('[auth] Apple sign-in (Android) failed', e);
+      Alert.alert(t('auth.screens.signIn.appleSignInFailedTitle'), t('auth.screens.signIn.appleSignInFailedMsg'));
+    }
+  };
+
+  const handleAppleSignIn = () => {
+    if (Platform.OS === 'ios') {
+      handleAppleSignInIOS();
+    } else {
+      handleAppleSignInAndroid();
     }
   };
 

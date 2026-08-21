@@ -47,8 +47,6 @@ export default {
         googleNotConfiguredTitle: 'Google Sign-In Not Set Up',
         googleNotConfiguredMsg: 'This build is missing its Google client IDs, so Google Sign-In can\'t be used yet.',
         appleNativeBuildMsg: 'Apple Sign-In requires a native build',
-        appleAndroidUnsupportedTitle: 'Not Available on Android',
-        appleAndroidUnsupportedMsg: 'Sign in with Apple isn\'t available on Android yet. Please use email or Google instead.',
         googleProfileErrorMsg: 'Could not retrieve Google profile',
         appleSignInFailedMsg: 'Apple Sign-In failed',
         nativeBuildRequiredTitle: 'Native Build Required',
