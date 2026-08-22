@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { mmkvStorage } from '../storage/mmkvStorage';
+import * as eventPlannerService from '../services/eventPlannerService';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -69,6 +70,7 @@ interface EventPlannerState {
   guests: Guest[];
   tasks: EventTask[];
   expenses: EventExpense[];
+  isLoaded: boolean;
   addEvent: (event: Omit<FamilyEvent, 'id' | 'createdAt'>) => void;
   updateEvent: (id: string, updates: Partial<FamilyEvent>) => void;
   removeEvent: (id: string) => void;
@@ -84,6 +86,7 @@ interface EventPlannerState {
   getExpensesForEvent: (eventId: string) => EventExpense[];
   getTotalSpent: (eventId: string) => number;
   getConfirmedGuestCount: (eventId: string) => number;
+  fetchFromServer: () => Promise<void>;
 }
 
 export const useEventPlannerStore = create<EventPlannerState>()(
@@ -98,43 +101,85 @@ export const useEventPlannerStore = create<EventPlannerState>()(
   guests: [],
   tasks: [],
   expenses: [],
+  isLoaded: false,
 
-  addEvent: (event) =>
-    set((s) => ({
-      events: [{ ...event, id: generateId(), createdAt: new Date().toISOString() }, ...s.events],
-    })),
+  addEvent: (event) => {
+    const newEvent: FamilyEvent = { ...event, id: generateId(), createdAt: new Date().toISOString() };
+    set((s) => ({ events: [newEvent, ...s.events] }));
+    eventPlannerService.createEvent(newEvent).catch(() => {
+      set((s) => ({ events: s.events.filter((e) => e.id !== newEvent.id) }));
+    });
+  },
 
-  updateEvent: (id, updates) =>
-    set((s) => ({ events: s.events.map((e) => (e.id === id ? { ...e, ...updates } : e)) })),
+  updateEvent: (id, updates) => {
+    const prev = get().events;
+    set((s) => ({ events: s.events.map((e) => (e.id === id ? { ...e, ...updates } : e)) }));
+    eventPlannerService.updateEventRemote(id, updates).catch(() => { set({ events: prev }); });
+  },
 
-  removeEvent: (id) =>
+  removeEvent: (id) => {
+    const prevEvents = get().events;
+    const prevGuests = get().guests;
+    const prevTasks = get().tasks;
+    const prevExpenses = get().expenses;
     set((s) => ({
       events: s.events.filter((e) => e.id !== id),
       guests: s.guests.filter((g) => g.eventId !== id),
       tasks: s.tasks.filter((t) => t.eventId !== id),
       expenses: s.expenses.filter((ex) => ex.eventId !== id),
-    })),
+    }));
+    eventPlannerService.deleteEventRemote(id).catch(() => {
+      set({ events: prevEvents, guests: prevGuests, tasks: prevTasks, expenses: prevExpenses });
+    });
+  },
 
-  addGuest: (guest) =>
-    set((s) => ({ guests: [...s.guests, { ...guest, id: generateId() }] })),
+  addGuest: (guest) => {
+    const newGuest: Guest = { ...guest, id: generateId() };
+    set((s) => ({ guests: [...s.guests, newGuest] }));
+    eventPlannerService.createGuest(newGuest).catch(() => {
+      set((s) => ({ guests: s.guests.filter((g) => g.id !== newGuest.id) }));
+    });
+  },
 
-  updateGuestRSVP: (id, rsvp) =>
-    set((s) => ({ guests: s.guests.map((g) => (g.id === id ? { ...g, rsvp } : g)) })),
+  updateGuestRSVP: (id, rsvp) => {
+    const prev = get().guests;
+    set((s) => ({ guests: s.guests.map((g) => (g.id === id ? { ...g, rsvp } : g)) }));
+    eventPlannerService.updateGuestRSVPRemote(id, rsvp).catch(() => { set({ guests: prev }); });
+  },
 
-  removeGuest: (id) =>
-    set((s) => ({ guests: s.guests.filter((g) => g.id !== id) })),
+  removeGuest: (id) => {
+    const prev = get().guests;
+    set((s) => ({ guests: s.guests.filter((g) => g.id !== id) }));
+    eventPlannerService.deleteGuestRemote(id).catch(() => { set({ guests: prev }); });
+  },
 
-  addTask: (task) =>
-    set((s) => ({ tasks: [...s.tasks, { ...task, id: generateId() }] })),
+  addTask: (task) => {
+    const newTask: EventTask = { ...task, id: generateId() };
+    set((s) => ({ tasks: [...s.tasks, newTask] }));
+    eventPlannerService.createEventTask(newTask).catch(() => {
+      set((s) => ({ tasks: s.tasks.filter((t) => t.id !== newTask.id) }));
+    });
+  },
 
-  completeTask: (id) =>
-    set((s) => ({ tasks: s.tasks.map((t) => (t.id === id ? { ...t, completed: true } : t)) })),
+  completeTask: (id) => {
+    const prev = get().tasks;
+    set((s) => ({ tasks: s.tasks.map((t) => (t.id === id ? { ...t, completed: true } : t)) }));
+    eventPlannerService.completeEventTaskRemote(id).catch(() => { set({ tasks: prev }); });
+  },
 
-  addExpense: (expense) =>
-    set((s) => ({ expenses: [...s.expenses, { ...expense, id: generateId() }] })),
+  addExpense: (expense) => {
+    const newExpense: EventExpense = { ...expense, id: generateId() };
+    set((s) => ({ expenses: [...s.expenses, newExpense] }));
+    eventPlannerService.createEventExpense(newExpense).catch(() => {
+      set((s) => ({ expenses: s.expenses.filter((ex) => ex.id !== newExpense.id) }));
+    });
+  },
 
-  removeExpense: (id) =>
-    set((s) => ({ expenses: s.expenses.filter((ex) => ex.id !== id) })),
+  removeExpense: (id) => {
+    const prev = get().expenses;
+    set((s) => ({ expenses: s.expenses.filter((ex) => ex.id !== id) }));
+    eventPlannerService.deleteEventExpenseRemote(id).catch(() => { set({ expenses: prev }); });
+  },
 
   getGuestsForEvent: (eventId) => get().guests.filter((g) => g.eventId === eventId),
   getTasksForEvent: (eventId) => get().tasks.filter((t) => t.eventId === eventId),
@@ -145,6 +190,20 @@ export const useEventPlannerStore = create<EventPlannerState>()(
       .reduce((sum, ex) => sum + ex.amount, 0),
   getConfirmedGuestCount: (eventId) =>
     get().guests.filter((g) => g.eventId === eventId && g.rsvp === 'yes').length,
+
+  fetchFromServer: async () => {
+    try {
+      const [{ events }, { guests }, { tasks }, { expenses }] = await Promise.all([
+        eventPlannerService.fetchEvents(),
+        eventPlannerService.fetchGuests(),
+        eventPlannerService.fetchEventTasks(),
+        eventPlannerService.fetchEventExpenses(),
+      ]);
+      set({ events, guests, tasks, expenses, isLoaded: true });
+    } catch {
+      set({ isLoaded: true });
+    }
+  },
     }),
     {
       name: 'family-command-center-event-planner',
@@ -154,6 +213,7 @@ export const useEventPlannerStore = create<EventPlannerState>()(
         guests: state.guests,
         tasks: state.tasks,
         expenses: state.expenses,
+        isLoaded: state.isLoaded,
       }),
     }
   )

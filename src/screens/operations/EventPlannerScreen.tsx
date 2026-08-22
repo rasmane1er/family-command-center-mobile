@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -108,6 +108,11 @@ export function EventPlannerScreen({ navigation: _navigation }: any) {
   const insets = useSafeAreaInsets();
   const tabBarInset = useTabBarInset();
   const store = useEventPlannerStore();
+
+  useEffect(() => {
+    store.fetchFromServer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [viewTab, setViewTab] = useState<ViewTab>('upcoming');
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
