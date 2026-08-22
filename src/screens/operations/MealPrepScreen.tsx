@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -98,6 +98,11 @@ export function MealPrepScreen({ navigation: _navigation }: any) {
   const insets = useSafeAreaInsets();
   const tabBarInset = useTabBarInset();
   const store = useMealPrepStore();
+
+  useEffect(() => {
+    store.fetchFromServer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [sessionTab, setSessionTab] = useState<SessionTab>('items');
