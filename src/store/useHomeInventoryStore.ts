@@ -3,8 +3,9 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { mmkvStorage } from '../storage/mmkvStorage';
 
 import { generateId } from '../utils/generateId';
+import * as homeInventoryService from '../services/homeInventoryService';
 
-type InventoryRoom =
+export type InventoryRoom =
   | 'living_room'
   | 'kitchen'
   | 'master_bedroom'
@@ -18,9 +19,9 @@ type InventoryRoom =
   | 'outdoor'
   | 'other';
 
-type ItemCondition = 'excellent' | 'good' | 'fair' | 'poor';
+export type ItemCondition = 'excellent' | 'good' | 'fair' | 'poor';
 
-type ItemCategory =
+export type ItemCategory =
   | 'electronics'
   | 'furniture'
   | 'appliance'
@@ -31,7 +32,7 @@ type ItemCategory =
   | 'collectible'
   | 'other';
 
-interface InventoryItem {
+export interface InventoryItem {
   id: string;
   familyId: string;
   room: InventoryRoom;
@@ -65,18 +66,29 @@ export const useHomeInventoryStore = create<HomeInventoryState>()(
   items: [],
   isLoaded: false,
 
-  addItem: (i) =>
-    set((s) => ({ items: [...s.items, { ...i, id: generateId() }] })),
+  addItem: (i) => {
+    const newItem: InventoryItem = { ...i, id: generateId() };
+    set((s) => ({ items: [...s.items, newItem] }));
+    homeInventoryService.createInventoryItem(newItem).catch(() => {
+      set((s) => ({ items: s.items.filter((item) => item.id !== newItem.id) }));
+    });
+  },
 
-  updateItem: (id, updates) =>
+  updateItem: (id, updates) => {
+    const prev = get().items;
     set((s) => ({
       items: s.items.map((item) =>
         item.id === id ? { ...item, ...updates } : item
       ),
-    })),
+    }));
+    homeInventoryService.updateInventoryItemRemote(id, updates).catch(() => { set({ items: prev }); });
+  },
 
-  deleteItem: (id) =>
-    set((s) => ({ items: s.items.filter((item) => item.id !== id) })),
+  deleteItem: (id) => {
+    const prev = get().items;
+    set((s) => ({ items: s.items.filter((item) => item.id !== id) }));
+    homeInventoryService.deleteInventoryItemRemote(id).catch(() => { set({ items: prev }); });
+  },
 
   getTotalValue: () =>
     get().items.reduce((sum, item) => sum + (item.currentValue ?? 0), 0),
@@ -84,7 +96,14 @@ export const useHomeInventoryStore = create<HomeInventoryState>()(
   getItemsByRoom: (room) =>
     get().items.filter((item) => item.room === room),
 
-  fetchFromServer: async () => { set({ isLoaded: true }); },
+  fetchFromServer: async () => {
+    try {
+      const { items } = await homeInventoryService.fetchInventoryItems();
+      set({ items, isLoaded: true });
+    } catch {
+      set({ isLoaded: true });
+    }
+  },
     }),
     {
       name: 'family-command-center-home-inventory',

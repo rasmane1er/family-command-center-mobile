@@ -131,7 +131,12 @@ const ALL_CONDITIONS: ItemCondition[] = ['excellent', 'good', 'fair', 'poor'];
 export function HomeInventoryScreen({ navigation }: any) {
   const { t } = useTranslation('ops');
   const insets = useSafeAreaInsets();
-  const { items, addItem, updateItem, deleteItem, getTotalValue, getItemsByRoom } = useHomeInventoryStore();
+  const { items, addItem, updateItem, deleteItem, getTotalValue, getItemsByRoom, fetchFromServer } = useHomeInventoryStore();
+
+  useEffect(() => {
+    fetchFromServer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const familyId = useFamilyStore((s) => s.family?.id) ?? useAuthStore.getState().familyId ?? '';
 
   const [activeTab, setActiveTab] = useState<'By Room' | 'All Items' | 'Value Report'>('By Room');
