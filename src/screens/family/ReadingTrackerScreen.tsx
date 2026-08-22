@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -20,6 +20,7 @@ import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
 import { useTabBarInset } from '../../hooks/useTabBarInset';
 import { useReadingStore, ReadingStatus, Book } from '../../store/useReadingStore';
+import { useFamilyStore } from '../../store/useFamilyStore';
 
 const STATUS_CONFIG: Record<ReadingStatus, { color: string; label: string; icon: string }> = {
   'want-to-read': { color: '#95A5A6', label: 'Want to Read', icon: 'bookmark-outline' },
@@ -29,13 +30,6 @@ const STATUS_CONFIG: Record<ReadingStatus, { color: string; label: string; icon:
 const STATUS_TYPES = Object.keys(STATUS_CONFIG) as ReadingStatus[];
 
 const COVER_EMOJIS = ['📚', '🔴', '🔵', '🟡', '🟢'];
-
-const MEMBERS = [
-  { id: 'member-1', name: 'Dad',  color: '#2980B9' },
-  { id: 'member-2', name: 'Mom',  color: '#8E44AD' },
-  { id: 'member-3', name: 'Emma', color: '#27AE60' },
-  { id: 'member-4', name: 'Liam', color: '#F5A623' },
-];
 
 function StarRating({ rating, onRate, size = 18 }: { rating: number; onRate?: (r: number) => void; size?: number }) {
   return (
@@ -148,10 +142,18 @@ export function ReadingTrackerScreen({ navigation }: any) {
     getBooksForMember,
     getCompletedCount,
     getTotalPagesRead,
+    fetchFromServer,
   } = useReadingStore();
+  const familyMembers = useFamilyStore((s) => s.members);
+  const MEMBERS = familyMembers.map((m) => ({ id: m.id, name: m.name, color: m.avatarColor }));
+
+  useEffect(() => {
+    fetchFromServer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [activeTab, setActiveTab] = useState<'bookshelf' | 'progress' | 'challenges'>('bookshelf');
-  const [selectedMemberId, setSelectedMemberId] = useState('member-3');
+  const [selectedMemberId, setSelectedMemberId] = useState('');
   const [showAddBook, setShowAddBook] = useState(false);
   const [showUpdatePages, setShowUpdatePages] = useState(false);
   const [showComplete, setShowComplete] = useState(false);
@@ -164,7 +166,7 @@ export function ReadingTrackerScreen({ navigation }: any) {
   const [bGenre, setBGenre] = useState('');
   const [bStatus, setBStatus] = useState<ReadingStatus>('want-to-read');
   const [bEmoji, setBEmoji] = useState('📚');
-  const [bMemberId, setBMemberId] = useState('member-3');
+  const [bMemberId, setBMemberId] = useState('');
   const [bNotes, setBNotes] = useState('');
 
   // Update pages modal
@@ -172,6 +174,29 @@ export function ReadingTrackerScreen({ navigation }: any) {
 
   // Complete modal
   const [starRating, setStarRating] = useState(5);
+
+  // Set Challenge modal
+  const [showSetChallenge, setShowSetChallenge] = useState(false);
+  const [chMemberId, setChMemberId] = useState('');
+  const [chMemberName, setChMemberName] = useState('');
+  const [chTarget, setChTarget] = useState('');
+
+  useEffect(() => {
+    if (MEMBERS.length === 0) return;
+    if (!selectedMemberId) setSelectedMemberId(MEMBERS[0].id);
+    if (!bMemberId) setBMemberId(MEMBERS[0].id);
+    if (!chMemberId) { setChMemberId(MEMBERS[0].id); setChMemberName(MEMBERS[0].name); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [familyMembers.length]);
+
+  const handleSetChallenge = () => {
+    const target = parseInt(chTarget);
+    if (!target || target <= 0) { Alert.alert('Missing Info', 'Please enter a target number of books.'); return; }
+    addChallenge({ memberId: chMemberId, memberName: chMemberName, year: currentYear, targetBooks: target });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setChTarget('');
+    setShowSetChallenge(false);
+  };
 
   const openAddBook = () => {
     setBTitle(''); setBAuthor(''); setBPages(''); setBGenre(''); setBStatus('want-to-read');
@@ -386,7 +411,13 @@ export function ReadingTrackerScreen({ navigation }: any) {
         {/* CHALLENGES TAB */}
         {activeTab === 'challenges' && (
           <>
-            <Text style={styles.sectionHeader}>Reading Challenges {currentYear}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <Text style={[styles.sectionHeader, { marginBottom: 0 }]}>Reading Challenges {currentYear}</Text>
+              <Pressable accessibilityRole="button" onPress={() => setShowSetChallenge(true)} style={styles.setChallengeBtn}>
+                <Ionicons name={'flag-outline' as any} size={14} color="#6A1B9A" />
+                <Text style={styles.setChallengeText}>Set Goal</Text>
+              </Pressable>
+            </View>
             {challenges.length === 0 ? (
               <View style={styles.emptyState}>
                 <Text style={styles.emptyEmoji}>🏆</Text>
@@ -584,6 +615,37 @@ export function ReadingTrackerScreen({ navigation }: any) {
           </View>
         </View>
       </Modal>
+
+      {/* Set Challenge Modal */}
+      <Modal visible={showSetChallenge} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowSetChallenge(false)}>
+        <View style={styles.modalContainer}>
+          <View style={{ width: 40, height: 4, backgroundColor: '#ccc', borderRadius: 2, alignSelf: 'center', marginBottom: 16 }} />
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Set Reading Challenge</Text>
+            <Pressable accessibilityRole="button" onPress={() => setShowSetChallenge(false)}>
+              <Ionicons name={'close' as any} size={24} color={colors.text} />
+            </Pressable>
+          </View>
+          <View style={styles.modalContent}>
+            <Text style={styles.fieldLabel}>Family Member</Text>
+            <View style={styles.chipRow}>
+              {MEMBERS.map((m) => (
+                <Pressable accessibilityRole="button" key={m.id} onPress={() => { setChMemberId(m.id); setChMemberName(m.name); }} style={[styles.chipBtn, chMemberId === m.id && { backgroundColor: m.color, borderColor: m.color }]}>
+                  <Text style={[styles.chipBtnText, chMemberId === m.id && { color: '#fff' }]}>{m.name}</Text>
+                </Pressable>
+              ))}
+            </View>
+            <Text style={styles.fieldLabel}>Books to Read in {currentYear}</Text>
+            <TextInput accessibilityLabel="24" style={styles.textInput} value={chTarget} onChangeText={setChTarget} placeholder="24" placeholderTextColor={colors.textMuted} keyboardType="number-pad" />
+            <Pressable accessibilityRole="button" style={[styles.saveBtn, { marginTop: 24 }]} onPress={handleSetChallenge}>
+              <LinearGradient colors={['#6A1B9A', '#4A148C']} style={styles.saveBtnGradient}>
+                <Ionicons name={'flag' as any} size={20} color="#fff" />
+                <Text style={styles.saveBtnText}>Save Goal</Text>
+              </LinearGradient>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -693,6 +755,8 @@ const styles = StyleSheet.create({
   bookNotes: { fontSize: 12, color: colors.textMuted, fontStyle: 'italic', marginTop: 6 },
   deleteBtn: { padding: 2 },
   sectionHeader: { fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 12, marginTop: 4 },
+  setChallengeBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, padding: 8, backgroundColor: colors.card, borderRadius: 10, ...shadows.sm },
+  setChallengeText: { fontSize: 13, fontWeight: '600', color: '#6A1B9A' },
   progressCard: {
     backgroundColor: colors.card,
     borderRadius: 14,

@@ -1,4 +1,7 @@
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import { mmkvStorage } from '../storage/mmkvStorage';
+import * as readingService from '../services/readingService';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -23,7 +26,7 @@ export interface Book {
 }
 
 export interface ReadingChallenge {
-  id: string;
+  id?: string;
   memberId: string;
   memberName: string;
   year: number;
@@ -33,6 +36,7 @@ export interface ReadingChallenge {
 interface ReadingState {
   books: Book[];
   challenges: ReadingChallenge[];
+  isLoaded: boolean;
   addBook: (book: Omit<Book, 'id' | 'createdAt'>) => void;
   updateProgress: (id: string, currentPage: number) => void;
   completeBook: (id: string, rating: number) => void;
@@ -41,187 +45,75 @@ interface ReadingState {
   getBooksForMember: (memberId: string) => Book[];
   getCompletedCount: (memberId: string, year: number) => number;
   getTotalPagesRead: (memberId: string) => number;
+  fetchFromServer: () => Promise<void>;
 }
 
-const _now = new Date().toISOString();
-const _today = new Date().toISOString().split('T')[0];
+export const useReadingStore = create<ReadingState>()(
+  persist(
+    (set, get) => ({
+  // A fresh family's reading tracker starts empty — the screen already has
+  // real "No Books Yet" / "Nobody Reading Right Now" / "No Challenges Yet"
+  // empty states for this. Shipping the same hardcoded Harry Potter/Atomic
+  // Habits demo library to every family regardless of what they actually
+  // read was never real data, just a permanent fake default.
+  books: [],
+  challenges: [],
+  isLoaded: false,
 
-const seedBooks: Book[] = [
-  {
-    id: 'bk1',
-    memberId: 'member-3',
-    memberName: 'Emma',
-    title: 'Harry Potter and the Sorcerer\'s Stone',
-    author: 'J.K. Rowling',
-    totalPages: 309,
-    currentPage: 309,
-    status: 'completed',
-    rating: 5,
-    genre: 'Fantasy',
-    startDate: '2025-05-01',
-    finishDate: '2025-05-20',
-    notes: 'Amazing! I love Hermione.',
-    coverEmoji: '🔵',
-    createdAt: _now,
+  addBook: (book) => {
+    const newBook: Book = { ...book, id: generateId(), createdAt: new Date().toISOString() };
+    set((s) => ({ books: [newBook, ...s.books] }));
+    readingService.createBook(newBook).catch(() => {
+      set((s) => ({ books: s.books.filter((b) => b.id !== newBook.id) }));
+    });
   },
-  {
-    id: 'bk2',
-    memberId: 'member-3',
-    memberName: 'Emma',
-    title: 'Harry Potter and the Chamber of Secrets',
-    author: 'J.K. Rowling',
-    totalPages: 341,
-    currentPage: 178,
-    status: 'reading',
-    rating: 0,
-    genre: 'Fantasy',
-    startDate: _today,
-    notes: 'Getting scary but so good!',
-    coverEmoji: '🟢',
-    createdAt: _now,
-  },
-  {
-    id: 'bk3',
-    memberId: 'member-3',
-    memberName: 'Emma',
-    title: 'The Giver',
-    author: 'Lois Lowry',
-    totalPages: 179,
-    currentPage: 0,
-    status: 'want-to-read',
-    rating: 0,
-    genre: 'Science Fiction',
-    notes: 'Teacher recommended',
-    coverEmoji: '📚',
-    createdAt: _now,
-  },
-  {
-    id: 'bk4',
-    memberId: 'member-4',
-    memberName: 'Liam',
-    title: 'Diary of a Wimpy Kid',
-    author: 'Jeff Kinney',
-    totalPages: 217,
-    currentPage: 217,
-    status: 'completed',
-    rating: 4,
-    genre: 'Humor',
-    startDate: '2025-06-01',
-    finishDate: '2025-06-15',
-    notes: 'So funny, Greg is hilarious',
-    coverEmoji: '🟡',
-    createdAt: _now,
-  },
-  {
-    id: 'bk5',
-    memberId: 'member-4',
-    memberName: 'Liam',
-    title: 'Captain Underpants',
-    author: 'Dav Pilkey',
-    totalPages: 176,
-    currentPage: 90,
-    status: 'reading',
-    rating: 0,
-    genre: 'Humor',
-    startDate: _today,
-    notes: '',
-    coverEmoji: '🔴',
-    createdAt: _now,
-  },
-  {
-    id: 'bk6',
-    memberId: 'member-4',
-    memberName: 'Liam',
-    title: 'Charlotte\'s Web',
-    author: 'E.B. White',
-    totalPages: 184,
-    currentPage: 0,
-    status: 'want-to-read',
-    rating: 0,
-    genre: 'Classic',
-    notes: 'Summer reading list',
-    coverEmoji: '📚',
-    createdAt: _now,
-  },
-  {
-    id: 'bk7',
-    memberId: 'member-2',
-    memberName: 'Mom',
-    title: 'Atomic Habits',
-    author: 'James Clear',
-    totalPages: 320,
-    currentPage: 320,
-    status: 'completed',
-    rating: 5,
-    genre: 'Self-Help',
-    startDate: '2025-04-01',
-    finishDate: '2025-04-28',
-    notes: 'Life-changing! Applying the 1% rule.',
-    coverEmoji: '🟢',
-    createdAt: _now,
-  },
-  {
-    id: 'bk8',
-    memberId: 'member-2',
-    memberName: 'Mom',
-    title: 'The Seven Husbands of Evelyn Hugo',
-    author: 'Taylor Jenkins Reid',
-    totalPages: 400,
-    currentPage: 215,
-    status: 'reading',
-    rating: 0,
-    genre: 'Fiction',
-    startDate: _today,
-    notes: 'Can\'t put it down!',
-    coverEmoji: '🔴',
-    createdAt: _now,
-  },
-];
 
-const seedChallenges: ReadingChallenge[] = [
-  { id: 'rc1', memberId: 'member-3', memberName: 'Emma', year: 2025, targetBooks: 24 },
-  { id: 'rc2', memberId: 'member-4', memberName: 'Liam', year: 2025, targetBooks: 20 },
-  { id: 'rc3', memberId: 'member-2', memberName: 'Mom', year: 2025, targetBooks: 15 },
-];
-
-export const useReadingStore = create<ReadingState>()((set, get) => ({
-  books: seedBooks,
-  challenges: seedChallenges,
-
-  addBook: (book) =>
+  updateProgress: (id, currentPage) => {
+    const prev = get().books;
     set((s) => ({
-      books: [{ ...book, id: generateId(), createdAt: new Date().toISOString() }, ...s.books],
-    })),
+      books: s.books.map((b) => (b.id === id ? { ...b, currentPage, status: 'reading' as ReadingStatus } : b)),
+    }));
+    readingService.updateBookRemote(id, { currentPage, status: 'reading' }).catch(() => { set({ books: prev }); });
+  },
 
-  updateProgress: (id, currentPage) =>
+  completeBook: (id, rating) => {
+    const prev = get().books;
+    const finishDate = new Date().toISOString().split('T')[0];
     set((s) => ({
       books: s.books.map((b) =>
-        b.id === id ? { ...b, currentPage, status: 'reading' as ReadingStatus } : b
+        b.id === id ? { ...b, status: 'completed' as ReadingStatus, currentPage: b.totalPages, rating, finishDate } : b
       ),
-    })),
+    }));
+    const book = prev.find((b) => b.id === id);
+    readingService
+      .updateBookRemote(id, { status: 'completed', currentPage: book?.totalPages, rating, finishDate })
+      .catch(() => { set({ books: prev }); });
+  },
 
-  completeBook: (id, rating) =>
-    set((s) => ({
-      books: s.books.map((b) =>
-        b.id === id
-          ? {
-              ...b,
-              status: 'completed' as ReadingStatus,
-              currentPage: b.totalPages,
-              rating,
-              finishDate: new Date().toISOString().split('T')[0],
-            }
-          : b
-      ),
-    })),
+  removeBook: (id) => {
+    const prev = get().books;
+    set((s) => ({ books: s.books.filter((b) => b.id !== id) }));
+    readingService.deleteBookRemote(id).catch(() => { set({ books: prev }); });
+  },
 
-  removeBook: (id) =>
-    set((s) => ({ books: s.books.filter((b) => b.id !== id) })),
-
-  addChallenge: (challenge) =>
-    set((s) => ({
-      challenges: [{ ...challenge, id: generateId() }, ...s.challenges],
-    })),
+  addChallenge: (challenge) => {
+    const prev = get().challenges;
+    set((s) => {
+      const exists = s.challenges.find((c) => c.memberId === challenge.memberId && c.year === challenge.year);
+      return {
+        challenges: exists
+          ? s.challenges.map((c) => (c.memberId === challenge.memberId && c.year === challenge.year ? { ...exists, ...challenge } : c))
+          : [challenge, ...s.challenges],
+      };
+    });
+    readingService.saveReadingChallengeRemote(challenge)
+      .then(({ challenge: saved }) => {
+        set((s) => ({
+          challenges: s.challenges.map((c) => (c.memberId === saved.memberId && c.year === saved.year ? saved : c)),
+        }));
+      })
+      .catch(() => { set({ challenges: prev }); });
+  },
 
   getBooksForMember: (memberId) =>
     get().books.filter((b) => b.memberId === memberId),
@@ -238,4 +130,23 @@ export const useReadingStore = create<ReadingState>()((set, get) => ({
     get()
       .books.filter((b) => b.memberId === memberId)
       .reduce((acc, b) => acc + b.currentPage, 0),
-}));
+
+  fetchFromServer: async () => {
+    try {
+      const [{ books }, { challenges }] = await Promise.all([
+        readingService.fetchBooks(),
+        readingService.fetchReadingChallenges(),
+      ]);
+      set({ books, challenges, isLoaded: true });
+    } catch {
+      set({ isLoaded: true });
+    }
+  },
+    }),
+    {
+      name: 'family-command-center-reading',
+      storage: createJSONStorage(() => mmkvStorage),
+      partialize: (state) => ({ books: state.books, challenges: state.challenges, isLoaded: state.isLoaded }),
+    }
+  )
+);
