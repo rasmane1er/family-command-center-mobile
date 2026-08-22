@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -28,6 +28,7 @@ import {
   VolunteerCause,
   VolunteerLog,
 } from '../../store/useVolunteerStore';
+import { useFamilyStore } from '../../store/useFamilyStore';
 
 type MainTab = 'log' | 'members' | 'impact';
 
@@ -43,12 +44,6 @@ const CAUSES: { value: VolunteerCause; label: string; color: string }[] = [
   { value: 'health', label: 'Health', color: '#F44336' },
   { value: 'arts', label: 'Arts', color: '#E91E63' },
   { value: 'other', label: 'Other', color: '#9E9E9E' },
-];
-
-const MEMBERS = [
-  { id: 'mom', name: 'Mom', color: '#FF6B6B' },
-  { id: 'dad', name: 'Dad', color: '#4ECDC4' },
-  { id: 'emma', name: 'Emma', color: '#45B7D1' },
 ];
 
 function getCauseColor(cause: VolunteerCause): string {
@@ -70,13 +65,20 @@ export function VolunteerTrackerScreen({ navigation: _navigation }: any) {
   const insets = useSafeAreaInsets();
   const tabBarInset = useTabBarInset();
   const store = useVolunteerStore();
+  const familyMembers = useFamilyStore((s) => s.members);
+  const MEMBERS = familyMembers.map((m) => ({ id: m.id, name: m.name, color: m.avatarColor }));
+
+  useEffect(() => {
+    store.fetchFromServer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [activeTab, setActiveTab] = useState<MainTab>('log');
 
   // Add Log modal
   const [showAddLog, setShowAddLog] = useState(false);
-  const [logMemberId, setLogMemberId] = useState('mom');
-  const [logMemberName, setLogMemberName] = useState('Mom');
+  const [logMemberId, setLogMemberId] = useState('');
+  const [logMemberName, setLogMemberName] = useState('');
   const [logOrg, setLogOrg] = useState('');
   const [logCause, setLogCause] = useState<VolunteerCause>('community');
   const [logDate, setLogDate] = useState('');
@@ -87,9 +89,16 @@ export function VolunteerTrackerScreen({ navigation: _navigation }: any) {
 
   // Set Goal modal
   const [showSetGoal, setShowSetGoal] = useState(false);
-  const [goalMemberId, setGoalMemberId] = useState('mom');
-  const [goalMemberName, setGoalMemberName] = useState('Mom');
+  const [goalMemberId, setGoalMemberId] = useState('');
+  const [goalMemberName, setGoalMemberName] = useState('');
   const [goalHours, setGoalHours] = useState('');
+
+  useEffect(() => {
+    if (MEMBERS.length === 0) return;
+    if (!logMemberId) { setLogMemberId(MEMBERS[0].id); setLogMemberName(MEMBERS[0].name); }
+    if (!goalMemberId) { setGoalMemberId(MEMBERS[0].id); setGoalMemberName(MEMBERS[0].name); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [familyMembers.length]);
 
   const allLogs = [...store.logs].sort((a, b) => b.date.localeCompare(a.date));
   const totalFamilyHoursThisYear = MEMBERS.reduce(
@@ -102,7 +111,7 @@ export function VolunteerTrackerScreen({ navigation: _navigation }: any) {
   );
 
   const resetLogForm = () => {
-    setLogMemberId('mom'); setLogMemberName('Mom'); setLogOrg(''); setLogCause('community');
+    setLogMemberId(MEMBERS[0]?.id ?? ''); setLogMemberName(MEMBERS[0]?.name ?? ''); setLogOrg(''); setLogCause('community');
     setLogDate(''); setLogHours(''); setLogDesc(''); setLogSupervisor(''); setLogVerified(false);
   };
 
