@@ -140,7 +140,7 @@ export function RecipesScreen({ navigation }: any) {
   const { t } = useTranslation('ops');
   const insets = useSafeAreaInsets();
   const {
-    recipes, toggleFavorite,
+    recipes, toggleFavorite, fetchFromServer,
     suggestedRecipes, isSuggesting, suggestionError,
     generateSuggestions, saveSuggestion, dismissSuggestion,
   } = useRecipesStore();
@@ -148,6 +148,11 @@ export function RecipesScreen({ navigation }: any) {
   const [filter, setFilter] = useState<RecipeCategory | 'all' | 'favorites'>('all');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<{ recipe: Recipe; isSuggestion: boolean } | null>(null);
+
+  useEffect(() => {
+    fetchFromServer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
 
   const handleGenerateSuggestions = () => {

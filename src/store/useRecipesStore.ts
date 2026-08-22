@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { mmkvStorage } from '../storage/mmkvStorage';
 import { API_BASE_URL } from '../config/api';
 import { secureStorage } from '../storage/secureStorage';
+import * as recipeService from '../services/recipeService';
 
 export type RecipeDifficulty = 'easy' | 'medium' | 'hard';
 export type RecipeCategory = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'dessert';
@@ -105,15 +106,28 @@ export const useRecipesStore = create<RecipesState>()(
     (set, get) => ({
       recipes: [],
       isLoaded: false,
-      toggleFavorite: (id) =>
+      toggleFavorite: (id) => {
+        const prev = get().recipes;
         set((s) => ({
           recipes: s.recipes.map((r) => (r.id === id ? { ...r, isFavorite: !r.isFavorite } : r)),
-        })),
-      addRecipe: (recipe) =>
-        set((s) => ({
-          recipes: [...s.recipes, { ...recipe, id: `recipe-${Date.now()}` }],
-        })),
-      fetchFromServer: async () => { set({ isLoaded: true }); },
+        }));
+        recipeService.toggleRecipeFavoriteRemote(id).catch(() => { set({ recipes: prev }); });
+      },
+      addRecipe: (recipe) => {
+        const newRecipe: Recipe = { ...recipe, id: `recipe-${Date.now()}` };
+        set((s) => ({ recipes: [...s.recipes, newRecipe] }));
+        recipeService.createRecipe(newRecipe).catch(() => {
+          set((s) => ({ recipes: s.recipes.filter((r) => r.id !== newRecipe.id) }));
+        });
+      },
+      fetchFromServer: async () => {
+        try {
+          const { recipes } = await recipeService.fetchRecipes();
+          set({ recipes, isLoaded: true });
+        } catch {
+          set({ isLoaded: true });
+        }
+      },
 
       suggestedRecipes: [],
       isSuggesting: false,
@@ -157,10 +171,8 @@ export const useRecipesStore = create<RecipesState>()(
         const suggestion = get().suggestedRecipes.find((r) => r.id === id);
         if (!suggestion) return;
         const { id: _discard, ...toSave } = suggestion;
-        set((s) => ({
-          recipes: [...s.recipes, { ...toSave, id: `recipe-${Date.now()}` }],
-          suggestedRecipes: s.suggestedRecipes.filter((r) => r.id !== id),
-        }));
+        set((s) => ({ suggestedRecipes: s.suggestedRecipes.filter((r) => r.id !== id) }));
+        get().addRecipe(toSave);
       },
 
       dismissSuggestion: (id) =>
