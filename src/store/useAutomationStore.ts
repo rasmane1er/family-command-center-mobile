@@ -7,6 +7,7 @@ import * as hueService from '../services/hueService';
 import * as smartDeviceService from '../services/smartDeviceService';
 import * as automationRuleService from '../services/automationRuleService';
 import * as marketplaceListingService from '../services/marketplaceListingService';
+import * as timeEconomyService from '../services/timeEconomyService';
 import { useFamilyStore } from './useFamilyStore';
 
 import { generateId } from '../utils/generateId';
@@ -228,21 +229,41 @@ export const useAutomationStore = create<AutomationState>()(
     });
   },
 
-  addConflict: (c) =>
-    set((s) => ({ conflicts: [{ ...c, id: generateId(), createdAt: new Date().toISOString() }, ...s.conflicts] })),
-  resolveConflict: (id, resolution) =>
+  addConflict: (c) => {
+    const newConflict: ConflictRecord = { ...c, id: generateId(), createdAt: new Date().toISOString() };
+    set((s) => ({ conflicts: [newConflict, ...s.conflicts] }));
+    timeEconomyService.createConflict(newConflict).catch(() => {
+      set((s) => ({ conflicts: s.conflicts.filter((c2) => c2.id !== newConflict.id) }));
+    });
+  },
+  resolveConflict: (id, resolution) => {
+    const prev = get().conflicts;
+    const resolvedAt = new Date().toISOString();
     set((s) => ({
       conflicts: s.conflicts.map((c) =>
-        c.id === id ? { ...c, resolution, status: 'resolved' as const, resolvedAt: new Date().toISOString() } : c
+        c.id === id ? { ...c, resolution, status: 'resolved' as const, resolvedAt } : c
       ),
-    })),
-  updateConflictStatus: (id, status) =>
-    set((s) => ({ conflicts: s.conflicts.map((c) => (c.id === id ? { ...c, status } : c)) })),
+    }));
+    timeEconomyService.updateConflictRemote(id, { resolution, status: 'resolved', resolvedAt }).catch(() => { set({ conflicts: prev }); });
+  },
+  updateConflictStatus: (id, status) => {
+    const prev = get().conflicts;
+    set((s) => ({ conflicts: s.conflicts.map((c) => (c.id === id ? { ...c, status } : c)) }));
+    timeEconomyService.updateConflictRemote(id, { status }).catch(() => { set({ conflicts: prev }); });
+  },
 
-  addTimeBlock: (b) =>
-    set((s) => ({ timeBlocks: [{ ...b, id: generateId() }, ...s.timeBlocks] })),
-  deleteTimeBlock: (id) =>
-    set((s) => ({ timeBlocks: s.timeBlocks.filter((b) => b.id !== id) })),
+  addTimeBlock: (b) => {
+    const newBlock: TimeBlock = { ...b, id: generateId() };
+    set((s) => ({ timeBlocks: [newBlock, ...s.timeBlocks] }));
+    timeEconomyService.createTimeBlock(newBlock).catch(() => {
+      set((s) => ({ timeBlocks: s.timeBlocks.filter((b2) => b2.id !== newBlock.id) }));
+    });
+  },
+  deleteTimeBlock: (id) => {
+    const prev = get().timeBlocks;
+    set((s) => ({ timeBlocks: s.timeBlocks.filter((b) => b.id !== id) }));
+    timeEconomyService.deleteTimeBlockRemote(id).catch(() => { set({ timeBlocks: prev }); });
+  },
 
   fetchDevices: async () => {
     try {
@@ -426,11 +447,13 @@ export const useAutomationStore = create<AutomationState>()(
   // addRule/addListing etc. above already write through to the backend.
   fetchFromServer: async () => {
     try {
-      const [{ rules }, { listings }] = await Promise.all([
+      const [{ rules }, { listings }, { timeBlocks }, { conflicts }] = await Promise.all([
         automationRuleService.fetchAutomationRules(),
         marketplaceListingService.fetchMarketplaceListings(),
+        timeEconomyService.fetchTimeBlocks(),
+        timeEconomyService.fetchConflicts(),
       ]);
-      set({ rules, listings });
+      set({ rules, listings, timeBlocks, conflicts });
     } catch {
       // offline or backend unreachable — keep whatever is already local.
     }

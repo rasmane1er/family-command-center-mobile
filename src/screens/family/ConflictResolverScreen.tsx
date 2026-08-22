@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -40,7 +40,12 @@ export function ConflictResolverScreen({ navigation }: any) {
   const [newDesc, setNewDesc] = useState('');
   const [newSeverity, setNewSeverity] = useState<'low' | 'medium' | 'high'>('medium');
   const [newParties, setNewParties] = useState<string[]>([]);
-  const { conflicts, resolveConflict, updateConflictStatus, addConflict } = useAutomationStore();
+  const { conflicts, resolveConflict, updateConflictStatus, addConflict, fetchFromServer } = useAutomationStore();
+
+  useEffect(() => {
+    fetchFromServer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const members = useFamilyStore((s) => s.members);
 
   const handleAddConflict = () => {

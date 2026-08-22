@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Modal, TextInput, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -54,7 +54,12 @@ export function TimeEconomyScreen({ navigation }: any) {
   const [newStart, setNewStart] = useState('09:00');
   const [newEnd, setNewEnd] = useState('10:00');
   const [newMemberIdModal, setNewMemberIdModal] = useState('');
-  const { timeBlocks, addTimeBlock } = useAutomationStore();
+  const { timeBlocks, addTimeBlock, fetchFromServer } = useAutomationStore();
+
+  useEffect(() => {
+    fetchFromServer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const members = useFamilyStore((s) => s.members);
   const familyId = useFamilyStore((s) => s.family?.id) ?? useAuthStore.getState().familyId ?? '';
 
