@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { mmkvStorage } from '../storage/mmkvStorage';
+import * as schoolService from '../services/schoolService';
 
 export type AssignmentStatus = 'not_started' | 'in_progress' | 'completed';
 export type AssignmentPriority = 'low' | 'medium' | 'high';
@@ -63,8 +64,15 @@ export const useSchoolStore = create<SchoolState>()(
       assignments: [],
       isLoaded: false,
 
-      addSubject: (s) => set((state) => ({ subjects: [...state.subjects, s] })),
-      deleteSubject: (id) =>
+      addSubject: (s) => {
+        set((state) => ({ subjects: [...state.subjects, s] }));
+        schoolService.createSubject(s).catch(() => {
+          set((state) => ({ subjects: state.subjects.filter((x) => x.id !== s.id) }));
+        });
+      },
+
+      deleteSubject: (id) => {
+        const prevSubjects = get().subjects;
         set((state) => {
           const target = state.subjects.find((s) => s.id === id);
           return {
@@ -73,40 +81,88 @@ export const useSchoolStore = create<SchoolState>()(
               ? state.assignments.filter((a) => !(a.memberId === target.memberId && a.subject === target.name))
               : state.assignments,
           };
-        }),
-      addGradeEntry: (subjectId, grade) =>
+        });
+        schoolService.deleteSubjectRemote(id).catch(() => { set({ subjects: prevSubjects }); });
+      },
+
+      addGradeEntry: (subjectId, grade) => {
+        const prev = get().subjects;
+        const tempId = generateId();
         set((state) => ({
           subjects: state.subjects.map((s) =>
             s.id === subjectId
-              ? { ...s, gradeEntries: [...s.gradeEntries, { ...grade, id: generateId() }] }
+              ? { ...s, gradeEntries: [...s.gradeEntries, { ...grade, id: tempId }] }
               : s
           ),
-        })),
-      deleteGradeEntry: (subjectId, gradeId) =>
+        }));
+        schoolService.createGradeEntryRemote(subjectId, grade)
+          .then(({ gradeEntry }) => {
+            set((state) => ({
+              subjects: state.subjects.map((s) =>
+                s.id === subjectId
+                  ? { ...s, gradeEntries: s.gradeEntries.map((g) => (g.id === tempId ? gradeEntry : g)) }
+                  : s
+              ),
+            }));
+          })
+          .catch(() => { set({ subjects: prev }); });
+      },
+
+      deleteGradeEntry: (subjectId, gradeId) => {
+        const prev = get().subjects;
         set((state) => ({
           subjects: state.subjects.map((s) =>
             s.id === subjectId
               ? { ...s, gradeEntries: s.gradeEntries.filter((g) => g.id !== gradeId) }
               : s
           ),
-        })),
-      addAssignment: (a) => set((state) => ({ assignments: [a, ...state.assignments] })),
-      updateAssignment: (id, updates) =>
+        }));
+        schoolService.deleteGradeEntryRemote(subjectId, gradeId).catch(() => { set({ subjects: prev }); });
+      },
+
+      addAssignment: (a) => {
+        set((state) => ({ assignments: [a, ...state.assignments] }));
+        schoolService.createAssignment(a).catch(() => {
+          set((state) => ({ assignments: state.assignments.filter((x) => x.id !== a.id) }));
+        });
+      },
+
+      updateAssignment: (id, updates) => {
+        const prev = get().assignments;
         set((state) => ({
           assignments: state.assignments.map((a) => (a.id === id ? { ...a, ...updates } : a)),
-        })),
-      toggleAssignmentComplete: (id) =>
-        set((state) => ({
-          assignments: state.assignments.map((a) =>
-            a.id === id
-              ? { ...a, status: a.status === 'completed' ? 'in_progress' : 'completed' }
-              : a
-          ),
-        })),
-      deleteAssignment: (id) =>
-        set((state) => ({ assignments: state.assignments.filter((a) => a.id !== id) })),
+        }));
+        schoolService.updateAssignmentRemote(id, updates).catch(() => { set({ assignments: prev }); });
+      },
 
-      fetchFromServer: async () => { set({ isLoaded: true }); },
+      toggleAssignmentComplete: (id) => {
+        const prev = get().assignments;
+        const current = prev.find((a) => a.id === id);
+        if (!current) return;
+        const newStatus: AssignmentStatus = current.status === 'completed' ? 'in_progress' : 'completed';
+        set((state) => ({
+          assignments: state.assignments.map((a) => (a.id === id ? { ...a, status: newStatus } : a)),
+        }));
+        schoolService.updateAssignmentRemote(id, { status: newStatus }).catch(() => { set({ assignments: prev }); });
+      },
+
+      deleteAssignment: (id) => {
+        const prev = get().assignments;
+        set((state) => ({ assignments: state.assignments.filter((a) => a.id !== id) }));
+        schoolService.deleteAssignmentRemote(id).catch(() => { set({ assignments: prev }); });
+      },
+
+      fetchFromServer: async () => {
+        try {
+          const [{ subjects }, { assignments }] = await Promise.all([
+            schoolService.fetchSubjects(),
+            schoolService.fetchAssignments(),
+          ]);
+          set({ subjects, assignments, isLoaded: true });
+        } catch {
+          set({ isLoaded: true });
+        }
+      },
     }),
     { name: 'school-store', storage: createJSONStorage(() => mmkvStorage) }
   )

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Modal,
   TextInput, Alert,
@@ -55,8 +55,13 @@ export function SchoolCenterScreen({ navigation }: any) {
   const children = members.filter((m) => m.role === 'child');
   const {
     subjects, assignments, toggleAssignmentComplete, addAssignment, deleteAssignment,
-    addSubject, deleteSubject, addGradeEntry,
+    addSubject, deleteSubject, addGradeEntry, fetchFromServer,
   } = useSchoolStore();
+
+  useEffect(() => {
+    fetchFromServer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [selectedChild, setSelectedChild] = useState(children[0]?.id ?? null);
   const [activeTab, setActiveTab] = useState<'grades' | 'assignments' | 'overview'>('overview');
