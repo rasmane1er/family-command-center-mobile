@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -109,7 +109,13 @@ export function GardenPlannerScreen({ navigation }: any) {
     getPlantsNeedingWater,
     getTasksDueToday,
     getAutoWateringTasks,
+    fetchFromServer,
   } = useGardenStore();
+
+  useEffect(() => {
+    fetchFromServer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [activeTab, setActiveTab] = useState<Tab>('Garden');
   const [locationFilter, setLocationFilter] = useState<string>('All');

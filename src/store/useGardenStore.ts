@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { mmkvStorage } from '../storage/mmkvStorage';
+import * as gardenService from '../services/gardenService';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -57,6 +58,7 @@ interface GardenState {
   // "automated" half of the watering flow. Skips any plant that already has
   // its own incomplete manually-created watering task, so nothing doubles up.
   getAutoWateringTasks: () => GardenTask[];
+  fetchFromServer: () => Promise<void>;
 }
 
 function calcNextWatering(freq: WateringFrequency, from: Date): string {
@@ -83,50 +85,61 @@ export const useGardenStore = create<GardenState>()(
   plants: [],
   tasks: [],
 
-  addPlant: (plant) =>
-    set((s) => ({
-      plants: [
-        ...s.plants,
-        { ...plant, id: generateId(), createdAt: new Date().toISOString() },
-      ],
-    })),
+  addPlant: (plant) => {
+    const newPlant: Plant = { ...plant, id: generateId(), createdAt: new Date().toISOString() };
+    set((s) => ({ plants: [...s.plants, newPlant] }));
+    gardenService.createPlant(newPlant).catch(() => {
+      set((s) => ({ plants: s.plants.filter((p) => p.id !== newPlant.id) }));
+    });
+  },
 
-  updatePlant: (id, updates) =>
+  updatePlant: (id, updates) => {
+    const prev = get().plants;
     set((s) => ({
       plants: s.plants.map((p) => (p.id === id ? { ...p, ...updates } : p)),
-    })),
+    }));
+    gardenService.updatePlantRemote(id, updates).catch(() => { set({ plants: prev }); });
+  },
 
-  waterPlant: (id) =>
+  waterPlant: (id) => {
+    const prev = get().plants;
+    const now = new Date();
+    const plant = prev.find((p) => p.id === id);
+    if (!plant) return;
+    const updates = { lastWatered: now.toISOString(), nextWatering: calcNextWatering(plant.wateringFrequency, now) };
     set((s) => ({
-      plants: s.plants.map((p) => {
-        if (p.id !== id) return p;
-        const now = new Date();
-        return {
-          ...p,
-          lastWatered: now.toISOString(),
-          nextWatering: calcNextWatering(p.wateringFrequency, now),
-        };
-      }),
-    })),
+      plants: s.plants.map((p) => (p.id === id ? { ...p, ...updates } : p)),
+    }));
+    gardenService.updatePlantRemote(id, updates).catch(() => { set({ plants: prev }); });
+  },
 
-  removePlant: (id) =>
-    set((s) => ({ plants: s.plants.filter((p) => p.id !== id) })),
+  removePlant: (id) => {
+    const prev = get().plants;
+    set((s) => ({ plants: s.plants.filter((p) => p.id !== id) }));
+    gardenService.deletePlantRemote(id).catch(() => { set({ plants: prev }); });
+  },
 
-  addTask: (task) =>
-    set((s) => ({
-      tasks: [
-        ...s.tasks,
-        { ...task, id: generateId(), createdAt: new Date().toISOString() },
-      ],
-    })),
+  addTask: (task) => {
+    const newTask: GardenTask = { ...task, id: generateId(), createdAt: new Date().toISOString() };
+    set((s) => ({ tasks: [...s.tasks, newTask] }));
+    gardenService.createGardenTask(newTask).catch(() => {
+      set((s) => ({ tasks: s.tasks.filter((t) => t.id !== newTask.id) }));
+    });
+  },
 
-  completeTask: (id) =>
+  completeTask: (id) => {
+    const prev = get().tasks;
     set((s) => ({
       tasks: s.tasks.map((t) => (t.id === id ? { ...t, completed: true } : t)),
-    })),
+    }));
+    gardenService.completeGardenTaskRemote(id).catch(() => { set({ tasks: prev }); });
+  },
 
-  removeTask: (id) =>
-    set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) })),
+  removeTask: (id) => {
+    const prev = get().tasks;
+    set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) }));
+    gardenService.deleteGardenTaskRemote(id).catch(() => { set({ tasks: prev }); });
+  },
 
   getPlantsNeedingWater: () => {
     const now = new Date();
@@ -159,6 +172,18 @@ export const useGardenStore = create<GardenState>()(
         createdAt: p.nextWatering!,
         auto: true,
       }));
+  },
+
+  fetchFromServer: async () => {
+    try {
+      const [{ plants }, { tasks }] = await Promise.all([
+        gardenService.fetchPlants(),
+        gardenService.fetchGardenTasks(),
+      ]);
+      set({ plants, tasks });
+    } catch {
+      // offline or backend unreachable — keep whatever is already local.
+    }
   },
     }),
     {
