@@ -4,6 +4,7 @@ import { mmkvStorage } from '../storage/mmkvStorage';
 import { useFamilyStore } from './useFamilyStore';
 import { useFinanceStore } from './useFinanceStore';
 import { authBridge } from './authBridge';
+import * as childcareService from '../services/childcareService';
 import type { Caregiver, Booking, CaregiverType, DaycareEnrollment, CalendarEvent, Bill } from '../types';
 
 export type { CaregiverType, Caregiver, Booking, DaycareEnrollment };
@@ -38,33 +39,46 @@ export const useChildcareStore = create<ChildcareState>()(
       bookings: [],
       isLoaded: false,
 
-      addCaregiver: (c) =>
-        set((s) => ({
-          caregivers: [
-            ...s.caregivers,
-            { ...c, id: generateId(), familyId: resolveFamilyId(), totalHoursWorked: 0, totalPaid: 0 },
-          ],
-        })),
+      addCaregiver: (c) => {
+        const newCaregiver: Caregiver = { ...c, id: generateId(), familyId: resolveFamilyId(), totalHoursWorked: 0, totalPaid: 0 };
+        set((s) => ({ caregivers: [...s.caregivers, newCaregiver] }));
+        childcareService.createCaregiver(newCaregiver).catch(() => {
+          set((s) => ({ caregivers: s.caregivers.filter((c2) => c2.id !== newCaregiver.id) }));
+        });
+      },
 
-      deleteCaregiver: (id) =>
+      deleteCaregiver: (id) => {
+        const prevCaregivers = get().caregivers;
+        const prevBookings = get().bookings;
         set((s) => ({
           caregivers: s.caregivers.filter((c) => c.id !== id),
           bookings: s.bookings.filter((b) => b.caregiverId !== id),
-        })),
+        }));
+        childcareService.deleteCaregiverRemote(id).catch(() => {
+          set({ caregivers: prevCaregivers, bookings: prevBookings });
+        });
+      },
 
-      togglePreferred: (id) =>
+      togglePreferred: (id) => {
+        const prev = get().caregivers;
+        const target = prev.find((c) => c.id === id);
+        if (!target) return;
+        const isPreferred = !target.isPreferred;
         set((s) => ({
-          caregivers: s.caregivers.map((c) =>
-            c.id === id ? { ...c, isPreferred: !c.isPreferred } : c
-          ),
-        })),
+          caregivers: s.caregivers.map((c) => (c.id === id ? { ...c, isPreferred } : c)),
+        }));
+        childcareService.updateCaregiverRemote(id, { isPreferred }).catch(() => { set({ caregivers: prev }); });
+      },
 
-      setDaycareEnrollment: (caregiverId, enrollment) =>
+      setDaycareEnrollment: (caregiverId, enrollment) => {
+        const prev = get().caregivers;
         set((s) => ({
           caregivers: s.caregivers.map((c) =>
             c.id === caregiverId ? { ...c, enrollment } : c
           ),
-        })),
+        }));
+        childcareService.updateCaregiverRemote(caregiverId, { enrollment }).catch(() => { set({ caregivers: prev }); });
+      },
 
       addBooking: (b) => {
         const familyId = resolveFamilyId();
@@ -95,9 +109,15 @@ export const useChildcareStore = create<ChildcareState>()(
         booking.eventId = event.id;
 
         set((s) => ({ bookings: [...s.bookings, booking] }));
+        childcareService.createBooking(booking).catch(() => {
+          set((s) => ({ bookings: s.bookings.filter((b) => b.id !== booking.id) }));
+        });
       },
 
-      completeBooking: (id, amountPaid) =>
+      completeBooking: (id, amountPaid) => {
+        const prevBookings = get().bookings;
+        const prevCaregivers = get().caregivers;
+        let billId: string | undefined;
         set((s) => {
           const booking = s.bookings.find((b) => b.id === id);
           if (!booking) return s;
@@ -107,7 +127,6 @@ export const useChildcareStore = create<ChildcareState>()(
           // Credit) — so completed bookings feed tax-deduction tracking and
           // monthly spend automatically instead of only updating a total
           // that lives nowhere outside this screen.
-          let billId: string | undefined;
           if (amountPaid > 0) {
             const familyId = booking.familyId || resolveFamilyId();
             const caregiver = s.caregivers.find((c) => c.id === booking.caregiverId);
@@ -142,9 +161,14 @@ export const useChildcareStore = create<ChildcareState>()(
                 : c
             ),
           };
-        }),
+        });
+        childcareService.updateBookingRemote(id, { status: 'completed', amountPaid, billId }).catch(() => {
+          set({ bookings: prevBookings, caregivers: prevCaregivers });
+        });
+      },
 
       cancelBooking: (id) => {
+        const prev = get().bookings;
         const booking = get().bookings.find((b) => b.id === id);
         // Clean up the calendar event a cancelled booking created —
         // otherwise a ghost "childcare" entry lingers on the shared family
@@ -157,9 +181,20 @@ export const useChildcareStore = create<ChildcareState>()(
             b.id === id ? { ...b, status: 'cancelled' } : b
           ),
         }));
+        childcareService.updateBookingRemote(id, { status: 'cancelled' }).catch(() => { set({ bookings: prev }); });
       },
 
-      fetchFromServer: async () => { set({ isLoaded: true }); },
+      fetchFromServer: async () => {
+        try {
+          const [{ caregivers }, { bookings }] = await Promise.all([
+            childcareService.fetchCaregivers(),
+            childcareService.fetchBookings(),
+          ]);
+          set({ caregivers, bookings, isLoaded: true });
+        } catch {
+          set({ isLoaded: true });
+        }
+      },
     }),
     {
       name: 'family-command-center-childcare',

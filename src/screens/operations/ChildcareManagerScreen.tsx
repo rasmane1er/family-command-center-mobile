@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -105,7 +105,13 @@ export function ChildcareManagerScreen({ navigation }: any) {
     addBooking,
     completeBooking,
     cancelBooking,
+    fetchFromServer,
   } = useChildcareStore();
+
+  useEffect(() => {
+    fetchFromServer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const { members, updateMember } = useFamilyStore();
   const children = useMemo(() => members.filter((m) => m.role === 'child'), [members]);
