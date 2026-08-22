@@ -51,9 +51,19 @@ export function MealPlanningScreen({ navigation }: any) {
   const [newMealPrep, setNewMealPrep] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
-  const { mealPlans, setMealPlan } = useOperationsStore();
+  const { mealPlans, setMealPlan, fetchFromServer } = useOperationsStore();
   const { addItem } = useShoppingStore();
   const familyId = useFamilyStore((s) => s.family?.id) ?? useAuthStore.getState().familyId ?? '';
+
+  // This screen previously only ever read whatever was already sitting in
+  // useOperationsStore — it only looked freshly-synced if the user happened
+  // to visit Pantry/Vehicles/Documents first, since those are what actually
+  // call fetchFromServer. A meal plan someone set from another device would
+  // silently never show up here otherwise.
+  useEffect(() => {
+    fetchFromServer(familyId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Guards the persist effect below from firing with stale initial state
   // before this load effect's setWeekMeals has taken effect — without it,
@@ -61,7 +71,9 @@ export function MealPlanningScreen({ navigation }: any) {
   // every mount, since both effects run in the same pass on first render.
   const hydratedRef = useRef(false);
 
-  // Load from store on mount
+  // Re-derive weekMeals from the store whenever it changes — not just on
+  // mount, since fetchFromServer above resolves asynchronously and needs to
+  // flow through here once real data arrives.
   useEffect(() => {
     const weekStartDate = startOfWeek(new Date(), { weekStartsOn: 1 });
     const weekKey = format(weekStartDate, 'yyyy-MM-dd');
@@ -88,8 +100,7 @@ export function MealPlanningScreen({ navigation }: any) {
       setWeekMeals(converted);
     }
     hydratedRef.current = true;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [mealPlans]);
 
   // Persist to store on change
   useEffect(() => {

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { mmkvStorage } from '../storage/mmkvStorage';
-import type { PantryItem, ShoppingList, MealPlan, Asset, Vehicle, Document } from '../types';
+import type { PantryItem, MealPlan, Asset, Vehicle, Document } from '../types';
 import * as assetService from '../services/assetService';
 import * as pantryService from '../services/pantryService';
 import * as vehicleService from '../services/vehicleService';
@@ -10,7 +10,6 @@ import { apiRequest } from '../api/client';
 
 interface OperationsState {
   pantryItems: PantryItem[];
-  shoppingLists: ShoppingList[];
   mealPlans: MealPlan[];
   assets: Asset[];
   vehicles: Vehicle[];
@@ -21,8 +20,6 @@ interface OperationsState {
   addPantryItemsBulk: (items: PantryItem[]) => void;
   updatePantryItem: (id: string, updates: Partial<PantryItem>) => void;
   deletePantryItem: (id: string) => void;
-  addShoppingList: (list: ShoppingList) => void;
-  updateShoppingList: (id: string, updates: Partial<ShoppingList>) => void;
   setMealPlan: (plan: MealPlan, familyId?: string) => void;
   addAsset: (asset: Asset) => void;
   updateAsset: (id: string, updates: Partial<Asset>) => void;
@@ -42,7 +39,6 @@ export const useOperationsStore = create<OperationsState>()(
   persist(
     (set, get) => ({
   pantryItems: [],
-  shoppingLists: [],
   mealPlans: [],
   assets: [],
   vehicles: [],
@@ -72,9 +68,6 @@ export const useOperationsStore = create<OperationsState>()(
     set((s) => ({ pantryItems: s.pantryItems.filter((i) => i.id !== id) }));
     pantryService.deletePantryItemRemote(id).catch(() => { set({ pantryItems: prev }); });
   },
-  addShoppingList: (list) => set((s) => ({ shoppingLists: [...s.shoppingLists, list] })),
-  updateShoppingList: (id, updates) =>
-    set((s) => ({ shoppingLists: s.shoppingLists.map((l) => (l.id === id ? { ...l, ...updates } : l)) })),
   setMealPlan: (plan, familyId) => {
     set((s) => {
       const exists = s.mealPlans.find((p) => p.weekStart === plan.weekStart);
@@ -163,7 +156,6 @@ export const useOperationsStore = create<OperationsState>()(
       storage: createJSONStorage(() => mmkvStorage),
       partialize: (state) => ({
         pantryItems: state.pantryItems,
-        shoppingLists: state.shoppingLists,
         mealPlans: state.mealPlans,
         assets: state.assets,
         vehicles: state.vehicles,

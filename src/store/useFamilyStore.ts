@@ -84,6 +84,7 @@ interface FamilyState {
 
   addRewardCatalogItem: (item: RewardCatalogItem) => void;
   deleteRewardCatalogItem: (id: string) => void;
+  fetchRewardCatalog: () => Promise<void>;
   // One-time starter catalog so the Store tab isn't empty on a brand-new
   // family — real, persisted, family-editable items from the start, not a
   // hardcoded array rendered outside the store. Safe to call on every
@@ -351,11 +352,32 @@ export const useFamilyStore = create<FamilyState>()(
       members: s.members.map((m) => (m.id === memberId ? { ...m, points: m.points + points } : m)),
     })),
 
-  addRewardCatalogItem: (item) => set((s) => ({ rewardCatalog: [...s.rewardCatalog, item] })),
-  deleteRewardCatalogItem: (id) =>
-    set((s) => ({ rewardCatalog: s.rewardCatalog.filter((r) => r.id !== id) })),
+  addRewardCatalogItem: (item) => {
+    set((s) => ({ rewardCatalog: [...s.rewardCatalog, item] }));
+    rewardService.createRewardCatalogItem(item).catch(() => {
+      set((s) => ({ rewardCatalog: s.rewardCatalog.filter((r) => r.id !== item.id) }));
+    });
+  },
+  deleteRewardCatalogItem: (id) => {
+    const prev = get().rewardCatalog;
+    set((s) => ({ rewardCatalog: s.rewardCatalog.filter((r) => r.id !== id) }));
+    rewardService.deleteRewardCatalogItemRemote(id).catch(() => { set({ rewardCatalog: prev }); });
+  },
+  fetchRewardCatalog: async () => {
+    try {
+      const { items } = await rewardService.fetchRewardCatalog();
+      set({ rewardCatalog: items });
+    } catch {
+      // offline or backend unreachable — keep whatever is already local.
+    }
+  },
   seedRewardCatalogDefaults: () => {
-    if (get().hasSeededRewardCatalog) return;
+    // Guarded on the real, just-fetched catalog being empty (not only the
+    // local hasSeededRewardCatalog flag) — that flag lives in local MMKV, so
+    // a reinstall would otherwise reset it and re-seed duplicate defaults on
+    // top of whatever the family already has on the backend. Call this only
+    // after fetchRewardCatalog() has resolved.
+    if (get().hasSeededRewardCatalog || get().rewardCatalog.length > 0) return;
     const familyId = get().family?.id ?? '';
     const defaults: Omit<RewardCatalogItem, 'id' | 'familyId'>[] = [
       { name: 'Extra Screen Time', description: '30 min of extra screen time', cost: 100, icon: 'phone-portrait', color: '#8E44AD' },
@@ -367,10 +389,10 @@ export const useFamilyStore = create<FamilyState>()(
       { name: 'Sleepover', description: 'Have a friend sleep over', cost: 500, icon: 'people', color: '#2980B9' },
       { name: 'Game Purchase', description: '$10 game or app', cost: 750, icon: 'game-controller', color: '#9B59B6' },
     ];
-    set({
-      rewardCatalog: defaults.map((d) => ({ ...d, id: generateId(), familyId })),
-      hasSeededRewardCatalog: true,
-    });
+    set({ hasSeededRewardCatalog: true });
+    for (const d of defaults) {
+      get().addRewardCatalogItem({ ...d, id: generateId(), familyId });
+    }
   },
 
   // Real hydration for the core family/members/tasks data — previously a

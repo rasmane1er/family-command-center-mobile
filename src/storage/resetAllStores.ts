@@ -88,7 +88,7 @@ export function resetAllStores() {
   useMilitaryStore.setState({ deployments: [], pcsMoves: [], readiness: null } as any);
 
   useOperationsStore.setState({
-    pantryItems: [], documents: [], shoppingLists: [],
+    pantryItems: [], documents: [],
     mealPlans: [], assets: [], vehicles: [],
   } as any);
 

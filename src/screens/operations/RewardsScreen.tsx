@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { View, Text, StyleSheet, ScrollView, Pressable, Alert, TextInput, Modal } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -63,6 +63,20 @@ export function RewardsScreen({ navigation, route }: any) {
   const clearRewardHistory = useFamilyStore((s) => s.clearRewardHistory);
   const addRewardCatalogItem = useFamilyStore((s) => s.addRewardCatalogItem);
   const deleteRewardCatalogItem = useFamilyStore((s) => s.deleteRewardCatalogItem);
+  const hydrateRewards = useFamilyStore((s) => s.hydrateRewards);
+  const fetchRewardCatalog = useFamilyStore((s) => s.fetchRewardCatalog);
+  const seedRewardCatalogDefaults = useFamilyStore((s) => s.seedRewardCatalogDefaults);
+
+  // hydrateRewards/fetchRewardCatalog previously existed but nothing ever
+  // called them — reward records and the catalog only ever showed whatever
+  // was already sitting in local state, never what another device wrote.
+  // Catalog seeding runs after the real fetch resolves so it only fires for
+  // a family that's actually still empty server-side, not on every reinstall.
+  useEffect(() => {
+    hydrateRewards();
+    fetchRewardCatalog().then(seedRewardCatalogDefaults);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const family = useFamilyStore((s) => s.family);
   const addNotification = useNotificationsStore((s) => s.addNotification);
 
