@@ -1,10 +1,11 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import * as Notifications from 'expo-notifications';
 import {
   Alert,
   AppState,
   AppStateStatus,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -101,6 +102,19 @@ export function GuardianDashboardScreen({ navigation }: any) {
   useEffect(() => {
     hydrate();
   }, [hydrate]);
+
+  // A device that looks stuck "Offline" has no way for the parent to force a
+  // fresh check short of backgrounding/reopening the whole app — pull down
+  // to ask the server right now instead of waiting for the next 10s poll.
+  const [refreshing, setRefreshing] = useState(false);
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await hydrate();
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   // Hydrate immediately when the guardian app comes back to the foreground —
   // catches reconnections that happened while the app was backgrounded.
@@ -320,6 +334,9 @@ export function GuardianDashboardScreen({ navigation }: any) {
             onMomentumScrollEnd={onMomentumScrollEnd}
             scrollEventThrottle={scrollEventThrottle}
             showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#fff" />
+            }
           >
             {/* SOS Banner */}
             {unresolved.length > 0 && (
