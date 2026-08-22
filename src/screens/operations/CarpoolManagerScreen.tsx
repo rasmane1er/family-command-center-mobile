@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, TextInput, Modal,
   KeyboardAvoidingView, Platform, Alert,
@@ -461,7 +461,12 @@ function AddRouteModal({
 export function CarpoolManagerScreen({ navigation }: any) {
   const { t } = useTranslation('ops');
   const insets = useSafeAreaInsets();
-  const { routes, addRoute, advanceDriver, addParticipant, deleteRoute } = useCarpoolStore();
+  const { routes, addRoute, advanceDriver, addParticipant, deleteRoute, fetchFromServer } = useCarpoolStore();
+
+  useEffect(() => {
+    fetchFromServer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [activeTab, setActiveTab] = useState<Tab>('routes');
   const [showAddRoute, setShowAddRoute] = useState(false);
 

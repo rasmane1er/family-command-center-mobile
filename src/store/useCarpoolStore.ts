@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { mmkvStorage } from '../storage/mmkvStorage';
+import * as carpoolService from '../services/carpoolService';
 
 import { generateId } from '../utils/generateId';
 
@@ -53,34 +54,58 @@ export const useCarpoolStore = create<CarpoolState>()(
   routes: [],
   isLoaded: false,
 
-  addRoute: (r) =>
-    set((s) => ({
-      routes: [...s.routes, { ...r, id: generateId(), currentDriverIndex: 0 }],
-    })),
+  addRoute: (r) => {
+    const newRoute: CarpoolRoute = { ...r, id: generateId(), currentDriverIndex: 0 };
+    set((s) => ({ routes: [...s.routes, newRoute] }));
+    carpoolService.createRoute(newRoute).catch(() => {
+      set((s) => ({ routes: s.routes.filter((route) => route.id !== newRoute.id) }));
+    });
+  },
 
-  advanceDriver: (routeId) =>
-    set((s) => ({
-      routes: s.routes.map((r) => {
-        if (r.id !== routeId) return r;
-        const updatedRotation = r.rotation.map((d, i) =>
-          i === r.currentDriverIndex ? { ...d, completed: true } : d
-        );
-        const nextIndex = (r.currentDriverIndex + 1) % r.rotation.length;
-        return { ...r, rotation: updatedRotation, currentDriverIndex: nextIndex };
-      }),
-    })),
-
-  deleteRoute: (id) =>
-    set((s) => ({ routes: s.routes.filter((r) => r.id !== id) })),
-
-  addParticipant: (routeId, p) =>
+  advanceDriver: (routeId) => {
+    const prev = get().routes;
+    const target = prev.find((r) => r.id === routeId);
+    if (!target) return;
+    const updatedRotation = target.rotation.map((d, i) =>
+      i === target.currentDriverIndex ? { ...d, completed: true } : d
+    );
+    const nextIndex = (target.currentDriverIndex + 1) % target.rotation.length;
     set((s) => ({
       routes: s.routes.map((r) =>
-        r.id === routeId ? { ...r, participants: [...r.participants, p] } : r
+        r.id === routeId ? { ...r, rotation: updatedRotation, currentDriverIndex: nextIndex } : r
       ),
-    })),
+    }));
+    carpoolService.updateRouteRemote(routeId, { rotation: updatedRotation, currentDriverIndex: nextIndex })
+      .catch(() => { set({ routes: prev }); });
+  },
 
-  fetchFromServer: async () => { set({ isLoaded: true }); },
+  deleteRoute: (id) => {
+    const prev = get().routes;
+    set((s) => ({ routes: s.routes.filter((r) => r.id !== id) }));
+    carpoolService.deleteRouteRemote(id).catch(() => { set({ routes: prev }); });
+  },
+
+  addParticipant: (routeId, p) => {
+    const prev = get().routes;
+    const target = prev.find((r) => r.id === routeId);
+    if (!target) return;
+    const participants = [...target.participants, p];
+    set((s) => ({
+      routes: s.routes.map((r) =>
+        r.id === routeId ? { ...r, participants } : r
+      ),
+    }));
+    carpoolService.updateRouteRemote(routeId, { participants }).catch(() => { set({ routes: prev }); });
+  },
+
+  fetchFromServer: async () => {
+    try {
+      const { routes } = await carpoolService.fetchRoutes();
+      set({ routes, isLoaded: true });
+    } catch {
+      set({ isLoaded: true });
+    }
+  },
     }),
     {
       name: 'family-command-center-carpool',
