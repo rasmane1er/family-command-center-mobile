@@ -51,6 +51,16 @@ export function unblockHousehold(familyId: string): Promise<void> {
   return apiRequest(`/connect/households/${familyId}/block`, { method: 'DELETE' });
 }
 
+export interface BlockedHousehold {
+  familyId: string;
+  familyName: string;
+  blockedAt: string;
+}
+
+export function fetchBlockedHouseholds(): Promise<{ blockedHouseholds: BlockedHousehold[] }> {
+  return apiRequest('/connect/households/blocked');
+}
+
 // ─── Family Connect Phase 2: feed ───────────────────────────────────────────
 
 export function createPost(params: {

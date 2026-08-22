@@ -169,6 +169,8 @@ export function FamilyConnectScreen({ navigation }: any) {
   const declineRequest = useConnectStore((s) => s.declineRequest);
   const removeConnection = useConnectStore((s) => s.removeConnection);
   const blockHousehold = useConnectStore((s) => s.blockHousehold);
+  const unblockHousehold = useConnectStore((s) => s.unblockHousehold);
+  const blockedHouseholds = useConnectStore((s) => s.blockedHouseholds);
   const feedPosts = useConnectStore((s) => s.feedPosts);
   const postComments = useConnectStore((s) => s.postComments);
   const postReactions = useConnectStore((s) => s.postReactions);
@@ -318,6 +320,13 @@ export function FamilyConnectScreen({ navigation }: any) {
     ]);
   };
 
+  const handleUnblock = (familyId: string, familyName: string) => {
+    Alert.alert('Unblock household?', `${familyName} will be able to send you connection requests again.`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Unblock', onPress: () => unblockHousehold(familyId) },
+    ]);
+  };
+
   const screenHeader = (
     <LinearGradient colors={['#0F2952', '#1E4A8A']} style={[styles.header, { paddingTop: insets.top + 6 }]}>
       <View style={styles.headerTop}>
@@ -445,6 +454,28 @@ export function FamilyConnectScreen({ navigation }: any) {
                     </Card>
                   );
                 }}
+                ListFooterComponent={
+                  blockedHouseholds.length > 0 ? (
+                    <View style={{ marginTop: 8 }}>
+                      <Text style={styles.blockedSectionTitle}>Blocked Households</Text>
+                      {blockedHouseholds.map((b) => (
+                        <Card key={b.familyId} style={styles.rowCard} variant="elevated">
+                          <View style={styles.rowTop}>
+                            <View style={[styles.familyIcon, { backgroundColor: colors.dangerLight }]}>
+                              <Ionicons name="ban" size={20} color={colors.danger} />
+                            </View>
+                            <View style={{ flex: 1, marginLeft: 12 }}>
+                              <Text style={styles.familyName}>{b.familyName}</Text>
+                            </View>
+                            <Pressable accessibilityRole="button" onPress={() => handleUnblock(b.familyId, b.familyName)} style={styles.actionBtn}>
+                              <Text style={[styles.actionBtnText, { color: colors.primary }]}>Unblock</Text>
+                            </Pressable>
+                          </View>
+                        </Card>
+                      ))}
+                    </View>
+                  ) : null
+                }
               />
             );
           }
@@ -602,6 +633,7 @@ const styles = StyleSheet.create({
   actionBtnText: { fontSize: 12, fontWeight: '700', color: colors.textSecondary },
   emptyState: { alignItems: 'center', paddingVertical: 60, paddingHorizontal: 20 },
   emptyTitle: { fontSize: 16, fontWeight: '800', color: colors.text, marginTop: 16 },
+  blockedSectionTitle: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10, marginTop: 8 },
   emptyDesc: { fontSize: 13, color: colors.textSecondary, marginTop: 8, textAlign: 'center', lineHeight: 19 },
   modal: { flex: 1, backgroundColor: colors.background, padding: 20 },
   modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: colors.border, alignSelf: 'center', marginBottom: 16 },

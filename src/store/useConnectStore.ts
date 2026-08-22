@@ -6,6 +6,7 @@ import type {
   CoParentAccessGrant, CoParentPermission, SharedChildFields, CalendarEvent,
 } from '../types';
 import * as connectService from '../services/connectService';
+import type { BlockedHousehold } from '../services/connectService';
 
 // apiRequest only throws a generic `API error {status}` (doesn't parse the
 // server's real error text) — map the status codes this route actually
@@ -38,6 +39,8 @@ interface ConnectState {
   removeConnection: (id: string) => Promise<void>;
   blockHousehold: (familyId: string) => Promise<void>;
   unblockHousehold: (familyId: string) => Promise<void>;
+  blockedHouseholds: BlockedHousehold[];
+  fetchBlockedHouseholds: () => Promise<void>;
 
   // Feed (Phase 2) — deliberately NOT persisted (see partialize below); it's
   // refetched on demand, same reasoning as any other social-style feed in
@@ -79,6 +82,7 @@ export const useConnectStore = create<ConnectState>()(
       connections: [],
       incomingRequests: [],
       outgoingRequests: [],
+      blockedHouseholds: [],
       isLoaded: false,
       isLoading: false,
       feedPosts: [],
@@ -93,15 +97,17 @@ export const useConnectStore = create<ConnectState>()(
       fetchFromServer: async () => {
         set({ isLoading: true });
         try {
-          const [connectionsRes, incomingRes, outgoingRes] = await Promise.all([
+          const [connectionsRes, incomingRes, outgoingRes, blockedRes] = await Promise.all([
             connectService.fetchConnections(),
             connectService.fetchIncomingRequests(),
             connectService.fetchOutgoingRequests(),
+            connectService.fetchBlockedHouseholds(),
           ]);
           set({
             connections: connectionsRes.connections,
             incomingRequests: incomingRes.requests,
             outgoingRequests: outgoingRes.requests,
+            blockedHouseholds: blockedRes.blockedHouseholds,
           });
         } catch {
           // offline/unreachable — keep whatever is already local.
@@ -160,10 +166,26 @@ export const useConnectStore = create<ConnectState>()(
           incomingRequests: s.incomingRequests.filter((r) => r.requesterFamilyId !== familyId),
           outgoingRequests: s.outgoingRequests.filter((r) => r.recipientFamilyId !== familyId),
         }));
+        get().fetchBlockedHouseholds();
+      },
+
+      fetchBlockedHouseholds: async () => {
+        try {
+          const { blockedHouseholds } = await connectService.fetchBlockedHouseholds();
+          set({ blockedHouseholds });
+        } catch {
+          // offline/unreachable — keep whatever is already local.
+        }
       },
 
       unblockHousehold: async (familyId) => {
-        await connectService.unblockHousehold(familyId);
+        const prev = get().blockedHouseholds;
+        set((s) => ({ blockedHouseholds: s.blockedHouseholds.filter((b) => b.familyId !== familyId) }));
+        try {
+          await connectService.unblockHousehold(familyId);
+        } catch {
+          set({ blockedHouseholds: prev });
+        }
       },
 
       fetchFeed: async (reset = true) => {
