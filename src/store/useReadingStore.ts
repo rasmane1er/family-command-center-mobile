@@ -22,6 +22,7 @@ export interface Book {
   finishDate?: string;
   notes: string;
   coverEmoji: string; // emoji to represent cover color/genre
+  coverUrl?: string; // real cover image from book search — takes priority over coverEmoji when present
   createdAt: string;
 }
 

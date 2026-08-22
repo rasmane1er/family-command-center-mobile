@@ -10,6 +10,8 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Image,
+  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,6 +23,7 @@ import { shadows } from '../../theme/spacing';
 import { useTabBarInset } from '../../hooks/useTabBarInset';
 import { useReadingStore, ReadingStatus, Book } from '../../store/useReadingStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { searchBooks, BookSearchResult } from '../../services/bookSearchService';
 
 const STATUS_CONFIG: Record<ReadingStatus, { color: string; label: string; icon: string }> = {
   'want-to-read': { color: '#95A5A6', label: 'Want to Read', icon: 'bookmark-outline' },
@@ -59,6 +62,19 @@ function ProgressRing({ pct, size, color }: { pct: number; size: number; color: 
   );
 }
 
+function BookCover({ book, size, large }: { book: Book; size?: number; large?: boolean }) {
+  if (book.coverUrl) {
+    return (
+      <Image
+        source={{ uri: book.coverUrl }}
+        style={size ? { width: size, height: size * 1.5, borderRadius: 6 } : (large ? styles.coverImageLg : styles.coverImage)}
+        resizeMode="cover"
+      />
+    );
+  }
+  return <Text style={large ? styles.coverEmojiLg : styles.coverEmoji}>{book.coverEmoji}</Text>;
+}
+
 function BookCard({ book, onDelete, onUpdatePages, onComplete }: {
   book: Book;
   onDelete: () => void;
@@ -70,7 +86,7 @@ function BookCard({ book, onDelete, onUpdatePages, onComplete }: {
   return (
     <View style={[styles.bookCard, shadows.sm]}>
       <View style={styles.bookRow}>
-        <Text style={styles.coverEmoji}>{book.coverEmoji}</Text>
+        <BookCover book={book} />
         <View style={styles.bookInfo}>
           <View style={styles.bookTitleRow}>
             <Text style={styles.bookTitle} numberOfLines={2}>{book.title}</Text>
@@ -166,8 +182,42 @@ export function ReadingTrackerScreen({ navigation }: any) {
   const [bGenre, setBGenre] = useState('');
   const [bStatus, setBStatus] = useState<ReadingStatus>('want-to-read');
   const [bEmoji, setBEmoji] = useState('📚');
+  const [bCoverUrl, setBCoverUrl] = useState<string | undefined>(undefined);
   const [bMemberId, setBMemberId] = useState('');
   const [bNotes, setBNotes] = useState('');
+
+  // Book search (Add Book modal) — auto-fills the fields above instead of
+  // typing everything in by hand.
+  const [bSearchQuery, setBSearchQuery] = useState('');
+  const [bSearchResults, setBSearchResults] = useState<BookSearchResult[]>([]);
+  const [bSearching, setBSearching] = useState(false);
+  const [bSearchError, setBSearchError] = useState('');
+
+  const handleSearchBooks = async () => {
+    if (!bSearchQuery.trim()) return;
+    setBSearching(true);
+    setBSearchError('');
+    try {
+      const results = await searchBooks(bSearchQuery);
+      setBSearchResults(results);
+      if (results.length === 0) setBSearchError('No books found. Try a different search, or enter the details manually below.');
+    } catch {
+      setBSearchError('Search failed. Check your connection, or enter the details manually below.');
+    } finally {
+      setBSearching(false);
+    }
+  };
+
+  const handleSelectSearchResult = (result: BookSearchResult) => {
+    setBTitle(result.title);
+    setBAuthor(result.author);
+    if (result.totalPages) setBPages(String(result.totalPages));
+    if (result.genre) setBGenre(result.genre);
+    setBCoverUrl(result.coverUrl);
+    setBSearchResults([]);
+    setBSearchQuery('');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
 
   // Update pages modal
   const [newPage, setNewPage] = useState('');
@@ -200,7 +250,8 @@ export function ReadingTrackerScreen({ navigation }: any) {
 
   const openAddBook = () => {
     setBTitle(''); setBAuthor(''); setBPages(''); setBGenre(''); setBStatus('want-to-read');
-    setBEmoji('📚'); setBMemberId(selectedMemberId); setBNotes('');
+    setBEmoji('📚'); setBCoverUrl(undefined); setBMemberId(selectedMemberId); setBNotes('');
+    setBSearchQuery(''); setBSearchResults([]); setBSearchError('');
     setShowAddBook(true);
   };
 
@@ -221,6 +272,7 @@ export function ReadingTrackerScreen({ navigation }: any) {
       genre: bGenre.trim(),
       notes: bNotes.trim(),
       coverEmoji: bEmoji,
+      coverUrl: bCoverUrl,
       startDate: bStatus === 'reading' ? new Date().toISOString().split('T')[0] : undefined,
     });
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -371,7 +423,7 @@ export function ReadingTrackerScreen({ navigation }: any) {
                 return (
                   <View key={book.id} style={[styles.progressCard, shadows.sm]}>
                     <View style={styles.progressCardHeader}>
-                      <Text style={styles.coverEmojiLg}>{book.coverEmoji}</Text>
+                      <BookCover book={book} large />
                       <View style={styles.progressCardInfo}>
                         <Text style={styles.bookTitle}>{book.title}</Text>
                         <Text style={styles.bookAuthor}>{book.author}</Text>
@@ -501,18 +553,66 @@ export function ReadingTrackerScreen({ navigation }: any) {
                 ))}
               </ScrollView>
 
-              <Text style={styles.fieldLabel}>Cover Emoji</Text>
-              <View style={styles.emojiRow}>
-                {COVER_EMOJIS.map((e) => (
-                  <Pressable accessibilityRole="button"
-                    key={e}
-                    style={[styles.emojiBtn, bEmoji === e && styles.emojiBtnActive]}
-                    onPress={() => setBEmoji(e)}
-                  >
-                    <Text style={styles.emojiText}>{e}</Text>
-                  </Pressable>
-                ))}
+              <Text style={styles.fieldLabel}>Search for a Book</Text>
+              <View style={styles.searchRow}>
+                <TextInput
+                  accessibilityLabel="Search by title or author"
+                  style={[styles.textInput, { flex: 1, marginBottom: 0 }]}
+                  value={bSearchQuery}
+                  onChangeText={setBSearchQuery}
+                  placeholder="Search by title or author"
+                  placeholderTextColor={colors.textMuted}
+                  onSubmitEditing={handleSearchBooks}
+                  returnKeyType="search"
+                />
+                <Pressable accessibilityRole="button" style={styles.searchBtn} onPress={handleSearchBooks} disabled={bSearching || !bSearchQuery.trim()}>
+                  {bSearching ? <ActivityIndicator size="small" color="#fff" /> : <Ionicons name={'search' as any} size={18} color="#fff" />}
+                </Pressable>
               </View>
+              {!!bSearchError && <Text style={styles.searchErrorText}>{bSearchError}</Text>}
+              {bSearchResults.length > 0 && (
+                <View style={styles.searchResults}>
+                  {bSearchResults.map((r, i) => (
+                    <Pressable accessibilityRole="button" key={`${r.title}-${i}`} style={styles.searchResultRow} onPress={() => handleSelectSearchResult(r)}>
+                      {r.coverUrl ? (
+                        <Image source={{ uri: r.coverUrl }} style={styles.searchResultCover} resizeMode="cover" />
+                      ) : (
+                        <View style={[styles.searchResultCover, styles.searchResultCoverPlaceholder]}>
+                          <Ionicons name={'book-outline' as any} size={18} color={colors.textMuted} />
+                        </View>
+                      )}
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.searchResultTitle} numberOfLines={2}>{r.title}</Text>
+                        <Text style={styles.searchResultAuthor} numberOfLines={1}>
+                          {r.author || 'Unknown author'}{r.totalPages ? ` · ${r.totalPages}p` : ''}{r.firstPublishYear ? ` · ${r.firstPublishYear}` : ''}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+
+              <Text style={styles.fieldLabel}>Cover</Text>
+              {bCoverUrl ? (
+                <View style={styles.selectedCoverRow}>
+                  <Image source={{ uri: bCoverUrl }} style={styles.coverImageLg} resizeMode="cover" />
+                  <Pressable accessibilityRole="button" onPress={() => setBCoverUrl(undefined)} style={styles.chipBtn}>
+                    <Text style={styles.chipBtnText}>Use Emoji Instead</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <View style={styles.emojiRow}>
+                  {COVER_EMOJIS.map((e) => (
+                    <Pressable accessibilityRole="button"
+                      key={e}
+                      style={[styles.emojiBtn, bEmoji === e && styles.emojiBtnActive]}
+                      onPress={() => setBEmoji(e)}
+                    >
+                      <Text style={styles.emojiText}>{e}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              )}
 
               <Text style={styles.fieldLabel}>Title *</Text>
               <TextInput accessibilityLabel="Book title" style={styles.textInput} value={bTitle} onChangeText={setBTitle} placeholder="Book title" placeholderTextColor={colors.textMuted} />
@@ -710,6 +810,8 @@ const styles = StyleSheet.create({
   bookRow: { flexDirection: 'row', gap: 12 },
   coverEmoji: { fontSize: 32, lineHeight: 40 },
   coverEmojiLg: { fontSize: 40, lineHeight: 50 },
+  coverImage: { width: 32, height: 48, borderRadius: 4, backgroundColor: colors.border },
+  coverImageLg: { width: 40, height: 60, borderRadius: 5, backgroundColor: colors.border },
   bookInfo: { flex: 1 },
   bookTitleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   bookTitle: { flex: 1, fontSize: 14, fontWeight: '700', color: colors.text, lineHeight: 20 },
@@ -819,6 +921,16 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
+  searchRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  searchBtn: { width: 48, height: 48, borderRadius: 12, backgroundColor: '#6A1B9A', alignItems: 'center', justifyContent: 'center' },
+  searchErrorText: { fontSize: 12, color: colors.textMuted, marginTop: 8 },
+  searchResults: { marginTop: 10, gap: 8 },
+  searchResultRow: { flexDirection: 'row', gap: 10, alignItems: 'center', backgroundColor: colors.card, borderRadius: 10, padding: 8, borderWidth: 1, borderColor: colors.border },
+  searchResultCover: { width: 32, height: 48, borderRadius: 4, backgroundColor: colors.border },
+  searchResultCoverPlaceholder: { alignItems: 'center', justifyContent: 'center' },
+  searchResultTitle: { fontSize: 13, fontWeight: '700', color: colors.text },
+  searchResultAuthor: { fontSize: 11, color: colors.textSecondary, marginTop: 2 },
+  selectedCoverRow: { flexDirection: 'row', gap: 12, alignItems: 'center' },
   emojiRow: { flexDirection: 'row', gap: 10 },
   emojiBtn: {
     width: 48,
