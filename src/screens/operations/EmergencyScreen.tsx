@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Linking, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -61,6 +61,12 @@ export function EmergencyScreen({ navigation }: any) {
   const members = useFamilyStore((s) => s.members);
   const checklist = useEmergencyStore((s) => s.checklist);
   const toggleCheckItem = useEmergencyStore((s) => s.toggleCheckItem);
+  const fetchFromServer = useEmergencyStore((s) => s.fetchFromServer);
+
+  useEffect(() => {
+    fetchFromServer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const callNumber = (number: string) => {
     Alert.alert(

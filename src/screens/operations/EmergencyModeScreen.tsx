@@ -81,8 +81,14 @@ export function EmergencyModeScreen({ navigation }: any) {
   const toggleKitItem = useEmergencyStore((s) => s.toggleKitItem);
   const meetingPoint = useEmergencyStore((s) => s.meetingPoint);
   const setMeetingPoint = useEmergencyStore((s) => s.setMeetingPoint);
+  const fetchEmergencyFromServer = useEmergencyStore((s) => s.fetchFromServer);
   const [editingMeetingPoint, setEditingMeetingPoint] = useState(false);
   const [meetingPointDraft, setMeetingPointDraft] = useState(meetingPoint);
+
+  useEffect(() => {
+    fetchEmergencyFromServer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (sosActive) {

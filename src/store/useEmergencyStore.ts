@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { mmkvStorage } from '../storage/mmkvStorage';
+import * as emergencyService from '../services/emergencyService';
 
 export interface SafetyCheckItem {
   id: string;
@@ -47,33 +48,63 @@ interface EmergencyState {
   // family's home address and doesn't need to resolve to one.
   meetingPoint: string;
   setMeetingPoint: (text: string) => void;
+  isLoaded: boolean;
+  fetchFromServer: () => Promise<void>;
 }
 
 // This is a safety feature — the checklist previously had hardcoded
 // `done: true/false` values that never reflected what this family had
 // actually done, and weren't even tappable. Real, persisted, defaults to
 // nothing checked (a fresh family hasn't done any of this yet — showing
-// 3/6 "complete" out of the box would be dishonest, not reassuring).
+// 3/6 "complete" out of the box would be dishonest, not reassuring). Now
+// also synced to the backend — a household-safety checklist that only ever
+// lived on one device defeated the point of a shared family view (one
+// parent checking "fire extinguisher charged" should show as checked for
+// everyone, not just re-hide itself on the next phone).
 export const useEmergencyStore = create<EmergencyState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       checklist: DEFAULT_CHECKLIST,
-      toggleCheckItem: (id) =>
-        set((s) => ({
-          checklist: s.checklist.map((c) => (c.id === id ? { ...c, done: !c.done } : c)),
-        })),
+      toggleCheckItem: (id) => {
+        const prev = get().checklist;
+        const checklist = prev.map((c) => (c.id === id ? { ...c, done: !c.done } : c));
+        set({ checklist });
+        emergencyService.saveEmergencyPreparedness({ checklist }).catch(() => { set({ checklist: prev }); });
+      },
       kit: DEFAULT_KIT,
-      toggleKitItem: (id) =>
-        set((s) => ({
-          kit: s.kit.map((c) => (c.id === id ? { ...c, done: !c.done } : c)),
-        })),
+      toggleKitItem: (id) => {
+        const prev = get().kit;
+        const kit = prev.map((c) => (c.id === id ? { ...c, done: !c.done } : c));
+        set({ kit });
+        emergencyService.saveEmergencyPreparedness({ kit }).catch(() => { set({ kit: prev }); });
+      },
       meetingPoint: '',
-      setMeetingPoint: (text) => set({ meetingPoint: text }),
+      setMeetingPoint: (text) => {
+        const prev = get().meetingPoint;
+        set({ meetingPoint: text });
+        emergencyService.saveEmergencyPreparedness({ meetingPoint: text }).catch(() => { set({ meetingPoint: prev }); });
+      },
+      isLoaded: false,
+      fetchFromServer: async () => {
+        try {
+          const { preparedness } = await emergencyService.fetchEmergencyPreparedness();
+          if (preparedness) {
+            set({
+              checklist: preparedness.checklist.length > 0 ? preparedness.checklist : DEFAULT_CHECKLIST,
+              kit: preparedness.kit.length > 0 ? preparedness.kit : DEFAULT_KIT,
+              meetingPoint: preparedness.meetingPoint ?? '',
+            });
+          }
+        } catch {
+          // offline or backend unreachable — keep whatever is already local.
+        }
+        set({ isLoaded: true });
+      },
     }),
     {
       name: 'family-command-center-emergency',
       storage: createJSONStorage(() => mmkvStorage),
-      partialize: (state) => ({ checklist: state.checklist, kit: state.kit, meetingPoint: state.meetingPoint }),
+      partialize: (state) => ({ checklist: state.checklist, kit: state.kit, meetingPoint: state.meetingPoint, isLoaded: state.isLoaded }),
     }
   )
 );
