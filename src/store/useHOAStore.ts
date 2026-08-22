@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { mmkvStorage } from '../storage/mmkvStorage';
+import * as hoaService from '../services/hoaService';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -55,14 +56,17 @@ interface HOAState {
   hoaName: string;
   managementCompany: string;
   managementPhone: string;
+  isLoaded: boolean;
   addDues: (dues: Omit<HOADuesRecord, 'id' | 'createdAt'>) => void;
   markDuesPaid: (id: string, paidDate: string) => void;
   addRule: (rule: Omit<HOARule, 'id' | 'createdAt'>) => void;
   removeRule: (id: string) => void;
   addMeeting: (meeting: Omit<HOAMeeting, 'id' | 'createdAt'>) => void;
   updateMeetingMinutes: (id: string, minutes: string) => void;
+  updateSettings: (settings: { hoaName?: string; managementCompany?: string; managementPhone?: string; monthlyDueAmount?: number }) => void;
   getTotalOwed: () => number;
   getOverdueDues: () => HOADuesRecord[];
+  fetchFromServer: () => Promise<void>;
 }
 
 export const useHOAStore = create<HOAState>()(
@@ -70,56 +74,75 @@ export const useHOAStore = create<HOAState>()(
     (set, get) => ({
   // A fresh family's HOA tracker starts empty — HOAManagerScreen already has
   // real "No dues records" / "No rules yet" / "No upcoming meetings" empty
-  // states for these. Shipping the same hardcoded demo dues/rules/amenities/
-  // meetings to every family regardless of their actual HOA was never real
-  // data, just a permanent fake default.
+  // states for these, and the name/company/phone fields below start blank
+  // (with a real "Add HOA Info" prompt in the UI) rather than a hardcoded
+  // "Sunset Ridge HOA" every family used to see regardless of their actual
+  // HOA — that read as real contact info, which made it worse than most
+  // fake-seed-data cases.
   dues: [],
   rules: [],
   amenities: [],
   meetings: [],
-  monthlyDueAmount: 250,
-  hoaName: 'Sunset Ridge HOA',
-  managementCompany: 'Premier Community Management',
-  managementPhone: '(555) 822-4400',
+  monthlyDueAmount: 0,
+  hoaName: '',
+  managementCompany: '',
+  managementPhone: '',
+  isLoaded: false,
 
-  addDues: (dues) =>
+  addDues: (dues) => {
+    const newDues: HOADuesRecord = { ...dues, id: generateId(), createdAt: new Date().toISOString() };
+    set((s) => ({ dues: [...s.dues, newDues] }));
+    hoaService.createHOADues(newDues).catch(() => {
+      set((s) => ({ dues: s.dues.filter((d) => d.id !== newDues.id) }));
+    });
+  },
+
+  markDuesPaid: (id, paidDate) => {
+    const prev = get().dues;
     set((s) => ({
-      dues: [
-        ...s.dues,
-        { ...dues, id: generateId(), createdAt: new Date().toISOString() },
-      ],
-    })),
+      dues: s.dues.map((d) => (d.id === id ? { ...d, status: 'paid' as DuesStatus, paidDate } : d)),
+    }));
+    hoaService.markHOADuesPaidRemote(id, paidDate).catch(() => { set({ dues: prev }); });
+  },
 
-  markDuesPaid: (id, paidDate) =>
-    set((s) => ({
-      dues: s.dues.map((d) =>
-        d.id === id ? { ...d, status: 'paid', paidDate } : d
-      ),
-    })),
+  addRule: (rule) => {
+    const newRule: HOARule = { ...rule, id: generateId(), createdAt: new Date().toISOString() };
+    set((s) => ({ rules: [...s.rules, newRule] }));
+    hoaService.createHOARule(newRule).catch(() => {
+      set((s) => ({ rules: s.rules.filter((r) => r.id !== newRule.id) }));
+    });
+  },
 
-  addRule: (rule) =>
-    set((s) => ({
-      rules: [
-        ...s.rules,
-        { ...rule, id: generateId(), createdAt: new Date().toISOString() },
-      ],
-    })),
+  removeRule: (id) => {
+    const prev = get().rules;
+    set((s) => ({ rules: s.rules.filter((r) => r.id !== id) }));
+    hoaService.deleteHOARuleRemote(id).catch(() => { set({ rules: prev }); });
+  },
 
-  removeRule: (id) =>
-    set((s) => ({ rules: s.rules.filter((r) => r.id !== id) })),
+  addMeeting: (meeting) => {
+    const newMeeting: HOAMeeting = { ...meeting, id: generateId(), createdAt: new Date().toISOString() };
+    set((s) => ({ meetings: [...s.meetings, newMeeting] }));
+    hoaService.createHOAMeeting(newMeeting).catch(() => {
+      set((s) => ({ meetings: s.meetings.filter((m) => m.id !== newMeeting.id) }));
+    });
+  },
 
-  addMeeting: (meeting) =>
-    set((s) => ({
-      meetings: [
-        ...s.meetings,
-        { ...meeting, id: generateId(), createdAt: new Date().toISOString() },
-      ],
-    })),
-
-  updateMeetingMinutes: (id, minutes) =>
+  updateMeetingMinutes: (id, minutes) => {
+    const prev = get().meetings;
     set((s) => ({
       meetings: s.meetings.map((m) => (m.id === id ? { ...m, minutes } : m)),
-    })),
+    }));
+    hoaService.updateHOAMeetingMinutesRemote(id, minutes).catch(() => { set({ meetings: prev }); });
+  },
+
+  updateSettings: (settings) => {
+    const prev = {
+      hoaName: get().hoaName, managementCompany: get().managementCompany,
+      managementPhone: get().managementPhone, monthlyDueAmount: get().monthlyDueAmount,
+    };
+    set(settings);
+    hoaService.saveHOASettings(settings).catch(() => { set(prev); });
+  },
 
   getTotalOwed: () =>
     get()
@@ -127,6 +150,27 @@ export const useHOAStore = create<HOAState>()(
       .reduce((sum, d) => sum + d.amount, 0),
 
   getOverdueDues: () => get().dues.filter((d) => d.status === 'overdue'),
+
+  fetchFromServer: async () => {
+    try {
+      const [{ settings }, { dues }, { rules }, { meetings }] = await Promise.all([
+        hoaService.fetchHOASettings(),
+        hoaService.fetchHOADues(),
+        hoaService.fetchHOARules(),
+        hoaService.fetchHOAMeetings(),
+      ]);
+      set({
+        dues, rules, meetings,
+        hoaName: settings?.hoaName ?? '',
+        managementCompany: settings?.managementCompany ?? '',
+        managementPhone: settings?.managementPhone ?? '',
+        monthlyDueAmount: settings?.monthlyDueAmount ?? 0,
+        isLoaded: true,
+      });
+    } catch {
+      set({ isLoaded: true });
+    }
+  },
     }),
     {
       name: 'family-command-center-hoa',
@@ -140,6 +184,7 @@ export const useHOAStore = create<HOAState>()(
         hoaName: state.hoaName,
         managementCompany: state.managementCompany,
         managementPhone: state.managementPhone,
+        isLoaded: state.isLoaded,
       }),
     }
   )

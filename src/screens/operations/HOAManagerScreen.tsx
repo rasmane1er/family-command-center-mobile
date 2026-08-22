@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -86,14 +86,43 @@ export function HOAManagerScreen({ navigation }: any) {
     removeRule,
     addMeeting,
     updateMeetingMinutes,
+    updateSettings,
     getTotalOwed,
     getOverdueDues,
+    fetchFromServer,
   } = useHOAStore();
+
+  useEffect(() => {
+    fetchFromServer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [activeTab, setActiveTab] = useState<Tab>('Dues');
   const [expandedRuleId, setExpandedRuleId] = useState<string | null>(null);
   const [showAddDuesModal, setShowAddDuesModal] = useState(false);
   const [showAddMeetingModal, setShowAddMeetingModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [sHoaName, setSHoaName] = useState(hoaName);
+  const [sCompany, setSCompany] = useState(managementCompany);
+  const [sPhone, setSPhone] = useState(managementPhone);
+  const [sDueAmount, setSDueAmount] = useState(String(monthlyDueAmount || ''));
+
+  const openSettingsModal = () => {
+    setSHoaName(hoaName); setSCompany(managementCompany); setSPhone(managementPhone);
+    setSDueAmount(String(monthlyDueAmount || ''));
+    setShowSettingsModal(true);
+  };
+
+  const handleSaveSettings = () => {
+    updateSettings({
+      hoaName: sHoaName.trim(),
+      managementCompany: sCompany.trim(),
+      managementPhone: sPhone.trim(),
+      monthlyDueAmount: parseFloat(sDueAmount) || 0,
+    });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setShowSettingsModal(false);
+  };
 
   // Add Dues form
   const [dPeriod, setDPeriod] = useState('');
@@ -200,10 +229,10 @@ export function HOAManagerScreen({ navigation }: any) {
           <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </Pressable>
-          <View style={styles.headerCenter}>
+          <Pressable accessibilityRole="button" onPress={openSettingsModal} style={styles.headerCenter}>
             <Text style={styles.headerTitle}>HOA Manager</Text>
-            <Text style={styles.headerSub}>{hoaName}</Text>
-          </View>
+            <Text style={styles.headerSub}>{hoaName || 'Tap to add your HOA info'}</Text>
+          </Pressable>
           <Pressable accessibilityRole="button"
             onPress={() => activeTab === 'Dues' ? setShowAddDuesModal(true) : activeTab === 'Community' ? setShowAddMeetingModal(true) : null}
             style={styles.addBtn}
@@ -375,13 +404,14 @@ export function HOAManagerScreen({ navigation }: any) {
             ))}
 
             {/* Management Contact */}
-            <View style={styles.contactCard}>
+            <Pressable accessibilityRole="button" onPress={openSettingsModal} style={styles.contactCard}>
               <Ionicons name="business-outline" size={20} color='#455A64' />
               <View style={{ flex: 1, marginLeft: 10 }}>
-                <Text style={styles.contactName}>{managementCompany}</Text>
-                <Text style={styles.contactPhone}>{managementPhone}</Text>
+                <Text style={styles.contactName}>{managementCompany || 'Add management company'}</Text>
+                <Text style={styles.contactPhone}>{managementPhone || 'Tap to add contact info'}</Text>
               </View>
-            </View>
+              <Ionicons name="pencil-outline" size={16} color={colors.textMuted} />
+            </Pressable>
 
             {/* Upcoming Meetings */}
             <View style={styles.sectionHeaderRow}>
@@ -566,6 +596,55 @@ export function HOAManagerScreen({ navigation }: any) {
               <Text style={styles.saveBtnText}>Add Meeting</Text>
             </Pressable>
             <Pressable accessibilityRole="button" style={styles.cancelBtn} onPress={() => { resetMeetingForm(); setShowAddMeetingModal(false); }}>
+              <Text style={styles.cancelBtnText}>Cancel</Text>
+            </Pressable>
+          </ScrollView>
+        </View>
+      </Modal>
+
+      <Modal visible={showSettingsModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowSettingsModal(false)}>
+        <View style={styles.modalContainer}>
+          <View style={{ width: 40, height: 4, backgroundColor: '#ccc', borderRadius: 2, alignSelf: 'center', marginBottom: 16 }} />
+          <Text style={styles.modalTitle}>HOA Info</Text>
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <Text style={styles.fieldLabel}>HOA Name</Text>
+            <TextInput accessibilityLabel="e.g. Maple Grove HOA"
+              style={styles.input}
+              value={sHoaName}
+              onChangeText={setSHoaName}
+              placeholder="e.g. Maple Grove HOA"
+            />
+
+            <Text style={styles.fieldLabel}>Management Company</Text>
+            <TextInput accessibilityLabel="e.g. ABC Community Management"
+              style={styles.input}
+              value={sCompany}
+              onChangeText={setSCompany}
+              placeholder="e.g. ABC Community Management"
+            />
+
+            <Text style={styles.fieldLabel}>Management Phone</Text>
+            <TextInput accessibilityLabel="e.g. (555) 123-4567"
+              style={styles.input}
+              value={sPhone}
+              onChangeText={setSPhone}
+              placeholder="e.g. (555) 123-4567"
+              keyboardType="phone-pad"
+            />
+
+            <Text style={styles.fieldLabel}>Monthly Dues Amount</Text>
+            <TextInput accessibilityLabel="e.g. 250"
+              style={styles.input}
+              value={sDueAmount}
+              onChangeText={setSDueAmount}
+              placeholder="e.g. 250"
+              keyboardType="decimal-pad"
+            />
+
+            <Pressable accessibilityRole="button" style={styles.saveBtn} onPress={handleSaveSettings}>
+              <Text style={styles.saveBtnText}>Save</Text>
+            </Pressable>
+            <Pressable accessibilityRole="button" style={styles.cancelBtn} onPress={() => setShowSettingsModal(false)}>
               <Text style={styles.cancelBtnText}>Cancel</Text>
             </Pressable>
           </ScrollView>
