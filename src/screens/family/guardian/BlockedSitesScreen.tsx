@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Linking,
   RefreshControl,
   StyleSheet,
   Text,
@@ -227,17 +228,21 @@ export function BlockedSitesScreen({ route }: any) {
             );
           }
           const { item: e } = item;
+          const url = `https://${e.domain}`;
           return (
-            <View style={styles.row}>
+            <TouchableOpacity
+              style={styles.row}
+              onPress={() => Linking.openURL(url).catch(() => Alert.alert('Could not open link', url))}
+            >
               <View style={styles.iconWrap}>
                 <Ionicons name="ban" size={18} color="#E74C3C" />
               </View>
               <View style={styles.rowContent}>
-                <Text style={styles.domainText} numberOfLines={1}>{cleanDomain(e.domain)}</Text>
+                <Text style={[styles.domainText, styles.domainLink]} numberOfLines={1}>{cleanDomain(e.domain)}</Text>
                 <Text style={styles.domainFull} numberOfLines={1}>{e.domain}</Text>
               </View>
               <Text style={styles.timeText}>{formatTime(e.blockedAt)}</Text>
-            </View>
+            </TouchableOpacity>
           );
         }}
         contentContainerStyle={styles.listContent}
@@ -317,6 +322,7 @@ const styles = StyleSheet.create({
   },
   rowContent:  { flex: 1, minWidth: 0 },
   domainText:  { fontSize: 14, fontWeight: '700', color: colors.text },
+  domainLink:  { color: colors.primary, textDecorationLine: 'underline' },
   domainFull:  { fontSize: 11, color: colors.textMuted, marginTop: 1 },
   timeText:    { fontSize: 12, color: colors.textSecondary, fontWeight: '500', marginLeft: 8 },
 
