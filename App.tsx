@@ -92,7 +92,7 @@ function AppInner() {
   const familyId = useAuthStore((s) => s.familyId);
 
   // SOS alarm overlay state — shown whenever an SOS push arrives (foreground or tapped from background)
-  const [sosAlarm, setSosAlarm] = useState<{ childName: string; message?: string } | null>(null);
+  const [sosAlarm, setSosAlarm] = useState<{ childName: string; message?: string; address?: string } | null>(null);
   const [messageBanner, setMessageBanner] = useState<MessageBannerData | null>(null);
   const navigationRef = useRef<NavigationContainerRef<any>>(null);
 
@@ -199,7 +199,7 @@ function AppInner() {
         addPushNotification(data, title, body, notifId);
         if (data?.type === 'sos') {
           const childName = (data.childName as string) || 'Your child';
-          setSosAlarm({ childName, message: (data.message as string) || undefined });
+          setSosAlarm({ childName, message: (data.message as string) || undefined, address: (data.address as string) || undefined });
         }
         if (data?.type === 'message') {
           const deviceId = data.deviceId as string | undefined;
@@ -226,7 +226,7 @@ function AppInner() {
       addPushNotification(data, title, body, notification.request.identifier);
       if (data?.type === 'sos') {
         const childName = (data.childName as string) || 'Your child';
-        setSosAlarm({ childName, message: (data.message as string) || undefined });
+        setSosAlarm({ childName, message: (data.message as string) || undefined, address: (data.address as string) || undefined });
       }
       if (data?.type === 'message') {
         const deviceId = data.deviceId as string | undefined;
@@ -261,7 +261,7 @@ function AppInner() {
         if (deviceId) navigateToChat(deviceId);
       }
       if (data?.type === 'sos') {
-        setSosAlarm({ childName: (data.childName as string) || 'Your child', message: (data.message as string) || undefined });
+        setSosAlarm({ childName: (data.childName as string) || 'Your child', message: (data.message as string) || undefined, address: (data.address as string) || undefined });
       }
     }).catch(() => {});
 
@@ -277,7 +277,7 @@ function AppInner() {
         if (deviceId) navigateToChat(deviceId);
       }
       if (data?.type === 'sos') {
-        setSosAlarm({ childName: (data.childName as string) || 'Your child', message: (data.message as string) || undefined });
+        setSosAlarm({ childName: (data.childName as string) || 'Your child', message: (data.message as string) || undefined, address: (data.address as string) || undefined });
       }
       // If this is a child device, forward the tapped notification to the API
       // as a backup in case the background handler couldn't reach the server.
@@ -312,7 +312,7 @@ function AppInner() {
       const member = familyMembers.find((m) => m.id === latest.memberId);
       const device = guardianDevices.find((d) => d.id === latest.deviceId);
       const childName = member?.name ?? device?.deviceName ?? 'Your child';
-      setSosAlarm({ childName, message: latest.message ?? undefined });
+      setSosAlarm({ childName, message: latest.message ?? undefined, address: latest.location?.address ?? undefined });
     }
   }, [sosAlerts, familyMembers, guardianDevices]);
 
@@ -438,6 +438,7 @@ function AppInner() {
         visible={!!sosAlarm}
         childName={sosAlarm?.childName ?? ''}
         message={sosAlarm?.message}
+        address={sosAlarm?.address}
         onDismiss={() => setSosAlarm(null)}
       />
     </>

@@ -15,10 +15,11 @@ interface SOSAlarmOverlayProps {
   visible: boolean;
   childName: string;
   message?: string;
+  address?: string;
   onDismiss: () => void;
 }
 
-export function SOSAlarmOverlay({ visible, childName, message, onDismiss }: SOSAlarmOverlayProps) {
+export function SOSAlarmOverlay({ visible, childName, message, address, onDismiss }: SOSAlarmOverlayProps) {
   const pulse = useRef(new Animated.Value(1)).current;
   const animRef = useRef<Animated.CompositeAnimation | null>(null);
 
@@ -94,6 +95,13 @@ export function SOSAlarmOverlay({ visible, childName, message, onDismiss }: SOSA
           {message?.trim() || `${childName} needs help immediately!`}
         </Text>
 
+        {address ? (
+          <View style={styles.addressRow}>
+            <Ionicons name="location" size={16} color="#fff" />
+            <Text style={styles.addressText}>{address}</Text>
+          </View>
+        ) : null}
+
         <View style={styles.divider} />
 
         <TouchableOpacity accessibilityRole="button" style={styles.acknowledgeBtn} onPress={onDismiss} activeOpacity={0.8}>
@@ -147,6 +155,24 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: 36,
+  },
+  addressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginBottom: 24,
+    maxWidth: '100%',
+  },
+  addressText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
+    textAlign: 'center',
+    flexShrink: 1,
   },
   divider: {
     width: 60,
