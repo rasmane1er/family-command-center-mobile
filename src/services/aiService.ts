@@ -13,7 +13,21 @@ export interface AIReply {
   reply: string;
   suggestions: string[];
   error?: string;
+  quotaExceeded?: boolean;
 }
+
+// Thrown by post() instead of a plain Error so callers can tell "you've hit
+// your monthly AI quota" (an expected, actionable 429) apart from a real
+// outage — previously post() discarded the status/body entirely, so every
+// one of the 5 chat helpers below showed the same generic "AI is temporarily
+// unavailable" message for both cases, hiding the actual, actionable reason.
+class AIServiceError extends Error {
+  constructor(public status: number, public body: string) {
+    super(`AI API error ${status}: ${body}`);
+  }
+}
+
+const QUOTA_EXCEEDED_MESSAGE = "You've reached your family's AI usage limit for this month. Upgrade your plan to keep chatting, or it resets next month.";
 
 async function post<T>(
   path: string,
@@ -56,9 +70,30 @@ async function post<T>(
 
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`AI API error ${res.status}: ${err}`);
+    throw new AIServiceError(res.status, err);
   }
   return res.json() as Promise<T>;
+}
+
+// Shared by every chat helper's catch block below — distinguishes a real
+// quota rejection (server working as intended, family is just out of AI
+// queries for this billing period) from every other failure mode (network
+// blip, auth issue, actual outage), which previously all collapsed into the
+// same misleading "temporarily unavailable" message.
+function isQuotaExceeded(e: unknown): boolean {
+  if (!(e instanceof AIServiceError) || e.status !== 429) return false;
+  try {
+    return JSON.parse(e.body)?.error === 'ai_quota_exceeded';
+  } catch {
+    return false;
+  }
+}
+
+function fallbackReply(e: unknown): AIReply {
+  if (isQuotaExceeded(e)) {
+    return { reply: QUOTA_EXCEEDED_MESSAGE, suggestions: [], error: String(e), quotaExceeded: true };
+  }
+  return { reply: 'AI is temporarily unavailable. Please try again.', suggestions: [], error: String(e) };
 }
 
 /* ── Family Safety Assistant ── */
@@ -77,7 +112,7 @@ export async function chatWithSafetyAssistant(opts: {
       mode: opts.mode,
     }, opts.token);
   } catch (e) {
-    return { reply: 'AI is temporarily unavailable. Please try again.', suggestions: [], error: String(e) };
+    return fallbackReply(e);
   }
 }
 
@@ -99,7 +134,7 @@ export async function chatWithParentingCoach(opts: {
       topic: opts.topic,
     }, opts.token);
   } catch (e) {
-    return { reply: 'AI is temporarily unavailable. Please try again.', suggestions: [], error: String(e) };
+    return fallbackReply(e);
   }
 }
 
@@ -121,7 +156,7 @@ export async function chatWithNegotiator(opts: {
       parties: opts.parties,
     }, opts.token);
   } catch (e) {
-    return { reply: 'AI is temporarily unavailable. Please try again.', suggestions: [], error: String(e) };
+    return fallbackReply(e);
   }
 }
 
@@ -141,7 +176,7 @@ export async function chatWithDigitalTwin(opts: {
       familyData: opts.familyData,
     }, opts.token);
   } catch (e) {
-    return { reply: 'AI is temporarily unavailable. Please try again.', suggestions: [], error: String(e) };
+    return fallbackReply(e);
   }
 }
 
@@ -161,7 +196,7 @@ export async function chatWithMemoryAI(opts: {
       memories: opts.memories,
     }, opts.token);
   } catch (e) {
-    return { reply: 'AI is temporarily unavailable. Please try again.', suggestions: [], error: String(e) };
+    return fallbackReply(e);
   }
 }
 
