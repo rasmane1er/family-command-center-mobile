@@ -242,9 +242,25 @@ export const useGuardianStore = create<GuardianStore>()(
           // that hasn't been executed by the child yet. A pending lock/unlock
           // command means we intentionally changed the status locally; keeping
           // the server value would flip the button back immediately.
+          //
+          // Bounded to PENDING_MASK_MAX_AGE_MS: pollCommandResolution gives up
+          // polling after ~60s and leaves the local entry at status:'pending'
+          // forever if the child device never resolves it in time (its own
+          // comment says so explicitly) — which was routine before today's
+          // native-execution fix, with real delays of 5-70+ minutes. That left
+          // permanent ghost entries masking the dashboard with stale
+          // lock/unlock state indefinitely, even long after a legitimately
+          // executed newer command should have taken over. A pending command
+          // this old is either genuinely still in flight (rare, and the real
+          // server status is the more honest thing to show at that point
+          // anyway) or a ghost from a resolution that timed out — either way,
+          // trusting the server over an indefinitely-stale local guess is
+          // strictly more correct.
+          const PENDING_MASK_MAX_AGE_MS = 90_000;
+          const now = Date.now();
           const pendingByDevice = new Map<string, string>();
           for (const cmd of s.pendingCommands) {
-            if (cmd.status === 'pending') {
+            if (cmd.status === 'pending' && now - new Date(cmd.sentAt).getTime() < PENDING_MASK_MAX_AGE_MS) {
               if (cmd.type === 'lock') pendingByDevice.set(cmd.deviceId, 'restricted');
               else if (cmd.type === 'unlock') pendingByDevice.set(cmd.deviceId, 'online');
               else if (cmd.type === 'school_on') pendingByDevice.set(cmd.deviceId, 'school_mode');
@@ -601,6 +617,14 @@ export const useGuardianStore = create<GuardianStore>()(
         };
         set((s) => ({ pendingCommands: trimPendingCommands([...s.pendingCommands, optimistic]) }));
 
+        // Snapshot the pre-optimistic status so we can roll back if the request
+        // fails. Must be read BEFORE the optimistic set() below — reading it
+        // after (as this previously did, despite its own comment claiming
+        // otherwise) always captures the just-applied optimistic value itself,
+        // making the failure-path rollback further down a silent no-op: it
+        // "rolled back" to the same value it was rolling back from.
+        const previousStatus = useGuardianStore.getState().devices.find((d) => d.id === deviceId)?.status;
+
         // Immediately flip the device status locally so buttons update
         // without waiting for the next hydrate or child confirmation.
         const OPTIMISTIC_STATUS: Partial<Record<string, import('../types').ChildDeviceStatus>> = {
@@ -619,11 +643,6 @@ export const useGuardianStore = create<GuardianStore>()(
             ),
           }));
         }
-
-        // Snapshot the pre-optimistic status so we can roll back if the request fails.
-        // This is read synchronously before the async block starts, so it reflects
-        // the state BEFORE the optimistic update above.
-        const previousStatus = useGuardianStore.getState().devices.find((d) => d.id === deviceId)?.status;
 
         (async () => {
           try {
