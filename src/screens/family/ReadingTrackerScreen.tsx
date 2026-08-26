@@ -131,6 +131,19 @@ function BookCard({ book, onDelete, onUpdatePages, onComplete }: {
               </View>
             </View>
           )}
+          {book.status === 'want-to-read' && onUpdatePages && (
+            // updateProgress() already flips status to 'reading' on the
+            // backend when called with any page number (useReadingStore.ts) —
+            // reusing the same modal/action here gets both the status
+            // transition and an initial page count in one step, instead of
+            // building a separate status-only control.
+            <View style={styles.bookActions}>
+              <Pressable accessibilityRole="button" style={[styles.actionBtn, styles.actionBtnGreen]} onPress={onUpdatePages}>
+                <Ionicons name={'book' as any} size={13} color="#fff" />
+                <Text style={[styles.actionBtnText, { color: '#fff' }]}>Start Reading</Text>
+              </Pressable>
+            </View>
+          )}
           {book.status === 'completed' && book.rating > 0 && (
             <View style={styles.ratingRow}>
               <StarRating rating={book.rating} size={14} />
@@ -396,7 +409,7 @@ export function ReadingTrackerScreen({ navigation }: any) {
                   key={book.id}
                   book={book}
                   onDelete={() => removeBook(book.id)}
-                  onUpdatePages={book.status === 'reading' ? () => openUpdatePages(book.id) : undefined}
+                  onUpdatePages={book.status === 'reading' || book.status === 'want-to-read' ? () => openUpdatePages(book.id) : undefined}
                   onComplete={book.status === 'reading' ? () => openComplete(book.id) : undefined}
                 />
               ))
