@@ -247,9 +247,11 @@ export function ChildDeviceDetailScreen({ navigation, route }: any) {
     .sort((a, b) => b.usageMinutes - a.usageMinutes)
     .slice(0, 5);
 
-  const rule = screenTimeRules.find(
-    (r) => r.memberId === device.memberId && r.isActive
-  );
+  // Same non-uniqueness as ScreenTimeScreen's memberRule lookup — pick the
+  // most recently created active rule rather than an arbitrary array match.
+  const rule = screenTimeRules
+    .filter((r) => r.memberId === device.memberId && r.isActive)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
 
   const totalUsageToday = todayUsage.reduce(
     (sum, u) => sum + u.usageMinutes,

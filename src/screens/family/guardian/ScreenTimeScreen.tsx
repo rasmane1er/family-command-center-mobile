@@ -140,8 +140,18 @@ export function ScreenTimeScreen({ navigation }: any) {
   const childMembers = members.filter((m) => m.role === 'child');
   const activeMemberId = selectedMemberId ?? childMembers[0]?.id ?? null;
   const activeMember = members.find((m) => m.id === activeMemberId);
-  const memberRule = rules.find((r) => r.memberId === activeMemberId);
-  const activeDevice = devices.find((d) => d.memberId === activeMemberId);
+  // A member can accumulate multiple ChildDevice/ScreenTimeRule rows over
+  // time (re-pairing, retried rule creation — same non-uniqueness the
+  // backend guards against with orderBy: lastSeen/createdAt desc, see
+  // guardian.ts). Picking the plain first match here would silently target
+  // a stale device or a superseded rule, so pick the most-recent one
+  // client-side too instead of relying on array order.
+  const memberRule = rules
+    .filter((r) => r.memberId === activeMemberId)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+  const activeDevice = devices
+    .filter((d) => d.memberId === activeMemberId)
+    .sort((a, b) => new Date(b.lastSeen).getTime() - new Date(a.lastSeen).getTime())[0];
 
   // Load installed apps from the child's device when the picker opens.
   const loadInstalledApps = useCallback(async () => {
