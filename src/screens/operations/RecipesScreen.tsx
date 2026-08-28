@@ -41,13 +41,14 @@ function StarRating({ rating }: { rating: number }) {
   );
 }
 
-function RecipeDetailModal({ recipe, isSuggestion, onClose, onFavorite, onSave, onDismiss }: {
+function RecipeDetailModal({ recipe, isSuggestion, onClose, onFavorite, onSave, onDismiss, onCook }: {
   recipe: Recipe;
   isSuggestion?: boolean;
   onClose: () => void;
   onFavorite?: () => void;
   onSave?: () => void;
   onDismiss?: () => void;
+  onCook: () => void;
 }) {
   const diff = DIFF_CONFIG[recipe.difficulty];
   return (
@@ -118,6 +119,11 @@ function RecipeDetailModal({ recipe, isSuggestion, onClose, onFavorite, onSave, 
               <Text style={det.stepText}>{step}</Text>
             </View>
           ))}
+
+          <Pressable accessibilityRole="button" onPress={onCook} style={det.cookBtn}>
+            <Ionicons name="restaurant" size={16} color="#fff" />
+            <Text style={det.cookBtnText}>Start Cooking</Text>
+          </Pressable>
 
           {isSuggestion && (
             <View style={det.suggestionActions}>
@@ -247,24 +253,27 @@ export function RecipesScreen({ navigation }: any) {
           <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]} showsVerticalScrollIndicator={false} onScroll={onScroll} onScrollEndDrag={onScrollEndDrag} onMomentumScrollEnd={onMomentumScrollEnd} scrollEventThrottle={scrollEventThrottle}>
         {/* AI Suggestions */}
         <View style={styles.aiSection}>
-          <View style={styles.aiSectionHeader}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.aiSectionTitle}>✨ AI Recipe Ideas</Text>
-              <Text style={styles.aiSectionSub}>
-                {pantryItems.length > 0
-                  ? `Generated from your ${pantryItems.length} pantry item${pantryItems.length !== 1 ? 's' : ''}`
-                  : 'Add pantry items for more tailored ideas'}
-              </Text>
-            </View>
-            <Pressable accessibilityRole="button" onPress={handleGenerateSuggestions} disabled={isSuggesting} style={styles.aiGenerateBtn}>
+          <Text style={styles.aiSectionTitle}>✨ Recipe Ideas</Text>
+          <Text style={styles.aiSectionSub}>
+            {pantryItems.length > 0
+              ? `Tailor from your ${pantryItems.length} pantry item${pantryItems.length !== 1 ? 's' : ''}, or browse real recipes from the web`
+              : 'Get AI ideas from your pantry, or browse real recipes from the web'}
+          </Text>
+
+          <View style={styles.aiOptionsRow}>
+            <Pressable accessibilityRole="button" onPress={handleGenerateSuggestions} disabled={isSuggesting} style={styles.aiOptionBtn}>
               {isSuggesting ? (
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
                 <>
                   <Ionicons name="sparkles" size={14} color="#fff" />
-                  <Text style={styles.aiGenerateBtnText}>{suggestedRecipes.length > 0 ? 'More Ideas' : 'Generate'}</Text>
+                  <Text style={styles.aiOptionBtnText}>{suggestedRecipes.length > 0 ? 'More From Pantry' : 'From Pantry'}</Text>
                 </>
               )}
+            </Pressable>
+            <Pressable accessibilityRole="button" onPress={() => navigation.navigate('WebRecipes')} style={[styles.aiOptionBtn, styles.aiOptionBtnWeb]}>
+              <Ionicons name="globe-outline" size={14} color="#fff" />
+              <Text style={styles.aiOptionBtnText}>From the Web</Text>
             </Pressable>
           </View>
 
@@ -369,6 +378,18 @@ export function RecipesScreen({ navigation }: any) {
           recipe={selected.recipe}
           isSuggestion={selected.isSuggestion}
           onClose={() => setSelected(null)}
+          onCook={() => navigation.navigate('RecipeCookMode', {
+            recipe: {
+              name: selected.recipe.name,
+              emoji: selected.recipe.emoji,
+              servings: selected.recipe.servings,
+              steps: selected.recipe.steps,
+              ingredients: selected.recipe.ingredients.map((ing) => ({
+                name: ing.name,
+                detail: `${ing.quantity} ${ing.unit}`.trim(),
+              })),
+            },
+          })}
           onFavorite={() => {
             toggleFavorite(selected.recipe.id);
             setSelected({ ...selected, recipe: { ...selected.recipe, isFavorite: !selected.recipe.isFavorite } });
@@ -403,8 +424,10 @@ const styles = StyleSheet.create({
   aiSectionHeader: { flexDirection: 'row', alignItems: 'center' },
   aiSectionTitle: { fontSize: 15, fontWeight: '700', color: colors.text, marginBottom: 3 },
   aiSectionSub: { fontSize: 12, color: colors.textSecondary },
-  aiGenerateBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#F5A623', borderRadius: 20, paddingVertical: 9, paddingHorizontal: 14, minWidth: 88, justifyContent: 'center' },
-  aiGenerateBtnText: { fontSize: 12, fontWeight: '700', color: '#fff' },
+  aiOptionsRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
+  aiOptionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#F5A623', borderRadius: 14, paddingVertical: 11 },
+  aiOptionBtnWeb: { backgroundColor: '#27AE60' },
+  aiOptionBtnText: { fontSize: 12, fontWeight: '700', color: '#fff' },
   aiError: { fontSize: 12, color: colors.danger, marginTop: 10 },
   suggestionCard: { width: 150, backgroundColor: colors.card, borderRadius: 16, padding: 14, borderWidth: 1.5, borderColor: '#F5A623', borderStyle: 'dashed' },
   suggestionEmoji: { fontSize: 30, marginBottom: 6 },
@@ -469,6 +492,8 @@ const det = StyleSheet.create({
   stepNum: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#E74C3C', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   stepNumText: { fontSize: 13, fontWeight: '800', color: '#fff' },
   stepText: { flex: 1, fontSize: 14, color: colors.text, lineHeight: 22 },
+  cookBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#E74C3C', borderRadius: 14, paddingVertical: 14, marginTop: 20 },
+  cookBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
   suggestionActions: { marginTop: 8, gap: 10 },
   saveBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#27AE60', borderRadius: 14, paddingVertical: 14 },
   saveBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },

@@ -22,6 +22,8 @@ import { ConnectHueBridgeScreen } from '../screens/operations/ConnectHueBridgeSc
 import { EmergencyModeScreen } from '../screens/operations/EmergencyModeScreen';
 import { ShoppingListScreen } from '../screens/operations/ShoppingListScreen';
 import { RecipesScreen } from '../screens/operations/RecipesScreen';
+import { WebRecipesScreen } from '../screens/operations/WebRecipesScreen';
+import { RecipeCookModeScreen } from '../screens/operations/RecipeCookModeScreen';
 import { TravelPlanningScreen } from '../screens/operations/TravelPlanningScreen';
 import { PetTrackerScreen } from '../screens/operations/PetTrackerScreen';
 import { HomeMaintenanceScreen } from '../screens/operations/HomeMaintenanceScreen';
@@ -107,6 +109,8 @@ export function OperationsNavigator() {
         </Stack.Screen>
 
         <Stack.Screen name="Recipes" component={withScreenErrorBoundary(RecipesScreen)} />
+        <Stack.Screen name="WebRecipes" component={withScreenErrorBoundary(WebRecipesScreen)} />
+        <Stack.Screen name="RecipeCookMode" component={withScreenErrorBoundary(RecipeCookModeScreen)} options={{ presentation: 'fullScreenModal' }} />
 
         <Stack.Screen name="TravelPlanning">
           {(props) => (
