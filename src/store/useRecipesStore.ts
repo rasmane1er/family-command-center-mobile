@@ -4,6 +4,7 @@ import { mmkvStorage } from '../storage/mmkvStorage';
 import { API_BASE_URL } from '../config/api';
 import { secureStorage } from '../storage/secureStorage';
 import * as recipeService from '../services/recipeService';
+import { QUOTA_EXCEEDED_MESSAGE } from '../services/aiService';
 
 export type RecipeDifficulty = 'easy' | 'medium' | 'hard';
 export type RecipeCategory = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'dessert';
@@ -147,7 +148,27 @@ export const useRecipesStore = create<RecipesState>()(
           });
 
           if (!response.ok) {
-            set({ isSuggesting: false, suggestionError: "Couldn't reach the AI service. Please try again in a moment." });
+            // A 429 with this specific error code is the family's real,
+            // expected monthly AI quota — not an outage. Every other AI
+            // feature already distinguishes the two (see aiService.ts's
+            // isQuotaExceeded); this raw-fetch call site (bypasses
+            // aiService.ts's post() helper) previously didn't, showing the
+            // same generic "couldn't reach" message for both.
+            let quotaExceeded = false;
+            if (response.status === 429) {
+              try {
+                const body = await response.clone().json();
+                quotaExceeded = body?.error === 'ai_quota_exceeded';
+              } catch {
+                // not JSON — fall through, treat as a generic failure
+              }
+            }
+            set({
+              isSuggesting: false,
+              suggestionError: quotaExceeded
+                ? QUOTA_EXCEEDED_MESSAGE
+                : "Couldn't reach the AI service. Please try again in a moment.",
+            });
             return;
           }
 

@@ -27,7 +27,11 @@ class AIServiceError extends Error {
   }
 }
 
-const QUOTA_EXCEEDED_MESSAGE = "You've reached your family's AI usage limit for this month. Upgrade your plan to keep chatting, or it resets next month.";
+// Exported for call sites that don't go through post() below (e.g.
+// useRecipesStore.ts's generateSuggestions, which does its own raw fetch)
+// but still hit an AI route gated by the same enforceAiQuota middleware —
+// see subscription.ts's { error: 'ai_quota_exceeded' } response shape.
+export const QUOTA_EXCEEDED_MESSAGE = "You've reached your family's AI usage limit for this month. Upgrade your plan to keep chatting, or it resets next month.";
 
 async function post<T>(
   path: string,
