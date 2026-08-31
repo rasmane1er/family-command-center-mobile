@@ -36,7 +36,7 @@ export function HealthHubScreen({ navigation: navProp }: any) {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<'overview' | 'metrics' | 'appointments'>('overview');
   const [selectedMember, setSelectedMember] = useState<string | null>(null);
-  const { records, goals, appointments, addAppointment, fetchFromServer, isLoaded } = useHealthStore();
+  const { records, goals, appointments, addRecord, addAppointment, fetchFromServer, isLoaded } = useHealthStore();
   const members = useFamilyStore((s) => s.members);
   // Whoever is actually using the phone right now (not `selectedMember`
   // below, which is just which member's records this screen is currently
@@ -80,6 +80,37 @@ export function HealthHubScreen({ navigation: navProp }: any) {
     if (progressRatios.length === 0) return 50;
     return Math.round((progressRatios.reduce((a, b) => a + b, 0) / progressRatios.length) * 100);
   }, [members, goals, records]);
+
+  // Logging a metric had no entry point anywhere in the app at all — the
+  // Metrics tab below could only ever show "No data", forever, since
+  // nothing called addRecord. Every metric shares one lightweight modal
+  // rather than 8 bespoke screens.
+  const [showLogModal, setShowLogModal] = useState(false);
+  const [logMetric, setLogMetric] = useState<keyof typeof METRIC_CONFIG>('steps');
+  const [logValue, setLogValue] = useState('');
+  const [logNotes, setLogNotes] = useState('');
+
+  const openLogModal = (metric: keyof typeof METRIC_CONFIG) => {
+    setLogMetric(metric);
+    setLogValue('');
+    setLogNotes('');
+    setShowLogModal(true);
+  };
+
+  const handleLogMetric = () => {
+    const value = parseFloat(logValue);
+    if (isNaN(value)) return;
+    addRecord({
+      memberId: activeMemberId,
+      metric: logMetric,
+      value,
+      unit: METRIC_CONFIG[logMetric].unit,
+      date: new Date().toISOString(),
+      notes: logNotes.trim() || undefined,
+    });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setShowLogModal(false);
+  };
 
   const [showAptModal, setShowAptModal] = useState(false);
   const [newAptMemberId, setNewAptMemberId] = useState<string>('');
@@ -334,6 +365,9 @@ export function HealthHubScreen({ navigation: navProp }: any) {
                     {goal && (
                       <Text style={s.metricGoal}>{t('health.screens.healthHub.goalLabel', { target: goal.target, unit: cfg.unit })}</Text>
                     )}
+                    <Pressable accessibilityRole="button" onPress={() => openLogModal(metric)} style={[s.metricLogBtn, { backgroundColor: cfg.color }]}>
+                      <Ionicons name="add" size={16} color="#fff" />
+                    </Pressable>
                   </View>
                   {(latest || goal) && (
                     <ProgressBar progress={progress} color={cfg.color} height={6} />
@@ -414,6 +448,42 @@ export function HealthHubScreen({ navigation: navProp }: any) {
           <Button title={t('health.screens.healthHub.cancelButton')} onPress={() => setShowAptModal(false)} variant="ghost" fullWidth style={{ marginTop: 8 }} />
         </ScrollView>
       </Modal>
+
+      <Modal visible={showLogModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowLogModal(false)}>
+        <ScrollView style={s.modal} contentContainerStyle={{ paddingBottom: 40 }}>
+          <View style={s.modalHandle} />
+          <Text style={s.modalTitle}>Log {t(`health.screens.healthHub.${METRIC_CONFIG[logMetric].labelKey}`)}</Text>
+          <Text style={s.modalLabel}>{activeMember?.name ?? ''}</Text>
+
+          <Text style={s.modalLabel}>Value ({METRIC_CONFIG[logMetric].unit})</Text>
+          <TextInput
+            accessibilityLabel={`Value in ${METRIC_CONFIG[logMetric].unit}`}
+            style={s.modalInput}
+            keyboardType={logMetric === 'bp' ? 'default' : 'decimal-pad'}
+            placeholder={logMetric === 'bp' ? 'e.g. 120' : `e.g. ${METRIC_CONFIG[logMetric].goal}`}
+            placeholderTextColor={colors.textMuted}
+            value={logValue}
+            onChangeText={setLogValue}
+          />
+
+          {logMetric === 'bp' && (
+            <>
+              <Text style={s.modalLabel}>Notes (e.g. diastolic reading)</Text>
+              <TextInput
+                accessibilityLabel="Notes"
+                style={[s.modalInput, { marginBottom: 24 }]}
+                placeholder="e.g. 80"
+                placeholderTextColor={colors.textMuted}
+                value={logNotes}
+                onChangeText={setLogNotes}
+              />
+            </>
+          )}
+
+          <Button title="Log Entry" onPress={handleLogMetric} fullWidth size="lg" disabled={!logValue.trim() || isNaN(parseFloat(logValue))} />
+          <Button title={t('health.screens.healthHub.cancelButton')} onPress={() => setShowLogModal(false)} variant="ghost" fullWidth style={{ marginTop: 8 }} />
+        </ScrollView>
+      </Modal>
     </View>
   );
 }
@@ -465,6 +535,7 @@ function makeStyles(colors: any) {
     metricLabel: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
     metricValue: { fontSize: 20, fontWeight: '800', color: colors.text },
     metricGoal: { fontSize: 11, color: colors.textMuted },
+    metricLogBtn: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
     aptCard: { marginBottom: 10, borderRadius: 14 },
     aptRow: { flexDirection: 'row', alignItems: 'center' },
     aptIcon: { width: 46, height: 46, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
