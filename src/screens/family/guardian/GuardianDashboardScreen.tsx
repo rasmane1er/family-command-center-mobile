@@ -415,7 +415,10 @@ export function GuardianDashboardScreen({ navigation }: any) {
               <View style={styles.emptyState}>
                 <Ionicons name="phone-portrait-outline" size={64} color={colors.textMuted} />
                 <Text style={styles.emptyTitle}>No paired devices yet</Text>
-                <Text style={styles.emptyDesc}>Tap + to pair a child's device</Text>
+                <Text style={styles.emptyDesc}>
+                  Guardian needs a free companion app, Family Guardian, installed on your
+                  child's device. Tap + to get a pairing code and instructions.
+                </Text>
               </View>
             )}
 
@@ -900,6 +903,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textSecondary,
     marginTop: 6,
+    textAlign: 'center',
+    paddingHorizontal: 32,
+    lineHeight: 19,
   },
 
   deviceCard: {

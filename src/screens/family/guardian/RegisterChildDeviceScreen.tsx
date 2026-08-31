@@ -243,7 +243,7 @@ export function RegisterChildDeviceScreen({ navigation }: any) {
               {[
                 {
                   step: '1',
-                  text: 'On a parent’s device, open Family Guardian and tap “Add Device”.',
+                  text: 'On a parent’s device, open Family Command Center and tap “Add Device”.',
                 },
                 {
                   step: '2',

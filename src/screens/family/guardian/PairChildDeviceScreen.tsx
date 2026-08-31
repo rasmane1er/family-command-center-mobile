@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   View,
@@ -132,6 +133,23 @@ export function PairChildDeviceScreen({ navigation }: any) {
     } finally {
       setLoading(false);
     }
+  };
+
+  // The "How It Works" card told parents to download a specific app but gave
+  // them nothing to actually tap — this hands them a message they can send
+  // (text/AirDrop/email) straight to the child's device. Android gets a real
+  // Play Store link since Family Guardian's package name is stable; iOS gets
+  // a plain search instruction rather than a fabricated App Store URL — the
+  // app isn't publicly listed yet, so any guessed link would just 404.
+  const handleShareInstallInfo = () => {
+    const codeLine = code ? `\n\nPairing code: ${code}` : '';
+    Share.share({
+      message:
+        'To set up parental controls, install the free "Family Guardian" app on your device:\n' +
+        'Android: https://play.google.com/store/apps/details?id=com.familycommandcenter.child\n' +
+        'iPhone: search "Family Guardian" in the App Store' +
+        codeLine,
+    }).catch(() => {});
   };
 
   const qrData = code
@@ -323,6 +341,11 @@ export function PairChildDeviceScreen({ navigation }: any) {
               <Text style={styles.stepText}>{step}</Text>
             </View>
           ))}
+
+          <Pressable accessibilityRole="button" style={styles.shareInstallBtn} onPress={handleShareInstallInfo}>
+            <Ionicons name="share-outline" size={16} color={colors.primary} />
+            <Text style={styles.shareInstallBtnText}>Send Install Link to Child&apos;s Device</Text>
+          </Pressable>
         </View>
       </ScrollView>
     </View>
@@ -591,5 +614,23 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.info,
     lineHeight: 20,
+  },
+
+  shareInstallBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 14,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+
+  shareInstallBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.primary,
   },
 });

@@ -19,7 +19,7 @@ export default {
   generateNewCode: 'Generate New Code',
   tryAgain: 'Try Again',
   howToPairTitle: 'How to Pair',
-  step1: 'On a parent’s device, open Family Guardian and tap “Add Device”.',
+  step1: 'On a parent’s device, open Family Command Center and tap “Add Device”.',
   step2: 'They’ll scan the QR code below, or type in the code shown above.',
   step3: 'The code is: {{code}}',
   step4: 'Once paired, this device will appear in their Guardian Dashboard.',

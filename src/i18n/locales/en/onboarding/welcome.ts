@@ -14,7 +14,7 @@ export default {
   featureRewardsTitle: 'Rewards System',
   featureRewardsDesc: 'Motivate kids with points, badges, and custom rewards.',
   featureSafetyTitle: 'Safety & Emergency',
-  featureSafetyDesc: 'Emergency contacts, medical info, and safety protocols ready.',
+  featureSafetyDesc: 'Emergency contacts, medical info, and parental controls — the last via a free companion app on your child\'s device.',
   setupButton: 'Set Up My Family',
   orDivider: 'or',
   demoButton: 'Explore with Demo Data',
