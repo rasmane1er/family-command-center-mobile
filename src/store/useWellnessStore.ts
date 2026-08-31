@@ -77,11 +77,13 @@ export const useWellnessStore = create<WellnessState>()((set) => ({
   generateMealSuggestions: async (memberId) => {
     set({ isSuggesting: true, suggestionError: null });
     try {
-      const { suggestions } = await fetchMealSuggestions(memberId);
+      const { suggestions, alreadyLoggedAll } = await fetchMealSuggestions(memberId);
       set({
         suggestions,
         isSuggesting: false,
-        suggestionError: suggestions ? null : 'No suggestions came back — try again in a moment.',
+        suggestionError: alreadyLoggedAll
+          ? "You've already logged all three meals today — nice work!"
+          : suggestions ? null : 'No suggestions came back — try again in a moment.',
       });
     } catch (e) {
       set({ isSuggesting: false, suggestionError: friendlyError(e, "Couldn't reach the AI service. Please try again in a moment.") });

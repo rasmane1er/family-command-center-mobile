@@ -14,10 +14,13 @@ export interface MealSuggestion {
   description: string;
 }
 
+// Partial — the backend omits keys for meals the member already logged
+// today in the Nutrition Tracker (routes/nutrition.ts), rather than
+// re-suggesting something they've already eaten.
 export interface MealSuggestions {
-  breakfast: MealSuggestion;
-  lunch: MealSuggestion;
-  dinner: MealSuggestion;
+  breakfast?: MealSuggestion;
+  lunch?: MealSuggestion;
+  dinner?: MealSuggestion;
 }
 
 export function fetchWeightEntries(memberId: string): Promise<{ entries: WeightEntry[] }> {
@@ -38,7 +41,7 @@ export function setWeightGoal(memberId: string, weightGoalLbs: number | null): P
   });
 }
 
-export function fetchMealSuggestions(memberId: string): Promise<{ suggestions: MealSuggestions | null }> {
+export function fetchMealSuggestions(memberId: string): Promise<{ suggestions: MealSuggestions | null; alreadyLoggedAll: boolean }> {
   return apiRequest('/ai/wellness-meal-suggestions', {
     method: 'POST',
     body: JSON.stringify({ memberId }),

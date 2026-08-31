@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -20,6 +20,7 @@ import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
 import { useTabBarInset } from '../../hooks/useTabBarInset';
 import { useNutritionStore, MealType, NutritionGoal } from '../../store/useNutritionStore';
+import { useFamilyStore } from '../../store/useFamilyStore';
 
 const MEAL_CONFIG: Record<MealType, { icon: string; color: string; label: string }> = {
   breakfast: { icon: 'sunny', color: '#F5A623', label: 'Breakfast' },
@@ -35,13 +36,6 @@ const MACRO_COLORS = {
   carbs:    '#F5A623',
   fat:      '#E74C3C',
 };
-
-const MEMBERS = [
-  { id: 'member-1', name: 'Dad',  color: '#2980B9' },
-  { id: 'member-2', name: 'Mom',  color: '#8E44AD' },
-  { id: 'member-3', name: 'Emma', color: '#27AE60' },
-  { id: 'member-4', name: 'Liam', color: '#F5A623' },
-];
 
 function formatDate(isoDate: string): string {
   const d = new Date(isoDate + 'T00:00:00');
@@ -73,11 +67,18 @@ function MacroBar({ value, max, color }: { value: number; max: number; color: st
 export function NutritionTrackerScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const tabBarInset = useTabBarInset();
-  const { entries, goals, addEntry, removeEntry, setGoal, getEntriesForDay, getDayTotals } = useNutritionStore();
+  const { entries, goals, isLoaded, fetchFromServer, addEntry, removeEntry, setGoal, getEntriesForDay, getDayTotals } = useNutritionStore();
+  const members = useFamilyStore((s) => s.members);
+  const viewerMemberId = useFamilyStore((s) => s.activeMemberId);
+  const viewerIsChild = members.find((m) => m.id === viewerMemberId)?.role === 'child';
+
+  useEffect(() => {
+    if (!isLoaded) fetchFromServer();
+  }, [isLoaded, fetchFromServer]);
 
   const [activeTab, setActiveTab] = useState<'today' | 'members' | 'goals'>('today');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [selectedMemberId, setSelectedMemberId] = useState('member-1');
+  const [selectedMemberId, setSelectedMemberId] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
 
   // Add Food modal state
@@ -89,17 +90,23 @@ export function NutritionTrackerScreen({ navigation }: any) {
   const [mMeal, setMMeal] = useState<MealType>('breakfast');
   const [mServing, setMServing] = useState('');
   const [mNotes, setMNotes] = useState('');
-  const [mMemberId, setMMemberId] = useState('member-1');
+  const [mMemberId, setMMemberId] = useState('');
 
   // Edit Goal modal
   const [showGoalModal, setShowGoalModal] = useState(false);
-  const [gMemberId, setGMemberId] = useState('member-1');
+  const [gMemberId, setGMemberId] = useState('');
   const [gCalories, setGCalories] = useState('');
   const [gProtein, setGProtein] = useState('');
   const [gCarbs, setGCarbs] = useState('');
   const [gFat, setGFat] = useState('');
 
-  const selectedMember = MEMBERS.find((m) => m.id === selectedMemberId) ?? MEMBERS[0];
+  // Members load asynchronously (unlike the old hardcoded array), so the
+  // initial '' from useState above needs to catch up once they arrive.
+  useEffect(() => {
+    if (!selectedMemberId && members.length > 0) setSelectedMemberId(members[0].id);
+  }, [members, selectedMemberId]);
+
+  const selectedMember = members.find((m) => m.id === selectedMemberId) ?? members[0];
   const dayEntries = getEntriesForDay(selectedMemberId, selectedDate);
   const dayTotals = getDayTotals(selectedMemberId, selectedDate);
   const currentGoal = goals.find((g) => g.memberId === selectedMemberId);
@@ -120,10 +127,8 @@ export function NutritionTrackerScreen({ navigation }: any) {
     if (!mFoodName.trim()) { Alert.alert('Missing Info', 'Please enter a food name.'); return; }
     const cal = parseInt(mCalories);
     if (!cal || cal <= 0) { Alert.alert('Missing Info', 'Please enter valid calories.'); return; }
-    const mem = MEMBERS.find((m) => m.id === mMemberId)!;
     addEntry({
       memberId: mMemberId,
-      memberName: mem.name,
       date: selectedDate,
       meal: mMeal,
       foodName: mFoodName.trim(),
@@ -149,10 +154,8 @@ export function NutritionTrackerScreen({ navigation }: any) {
   };
 
   const handleSaveGoal = () => {
-    const mem = MEMBERS.find((m) => m.id === gMemberId)!;
     setGoal({
       memberId: gMemberId,
-      memberName: mem.name,
       dailyCalories: parseInt(gCalories) || 2000,
       dailyProtein: parseInt(gProtein) || 150,
       dailyCarbs: parseInt(gCarbs) || 200,
@@ -180,7 +183,13 @@ export function NutritionTrackerScreen({ navigation }: any) {
           <Text style={styles.headerTitle}>Nutrition Tracker</Text>
           <Text style={styles.headerSubtitle}>Daily food & macro diary</Text>
         </View>
-        <View style={{ width: 40 }} />
+        {viewerIsChild ? (
+          <View style={{ width: 40 }} />
+        ) : (
+          <Pressable accessibilityRole="button" onPress={() => navigation.navigate('WeightGoal')} style={styles.backBtn}>
+            <Ionicons name={'trending-down' as any} size={22} color="#fff" />
+          </Pressable>
+        )}
       </LinearGradient>
 
       {/* Tabs */}
@@ -216,10 +225,10 @@ export function NutritionTrackerScreen({ navigation }: any) {
 
             {/* Member picker */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.memberScroll} contentContainerStyle={styles.memberScrollContent}>
-              {MEMBERS.map((m) => (
+              {members.map((m) => (
                 <Pressable accessibilityRole="button"
                   key={m.id}
-                  style={[styles.memberChip, selectedMemberId === m.id && { backgroundColor: m.color, borderColor: m.color }]}
+                  style={[styles.memberChip, selectedMemberId === m.id && { backgroundColor: m.avatarColor, borderColor: m.avatarColor }]}
                   onPress={() => setSelectedMemberId(m.id)}
                 >
                   <Text style={[styles.memberChipText, selectedMemberId === m.id && { color: '#fff' }]}>{m.name}</Text>
@@ -303,7 +312,7 @@ export function NutritionTrackerScreen({ navigation }: any) {
         {activeTab === 'members' && (
           <>
             <Text style={styles.sectionHeader}>Today's Calorie Intake</Text>
-            {MEMBERS.map((m) => {
+            {members.map((m) => {
               const todayDate = new Date().toISOString().split('T')[0];
               const totals = getDayTotals(m.id, todayDate);
               const goal = goals.find((g) => g.memberId === m.id);
@@ -311,7 +320,7 @@ export function NutritionTrackerScreen({ navigation }: any) {
               return (
                 <View key={m.id} style={[styles.memberCard, shadows.sm]}>
                   <View style={styles.memberCardHeader}>
-                    <View style={[styles.memberAvatar, { backgroundColor: m.color }]}>
+                    <View style={[styles.memberAvatar, { backgroundColor: m.avatarColor }]}>
                       <Text style={styles.memberAvatarText}>{m.name[0]}</Text>
                     </View>
                     <View style={styles.memberCardInfo}>
@@ -320,10 +329,10 @@ export function NutritionTrackerScreen({ navigation }: any) {
                         {totals.calories} {goal ? `/ ${goal.dailyCalories} kcal` : 'kcal'}
                       </Text>
                     </View>
-                    <Text style={[styles.memberPct, { color: m.color }]}>{Math.round(pct * 100)}%</Text>
+                    <Text style={[styles.memberPct, { color: m.avatarColor }]}>{Math.round(pct * 100)}%</Text>
                   </View>
                   <View style={styles.macroBarTrack}>
-                    <View style={[styles.macroBarFill, { width: `${pct * 100}%` as any, backgroundColor: m.color }]} />
+                    <View style={[styles.macroBarFill, { width: `${pct * 100}%` as any, backgroundColor: m.avatarColor }]} />
                   </View>
                   <View style={styles.memberMacroRow}>
                     <Text style={styles.memberMacroItem}>P: {totals.protein}g</Text>
@@ -341,17 +350,17 @@ export function NutritionTrackerScreen({ navigation }: any) {
         {activeTab === 'goals' && (
           <>
             <Text style={styles.sectionHeader}>Daily Macro Goals</Text>
-            {MEMBERS.map((m) => {
+            {members.map((m) => {
               const goal = goals.find((g) => g.memberId === m.id);
               return (
                 <View key={m.id} style={[styles.goalCard, shadows.sm]}>
                   <View style={styles.goalCardHeader}>
-                    <View style={[styles.memberAvatar, { backgroundColor: m.color }]}>
+                    <View style={[styles.memberAvatar, { backgroundColor: m.avatarColor }]}>
                       <Text style={styles.memberAvatarText}>{m.name[0]}</Text>
                     </View>
                     <Text style={styles.goalCardName}>{m.name}</Text>
                     <Pressable accessibilityRole="button"
-                      style={[styles.editGoalBtn, { backgroundColor: m.color }]}
+                      style={[styles.editGoalBtn, { backgroundColor: m.avatarColor }]}
                       onPress={() => openGoalModal(m.id)}
                     >
                       <Ionicons name={'pencil' as any} size={14} color="#fff" />
@@ -412,10 +421,10 @@ export function NutritionTrackerScreen({ navigation }: any) {
 
               <Text style={styles.fieldLabel}>Member</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                {MEMBERS.map((m) => (
+                {members.map((m) => (
                   <Pressable accessibilityRole="button"
                     key={m.id}
-                    style={[styles.chipBtn, mMemberId === m.id && { backgroundColor: m.color, borderColor: m.color }]}
+                    style={[styles.chipBtn, mMemberId === m.id && { backgroundColor: m.avatarColor, borderColor: m.avatarColor }]}
                     onPress={() => setMMemberId(m.id)}
                   >
                     <Text style={[styles.chipBtnText, mMemberId === m.id && { color: '#fff' }]}>{m.name}</Text>
@@ -516,10 +525,10 @@ export function NutritionTrackerScreen({ navigation }: any) {
           <ScrollView style={styles.modalScroll} contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">
             <Text style={styles.fieldLabel}>Member</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {MEMBERS.map((m) => (
+              {members.map((m) => (
                 <Pressable accessibilityRole="button"
                   key={m.id}
-                  style={[styles.chipBtn, gMemberId === m.id && { backgroundColor: m.color, borderColor: m.color }]}
+                  style={[styles.chipBtn, gMemberId === m.id && { backgroundColor: m.avatarColor, borderColor: m.avatarColor }]}
                   onPress={() => setGMemberId(m.id)}
                 >
                   <Text style={[styles.chipBtnText, gMemberId === m.id && { color: '#fff' }]}>{m.name}</Text>

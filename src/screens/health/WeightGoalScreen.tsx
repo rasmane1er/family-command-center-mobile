@@ -75,7 +75,9 @@ export function WeightGoalScreen({ navigation }: any) {
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </Pressable>
         <Text style={s.headerTitle}>Weight Goals</Text>
-        <View style={{ width: 38 }} />
+        <Pressable accessibilityRole="button" onPress={() => navigation.navigate('NutritionTracker')} style={s.backBtn}>
+          <Ionicons name="restaurant-outline" size={20} color="#fff" />
+        </Pressable>
       </View>
 
       <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
@@ -170,14 +172,16 @@ export function WeightGoalScreen({ navigation }: any) {
 
           {suggestions && (
             <View style={{ marginTop: 10, gap: 10 }}>
-              {([['Breakfast', 'sunny', suggestions.breakfast], ['Lunch', 'partly-sunny', suggestions.lunch], ['Dinner', 'moon', suggestions.dinner]] as const).map(([label, icon, meal]) => (
+              {([['Breakfast', 'sunny', suggestions.breakfast], ['Lunch', 'partly-sunny', suggestions.lunch], ['Dinner', 'moon', suggestions.dinner]] as const)
+                .filter(([, , meal]) => !!meal)
+                .map(([label, icon, meal]) => (
                 <View key={label} style={s.mealRow}>
                   <View style={s.mealIcon}>
                     <Ionicons name={icon as any} size={16} color={colors.primary} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={s.mealLabel}>{label}: {meal.name}</Text>
-                    <Text style={s.mealDesc}>{meal.description}</Text>
+                    <Text style={s.mealLabel}>{label}: {meal!.name}</Text>
+                    <Text style={s.mealDesc}>{meal!.description}</Text>
                   </View>
                 </View>
               ))}

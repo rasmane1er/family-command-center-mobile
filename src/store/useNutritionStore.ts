@@ -1,13 +1,15 @@
 import { create } from 'zustand';
-
-const generateId = () => Math.random().toString(36).substring(2, 11);
+import {
+  fetchFoodEntries, createFoodEntry, deleteFoodEntry as deleteFoodEntryRemote,
+  fetchNutritionGoals, saveNutritionGoal,
+} from '../services/nutritionService';
 
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 
 export interface FoodEntry {
   id: string;
+  familyId: string;
   memberId: string;
-  memberName: string;
   date: string; // ISO date YYYY-MM-DD
   meal: MealType;
   foodName: string;
@@ -15,153 +17,87 @@ export interface FoodEntry {
   protein: number; // grams
   carbs: number; // grams
   fat: number; // grams
-  servingSize: string; // e.g. "1 cup", "200g"
-  notes: string;
+  servingSize: string;
+  notes?: string;
   createdAt: string;
 }
 
 export interface NutritionGoal {
+  id: string;
+  familyId: string;
   memberId: string;
-  memberName: string;
   dailyCalories: number;
   dailyProtein: number;
   dailyCarbs: number;
   dailyFat: number;
+  updatedAt: string;
 }
 
 interface NutritionState {
   entries: FoodEntry[];
   goals: NutritionGoal[];
-  addEntry: (entry: Omit<FoodEntry, 'id' | 'createdAt'>) => void;
-  removeEntry: (id: string) => void;
-  setGoal: (goal: NutritionGoal) => void;
+  isLoaded: boolean;
+  isLoading: boolean;
+  error: string | null;
+  fetchFromServer: () => Promise<void>;
+  addEntry: (entry: Omit<FoodEntry, 'id' | 'createdAt' | 'familyId'>) => Promise<void>;
+  removeEntry: (id: string) => Promise<void>;
+  setGoal: (goal: Omit<NutritionGoal, 'id' | 'familyId' | 'updatedAt'>) => Promise<void>;
   getEntriesForDay: (memberId: string, date: string) => FoodEntry[];
   getDayTotals: (memberId: string, date: string) => { calories: number; protein: number; carbs: number; fat: number };
 }
 
-const _today = new Date().toISOString().split('T')[0];
-const _yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-const _now = new Date().toISOString();
-
-const seedEntries: FoodEntry[] = [
-  {
-    id: 'ne1',
-    memberId: 'member-1',
-    memberName: 'Dad',
-    date: _today,
-    meal: 'breakfast',
-    foodName: 'Oatmeal with berries',
-    calories: 320,
-    protein: 10,
-    carbs: 58,
-    fat: 6,
-    servingSize: '1 bowl',
-    notes: '',
-    createdAt: _now,
-  },
-  {
-    id: 'ne2',
-    memberId: 'member-1',
-    memberName: 'Dad',
-    date: _today,
-    meal: 'lunch',
-    foodName: 'Grilled chicken salad',
-    calories: 450,
-    protein: 40,
-    carbs: 20,
-    fat: 22,
-    servingSize: '1 large plate',
-    notes: 'No dressing',
-    createdAt: _now,
-  },
-  {
-    id: 'ne3',
-    memberId: 'member-2',
-    memberName: 'Mom',
-    date: _today,
-    meal: 'breakfast',
-    foodName: 'Greek yogurt parfait',
-    calories: 280,
-    protein: 18,
-    carbs: 35,
-    fat: 7,
-    servingSize: '1 cup',
-    notes: 'With granola and honey',
-    createdAt: _now,
-  },
-  {
-    id: 'ne4',
-    memberId: 'member-2',
-    memberName: 'Mom',
-    date: _today,
-    meal: 'snack',
-    foodName: 'Apple and almond butter',
-    calories: 190,
-    protein: 5,
-    carbs: 25,
-    fat: 9,
-    servingSize: '1 medium apple + 2 tbsp',
-    notes: '',
-    createdAt: _now,
-  },
-  {
-    id: 'ne5',
-    memberId: 'member-1',
-    memberName: 'Dad',
-    date: _yesterday,
-    meal: 'dinner',
-    foodName: 'Salmon with roasted vegetables',
-    calories: 580,
-    protein: 48,
-    carbs: 30,
-    fat: 28,
-    servingSize: '6oz salmon + 1 cup veggies',
-    notes: 'Lemon herb seasoning',
-    createdAt: _now,
-  },
-];
-
-const seedGoals: NutritionGoal[] = [
-  {
-    memberId: 'member-1',
-    memberName: 'Dad',
-    dailyCalories: 2200,
-    dailyProtein: 160,
-    dailyCarbs: 220,
-    dailyFat: 73,
-  },
-  {
-    memberId: 'member-2',
-    memberName: 'Mom',
-    dailyCalories: 1800,
-    dailyProtein: 120,
-    dailyCarbs: 180,
-    dailyFat: 60,
-  },
-];
-
 export const useNutritionStore = create<NutritionState>()((set, get) => ({
-  entries: seedEntries,
-  goals: seedGoals,
+  entries: [],
+  goals: [],
+  isLoaded: false,
+  isLoading: false,
+  error: null,
 
-  addEntry: (entry) =>
-    set((s) => ({
-      entries: [{ ...entry, id: generateId(), createdAt: new Date().toISOString() }, ...s.entries],
-    })),
+  fetchFromServer: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const [{ entries }, { goals }] = await Promise.all([fetchFoodEntries(), fetchNutritionGoals()]);
+      set({ entries, goals, isLoaded: true, isLoading: false });
+    } catch {
+      set({ isLoading: false, error: "Couldn't load nutrition data. Check your connection and try again." });
+    }
+  },
 
-  removeEntry: (id) =>
-    set((s) => ({ entries: s.entries.filter((e) => e.id !== id) })),
+  addEntry: async (entry) => {
+    try {
+      const { entry: created } = await createFoodEntry(entry);
+      set((s) => ({ entries: [created, ...s.entries] }));
+    } catch {
+      set({ error: "Couldn't save that food entry. Check your connection and try again." });
+    }
+  },
 
-  setGoal: (goal) =>
-    set((s) => {
-      const existing = s.goals.findIndex((g) => g.memberId === goal.memberId);
-      if (existing >= 0) {
-        const updated = [...s.goals];
-        updated[existing] = goal;
-        return { goals: updated };
-      }
-      return { goals: [...s.goals, goal] };
-    }),
+  removeEntry: async (id) => {
+    const prev = get().entries;
+    set((s) => ({ entries: s.entries.filter((e) => e.id !== id) }));
+    try {
+      await deleteFoodEntryRemote(id);
+    } catch {
+      set({ entries: prev, error: "Couldn't delete that entry. Check your connection and try again." });
+    }
+  },
+
+  setGoal: async (goal) => {
+    try {
+      const { goal: saved } = await saveNutritionGoal(goal.memberId, {
+        dailyCalories: goal.dailyCalories,
+        dailyProtein: goal.dailyProtein,
+        dailyCarbs: goal.dailyCarbs,
+        dailyFat: goal.dailyFat,
+      });
+      set((s) => ({
+        goals: [saved, ...s.goals.filter((g) => g.memberId !== goal.memberId)],
+      }));
+    } catch {
+      set({ error: "Couldn't save that goal. Check your connection and try again." });
+    }
+  },
 
   getEntriesForDay: (memberId, date) =>
     get().entries.filter((e) => e.memberId === memberId && e.date === date),
