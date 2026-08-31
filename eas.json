@@ -14,7 +14,8 @@
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "908895908238-6l7sjfjaj5lji4rh2b38o7r1euam8arl.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_MAPS_IOS_KEY": "AIzaSyB6QAFHeXkF0jd1JH5bWhV-Xkbx3BUSe7A",
         "EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_KEY": "AIzaSyB6QAFHeXkF0jd1JH5bWhV-Xkbx3BUSe7A",
-        "EXPO_PUBLIC_APPLE_SERVICES_ID": "com.grasmane.familycommandcenter.signin"
+        "EXPO_PUBLIC_APPLE_SERVICES_ID": "com.grasmane.familycommandcenter.signin",
+        "EXPO_PUBLIC_TURNSTILE_SITE_KEY": "0x4AAAAAAEPQSiMDzVufwY88"
       }
     },
     "preview": {
@@ -28,7 +29,8 @@
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "908895908238-6l7sjfjaj5lji4rh2b38o7r1euam8arl.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_MAPS_IOS_KEY": "AIzaSyB6QAFHeXkF0jd1JH5bWhV-Xkbx3BUSe7A",
         "EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_KEY": "AIzaSyB6QAFHeXkF0jd1JH5bWhV-Xkbx3BUSe7A",
-        "EXPO_PUBLIC_APPLE_SERVICES_ID": "com.grasmane.familycommandcenter.signin"
+        "EXPO_PUBLIC_APPLE_SERVICES_ID": "com.grasmane.familycommandcenter.signin",
+        "EXPO_PUBLIC_TURNSTILE_SITE_KEY": "0x4AAAAAAEPQSiMDzVufwY88"
       }
     },
     "production": {
@@ -46,7 +48,8 @@
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "908895908238-6l7sjfjaj5lji4rh2b38o7r1euam8arl.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_MAPS_IOS_KEY": "AIzaSyB6QAFHeXkF0jd1JH5bWhV-Xkbx3BUSe7A",
         "EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_KEY": "AIzaSyB6QAFHeXkF0jd1JH5bWhV-Xkbx3BUSe7A",
-        "EXPO_PUBLIC_APPLE_SERVICES_ID": "com.grasmane.familycommandcenter.signin"
+        "EXPO_PUBLIC_APPLE_SERVICES_ID": "com.grasmane.familycommandcenter.signin",
+        "EXPO_PUBLIC_TURNSTILE_SITE_KEY": "0x4AAAAAAEPQSiMDzVufwY88"
       }
     }
   },

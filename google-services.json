@@ -14,12 +14,32 @@
       },
       "oauth_client": [
         {
-          "client_id": "908895908238-qhah0te4q0sde11co45g7onh43nk52hi.apps.googleusercontent.com",
+          "client_id": "908895908238-ee1bmnrvvjqphfohlhhcngjfmki1c8q8.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.familycommandcenter.app",
             "certificate_hash": "ef28c135f1d9e115d353d0dc15526a0d2b8ff1a6"
           }
+        },
+        {
+          "client_id": "908895908238-fsh7tkpd9ovc68ot5amovge6t34fmfst.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.familycommandcenter.app",
+            "certificate_hash": "b41e8a0568b84649303787531d46d51f08422a92"
+          }
+        },
+        {
+          "client_id": "908895908238-qhah0te4q0sde11co45g7onh43nk52hi.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.familycommandcenter.app",
+            "certificate_hash": "e2fb5c1d6f50b6fefc8df346666e6f47ca598bd1"
+          }
+        },
+        {
+          "client_id": "908895908238-6l7sjfjaj5lji4rh2b38o7r1euam8arl.apps.googleusercontent.com",
+          "client_type": 3
         }
       ],
       "api_key": [
@@ -29,7 +49,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "908895908238-14f7h1etiprkc8cae97ggkv4d11m1nh2.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "908895908238-36h6slllf01ruhl668cfagcv2dl65kdf.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.grasmane.familycommandcenter"
+              }
+            }
+          ]
         }
       }
     }

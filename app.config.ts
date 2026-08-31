@@ -9,7 +9,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: 'Family Command Center',
   slug: 'family-command-center',
-  scheme: 'familycommandcenter',
+  // expo-auth-session's Google provider builds its Android redirect URI as
+  // `${applicationId}:/oauthredirect` (see SignInScreen.tsx) — that scheme
+  // must be registered too, or the OS has nowhere to route Google's
+  // response back into the app after the browser step completes.
+  scheme: ['familycommandcenter', 'com.familycommandcenter.app'],
   version: '1.0.0',
   orientation: 'portrait',
   icon: './src/assets/icon.png',
