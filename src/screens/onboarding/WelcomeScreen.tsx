@@ -19,6 +19,7 @@ const features = [
   { icon: 'sparkles', color: '#0F2952', bg: '#E8EEF9', titleKey: 'featureAiTitle', descKey: 'featureAiDesc' },
   { icon: 'trophy', color: '#FFD700', bg: '#FFFACC', titleKey: 'featureRewardsTitle', descKey: 'featureRewardsDesc' },
   { icon: 'shield-checkmark', color: '#E74C3C', bg: '#FDEDEC', titleKey: 'featureSafetyTitle', descKey: 'featureSafetyDesc' },
+  { icon: 'phone-portrait', color: '#2F6FED', bg: '#E8EEFB', titleKey: 'featureGuardianTitle', descKey: 'featureGuardianDesc' },
 ];
 
 export function WelcomeScreen({ navigation }: any) {
