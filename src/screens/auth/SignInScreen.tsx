@@ -25,6 +25,7 @@ import { getAuth, GoogleAuthProvider, OAuthProvider, signInWithCredential, getId
 import { useAuthStore } from '../../store/useAuthStore';
 import { awsConfig } from '../../config/aws';
 import { useTranslation } from 'react-i18next';
+import { captureError } from '../../config/sentry';
 
 // Native social-auth modules are loaded lazily so the app works without a
 // full native rebuild. They become functional once you run `npx expo run:ios`.
@@ -359,16 +360,21 @@ export default function SignInScreen({ navigation }: Props) {
       const { params } = QueryParamsUtil.getQueryParams(result.url);
       if (params.error) {
         if (params.error !== 'user_cancelled_authorize') {
+          console.error('[auth] Apple sign-in (Android) failed: redirect carried an error param', params.error);
+          captureError(new Error(`Apple sign-in (Android) redirect error: ${params.error}`), { params });
           Alert.alert(t('auth.screens.signIn.appleSignInFailedTitle'), t('auth.screens.signIn.appleSignInFailedMsg'));
         }
         return;
       }
       if (params.state !== state) {
-        console.error('[auth] Apple sign-in failed: state mismatch');
+        console.error('[auth] Apple sign-in failed: state mismatch', { expected: state, received: params.state });
+        captureError(new Error('Apple sign-in (Android) state mismatch'), { expected: state, received: params.state });
         Alert.alert(t('auth.screens.signIn.appleSignInFailedTitle'), t('auth.screens.signIn.appleSignInFailedMsg'));
         return;
       }
       if (!params.id_token) {
+        console.error('[auth] Apple sign-in (Android) failed: no id_token in redirect', params);
+        captureError(new Error('Apple sign-in (Android) redirect missing id_token'), { params });
         Alert.alert(t('auth.screens.signIn.appleSignInFailedTitle'), t('auth.screens.signIn.appleSignInFailedMsg'));
         return;
       }
@@ -397,7 +403,8 @@ export default function SignInScreen({ navigation }: Props) {
 
       await finishAppleSignIn(params.id_token, rawNonce, appleUserId, email, name);
     } catch (e: any) {
-      console.error('[auth] Apple sign-in (Android) failed', e);
+      console.error('[auth] Apple sign-in (Android) failed', e?.message ?? e, e?.code);
+      captureError(e instanceof Error ? e : new Error(String(e)), { stage: 'handleAppleSignInAndroid', code: e?.code });
       Alert.alert(t('auth.screens.signIn.appleSignInFailedTitle'), t('auth.screens.signIn.appleSignInFailedMsg'));
     }
   };
