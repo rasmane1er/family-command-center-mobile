@@ -38,6 +38,14 @@ export function HealthHubScreen({ navigation: navProp }: any) {
   const [selectedMember, setSelectedMember] = useState<string | null>(null);
   const { records, goals, appointments, addAppointment, fetchFromServer, isLoaded } = useHealthStore();
   const members = useFamilyStore((s) => s.members);
+  // Whoever is actually using the phone right now (not `selectedMember`
+  // below, which is just which member's records this screen is currently
+  // displaying — a parent can view a child's steps/sleep here just fine).
+  // Weight Goals is adults-only, so it's hidden from the tools grid
+  // entirely when a child profile is the one signed in, mirroring the
+  // server-side check in routes/wellness.ts.
+  const viewerMemberId = useFamilyStore((s) => s.activeMemberId);
+  const viewerIsChild = members.find((m) => m.id === viewerMemberId)?.role === 'child';
 
   useEffect(() => {
     if (!isLoaded) fetchFromServer();
@@ -239,6 +247,8 @@ export function HealthHubScreen({ navigation: navProp }: any) {
                 { key: 'WorkoutTracker', icon: 'flame', label: t('health.screens.healthHub.toolWorkouts'), color: '#BF360C', bg: '#FBE9E7' },
                 { key: 'NutritionTracker', icon: 'nutrition', label: 'Nutrition', color: '#1B5E20', bg: '#E8F5E9' },
                 { key: 'MedicalRecords', icon: 'folder-open', label: 'Records', color: '#1A237E', bg: '#E8EAF6' },
+                // Adults only — see viewerIsChild above.
+                ...(viewerIsChild ? [] : [{ key: 'WeightGoal', icon: 'trending-down', label: 'Weight Goals', color: '#00695C', bg: '#E0F2F1' }]),
               ].map((tool) => (
                 <Pressable accessibilityRole="button" key={tool.key} onPress={() => navigation.navigate(tool.key)} style={[s.healthToolCard, { backgroundColor: tool.bg }]}>
                   <Ionicons name={tool.icon as any} size={24} color={tool.color} />

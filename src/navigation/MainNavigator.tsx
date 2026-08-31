@@ -13,6 +13,7 @@ import { TermsOfServiceScreen } from '../screens/settings/TermsOfServiceScreen';
 import { MfaSettingsScreen } from '../screens/settings/MfaSettingsScreen';
 import { ReferAndEarnScreen } from '../screens/settings/ReferAndEarnScreen';
 import { HealthHubScreen } from '../screens/health/HealthHubScreen';
+import { WeightGoalScreen } from '../screens/health/WeightGoalScreen';
 import { MedicationManagerScreen } from '../screens/health/MedicationManagerScreen';
 import { SleepTrackerScreen } from '../screens/health/SleepTrackerScreen';
 import { WorkoutTrackerScreen } from '../screens/health/WorkoutTrackerScreen';
@@ -131,6 +132,22 @@ export function MainNavigator() {
         component={withScreenErrorBoundary(HealthHubScreen)}
         options={{ animation: 'slide_from_right' }}
       />
+
+      {/* Adults only — see the long comment in routes/wellness.ts on why
+          this is deliberately not "Parent + Child" like the other health
+          tools above. */}
+      <Stack.Screen
+        name="WeightGoal"
+        options={{ animation: 'slide_from_right' }}
+      >
+        {(props) => (
+          <ErrorBoundary>
+            <ProtectedRoute allowParent allowGrandparent>
+              <WeightGoalScreen {...props} />
+            </ProtectedRoute>
+          </ErrorBoundary>
+        )}
+      </Stack.Screen>
 
       {/* Parent + Child */}
       <Stack.Screen
