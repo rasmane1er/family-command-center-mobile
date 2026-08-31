@@ -2,7 +2,7 @@ import React from 'react';
 import { LegalDocumentLayout, LegalSection } from '../../components/common/LegalDocumentLayout';
 import { useTranslation } from 'react-i18next';
 
-const LAST_UPDATED = 'August 14, 2026';
+const LAST_UPDATED = 'August 31, 2026';
 
 const SECTIONS: LegalSection[] = [
   {
@@ -18,8 +18,8 @@ const SECTIONS: LegalSection[] = [
       'Health information: medications, sleep logs, workout logs, and mood entries you choose to record in the Health Hub.',
       'Photos and documents: images you attach as proof of a completed task, and files you upload to the Document Vault, via your camera, photo library, or device file picker.',
       'Contacts: only if you choose to invite a family member and grant contacts access to make that easier.',
-      'Voice input: audio is processed by your device\'s speech-recognition service to convert speech to text for the AI Assistant. We do not store audio recordings.',
-      'AI Assistant conversations: the questions you ask and the family context needed to answer them (e.g. upcoming bills, tasks) are sent to our AI provider (Google Gemini or Anthropic, depending on configuration) to generate a response.',
+      'Voice input: speech is converted to text using your device\'s operating system speech-recognition service (which, depending on your device, may process audio on-device or on that OS provider\'s own servers) for voice input to the AI Assistant. We do not receive, store, or transmit audio recordings ourselves.',
+      'AI Assistant conversations: the questions you ask and the family context needed to answer them (e.g. upcoming bills, tasks) are sent to our AI provider (Google Gemini) to generate a response.',
       'Support messages: anything you submit through Help & Support tickets or Live Chat, so our support team can respond to you.',
       'Push notification tokens: used only to deliver notifications you\'ve enabled (bill reminders, task alerts, Guardian alerts, etc.).',
       'Household connections: if you connect with another household through Family Connect, or grant/receive co-parent access to a shared custody calendar, we share the specific profile, calendar, and post information needed to make that connection work with the members of that other household.',
@@ -43,7 +43,7 @@ const SECTIONS: LegalSection[] = [
   {
     heading: 'Where Your Data Is Stored',
     body: [
-      'Your family\'s data is stored on our backend servers so it can sync in real time across your devices and power the app\'s features — this is true for account, family, task, calendar, finance, and other core data, not just optional features. Some data is also cached locally on your device for offline access and performance. Photos and documents you upload are stored in encrypted cloud storage.',
+      'Your family\'s data is stored on our backend servers so it can sync in real time across your devices and power the app\'s features — this is true for account, family, task, calendar, finance, and other core data, not just optional features. Some data is also cached locally on your device for offline access and performance. Photos you upload (task-completion photos, avatars, scanned receipts) are stored in encrypted cloud storage; Document Vault files stay only on your device — we sync just the document\'s title, category, and other details, not the file itself.',
     ],
   },
   {
@@ -54,7 +54,7 @@ const SECTIONS: LegalSection[] = [
     bullets: [
       'Plaid, Inc. — to securely connect and read your linked bank accounts.',
       'RevenueCat and the Apple App Store / Google Play — to process and manage subscription purchases.',
-      'Google (Gemini) or Anthropic — to generate AI Assistant responses.',
+      'Google (Gemini) — to generate AI Assistant responses.',
       'Cloudflare — to protect sign-up from bots (Turnstile) and to store uploaded photos and documents securely (R2 storage).',
       'Railway and our database provider — to host and back up your account data securely.',
       'Members of a household you\'ve connected with (Family Connect) or granted co-parent access to — only the specific data covered by that connection, and only after you set it up.',
@@ -81,7 +81,7 @@ const SECTIONS: LegalSection[] = [
       'Location features (geofencing, Guardian tracking) are opt-in and can be disabled at any time.',
       'Household connections and co-parent access can be reviewed and revoked at any time from Settings.',
       'You can reset all local data and start fresh from Settings → Developer → Reset Local Data.',
-      'You can permanently delete your account and associated server-side data yourself at any time from Settings → Account → Delete Account, or by contacting us through Help & Support.',
+      'You can permanently delete your account at any time from Settings → Account → Delete Account, or by contacting us through Help & Support. If you\'re the only login on your family\'s account, this also deletes your family\'s server-side data, revokes your connected bank\'s access via Plaid, and deletes your uploaded photos. If other family members still have active logins, your own login and profile are deleted, but shared family data (calendar, finances, etc.) remains for the family members still using it.',
     ],
   },
   {
