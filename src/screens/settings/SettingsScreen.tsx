@@ -8,7 +8,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
-import * as StoreReview from 'expo-store-review';
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
@@ -328,18 +327,17 @@ export function SettingsScreen({ navigation }: any) {
     navigation.navigate('HelpSupport');
   };
 
-  const handleRateApp = async () => {
-    // Prefer the native in-app review prompt (SKStoreReviewController / Play in-app review).
-    // The OS throttles how often this can actually appear — that's expected platform behavior.
-    try {
-      if (await StoreReview.isAvailableAsync()) {
-        await StoreReview.requestReview();
-        return;
-      }
-    } catch {
-      // fall through to a direct store link
-    }
-
+  const handleRateApp = () => {
+    // Deliberately NOT using StoreReview.requestReview() here — that API
+    // (SKStoreReviewController / Play in-app review) is designed for
+    // automatic, contextual prompts, not a manually-tapped "Rate the App"
+    // row. isAvailableAsync() only confirms the OS *has* the API, not that
+    // tapping it will visibly do anything: Apple silently no-ops
+    // requestReview() in Simulator, in non-App-Store builds, and once the
+    // yearly 3-prompt quota is used up — with no error and no signal to
+    // fall back on, so routing this specific, deliberate tap through it
+    // meant the button could silently do nothing at all. A direct link to
+    // the store's review page always does something visible.
     const appStoreUrl = 'https://apps.apple.com/app/id6792257899?action=write-review';
     const playStoreUrl = 'https://play.google.com/store/apps/details?id=com.familycommandcenter.app';
     const url = Platform.OS === 'ios' ? appStoreUrl : playStoreUrl;
