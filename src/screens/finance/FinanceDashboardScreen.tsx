@@ -767,6 +767,9 @@ export function FinanceDashboardScreen({ navigation }: any) {
               <View style={s.sectionLeft}>
                 <View style={s.sectionDot} />
                 <Text style={s.sectionTitle}>Bank Accounts</Text>
+                <View style={s.sectionBadge}>
+                  <Text style={s.sectionBadgeText}>AUTO-SYNCED</Text>
+                </View>
               </View>
               {/* "Linked Balance" not "Net Worth" — this is scoped to just
                   the connected bank accounts, while the header's TOTAL NET
@@ -814,13 +817,20 @@ export function FinanceDashboardScreen({ navigation }: any) {
         <View style={s.sectionRow}>
           <View style={s.sectionLeft}>
             <View style={s.sectionDot} />
-            <Text style={s.sectionTitle}>Accounts</Text>
+            <Text style={s.sectionTitle}>Other Accounts</Text>
+            <View style={[s.sectionBadge, s.sectionBadgeManual]}>
+              <Text style={[s.sectionBadgeText, s.sectionBadgeManualText]}>MANUAL</Text>
+            </View>
           </View>
           <Pressable accessibilityRole="button" onPress={() => setShowAccountModal(true)} style={s.addBtn}>
             <Ionicons name="add" size={14} color={colors.primary} />
             <Text style={s.addBtnText}>Add</Text>
           </Pressable>
         </View>
+        {/* Distinguishes this from Bank Accounts above — without this,
+            an empty manual-accounts list right below a real synced one
+            reads as a confusing, seemingly-redundant duplicate section. */}
+        <Text style={s.sectionSubtitle}>Accounts you add and update yourself — not connected to a bank.</Text>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false}
           style={s.cardsScroll} contentContainerStyle={s.cardsContent}>
@@ -1669,6 +1679,11 @@ const s = StyleSheet.create({
   sectionLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   sectionDot: { width: 4, height: 20, borderRadius: 2, backgroundColor: colors.primary },
   sectionTitle: { fontSize: 18, fontWeight: '900', color: '#0D1B2A' },
+  sectionBadge: { backgroundColor: '#D1FAE5', borderRadius: 8, paddingVertical: 3, paddingHorizontal: 7 },
+  sectionBadgeText: { fontSize: 9, fontWeight: '800', color: '#059669', letterSpacing: 0.3 },
+  sectionBadgeManual: { backgroundColor: '#EDE9FE' },
+  sectionBadgeManualText: { color: '#7C3AED' },
+  sectionSubtitle: { fontSize: 12, color: colors.textSecondary, marginTop: -8, marginBottom: 12 },
   seeAll: { fontSize: 13, color: colors.primary, fontWeight: '700' },
   addBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
