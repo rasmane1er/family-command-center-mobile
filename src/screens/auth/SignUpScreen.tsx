@@ -13,7 +13,6 @@ import {
   Switch,
   Image,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -128,133 +127,137 @@ function pwStrength(pw: string, t: (key: string) => string) {
 
 // ─── makeStyles ───────────────────────────────────────────────────────────────
 
+// Enterprise-grade sign-up redesign: a restrained, structured look (light
+// neutral page, solid navy actions, hairline dividers, slim segmented
+// progress) in place of the previous dark-gradient hero + heavy-shadow
+// card + gradient buttons. Kept local to this screen rather than folded
+// into the shared theme, since it's a deliberate departure from the rest
+// of the app's (still gradient-heavy) visual language.
+const ENT = {
+  navy: '#0F2952',
+  ink: '#101828',
+  ink2: '#475467',
+  ink3: '#98A2B3',
+  line: '#E4E7EC',
+  line2: '#EAECF0',
+  surface: '#FFFFFF',
+  page: '#F9FAFB',
+  danger: '#D92D20',
+  success: '#16794F',
+};
+
 function makeStyles(colors: any) {
   return StyleSheet.create({
-    root: { flex: 1 },
-    orb1: { position: 'absolute', width: 300, height: 300, borderRadius: 150, backgroundColor: 'rgba(78,143,217,0.14)', top: -90, right: -70 },
-    orb2: { position: 'absolute', width: 220, height: 220, borderRadius: 110, backgroundColor: 'rgba(245,166,35,0.09)', bottom: 60, left: -80 },
+    root: { flex: 1, backgroundColor: ENT.page },
     kav: { flex: 1 },
-    scrollContent: { padding: 20 },
-    card: {
-      backgroundColor: colors.card, borderRadius: 28, padding: 24,
-      shadowColor: '#000', shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.14, shadowRadius: 24, elevation: 10,
-    },
-    // step bar
-    stepRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 24 },
-    stepItem: { alignItems: 'center' },
-    stepBubble: {
-      width: 28, height: 28, borderRadius: 14, borderWidth: 2,
-      borderColor: colors.border, alignItems: 'center', justifyContent: 'center',
-      backgroundColor: colors.card,
-    },
-    stepBubbleOn: { backgroundColor: colors.primary, borderColor: colors.primary },
-    stepBubbleText: { fontSize: 11, fontWeight: '700', color: colors.textMuted },
-    stepBubbleTextOn: { color: '#fff' },
-    stepLabel: { fontSize: 10, color: colors.textMuted, marginTop: 4 },
-    stepLabelActive: { color: colors.primary, fontWeight: '700' },
-    stepLine: { flex: 1, height: 2, backgroundColor: colors.border, marginHorizontal: 4, marginBottom: 16 },
-    stepLineDone: { backgroundColor: colors.primary },
-    // section title
-    secTitle: {
-      fontSize: 11, fontWeight: '700', letterSpacing: 1.1, textTransform: 'uppercase',
-      color: colors.textMuted, marginBottom: 10, marginTop: 4,
-    },
+    scrollContent: { paddingHorizontal: 24, paddingBottom: 40 },
+    // top bar: brand + progress
+    brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 22 },
+    brandMark: { width: 22, height: 22, borderRadius: 6, backgroundColor: ENT.navy, alignItems: 'center', justifyContent: 'center' },
+    brandName: { fontSize: 13, fontWeight: '700', color: ENT.ink },
+    progressTrack: { flexDirection: 'row', gap: 6, marginBottom: 10 },
+    progressSeg: { height: 3, borderRadius: 2, flex: 1, backgroundColor: ENT.line },
+    progressSegOn: { backgroundColor: ENT.navy },
+    progressLabelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 20 },
+    progressStep: { fontSize: 12, fontWeight: '600', color: ENT.ink2 },
+    progressStepOn: { color: ENT.navy, fontWeight: '700' },
+    progressCount: { fontSize: 12, color: ENT.ink3 },
+    // screen title
+    h1: { fontSize: 22, fontWeight: '700', color: ENT.ink, marginBottom: 4, letterSpacing: -0.2 },
+    subtitle: { fontSize: 13.5, color: ENT.ink2, marginBottom: 26, lineHeight: 19 },
+    // section title + dividers
+    secTitle: { fontSize: 11, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', color: ENT.ink3, marginBottom: 14 },
+    divider: { height: 1, backgroundColor: ENT.line2, marginVertical: 26 },
     // avatar
-    avatarWrap: { alignItems: 'center', marginBottom: 18 },
-    avatarCircle: {
-      width: 110, height: 110, borderRadius: 55, alignItems: 'center',
-      justifyContent: 'center', borderWidth: 3, borderColor: colors.border,
-    },
-    avatarImg: { width: 110, height: 110, borderRadius: 55 },
-    avatarInitials: { fontSize: 38, fontWeight: '800', color: '#fff' },
-    cameraBtn: {
-      position: 'absolute', bottom: 2, right: 2, width: 32, height: 32,
-      borderRadius: 16, backgroundColor: '#0F2952', borderWidth: 2,
-      borderColor: colors.card, alignItems: 'center', justifyContent: 'center',
-    },
-    avatarHint: { fontSize: 12, color: colors.textMuted, marginTop: 8 },
-    colorLabel: { fontSize: 12, color: colors.textMuted, marginBottom: 6, alignSelf: 'flex-start' },
-    colorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
-    colorDot: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+    avatarRow: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 16 },
+    avatarCircle: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center' },
+    avatarImg: { width: 72, height: 72, borderRadius: 36 },
+    avatarInitials: { fontSize: 24, fontWeight: '700', color: '#fff' },
+    avatarActions: { flex: 1, gap: 8 },
+    avatarActionBtn: { flexDirection: 'row', alignItems: 'center', gap: 9, height: 38, paddingHorizontal: 13, borderRadius: 8, borderWidth: 1, borderColor: ENT.line, backgroundColor: ENT.surface },
+    avatarActionText: { fontSize: 13, fontWeight: '600', color: ENT.ink },
+    removePhotoLink: { fontSize: 12.5, fontWeight: '600', color: ENT.danger },
+    swatchLabel: { fontSize: 12.5, color: ENT.ink3, marginBottom: 8 },
+    colorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 },
+    colorDot: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
     // field
     fieldWrap: { marginBottom: 14 },
-    fieldLabel: { fontSize: 12, fontWeight: '600', color: colors.textSecondary, marginBottom: 5, marginLeft: 2 },
-    fieldLabelOpt: { fontSize: 12, color: colors.textMuted },
+    fieldLabel: { fontSize: 12.5, fontWeight: '600', color: ENT.ink2, marginBottom: 6 },
+    fieldLabelOpt: { fontWeight: '400', color: ENT.ink3 },
     inputRow: {
-      flexDirection: 'row', alignItems: 'center', minHeight: 52,
-      borderRadius: 14, borderWidth: 1.5, borderColor: colors.border,
-      paddingHorizontal: 14, backgroundColor: colors.surface ?? '#F8FAFD',
+      flexDirection: 'row', alignItems: 'center', height: 46,
+      borderRadius: 9, borderWidth: 1, borderColor: ENT.line,
+      paddingHorizontal: 13, backgroundColor: ENT.surface,
     },
-    inputRowFocus: { borderColor: colors.primary },
-    inputRowError: { borderColor: '#E74C3C' },
-    textInput: { flex: 1, fontSize: 15, color: colors.text, marginLeft: 10, paddingVertical: 14 },
+    inputRowFocus: { borderColor: ENT.navy },
+    inputRowError: { borderColor: ENT.danger },
+    textInput: { flex: 1, fontSize: 14.5, color: ENT.ink, marginLeft: 10, paddingVertical: 0 },
     multiInput: {
-      borderRadius: 14, borderWidth: 1.5, borderColor: colors.border,
-      paddingHorizontal: 14, paddingVertical: 12, fontSize: 15,
-      color: colors.text, minHeight: 88, textAlignVertical: 'top',
-      backgroundColor: colors.surface ?? '#F8FAFD',
+      borderRadius: 9, borderWidth: 1, borderColor: ENT.line,
+      paddingHorizontal: 13, paddingVertical: 12, fontSize: 14.5,
+      color: ENT.ink, minHeight: 76, textAlignVertical: 'top',
+      backgroundColor: ENT.surface,
     },
-    multiInputFocus: { borderColor: colors.primary },
-    multiInputError: { borderColor: '#E74C3C' },
+    multiInputFocus: { borderColor: ENT.navy },
+    multiInputError: { borderColor: ENT.danger },
     eyeBtn: { padding: 4 },
-    errorText: { fontSize: 12, color: '#E74C3C', marginTop: 4, marginLeft: 2 },
-    charCount: { fontSize: 11, color: colors.textMuted, textAlign: 'right', marginTop: 3 },
+    errorText: { fontSize: 12, color: ENT.danger, marginTop: 4, marginLeft: 2 },
+    charCount: { fontSize: 11, color: ENT.ink3, textAlign: 'right', marginTop: 3 },
     halfRow: { flexDirection: 'row', gap: 12 },
     halfField: { flex: 1 },
     // chips
     chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 },
-    chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1.5, borderColor: colors.border },
-    chipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
-    chipText: { fontSize: 13, fontWeight: '600', color: colors.text },
+    chip: { paddingHorizontal: 15, paddingVertical: 9, borderRadius: 9, borderWidth: 1, borderColor: ENT.line, backgroundColor: ENT.surface },
+    chipOn: { backgroundColor: ENT.navy, borderColor: ENT.navy },
+    chipText: { fontSize: 13, fontWeight: '600', color: ENT.ink },
     chipTextOn: { color: '#fff' },
-    roleGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
+    roleGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 },
     roleChip: {
-      flexDirection: 'row', alignItems: 'center', gap: 6,
-      paddingHorizontal: 12, paddingVertical: 9, borderRadius: 12,
-      borderWidth: 1.5, borderColor: colors.border, minWidth: '45%', flexGrow: 1,
+      flexDirection: 'row', alignItems: 'center', gap: 8,
+      paddingHorizontal: 12, paddingVertical: 11, borderRadius: 9,
+      borderWidth: 1, borderColor: ENT.line, backgroundColor: ENT.surface,
+      minWidth: '45%', flexGrow: 1,
     },
-    roleChipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
-    roleChipText: { fontSize: 13, fontWeight: '600', color: colors.text },
+    roleChipFull: { minWidth: '100%' },
+    roleChipOn: { backgroundColor: ENT.navy, borderColor: ENT.navy },
+    roleChipText: { fontSize: 13, fontWeight: '600', color: ENT.ink },
     roleChipTextOn: { color: '#fff' },
     // stepper
     stepperRow: {
-      flexDirection: 'row', alignItems: 'center', minHeight: 52,
-      borderRadius: 14, borderWidth: 1.5, borderColor: colors.border,
-      paddingHorizontal: 14, backgroundColor: colors.surface ?? '#F8FAFD',
+      flexDirection: 'row', alignItems: 'center', height: 46,
+      borderRadius: 9, borderWidth: 1, borderColor: ENT.line,
+      paddingHorizontal: 13, backgroundColor: ENT.surface,
     },
-    stepperLabel: { flex: 1, fontSize: 15, marginLeft: 10, color: colors.text },
+    stepperLabel: { flex: 1, fontSize: 14.5, marginLeft: 10, color: ENT.ink },
     stepperControls: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-    stepperBtn: { width: 32, height: 32, borderRadius: 16, borderWidth: 1.5, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
-    stepperVal: { fontSize: 16, fontWeight: '700', color: colors.text, minWidth: 24, textAlign: 'center' },
+    stepperBtn: { width: 28, height: 28, borderRadius: 14, borderWidth: 1, borderColor: ENT.line, alignItems: 'center', justifyContent: 'center' },
+    stepperVal: { fontSize: 15, fontWeight: '700', color: ENT.ink, minWidth: 16, textAlign: 'center' },
     // toggle
-    toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.border },
+    toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: ENT.line2 },
     toggleLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, gap: 12 },
-    toggleLabel: { fontSize: 15, color: colors.text },
+    toggleLabel: { fontSize: 14.5, fontWeight: '600', color: ENT.ink },
     // terms
-    termsRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginVertical: 12 },
-    checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', marginTop: 2 },
-    checkboxOn: { backgroundColor: colors.primary, borderColor: colors.primary },
-    termsText: { flex: 1, fontSize: 13, color: colors.textSecondary, lineHeight: 20 },
-    termsLink: { color: colors.primary, fontWeight: '600' },
+    termsRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginTop: 24 },
+    checkbox: { width: 20, height: 20, borderRadius: 5, borderWidth: 1.5, borderColor: ENT.line, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
+    checkboxOn: { backgroundColor: ENT.navy, borderColor: ENT.navy },
+    termsText: { flex: 1, fontSize: 13, color: ENT.ink2, lineHeight: 19 },
+    termsLink: { color: ENT.navy, fontWeight: '600' },
     // strength
-    strengthBar: { height: 4, borderRadius: 2, marginTop: 6, backgroundColor: colors.border, overflow: 'hidden' },
+    strengthBar: { height: 4, borderRadius: 2, marginTop: 10, backgroundColor: ENT.line, overflow: 'hidden' },
     strengthFill: { height: 4, borderRadius: 2 },
-    strengthLabel: { fontSize: 11, marginTop: 3, fontWeight: '600' },
-    matchHint: { fontSize: 12, marginTop: 4 },
+    strengthLabel: { fontSize: 11.5, marginTop: 6, fontWeight: '600' },
+    matchHint: { fontSize: 12, marginTop: 8, fontWeight: '600' },
     // nav
-    navRow: { flexDirection: 'row', gap: 12, marginTop: 20 },
-    backBtn: { flex: 1, height: 52, borderRadius: 14, borderWidth: 1.5, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
-    backBtnText: { fontSize: 15, fontWeight: '700', color: colors.textSecondary },
-    nextBtn: { flex: 2, borderRadius: 14, overflow: 'hidden' },
-    nextBtnGrad: { height: 52, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 },
-    nextBtnText: { fontSize: 16, fontWeight: '800', color: '#fff' },
-    fullBtn: { borderRadius: 14, overflow: 'hidden', marginTop: 20 },
-    fullBtnGrad: { height: 52, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 },
-    fullBtnText: { fontSize: 16, fontWeight: '800', color: '#fff' },
-    footerRow: { alignItems: 'center', marginTop: 20 },
-    footerText: { fontSize: 14, color: colors.textSecondary },
-    footerLink: { fontWeight: '800', color: colors.primary },
+    navRow: { flexDirection: 'row', gap: 12, marginTop: 26 },
+    backBtn: { flex: 1, height: 50, borderRadius: 10, borderWidth: 1, borderColor: ENT.line, backgroundColor: ENT.surface, alignItems: 'center', justifyContent: 'center' },
+    backBtnText: { fontSize: 14.5, fontWeight: '600', color: ENT.ink2 },
+    nextBtn: { flex: 2, height: 50, borderRadius: 10, backgroundColor: ENT.navy, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 },
+    nextBtnText: { fontSize: 15, fontWeight: '600', color: '#fff' },
+    fullBtn: { height: 50, borderRadius: 10, backgroundColor: ENT.navy, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, marginTop: 6 },
+    fullBtnText: { fontSize: 15, fontWeight: '600', color: '#fff' },
+    footerRow: { alignItems: 'center', marginTop: 22 },
+    footerText: { fontSize: 13.5, color: ENT.ink2 },
+    footerLink: { fontWeight: '700', color: ENT.navy },
   });
 }
 
@@ -357,28 +360,22 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
   const step3Schema = React.useMemo(() => makeStep3Schema(t), [t]);
 
   // ── photo picker ──────────────────────────────────────────────────────────
+  // Split into two explicit, always-visible actions (rather than one tap
+  // target that opens a native action-sheet Alert) so both paths — camera
+  // and gallery — are discoverable without a hidden menu.
 
-  const pickPhoto = () => {
-    Alert.alert(t('auth.screens.signUp.photoAlertTitle'), t('auth.screens.signUp.photoAlertMsg'), [
-      {
-        text: t('auth.screens.signUp.takePhoto'), onPress: async () => {
-          const { status } = await ImagePicker.requestCameraPermissionsAsync();
-          if (status !== 'granted') { Alert.alert(t('auth.screens.signUp.permissionNeededTitle'), t('auth.screens.signUp.cameraPermissionMsg')); return; }
-          const r = await ImagePicker.launchCameraAsync({ mediaTypes: 'images', allowsEditing: true, aspect: [1, 1], quality: 0.8 });
-          if (!r.canceled && r.assets[0]) setAvatarUri(r.assets[0].uri);
-        },
-      },
-      {
-        text: t('auth.screens.signUp.chooseFromLibrary'), onPress: async () => {
-          const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-          if (status !== 'granted') { Alert.alert(t('auth.screens.signUp.permissionNeededTitle'), t('auth.screens.signUp.libraryPermissionMsg')); return; }
-          const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: 'images', allowsEditing: true, aspect: [1, 1], quality: 0.8 });
-          if (!r.canceled && r.assets[0]) setAvatarUri(r.assets[0].uri);
-        },
-      },
-      { text: t('auth.screens.signUp.removePhoto'), style: 'destructive', onPress: () => setAvatarUri(null) },
-      { text: t('auth.screens.signUp.cancel'), style: 'cancel' },
-    ]);
+  const takePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') { Alert.alert(t('auth.screens.signUp.permissionNeededTitle'), t('auth.screens.signUp.cameraPermissionMsg')); return; }
+    const r = await ImagePicker.launchCameraAsync({ mediaTypes: 'images', allowsEditing: true, aspect: [1, 1], quality: 0.8 });
+    if (!r.canceled && r.assets[0]) setAvatarUri(r.assets[0].uri);
+  };
+
+  const chooseFromGallery = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') { Alert.alert(t('auth.screens.signUp.permissionNeededTitle'), t('auth.screens.signUp.libraryPermissionMsg')); return; }
+    const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: 'images', allowsEditing: true, aspect: [1, 1], quality: 0.8 });
+    if (!r.canceled && r.assets[0]) setAvatarUri(r.assets[0].uri);
   };
 
   // ── step advance (validates only the current step's fields, via the
@@ -493,34 +490,38 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
     }
   };
 
-  // ── step bar ──────────────────────────────────────────────────────────────
+  // ── top bar: brand + slim segmented progress ────────────────────────────
 
-  const StepBar = () => (
-    <View style={s.stepRow}>
-      {([
-        t('auth.screens.signUp.stepYou'),
-        t('auth.screens.signUp.stepFamily'),
-        t('auth.screens.signUp.stepSecurity'),
-      ] as const).map((label, idx) => {
-        const n = idx + 1;
-        const isActive = n === step;
-        const isDone   = n < step;
-        return (
-          <React.Fragment key={n}>
-            <View style={s.stepItem}>
-              <View style={[s.stepBubble, (isActive || isDone) && s.stepBubbleOn]}>
-                {isDone
-                  ? <Ionicons name="checkmark" size={14} color="#fff" />
-                  : <Text style={[s.stepBubbleText, isActive && s.stepBubbleTextOn]}>{n}</Text>
-                }
-              </View>
-              <Text style={[s.stepLabel, isActive && s.stepLabelActive]}>{label}</Text>
-            </View>
-            {idx < 2 && <View style={[s.stepLine, isDone && s.stepLineDone]} />}
-          </React.Fragment>
-        );
-      })}
-    </View>
+  const STEP_TITLES = [
+    t('auth.screens.signUp.stepYou'),
+    t('auth.screens.signUp.stepFamily'),
+    t('auth.screens.signUp.stepSecurity'),
+  ];
+
+  const TopBar = () => (
+    <>
+      <View style={s.brandRow}>
+        <View style={s.brandMark}>
+          <Ionicons name="home" size={12} color="#fff" />
+        </View>
+        <Text style={s.brandName}>{t('appName', { defaultValue: 'Family Command Center' })}</Text>
+      </View>
+      <View style={s.progressTrack}>
+        {[1, 2, 3].map((n) => (
+          <View key={n} style={[s.progressSeg, n <= step && s.progressSegOn]} />
+        ))}
+      </View>
+      <View style={s.progressLabelRow}>
+        <Text style={s.progressStep}>
+          {STEP_TITLES.map((label, idx) => (
+            <Text key={label} style={idx + 1 === step ? s.progressStepOn : undefined}>
+              {idx > 0 ? '   ·   ' : ''}{label}
+            </Text>
+          ))}
+        </Text>
+        <Text style={s.progressCount}>{t('auth.screens.signUp.stepCount', { step, total: 3, defaultValue: `Step ${step} of 3` })}</Text>
+      </View>
+    </>
   );
 
   // ── step 1 ────────────────────────────────────────────────────────────────
@@ -533,41 +534,51 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
     return (
       <>
         <Text style={s.secTitle}>{t('auth.screens.signUp.sectionProfilePhoto')}</Text>
-        <View style={s.avatarWrap}>
-          <Pressable accessibilityRole="button" onPress={pickPhoto} style={{ position: 'relative' }}>
-            <View style={[s.avatarCircle, { backgroundColor: avatarUri ? 'transparent' : avatarColor }]}>
-              {avatarUri
-                ? <Image source={{ uri: avatarUri }} style={s.avatarImg} />
-                : <Text style={s.avatarInitials}>{initials}</Text>
-              }
-            </View>
-            <View style={s.cameraBtn}>
-              <Ionicons name="camera" size={16} color="#fff" />
-            </View>
-          </Pressable>
-          <Text style={s.avatarHint}>{avatarUri ? t('auth.screens.signUp.tapToChange') : t('auth.screens.signUp.tapToAddPhoto')}</Text>
+        <View style={s.avatarRow}>
+          <View style={[s.avatarCircle, { backgroundColor: avatarUri ? 'transparent' : avatarColor }]}>
+            {avatarUri
+              ? <Image source={{ uri: avatarUri }} style={s.avatarImg} />
+              : <Text style={s.avatarInitials}>{initials}</Text>
+            }
+          </View>
+          <View style={s.avatarActions}>
+            <Pressable accessibilityRole="button" style={s.avatarActionBtn} onPress={takePhoto}>
+              <Ionicons name="camera-outline" size={16} color={ENT.ink2} />
+              <Text style={s.avatarActionText}>{t('auth.screens.signUp.takePhoto')}</Text>
+            </Pressable>
+            <Pressable accessibilityRole="button" style={s.avatarActionBtn} onPress={chooseFromGallery}>
+              <Ionicons name="image-outline" size={16} color={ENT.ink2} />
+              <Text style={s.avatarActionText}>{t('auth.screens.signUp.chooseFromLibrary')}</Text>
+            </Pressable>
+            {avatarUri && (
+              <Pressable accessibilityRole="button" onPress={() => setAvatarUri(null)}>
+                <Text style={s.removePhotoLink}>{t('auth.screens.signUp.removePhoto')}</Text>
+              </Pressable>
+            )}
+          </View>
         </View>
 
         {!avatarUri && (
           <>
-            <Text style={s.colorLabel}>{t('auth.screens.signUp.orChooseColor')}</Text>
+            <Text style={s.swatchLabel}>{t('auth.screens.signUp.orChooseColor')}</Text>
             <View style={s.colorRow}>
               {AVATAR_COLORS.map(c => (
                 <Pressable accessibilityRole="button" key={c}
                   style={[s.colorDot, { backgroundColor: c },
-                    avatarColor === c && { borderWidth: 3, borderColor: '#fff', shadowColor: c, shadowOpacity: 0.6, shadowRadius: 4, elevation: 4 },
+                    avatarColor === c && { borderWidth: 2, borderColor: ENT.page, shadowColor: ENT.navy, shadowOpacity: 0.5, shadowRadius: 0, shadowOffset: { width: 0, height: 0 }, elevation: 3 },
                   ]}
                   onPress={() => setAvatarColor(c)}>
-                  {avatarColor === c && <Ionicons name="checkmark" size={14} color="#fff" />}
+                  {avatarColor === c && <Ionicons name="checkmark" size={12} color="#fff" />}
                 </Pressable>
               ))}
             </View>
           </>
         )}
 
-        <Text style={s.secTitle}>{t('auth.screens.signUp.sectionPersonalInfo')}</Text>
+        <View style={s.divider} />
 
         {/* First / Last name side-by-side */}
+        <Text style={s.secTitle}>{t('auth.screens.signUp.sectionPersonalInfo')}</Text>
         <View style={s.halfRow}>
           <View style={s.halfField}>
             <FormField label={t('auth.screens.signUp.firstNameLabel')} icon="person-outline" placeholder={t('auth.screens.signUp.firstNamePlaceholder')}
@@ -617,6 +628,8 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
           keyboardType="numeric" autoCapitalize="none" optional
           colors={colors} s={s} />
 
+        <View style={s.divider} />
+
         <Text style={s.secTitle}>{t('auth.screens.signUp.sectionGender')}</Text>
         <View style={[s.chipRow, { marginBottom: 16 }]}>
           {GENDER_OPTIONS.map(g => (
@@ -627,6 +640,8 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
             </Pressable>
           ))}
         </View>
+
+        <View style={s.divider} />
 
         <Text style={s.secTitle}>{t('auth.screens.signUp.sectionAboutYou')}</Text>
         <FormField label={t('auth.screens.signUp.occupationLabel')} icon="briefcase-outline" placeholder={t('auth.screens.signUp.occupationPlaceholder')}
@@ -645,10 +660,8 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
           multiline maxLength={300} optional colors={colors} s={s} />
 
         <Pressable accessibilityRole="button" style={s.fullBtn} onPress={() => advanceStep(fk, 2)}>
-          <LinearGradient colors={['#1E4A8A', '#0F2952']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.fullBtnGrad}>
-            <Text style={s.fullBtnText}>{t('auth.screens.signUp.nextFamilySetup')}</Text>
-            <Ionicons name="arrow-forward" size={18} color="#fff" />
-          </LinearGradient>
+          <Text style={s.fullBtnText}>{t('auth.screens.signUp.nextFamilySetup')}</Text>
+          <Ionicons name="arrow-forward" size={16} color="#fff" />
         </Pressable>
 
         <View style={s.footerRow}>
@@ -680,11 +693,13 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
         error={fk.errors.familyMotto} touched={fk.touched.familyMotto}
         optional colors={colors} s={s} />
 
+      <View style={s.divider} />
+
       <Text style={s.secTitle}>{t('auth.screens.signUp.sectionYourRole')}</Text>
       <View style={s.roleGrid}>
-        {ROLE_OPTIONS.map(opt => (
+        {ROLE_OPTIONS.map((opt, idx) => (
           <Pressable accessibilityRole="button" key={opt.key}
-            style={[s.roleChip, familyRole === opt.key && s.roleChipOn]}
+            style={[s.roleChip, idx === ROLE_OPTIONS.length - 1 && ROLE_OPTIONS.length % 2 === 1 && s.roleChipFull, familyRole === opt.key && s.roleChipOn]}
             onPress={() => setFamilyRole(opt.key)}>
             <Ionicons name={opt.icon as any} size={16} color={familyRole === opt.key ? '#fff' : colors.textSecondary} />
             <Text style={[s.roleChipText, familyRole === opt.key && s.roleChipTextOn]}>{t(opt.labelKey)}</Text>
@@ -692,7 +707,9 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
         ))}
       </View>
 
-      <Text style={[s.secTitle, { marginTop: 10 }]}>{t('auth.screens.signUp.sectionNumberOfChildren')}</Text>
+      <View style={s.divider} />
+
+      <Text style={s.secTitle}>{t('auth.screens.signUp.sectionNumberOfChildren')}</Text>
       <View style={s.fieldWrap}>
         <View style={s.stepperRow}>
           <Ionicons name="people-outline" size={18} color={colors.textMuted} />
@@ -711,7 +728,9 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
         </View>
       </View>
 
-      <Text style={[s.secTitle, { marginTop: 6 }]}>{t('auth.screens.signUp.sectionHomeAddress')}</Text>
+      <View style={s.divider} />
+
+      <Text style={s.secTitle}>{t('auth.screens.signUp.sectionHomeAddress')}</Text>
       <FormField label={t('auth.screens.signUp.streetAddressLabel')} icon="location-outline" placeholder={t('auth.screens.signUp.streetAddressPlaceholder')}
         value={fk.values.streetAddress}
         onChangeText={val => fk.setFieldValue('streetAddress', val)}
@@ -746,7 +765,9 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
         </View>
       </View>
 
-      <Text style={[s.secTitle, { marginTop: 6 }]}>{t('auth.screens.signUp.sectionEmergencyContact')}</Text>
+      <View style={s.divider} />
+
+      <Text style={s.secTitle}>{t('auth.screens.signUp.sectionEmergencyContact')}</Text>
       <FormField label={t('auth.screens.signUp.contactNameLabel')} icon="person-add-outline" placeholder={t('auth.screens.signUp.contactNamePlaceholder')}
         value={fk.values.ecName}
         onChangeText={val => fk.setFieldValue('ecName', val)}
@@ -767,9 +788,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
           <Text style={s.backBtnText}>{t('auth.screens.signUp.backButton')}</Text>
         </Pressable>
         <Pressable accessibilityRole="button" style={s.nextBtn} onPress={() => advanceStep(fk, 3)}>
-          <LinearGradient colors={['#1E4A8A', '#0F2952']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.nextBtnGrad}>
-            <Text style={s.nextBtnText}>{t('auth.screens.signUp.nextSecurity')}</Text>
-          </LinearGradient>
+          <Text style={s.nextBtnText}>{t('auth.screens.signUp.nextSecurity')}</Text>
         </Pressable>
       </View>
     </>
@@ -840,7 +859,9 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
           {fk.touched.confirmPw && fk.errors.confirmPw && <Text style={s.errorText}>{fk.errors.confirmPw}</Text>}
         </View>
 
-        <Text style={[s.secTitle, { marginTop: 4 }]}>{t('auth.screens.signUp.sectionSecurityOptions')}</Text>
+        <View style={s.divider} />
+
+        <Text style={s.secTitle}>{t('auth.screens.signUp.sectionSecurityOptions')}</Text>
         <View style={s.toggleRow}>
           <View style={s.toggleLeft}>
             <Ionicons name="finger-print-outline" size={20} color={colors.primary} />
@@ -872,12 +893,10 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
             <Text style={s.backBtnText}>{t('auth.screens.signUp.backButton')}</Text>
           </Pressable>
           <Pressable accessibilityRole="button" style={s.nextBtn} disabled={loading} onPress={() => fk.handleSubmit()}>
-            <LinearGradient colors={['#F5A623', '#FF8C42']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.nextBtnGrad}>
-              {loading
-                ? <ActivityIndicator color="#fff" size="small" />
-                : <Text style={s.nextBtnText}>{t('auth.createAccount')}</Text>
-              }
-            </LinearGradient>
+            {loading
+              ? <ActivityIndicator color="#fff" size="small" />
+              : <Text style={s.nextBtnText}>{t('auth.createAccount')}</Text>
+            }
           </Pressable>
         </View>
       </>
@@ -886,18 +905,26 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
 
   // ── root ──────────────────────────────────────────────────────────────────
 
+  const STEP_HEADERS: Record<1 | 2 | 3, { title: string; subtitle: string }> = {
+    1: { title: t('auth.screens.signUp.headerYouTitle', { defaultValue: 'Create your account' }), subtitle: t('auth.screens.signUp.headerYouSubtitle', { defaultValue: 'Tell us a bit about yourself. Only your name and email are required — everything else can be filled in later.' }) },
+    2: { title: t('auth.screens.signUp.headerFamilyTitle', { defaultValue: 'Set up your family' }), subtitle: t('auth.screens.signUp.headerFamilySubtitle', { defaultValue: "This creates your household — you can invite the rest of your family once you're in." }) },
+    3: { title: t('auth.screens.signUp.headerSecurityTitle', { defaultValue: 'Secure your account' }), subtitle: t('auth.screens.signUp.headerSecuritySubtitle', { defaultValue: "Choose a strong password — you'll use this alongside Face ID or Touch ID once enabled." }) },
+  };
+
   return (
     <View style={s.root}>
-      <StatusBar style="light" />
-      <LinearGradient colors={['#040D1A', '#0A1E3D', '#0F2952']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-      <View style={s.orb1} /><View style={s.orb2} />
+      <StatusBar style="dark" />
 
       <KeyboardAvoidingView style={s.kav} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView
-          contentContainerStyle={[s.scrollContent, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 40 }]}
+          contentContainerStyle={[s.scrollContent, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 40 }]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
+          <TopBar />
+          <Text style={s.h1}>{STEP_HEADERS[step].title}</Text>
+          <Text style={s.subtitle}>{STEP_HEADERS[step].subtitle}</Text>
+
           <Formik
             innerRef={formikRef}
             initialValues={INITIAL}
@@ -907,12 +934,11 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
             onSubmit={handleSubmit}
           >
             {(fk) => (
-              <View style={s.card}>
-                <StepBar />
+              <>
                 {step === 1 && renderStep1(fk)}
                 {step === 2 && renderStep2(fk)}
                 {step === 3 && renderStep3(fk)}
-              </View>
+              </>
             )}
           </Formik>
         </ScrollView>
