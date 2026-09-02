@@ -136,7 +136,13 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       'expo-build-properties',
       {
-        android: { usesCleartextTraffic: isDevBuild },
+        // Pinned explicitly after adding @react-native-google-signin/google-signin
+        // caused Play Store submission to fail with "Target SDK of artifact
+        // is too low: 25" — every prior build correctly resolved to 35 with
+        // no override at all, so something in that library's own autolinking
+        // disturbed the default resolution. Pinning removes the dependency
+        // on that resolution being correct, rather than chasing why it broke.
+        android: { usesCleartextTraffic: isDevBuild, targetSdkVersion: 35, compileSdkVersion: 35 },
         // expo-speech-recognition's podspec requires iOS 16.4+ (on-device
         // speech recognition APIs introduced that version) — CocoaPods
         // silently drops any pod whose minimum iOS version exceeds the
