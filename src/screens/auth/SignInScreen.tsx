@@ -34,6 +34,25 @@ let WebBrowser: typeof import('expo-web-browser') | null = null;
 let Google: typeof import('expo-auth-session/providers/google') | null = null;
 let AuthSession: typeof import('expo-auth-session') | null = null;
 let QueryParamsUtil: typeof import('expo-auth-session/build/QueryParams') | null = null;
+// Android Google sign-in uses this native SDK, not expo-auth-session's
+// browser-redirect flow above (still used for iOS, where it works fine —
+// iOS OAuth clients validate by bundle ID, which doesn't have Android's
+// failure mode below). expo-auth-session's Android flow drives a generic
+// browser authorization request using an Android-type OAuth client ID,
+// which Google validates against the SHA-1 certificate that actually
+// signed the installed app — but Google Play re-signs every app it
+// distributes with its own "Play App Signing" key, a different
+// certificate than the one used to build/upload it. That mismatch is
+// invisible from the developer's own machine (a sideloaded or
+// internal-testing build is signed with the upload key, so it works
+// there) and only ever seen by a user who installed via the Play Store.
+// The native SDK sidesteps this entirely — it authenticates through
+// Google Play Services on-device rather than a redirect Google's server
+// has to validate by certificate fingerprint.
+let GoogleSignin: typeof import('@react-native-google-signin/google-signin').GoogleSignin | null = null;
+let isSuccessResponse: typeof import('@react-native-google-signin/google-signin').isSuccessResponse | null = null;
+let isErrorWithCode: typeof import('@react-native-google-signin/google-signin').isErrorWithCode | null = null;
+let statusCodes: typeof import('@react-native-google-signin/google-signin').statusCodes | null = null;
 try {
   AppleAuthentication = require('expo-apple-authentication');
   WebBrowser = require('expo-web-browser');
@@ -41,6 +60,7 @@ try {
   AuthSession = require('expo-auth-session');
   QueryParamsUtil = require('expo-auth-session/build/QueryParams');
   WebBrowser?.maybeCompleteAuthSession?.();
+  ({ GoogleSignin, isSuccessResponse, isErrorWithCode, statusCodes } = require('@react-native-google-signin/google-signin'));
 } catch {
   // Native modules not linked yet — social auth will show "run native build" prompt.
 }
@@ -143,6 +163,76 @@ export default function SignInScreen({ navigation }: Props) {
     : [null, null, null] as const;
   const [googleRequest, googleResponse, promptGoogleAsync] = googleHook;
 
+  // Native SDK config for Android only — iOS keeps using the expo-auth-session
+  // flow above (see the comment by the GoogleSignin require above for why).
+  // webClientId (not androidClientId) is what the native SDK needs here: it
+  // resolves the Android-specific OAuth client itself, from the app's own
+  // package name + signing certificate via Google Play Services, and only
+  // needs the web client to know which Firebase/GCP project's server-side
+  // audience the resulting idToken should be minted for.
+  React.useEffect(() => {
+    if (Platform.OS === 'android' && GoogleSignin && googleWebClientId) {
+      GoogleSignin.configure({ webClientId: googleWebClientId });
+    }
+  }, [googleWebClientId]);
+
+  const handleGoogleSignInAndroid = async () => {
+    if (!GoogleSignin || !isSuccessResponse || !isErrorWithCode || !statusCodes) {
+      Alert.alert(
+        t('auth.screens.signIn.nativeBuildRequiredTitle'),
+        t('auth.screens.signIn.googleNativeBuildMsg'),
+        [{ text: t('auth.screens.signIn.ok') }],
+      );
+      return;
+    }
+    if (!googleWebClientId) {
+      Alert.alert(
+        t('auth.screens.signIn.googleNotConfiguredTitle'),
+        t('auth.screens.signIn.googleNotConfiguredMsg'),
+        [{ text: t('auth.screens.signIn.ok') }],
+      );
+      return;
+    }
+    try {
+      await GoogleSignin.hasPlayServices();
+      const response = await GoogleSignin.signIn();
+      if (!isSuccessResponse(response)) return; // user cancelled — not an error
+      const { idToken, user: googleUser } = response.data;
+      if (!idToken) {
+        Alert.alert(t('auth.screens.signIn.googleProfileErrorTitle'), t('auth.screens.signIn.googleProfileErrorMsg'));
+        return;
+      }
+      const credential = GoogleAuthProvider.credential(idToken);
+      const userCredential = await signInWithCredential(getAuth(), credential);
+      const firebaseIdToken = await getIdToken(userCredential.user);
+
+      await signInWithSocial(
+        {
+          id: googleUser.id,
+          email: googleUser.email ?? '',
+          displayName: googleUser.name || (googleUser.email ? googleUser.email.split('@')[0] : 'Google User'),
+          avatarColor: '#4285F4',
+          provider: 'google',
+        },
+        firebaseIdToken,
+      );
+      const { user: authUser } = useAuthStore.getState();
+      if (authUser) {
+        const { useFamilyStore } = require('../../store/useFamilyStore');
+        if (!useFamilyStore.getState().family) {
+          const { populateFromSignUp } = require('../../utils/populateFromSignUp');
+          await populateFromSignUp(authUser);
+        }
+      }
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (e: any) {
+      if (isErrorWithCode(e) && (e.code === statusCodes.SIGN_IN_CANCELLED || e.code === statusCodes.IN_PROGRESS)) return;
+      console.error('[auth] Google sign-in (Android, native) failed', e?.message ?? e, e?.code);
+      captureError(e instanceof Error ? e : new Error(String(e)), { stage: 'handleGoogleSignInAndroid', code: e?.code });
+      Alert.alert(t('auth.screens.signIn.googleProfileErrorTitle'), t('auth.screens.signIn.googleProfileErrorMsg'));
+    }
+  };
+
   React.useEffect(() => {
     if (!googleResponse || (googleResponse as any).type !== 'success') return;
     const auth = (googleResponse as any).authentication;
@@ -201,6 +291,10 @@ export default function SignInScreen({ navigation }: Props) {
   }, [googleResponse]);
 
   const handleGoogleSignIn = () => {
+    if (Platform.OS === 'android') {
+      handleGoogleSignInAndroid();
+      return;
+    }
     if (!Google) {
       Alert.alert(
         t('auth.screens.signIn.nativeBuildRequiredTitle'),

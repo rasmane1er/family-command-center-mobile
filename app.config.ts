@@ -105,6 +105,16 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     'expo-web-browser',
     'expo-apple-authentication',
     [
+      '@react-native-google-signin/google-signin',
+      {
+        // GoogleService-Info.plist's REVERSED_CLIENT_ID — the config plugin
+        // doesn't read that file itself, so this has to be passed explicitly
+        // for the iOS redirect to complete. Android needs no equivalent here:
+        // the native SDK resolves everything from google-services.json.
+        iosUrlScheme: 'com.googleusercontent.apps.908895908238-36h6slllf01ruhl668cfagcv2dl65kdf',
+      },
+    ],
+    [
       'expo-local-authentication',
       {
         faceIDPermission:
