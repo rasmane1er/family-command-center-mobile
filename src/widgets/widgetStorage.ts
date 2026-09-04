@@ -28,3 +28,15 @@ export function getWidgetData(): FamilyGlanceData | null {
 export function setWidgetData(data: FamilyGlanceData): void {
   store.set(KEY, JSON.stringify(data));
 }
+
+// Separate MMKV instance (see comment above) means the app's account-switch
+// reset (resetAllStores) can't reach this via its generic "wipe everything
+// in the main store" loop — without an explicit clear, a previous account's
+// family name/task count/event stays on the home-screen widget, visible
+// outside the app entirely, until the next background widget refresh
+// happens to overwrite it.
+export function clearWidgetData(): void {
+  // This instance only ever holds the one `widgetData` key, so clearing
+  // everything is equivalent to (and simpler than) a per-key delete.
+  store.clearAll();
+}

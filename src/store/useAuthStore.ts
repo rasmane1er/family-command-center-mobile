@@ -316,6 +316,15 @@ function applySuccessfulAuth(
     createdAt: existing?.email === email ? existing.createdAt : new Date().toISOString(),
   };
 
+  // Sign-out is the only other place this ran until now — meaning signing
+  // straight from Account A into a different existing Account B (without an
+  // intervening sign-out on this exact code path, or after any gap in
+  // resetAllStores()'s own coverage) rendered Account A's data under
+  // Account B's name. Reset before flipping isAuthenticated, same ordering
+  // SignUpScreen already uses, so nothing renders against stale state even
+  // for one frame.
+  resetAllStores();
+
   set({
     isAuthenticated: true,
     pendingVerificationEmail: null,
@@ -531,6 +540,11 @@ export const useAuthStore = create<AuthState>()(
           provider: user.provider as 'google' | 'apple',
           familyName: user.familyName,
         });
+        // Same reasoning as applySuccessfulAuth above — reset before this
+        // account becomes the active one, so a different Google/Apple
+        // account signing in on the same device can't inherit whatever the
+        // previous account left in the ~65 in-memory stores.
+        resetAllStores();
         set({
           isAuthenticated: true,
           user,
