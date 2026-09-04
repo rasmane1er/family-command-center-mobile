@@ -29,6 +29,7 @@ import { uploadImageToR2 } from '../../services/uploadService';
 import { useTranslation } from 'react-i18next';
 import { validatePasswordStrength } from '../../utils/passwordPolicy';
 import { TurnstileWidget } from '../../components/common/TurnstileWidget';
+import { TURNSTILE_SITE_KEY } from '../../config/turnstile';
 
 // ─── constants ───────────────────────────────────────────────────────────────
 
@@ -252,7 +253,11 @@ function makeStyles(colors: any) {
     backBtn: { flex: 1, height: 50, borderRadius: 10, borderWidth: 1, borderColor: ENT.line, backgroundColor: ENT.surface, alignItems: 'center', justifyContent: 'center' },
     backBtnText: { fontSize: 14.5, fontWeight: '600', color: ENT.ink2 },
     nextBtn: { flex: 2, height: 50, borderRadius: 10, backgroundColor: ENT.navy, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 },
+    nextBtnDisabled: { opacity: 0.5 },
     nextBtnText: { fontSize: 15, fontWeight: '600', color: '#fff' },
+    turnstileErrorRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 4, marginBottom: 8 },
+    turnstileErrorText: { fontSize: 12.5, color: '#E74C3C' },
+    turnstileRetryText: { fontSize: 12.5, fontWeight: '700', color: ENT.navy },
     fullBtn: { height: 50, borderRadius: 10, backgroundColor: ENT.navy, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, marginTop: 6 },
     fullBtnText: { fontSize: 15, fontWeight: '600', color: '#fff' },
     footerRow: { alignItems: 'center', marginTop: 22 },
@@ -355,6 +360,12 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
   const [showCpw, setShowCpw]     = useState(false);
   const [loading, setLoading]     = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | undefined>(undefined);
+  // 'error' surfaces when the widget hangs or Cloudflare reports a failure —
+  // otherwise the user was stuck on Cloudflare's own indefinite "Verifying..."
+  // spinner with no feedback and no way to retry.
+  const [turnstileStatus, setTurnstileStatus] = useState<'pending' | 'error'>('pending');
+  const [turnstileKey, setTurnstileKey] = useState(0);
+  const turnstileRequired = !!TURNSTILE_SITE_KEY;
 
   const formikRef = useRef<FormikProps<FormValues>>(null);
   const step3Schema = React.useMemo(() => makeStep3Schema(t), [t]);
@@ -872,7 +883,23 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
             thumbColor={biometric ? colors.primary : colors.textMuted} />
         </View>
 
-        <TurnstileWidget onToken={setTurnstileToken} onExpire={() => setTurnstileToken(undefined)} />
+        <TurnstileWidget
+          key={turnstileKey}
+          onToken={(tok) => { setTurnstileToken(tok); setTurnstileStatus('pending'); }}
+          onExpire={() => setTurnstileToken(undefined)}
+          onError={() => { setTurnstileToken(undefined); setTurnstileStatus('error'); }}
+        />
+        {turnstileRequired && turnstileStatus === 'error' && (
+          <View style={s.turnstileErrorRow}>
+            <Text style={s.turnstileErrorText}>{t('auth.screens.signUp.turnstileError', { defaultValue: "Couldn't complete the security check." })}</Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => { setTurnstileStatus('pending'); setTurnstileKey((k) => k + 1); }}
+            >
+              <Text style={s.turnstileRetryText}>{t('auth.screens.signUp.turnstileRetry', { defaultValue: 'Retry' })}</Text>
+            </Pressable>
+          </View>
+        )}
 
         <Text style={[s.secTitle, { marginTop: 16 }]}>{t('auth.screens.signUp.sectionTerms')}</Text>
         <Pressable accessibilityRole="button" style={s.termsRow} onPress={() => fk.setFieldValue('agreed', !fk.values.agreed)}>
@@ -892,7 +919,12 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
           <Pressable accessibilityRole="button" style={s.backBtn} onPress={() => setStep(2)}>
             <Text style={s.backBtnText}>{t('auth.screens.signUp.backButton')}</Text>
           </Pressable>
-          <Pressable accessibilityRole="button" style={s.nextBtn} disabled={loading} onPress={() => fk.handleSubmit()}>
+          <Pressable
+            accessibilityRole="button"
+            style={[s.nextBtn, (loading || (turnstileRequired && !turnstileToken)) && s.nextBtnDisabled]}
+            disabled={loading || (turnstileRequired && !turnstileToken)}
+            onPress={() => fk.handleSubmit()}
+          >
             {loading
               ? <ActivityIndicator color="#fff" size="small" />
               : <Text style={s.nextBtnText}>{t('auth.createAccount')}</Text>
