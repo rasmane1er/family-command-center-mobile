@@ -133,6 +133,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     './plugins/withAndroidManifestPlacementFix.js',
     './plugins/withAndroidExcludeLegacySupportLib.js',
     './plugins/withFmtConstevalFix.js',
+    './plugins/withAndroidTargetSdkFix.js',
     [
       'expo-build-properties',
       {
