@@ -1621,10 +1621,10 @@ const s = StyleSheet.create({
     width: 140, height: 140, borderRadius: 70,
     backgroundColor: 'rgba(0,212,170,0.10)',
   },
-  headerGreeting: { fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: '600', letterSpacing: 0.2, marginBottom: 4 },
+  headerGreeting: { fontSize: 14, color: 'rgba(255,255,255,0.78)', fontWeight: '600', letterSpacing: 0.2, marginBottom: 4 },
   headerTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 },
   netWorthLabel: { fontSize: 10, color: 'rgba(255,255,255,0.45)', fontWeight: '700', letterSpacing: 1.5, marginBottom: 4 },
-  netWorthValue: { fontSize: 28, fontWeight: '900', color: '#fff', letterSpacing: -1.5 },
+  netWorthValue: { fontSize: 36, fontWeight: '900', color: '#fff', letterSpacing: -1.5 },
   trendRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8, flexWrap: 'wrap' },
   trendPill: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
@@ -1632,7 +1632,7 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: 'rgba(52,211,153,0.25)',
     paddingVertical: 3, paddingHorizontal: 8,
   },
-  trendPillText: { fontSize: 11, fontWeight: '700' },
+  trendPillText: { fontSize: 12, fontWeight: '800' },
   datePill: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
     backgroundColor: 'rgba(255,255,255,0.10)', borderRadius: 20,
@@ -1652,33 +1652,34 @@ const s = StyleSheet.create({
   /* Stats cards */
   statsStrip: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   statCard: {
-    flex: 1, alignItems: 'center', gap: 4,
-    borderRadius: 14, paddingVertical: 10,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
+    flex: 1, alignItems: 'center', gap: 5,
+    borderRadius: 20, paddingVertical: 13,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)',
+    overflow: 'hidden',
   },
-  statIconBg: { width: 28, height: 28, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
-  statValue: { fontSize: 12, fontWeight: '900' },
-  statLabel: { fontSize: 9, color: 'rgba(255,255,255,0.5)', fontWeight: '700', letterSpacing: 0.3 },
+  statIconBg: { width: 32, height: 32, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
+  statValue: { fontSize: 17, fontWeight: '900', letterSpacing: -0.4 },
+  statLabel: { fontSize: 10.5, color: 'rgba(255,255,255,0.62)', fontWeight: '700', letterSpacing: 0.3 },
 
   /* Tab pills */
   tabPills: { flexGrow: 0 },
   tabPill: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    paddingVertical: 5, paddingHorizontal: 12,
-    borderTopLeftRadius: 10, borderTopRightRadius: 10,
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingVertical: 9, paddingHorizontal: 14,
+    borderTopLeftRadius: 16, borderTopRightRadius: 16,
   },
   tabPillActive: { backgroundColor: '#F0F3F9' },
-  tabPillText: { fontSize: 9.8, fontWeight: '700', color: 'rgba(255,255,255,0.5)' },
+  tabPillText: { fontSize: 12.5, fontWeight: '800', color: 'rgba(255,255,255,0.62)' },
   tabPillTextActive: { color: colors.primary },
 
   /* ── Body ── */
   body: { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 110 },
 
   /* Section headers */
-  sectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, marginTop: 6 },
-  sectionLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  sectionDot: { width: 4, height: 20, borderRadius: 2, backgroundColor: colors.primary },
-  sectionTitle: { fontSize: 18, fontWeight: '900', color: '#0D1B2A' },
+  sectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, marginTop: 10 },
+  sectionLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  sectionDot: { width: 0, height: 0, marginRight: -8 },
+  sectionTitle: { fontSize: 20, fontWeight: '900', color: '#0D1B2A', letterSpacing: -0.5 },
   sectionBadge: { backgroundColor: '#D1FAE5', borderRadius: 8, paddingVertical: 3, paddingHorizontal: 7 },
   sectionBadgeText: { fontSize: 9, fontWeight: '800', color: '#059669', letterSpacing: 0.3 },
   sectionBadgeManual: { backgroundColor: '#EDE9FE' },
@@ -1687,8 +1688,8 @@ const s = StyleSheet.create({
   seeAll: { fontSize: 13, color: colors.primary, fontWeight: '700' },
   addBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: colors.primary + '12', borderRadius: 20,
-    paddingVertical: 5, paddingHorizontal: 10,
+    backgroundColor: colors.primary + '14', borderRadius: 999,
+    paddingVertical: 7, paddingHorizontal: 13,
   },
   addBtnText: { fontSize: 13, color: colors.primary, fontWeight: '700' },
 
@@ -1697,7 +1698,7 @@ const s = StyleSheet.create({
 
   /* ── In-place Bills / Subs / Assets rows (Budget tab reuses budgetRow below) ── */
   emptyHint: { fontSize: 13, color: colors.textMuted, textAlign: 'center', paddingVertical: 24 },
-  finRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, padding: 14, marginBottom: 10, ...SHADOW },
+  finRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 22, padding: 15, marginBottom: 12, borderWidth: 1, borderColor: '#E4EAF2', ...SHADOW },
   finIconWrap: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   finName: { fontSize: 14, fontWeight: '700', color: '#0D1B2A', marginBottom: 3 },
   finMeta: { fontSize: 12, color: colors.textSecondary },
@@ -1720,14 +1721,14 @@ const s = StyleSheet.create({
   plaidCardName: { fontSize: 13, fontWeight: '700', color: '#1A1A2E', marginBottom: 2 },
   plaidCardMask: { fontSize: 11, color: '#6B7280', marginBottom: 6 },
   plaidCardBalance: { fontSize: 18, fontWeight: '900', color: '#1A1A2E' },
-  connectPrompt: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#ECFDF5', borderRadius: 12, padding: 14, marginBottom: 16,marginTop: 16, borderWidth: 1, borderColor: '#A7F3D0' },
+  connectPrompt: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#ECFDF5', borderRadius: 20, padding: 16, marginBottom: 16,marginTop: 16, borderWidth: 1, borderColor: '#A7F3D0' },
   connectPromptText: { flex: 1, fontSize: 13, fontWeight: '600', color: '#065F46' },
 
   /* ── Account cards ── */
   cardsScroll: { marginBottom: 26, marginHorizontal: -16 },
   cardsContent: { paddingHorizontal: 16, gap: 14 },
   accountCard: {
-    width: CARD_W, height: 190, borderRadius: 24, padding: 20,
+    width: CARD_W, height: 190, borderRadius: 28, padding: 20,
     justifyContent: 'space-between', overflow: 'hidden',
     ...SHADOW,
   },
@@ -1765,10 +1766,10 @@ const s = StyleSheet.create({
   freshnessRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 8 },
   freshnessDot: { width: 6, height: 6, borderRadius: 3 },
   freshnessText: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.85)', textTransform: 'uppercase', letterSpacing: 0.3 },
-  addCard: { width: CARD_W * 0.55, height: 190, borderRadius: 24, overflow: 'hidden' },
+  addCard: { width: CARD_W * 0.55, height: 190, borderRadius: 28, overflow: 'hidden' },
   addCardInner: {
     flex: 1, alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: colors.border, borderRadius: 24, gap: 8,
+    borderWidth: 2, borderColor: colors.border, borderRadius: 28, gap: 8,
   },
   addCardIcon: {
     width: 52, height: 52, borderRadius: 16,
@@ -1780,13 +1781,14 @@ const s = StyleSheet.create({
   /* ── Budget rows ── */
   budgetRow: {
     flexDirection: 'row', backgroundColor: '#fff',
-    borderRadius: 18, marginBottom: 10, overflow: 'hidden', ...SHADOW,
+    borderRadius: 22, marginBottom: 12, overflow: 'hidden',
+    borderWidth: 1, borderColor: '#E4EAF2', ...SHADOW,
   },
   budgetStrip: { width: 5 },
   budgetBody: { flex: 1, flexDirection: 'row', alignItems: 'center', padding: 14 },
-  budgetIconWrap: { width: 46, height: 46, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  budgetIconWrap: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   budgetTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
-  budgetName: { fontSize: 15, fontWeight: '700', color: '#0D1B2A' },
+  budgetName: { fontSize: 16, fontWeight: '800', color: '#0D1B2A', letterSpacing: -0.2 },
   budgetAmt: { fontSize: 14, fontWeight: '700', color: '#0D1B2A' },
   budgetOf: { fontWeight: '400', color: colors.textSecondary },
   budgetBarRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
@@ -1817,8 +1819,8 @@ const s = StyleSheet.create({
   /* ── Goals ── */
   goalCard: {
     flexDirection: 'row', alignItems: 'flex-start',
-    backgroundColor: '#fff', borderRadius: 18, padding: 16,
-    marginBottom: 12, ...SHADOW,
+    backgroundColor: '#fff', borderRadius: 22, padding: 16,
+    marginBottom: 12, borderWidth: 1, borderColor: '#E4EAF2', ...SHADOW,
   },
   goalIconWrap: { width: 50, height: 50, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   goalTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 },
@@ -1828,16 +1830,16 @@ const s = StyleSheet.create({
   goalDeadline: { fontSize: 11, color: colors.textMuted, marginTop: 6 },
 
   /* ── Transactions ── */
-  txContainer: { backgroundColor: '#fff', borderRadius: 20, overflow: 'hidden', marginBottom: 24, ...SHADOW },
+  txContainer: { backgroundColor: '#fff', borderRadius: 24, overflow: 'hidden', marginBottom: 24, borderWidth: 1, borderColor: '#E4EAF2', ...SHADOW },
   txRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 13 },
   txBorder: { borderBottomWidth: 1, borderBottomColor: '#F0F3F9' },
-  txIconCircle: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  txDesc: { fontSize: 14, fontWeight: '600', color: '#0D1B2A', marginBottom: 2 },
+  txIconCircle: { width: 44, height: 44, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
+  txDesc: { fontSize: 15, fontWeight: '700', color: '#0D1B2A', marginBottom: 2 },
   txMeta: { fontSize: 11, color: colors.textSecondary },
   txAmount: { fontSize: 15, fontWeight: '800' },
 
   fab: {
-    position: 'absolute', bottom: 140, right: 20,
+    position: 'absolute', bottom: 132, right: 20,
     width: 58, height: 58, borderRadius: 29,
     backgroundColor: '#8B5CF6', alignItems: 'center', justifyContent: 'center',
     shadowColor: '#8B5CF6', shadowOffset: { width: 0, height: 6 },
@@ -1847,11 +1849,11 @@ const s = StyleSheet.create({
   /* ── Tools ── */
   toolsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 16 },
   toolCard: {
-    backgroundColor: '#fff', borderRadius: 18,
-    padding: 16, alignItems: 'center', gap: 10, ...SHADOW,
+    backgroundColor: '#fff', borderRadius: 22,
+    padding: 16, alignItems: 'center', gap: 10, borderWidth: 1, borderColor: '#E4EAF2', ...SHADOW,
   },
-  toolIconWrap: { width: 52, height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  toolLabel: { fontSize: 11, fontWeight: '800', textAlign: 'center' },
+  toolIconWrap: { width: 56, height: 56, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  toolLabel: { fontSize: 12, fontWeight: '800', textAlign: 'center' },
 
   /* ── Modals ── */
   modal: { flex: 1, padding: 24, backgroundColor: colors.background },
@@ -1879,7 +1881,7 @@ const s = StyleSheet.create({
   gradeText: { fontSize: 12, fontWeight: '800' },
   healthCard: {
     flexDirection: 'row', backgroundColor: colors.card,
-    borderRadius: 20, padding: 16, marginBottom: 10,
+    borderRadius: 24, padding: 18, marginBottom: 12,
     borderWidth: 1, borderColor: colors.border, gap: 16,
     ...SHADOW,
   },

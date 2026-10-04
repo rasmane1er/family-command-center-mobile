@@ -1,15 +1,14 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useAuthStore } from '../../store/useAuthStore';
-import { View, Text, StyleSheet, ScrollView, FlatList, Pressable, Modal, TextInput, Image, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, FlatList, Pressable, Modal, TextInput, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
 import { PremiumHeader } from '../../components/common/PremiumHeader';
 import { Avatar } from '../../components/common/Avatar';
-import { Badge } from '../../components/common/Badge';
-import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
+import { ProgressRing } from '../../components/dashboard/ProgressRing';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import type { Task, TaskPriority, FamilyMember } from '../../types';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
@@ -49,21 +48,23 @@ const TaskListItem = React.memo(function TaskListItem({
 }: TaskListItemProps) {
   const isPendingApproval = task.status === 'pending_approval';
   const isDone = task.status === 'completed';
+  const isOverdue = task.status === 'overdue';
+  const tone = isPendingApproval ? '#F5A623' : priorityColors[task.priority];
   return (
-    <Card style={styles.taskCard} variant="elevated">
+    <View style={[styles.taskCard, isDone && styles.taskCardDone, isOverdue && styles.taskCardOverdue]}>
       <View style={styles.taskRow}>
         <Pressable accessibilityRole="button"
           onPress={() => onPress(task, assigneeId)}
           disabled={isPendingApproval}
           style={[
             styles.checkCircle,
+            { borderColor: tone, backgroundColor: tone + '14' },
             isDone && styles.checkCircleComplete,
             isPendingApproval && styles.checkCirclePending,
-            { borderColor: isPendingApproval ? '#F5A623' : priorityColors[task.priority] },
           ]}
         >
-          {isDone && <Ionicons name="checkmark" size={16} color="#fff" />}
-          {isPendingApproval && <Ionicons name="hourglass-outline" size={14} color="#F5A623" />}
+          {isDone && <Ionicons name="checkmark" size={18} color="#fff" />}
+          {isPendingApproval && <Ionicons name="hourglass-outline" size={15} color="#F5A623" />}
         </Pressable>
 
         <View style={{ flex: 1, marginLeft: 14 }}>
@@ -74,18 +75,24 @@ const TaskListItem = React.memo(function TaskListItem({
             <Text style={styles.taskDesc} numberOfLines={1}>{task.description}</Text>
           )}
           <View style={styles.taskMeta}>
-            <Badge
-              label={task.priority}
-              variant={task.priority === 'urgent' || task.priority === 'high' ? 'danger' : task.priority === 'medium' ? 'warning' : 'neutral'}
-              dot
-            />
-            <Badge label={task.category} variant="neutral" size="sm" style={{ marginLeft: 6 }} />
-            <Text style={styles.taskPoints}>+{task.points} pts</Text>
+            <View style={[styles.pill, { backgroundColor: tone + '1F' }]}>
+              <View style={[styles.pillDot, { backgroundColor: tone }]} />
+              <Text style={[styles.pillText, { color: tone, textTransform: 'capitalize' }]}>{task.priority}</Text>
+            </View>
+            <View style={[styles.pill, styles.pillNeutral]}>
+              <Text style={[styles.pillText, { color: colors.textSecondary }]}>{task.category}</Text>
+            </View>
+            <View style={[styles.pill, styles.pillPoints]}>
+              <Ionicons name="star" size={11} color="#D97706" />
+              <Text style={[styles.pillText, { color: '#B45309' }]}>+{task.points} pts</Text>
+            </View>
           </View>
           {task.dueDate && (
             <View style={styles.dueDateRow}>
-              <Ionicons name="calendar-outline" size={12} color={colors.textMuted} />
-              <Text style={styles.dueDate}>Due {format(new Date(task.dueDate), 'MMM d, yyyy')}</Text>
+              <Ionicons name="calendar-outline" size={13} color={isOverdue ? colors.danger : colors.textMuted} />
+              <Text style={[styles.dueDate, isOverdue && { color: colors.danger, fontWeight: '700' }]}>
+                Due {format(new Date(task.dueDate), 'MMM d, yyyy')}
+              </Text>
             </View>
           )}
           {task.rejectionNote !== undefined && task.status === 'pending' && (
@@ -122,16 +129,18 @@ const TaskListItem = React.memo(function TaskListItem({
           {assignees.length > 0 && (
             <View style={styles.assignees}>
               {assignees.slice(0, 2).map((a, i) => (
-                <Avatar key={a.id} name={a.name} color={a.avatarColor} size={28} style={{ marginLeft: i > 0 ? -8 : 0 }} />
+                <View key={a.id} style={[styles.assigneeRing, { marginLeft: i > 0 ? -10 : 0 }]}>
+                  <Avatar name={a.name} color={a.avatarColor} size={28} />
+                </View>
               ))}
             </View>
           )}
-          <Pressable accessibilityRole="button" onPress={() => onDelete(task.id)} style={styles.deleteBtn}>
-            <Ionicons name="trash-outline" size={16} color={colors.danger} />
+          <Pressable accessibilityRole="button" onPress={() => onDelete(task.id)} style={styles.deleteBtn} hitSlop={8}>
+            <Ionicons name="trash-outline" size={16} color={colors.textMuted} />
           </Pressable>
         </View>
       </View>
-    </Card>
+    </View>
   );
 });
 
@@ -248,6 +257,15 @@ const filteredTasks = visibleTasks
     pending: visibleTasks.filter((t) => t.status === 'pending').length,
     overdue: visibleTasks.filter((t) => t.status === 'overdue').length,
   };
+  const completionRatio = stats.total > 0 ? stats.completed / stats.total : 0;
+
+  const filterCounts: Record<string, number> = {
+    All: visibleTasks.length,
+    Pending: stats.pending,
+    'Needs Review': visibleTasks.filter((t) => t.status === 'pending_approval').length,
+    Completed: stats.completed,
+    Overdue: stats.overdue,
+  };
 
   const screenHeader = (
         <PremiumHeader
@@ -262,24 +280,41 @@ const filteredTasks = visibleTasks
             </Pressable>
           }
         >
-          <View style={styles.statsRow}>
-            {[
-              { label: 'Total', value: stats.total, color: 'rgba(255,255,255,0.8)' },
-              { label: t('tasks.completed'), value: stats.completed, color: colors.success },
-              { label: t('tasks.pending'), value: stats.pending, color: colors.secondary },
-              { label: t('tasks.overdue'), value: stats.overdue, color: colors.danger },
-            ].map((s, i) => (
-              <View key={i} style={styles.statChip}>
-                <Text style={[styles.statValue, { color: s.color }]}>{s.value}</Text>
-                <Text style={styles.statLabel}>{s.label}</Text>
-              </View>
-            ))}
+          <View style={styles.summaryRow}>
+            <ProgressRing
+              size={88}
+              strokeWidth={9}
+              progress={completionRatio}
+              color="#5EEAD4"
+              trackColor="rgba(255,255,255,0.18)"
+            >
+              <Text style={styles.ringPct}>{Math.round(completionRatio * 100)}%</Text>
+              <Text style={styles.ringCaption}>{stats.completed}/{stats.total}</Text>
+            </ProgressRing>
+
+            <View style={styles.statGrid}>
+              {[
+                { label: 'Total', value: stats.total, color: '#fff', icon: 'layers' },
+                { label: t('tasks.completed'), value: stats.completed, color: '#4ADE80', icon: 'checkmark-circle' },
+                { label: t('tasks.pending'), value: stats.pending, color: '#FBBF24', icon: 'time' },
+                { label: t('tasks.overdue'), value: stats.overdue, color: '#F87171', icon: 'alert-circle' },
+              ].map((s, i) => (
+                <View key={i} style={styles.statChip}>
+                  <Ionicons name={s.icon as any} size={16} color={s.color} />
+                  <Text style={[styles.statValue, { color: s.color }]}>{s.value}</Text>
+                  <Text style={styles.statLabel} numberOfLines={1}>{s.label}</Text>
+                </View>
+              ))}
+            </View>
           </View>
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
             {FILTERS.map((f) => (
               <Pressable accessibilityRole="button" key={f} onPress={() => setFilter(f)} style={[styles.filterChip, filter === f && styles.filterChipActive]}>
                 <Text style={[styles.filterText, filter === f && styles.filterTextActive]}>{f}</Text>
+                <View style={[styles.filterCount, filter === f && styles.filterCountActive]}>
+                  <Text style={[styles.filterCountText, filter === f && styles.filterCountTextActive]}>{filterCounts[f] ?? 0}</Text>
+                </View>
               </Pressable>
             ))}
           </ScrollView>
@@ -310,7 +345,7 @@ const filteredTasks = visibleTasks
             keyExtractor={(task) => task.id}
             contentContainerStyle={[
               styles.content,
-              { paddingBottom: 100, paddingTop: contentPaddingTop },
+              { paddingBottom: 110, paddingTop: contentPaddingTop + 14 },
               filteredTasks.length === 0 && { flexGrow: 1 },
             ]}
             onScroll={onScroll}
@@ -319,9 +354,15 @@ const filteredTasks = visibleTasks
             scrollEventThrottle={scrollEventThrottle}
             ListEmptyComponent={
               <View style={styles.emptyState}>
-                <Ionicons name="checkmark-done-circle-outline" size={64} color={colors.textMuted} />
+                <LinearGradient colors={['#E0E7FF', '#DBEAFE']} style={styles.emptyIconWrap}>
+                  <Ionicons name="checkmark-done" size={38} color={colors.primaryLight} />
+                </LinearGradient>
                 <Text style={styles.emptyTitle}>No tasks here!</Text>
                 <Text style={styles.emptyDesc}>{filter === 'Completed' ? 'Complete some tasks to see them here.' : 'All caught up! Add new tasks above.'}</Text>
+                <Pressable accessibilityRole="button" onPress={() => setShowAddModal(true)} style={styles.emptyCta}>
+                  <Ionicons name="add" size={18} color="#fff" />
+                  <Text style={styles.emptyCtaText}>Add Task</Text>
+                </Pressable>
               </View>
             }
             renderItem={renderTaskItem}
@@ -347,6 +388,7 @@ const filteredTasks = visibleTasks
           <View style={styles.priorityRow}>
             {PRIORITIES.map((p) => (
               <Pressable accessibilityRole="button" key={p} onPress={() => setNewTaskPriority(p)} style={[styles.priorityChip, newTaskPriority === p && { backgroundColor: priorityColors[p], borderColor: priorityColors[p] }]}>
+                <View style={[styles.priorityDot, { backgroundColor: newTaskPriority === p ? '#fff' : priorityColors[p] }]} />
                 <Text style={[styles.priorityText, newTaskPriority === p && { color: '#fff' }]}>{p}</Text>
               </Pressable>
             ))}
@@ -389,63 +431,90 @@ const filteredTasks = visibleTasks
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  addBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
-  statsRow: { flexDirection: 'row', gap: 10, marginBottom: 14 },
-  statChip: { flex: 1, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 10, padding: 10, alignItems: 'center' },
-  statValue: { fontSize: 18, fontWeight: '800' },
-  statLabel: { fontSize: 10, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
+  addBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
+
+  /* ── Header summary ── */
+  summaryRow: { flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: 10, marginBottom: 16 },
+  ringPct: { fontSize: 22, fontWeight: '900', color: '#fff', letterSpacing: -0.5 },
+  ringCaption: { fontSize: 10.5, fontWeight: '700', color: 'rgba(255,255,255,0.65)', marginTop: -1 },
+  statGrid: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  statChip: { width: '47.5%', flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 14, paddingVertical: 8, paddingHorizontal: 10 },
+  statValue: { fontSize: 17, fontWeight: '900' },
+  statLabel: { flex: 1, fontSize: 10.5, fontWeight: '600', color: 'rgba(255,255,255,0.7)' },
+
   filterScroll: { marginBottom: 0 },
-  filterChip: { paddingVertical: 6, paddingHorizontal: 16, borderRadius: 20, marginRight: 8, backgroundColor: 'rgba(255,255,255,0.1)' },
+  filterChip: { flexDirection: 'row', alignItems: 'center', gap: 7, paddingVertical: 7, paddingLeft: 14, paddingRight: 8, borderRadius: 20, marginRight: 8, backgroundColor: 'rgba(255,255,255,0.12)' },
   filterChipActive: { backgroundColor: '#fff' },
-  filterText: { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.7)' },
+  filterText: { fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.78)' },
   filterTextActive: { color: colors.primary },
+  filterCount: { minWidth: 20, height: 20, borderRadius: 10, paddingHorizontal: 5, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.18)' },
+  filterCountActive: { backgroundColor: colors.primary + '1A' },
+  filterCountText: { fontSize: 11, fontWeight: '800', color: '#fff' },
+  filterCountTextActive: { color: colors.primary },
+
+  /* ── Task cards ── */
   content: { padding: 16 },
-  taskCard: { marginBottom: 10, borderRadius: 16 },
+  taskCard: { marginBottom: 12, borderRadius: 22, padding: 16, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, ...shadows.sm },
+  taskCardDone: { opacity: 0.68 },
+  taskCardOverdue: { borderColor: colors.danger + '55', backgroundColor: '#FFFBFB' },
   taskRow: { flexDirection: 'row', alignItems: 'flex-start' },
-  checkCircle: { width: 28, height: 28, borderRadius: 14, borderWidth: 2.5, alignItems: 'center', justifyContent: 'center', marginTop: 2 },
+  checkCircle: { width: 32, height: 32, borderRadius: 16, borderWidth: 2.5, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
   checkCircleComplete: { backgroundColor: colors.success, borderColor: colors.success },
   checkCirclePending: { backgroundColor: '#FEF3E2' },
-  taskTitle: { fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: 5 },
+  taskTitle: { fontSize: 16.5, fontWeight: '800', color: colors.text, marginBottom: 4, letterSpacing: -0.2 },
   taskTitleDone: { textDecorationLine: 'line-through', color: colors.textSecondary },
-  rejectedHint: { fontSize: 11, color: colors.danger, fontWeight: '600', marginTop: 2, marginBottom: 4 },
-  taskDesc: { fontSize: 13, color: colors.textSecondary, marginBottom: 6 },
-  taskMeta: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 4, marginBottom: 6 },
-  taskPoints: { fontSize: 11, color: colors.success, fontWeight: '700', marginLeft: 4 },
-  dueDateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  dueDate: { fontSize: 12, color: colors.textSecondary },
-  taskRight: { alignItems: 'flex-end', gap: 10 },
+  rejectedHint: { fontSize: 11, color: colors.danger, fontWeight: '600', marginTop: 4 },
+  taskDesc: { fontSize: 13, color: colors.textSecondary, marginBottom: 8 },
+  taskMeta: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
+  pill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 4, paddingHorizontal: 9, borderRadius: 999 },
+  pillDot: { width: 6, height: 6, borderRadius: 3 },
+  pillText: { fontSize: 11.5, fontWeight: '800' },
+  pillNeutral: { backgroundColor: colors.background },
+  pillPoints: { backgroundColor: '#FEF3C7' },
+  dueDateRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  dueDate: { fontSize: 12.5, color: colors.textSecondary, fontWeight: '600' },
+  taskRight: { alignItems: 'flex-end', gap: 12, marginLeft: 8 },
   assignees: { flexDirection: 'row' },
+  assigneeRing: { borderRadius: 16, borderWidth: 2, borderColor: colors.card, overflow: 'hidden' },
   deleteBtn: { padding: 4 },
-  emptyState: { alignItems: 'center', paddingVertical: 80 },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginTop: 16 },
-  emptyDesc: { fontSize: 15, color: colors.textSecondary, marginTop: 8, textAlign: 'center', paddingHorizontal: 32 },
+
+  /* ── Empty state ── */
+  emptyState: { alignItems: 'center', paddingVertical: 60 },
+  emptyIconWrap: { width: 92, height: 92, borderRadius: 46, alignItems: 'center', justifyContent: 'center' },
+  emptyTitle: { fontSize: 20, fontWeight: '900', color: colors.text, marginTop: 20, letterSpacing: -0.3 },
+  emptyDesc: { fontSize: 14.5, color: colors.textSecondary, marginTop: 8, textAlign: 'center', paddingHorizontal: 32, lineHeight: 21 },
+  emptyCta: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 22, backgroundColor: colors.primary, paddingVertical: 12, paddingHorizontal: 22, borderRadius: 999, ...shadows.md },
+  emptyCtaText: { fontSize: 14.5, fontWeight: '800', color: '#fff' },
+
+  /* ── Add-task sheet ── */
   modal: { flex: 1, padding: 24, backgroundColor: colors.background },
   modalHandle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 24 },
-  modalTitle: { fontSize: 20, fontWeight: '800', color: colors.text, marginBottom: 20 },
-  taskInput: { backgroundColor: colors.card, borderRadius: 12, padding: 16, fontSize: 16, color: colors.text, borderWidth: 1.5, borderColor: colors.border, marginBottom: 20, ...shadows.sm },
-  modalLabel: { fontSize: 14, fontWeight: '600', color: colors.text, marginBottom: 10 },
-  priorityRow: { flexDirection: 'row', gap: 8, marginBottom: 20 },
-  priorityChip: { flex: 1, paddingVertical: 10, borderRadius: 10, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.card, alignItems: 'center' },
-  priorityText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary, textTransform: 'capitalize' },
-  assignScroll: { marginBottom: 24, maxHeight: 78 },
+  modalTitle: { fontSize: 22, fontWeight: '900', color: colors.text, marginBottom: 20, letterSpacing: -0.4 },
+  taskInput: { backgroundColor: colors.card, borderRadius: 16, padding: 16, fontSize: 16, color: colors.text, borderWidth: 1.5, borderColor: colors.border, marginBottom: 22, ...shadows.sm },
+  modalLabel: { fontSize: 12, fontWeight: '800', color: colors.textSecondary, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.8 },
+  priorityRow: { flexDirection: 'row', gap: 8, marginBottom: 22 },
+  priorityChip: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 11, borderRadius: 14, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.card },
+  priorityDot: { width: 7, height: 7, borderRadius: 4 },
+  priorityText: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, textTransform: 'capitalize' },
+  assignScroll: { marginBottom: 24, maxHeight: 82 },
   assignScrollContent: { alignItems: 'flex-start' },
-  assignChip: { alignItems: 'center', marginRight: 12, padding: 10, borderRadius: 12, borderWidth: 1.5, borderColor: 'transparent' },
+  assignChip: { alignItems: 'center', marginRight: 10, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 16, borderWidth: 1.5, borderColor: 'transparent' },
   assignChipActive: { borderColor: colors.primary, backgroundColor: '#E8EEF9' },
-  assignName: { fontSize: 11, color: colors.textSecondary, marginTop: 4 },
-  approveToggleRow: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: colors.card, borderRadius: 12, padding: 12, borderWidth: 1.5, borderColor: colors.border },
-  approveToggleTitle: { fontSize: 13, fontWeight: '700', color: colors.text, marginBottom: 3 },
+  assignName: { fontSize: 11, color: colors.textSecondary, marginTop: 4, fontWeight: '600' },
+  approveToggleRow: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: colors.card, borderRadius: 16, padding: 14, borderWidth: 1.5, borderColor: colors.border },
+  approveToggleTitle: { fontSize: 13, fontWeight: '800', color: colors.text, marginBottom: 3 },
   approveToggleDesc: { fontSize: 11, color: colors.textSecondary, lineHeight: 15 },
 
   /* ── Review / approval box ── */
-  reviewBox: { backgroundColor: '#FEF3E2', borderRadius: 12, padding: 10, marginTop: 8, gap: 8 },
+  reviewBox: { backgroundColor: '#FEF3E2', borderRadius: 14, padding: 12, marginTop: 10, gap: 10 },
   reviewRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   reviewText: { flex: 1, fontSize: 12, fontWeight: '700', color: '#B85C00' },
   reviewThumb: { width: 40, height: 40, borderRadius: 8 },
   reviewActions: { flexDirection: 'row', gap: 8 },
-  approveBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, backgroundColor: colors.success, borderRadius: 10, paddingVertical: 8 },
-  approveBtnText: { fontSize: 12, fontWeight: '700', color: '#fff' },
-  rejectBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 10, paddingVertical: 8, borderWidth: 1.5, borderColor: colors.danger },
-  rejectBtnText: { fontSize: 12, fontWeight: '700', color: colors.danger },
+  approveBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, backgroundColor: colors.success, borderRadius: 12, paddingVertical: 9 },
+  approveBtnText: { fontSize: 12.5, fontWeight: '800', color: '#fff' },
+  rejectBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 12, paddingVertical: 9, borderWidth: 1.5, borderColor: colors.danger },
+  rejectBtnText: { fontSize: 12.5, fontWeight: '800', color: colors.danger },
 
   /* ── Photo preview modal ── */
   photoPreviewBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.9)', alignItems: 'center', justifyContent: 'center' },

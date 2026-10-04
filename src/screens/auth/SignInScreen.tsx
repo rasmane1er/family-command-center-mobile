@@ -1142,6 +1142,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 12,
+    gap: 4,
   },
   bottomText: {
     fontSize: 13,
@@ -1154,20 +1155,22 @@ const styles = StyleSheet.create({
   },
   termsRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'center',
     marginTop: 8,
     paddingHorizontal: 36,
-    gap: 5,
+    gap: 6,
   },
   termsIcon: {
-    marginTop: 2,
+    marginTop: 0,
   },
   termsText: {
-    flex: 1,
-    fontSize: 10.5,
+    // flexShrink (not flex: 1) so the shield + text center as one group
+    // instead of the icon pinning to the far left of a full-width row.
+    flexShrink: 1,
+    fontSize: 11,
     color: SLATE,
-    lineHeight: 14,
+    lineHeight: 15,
     textAlign: 'center',
   },
   termsLink: {

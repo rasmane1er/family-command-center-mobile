@@ -27,6 +27,8 @@ import { useFamilyContextString } from '../../utils/buildFamilyContext';
 import { useTabBarDockOffset } from '../../hooks/useTabBarInset';
 import { useTotalNetWorth } from '../../hooks/useTotalNetWorth';
 
+const SUGGESTION_TONES = ['#8B5CF6', '#14B8A6', '#F59E0B', '#3B82F6'];
+
 const AI_FEATURES = [
   { label: 'Memory', icon: 'albums', color: '#6A1B9A', screen: 'AIMemory' },
   { label: 'Coach', icon: 'school', color: '#1A6B3C', screen: 'ParentingCoach' },
@@ -359,9 +361,9 @@ export function AIAssistantScreen({ navigation }: any) {
         >
           {messages.length === 0 && (
             <View style={dynStyles.emptyChat}>
-              <View style={dynStyles.emptyChatIcon}>
-                <Ionicons name="sparkles" size={40} color={colors.primary} />
-              </View>
+              <LinearGradient colors={['#EDE9FE', '#DBEAFE']} style={dynStyles.emptyChatIcon}>
+                <Ionicons name="sparkles" size={44} color="#7C3AED" />
+              </LinearGradient>
               <Text style={dynStyles.emptyChatTitle}>Hi there!</Text>
               <Text style={dynStyles.emptyChatSubtitle}>
                 I'm your AI Household Chief of Staff. I have full context of your family's finances, tasks, pantry, vehicles, and goals. Ask me anything!
@@ -436,9 +438,11 @@ export function AIAssistantScreen({ navigation }: any) {
             <View style={dynStyles.suggestions}>
               <Text style={dynStyles.suggestionsTitle}>{t('ai.suggestions')}</Text>
               <View style={dynStyles.suggestionsGrid}>
-                {quickChips.map((s) => (
+                {quickChips.map((s, idx) => (
                   <Pressable accessibilityRole="button" key={s.label} onPress={() => handleSend(s.prompt)} style={dynStyles.suggestionChip}>
-                    <Ionicons name={s.icon as keyof typeof Ionicons.glyphMap} size={16} color={colors.primary} />
+                    <View style={[dynStyles.suggestionIcon, { backgroundColor: SUGGESTION_TONES[idx % SUGGESTION_TONES.length] + '1F' }]}>
+                      <Ionicons name={s.icon as keyof typeof Ionicons.glyphMap} size={18} color={SUGGESTION_TONES[idx % SUGGESTION_TONES.length]} />
+                    </View>
                     <Text style={dynStyles.suggestionText}>{s.label}</Text>
                   </Pressable>
                 ))}
@@ -498,42 +502,42 @@ function makeStyles(colors: import('../../theme/ThemeContext').ThemeColors) {
     aiAvatarWrap: { position: 'relative', width: 52, height: 52 },
     aiAvatarRing: { position: 'absolute', inset: -3, borderRadius: 29, borderWidth: 1.5, borderColor: colors.secondary + '60', borderStyle: 'dashed' },
     aiAvatar: { width: 46, height: 46, borderRadius: 23, backgroundColor: 'rgba(255,255,255,0.10)', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: colors.secondary, margin: 3 },
-    headerGreeting: { fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.5)', letterSpacing: 0.3, marginBottom: 2 },
-    headerTitle: { fontSize: 22, fontWeight: '900', color: '#fff', letterSpacing: -0.8, lineHeight: 26 },
+    headerGreeting: { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.72)', letterSpacing: 0.3, marginBottom: 2 },
+    headerTitle: { fontSize: 28, fontWeight: '900', color: '#fff', letterSpacing: -0.8, lineHeight: 34 },
     statusRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 5, flexWrap: 'wrap' },
     statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#2ECC71' },
-    statusText: { fontSize: 11, color: 'rgba(255,255,255,0.55)', fontWeight: '500' },
+    statusText: { fontSize: 12, color: 'rgba(255,255,255,0.7)', fontWeight: '600' },
     datePill: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: 'rgba(255,255,255,0.10)', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', paddingHorizontal: 7, paddingVertical: 2 },
     datePillText: { fontSize: 9, color: 'rgba(255,255,255,0.6)', fontWeight: '600', letterSpacing: 0.2 },
     headerDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.08)', marginBottom: 12 },
-    clearBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' },
+    clearBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' },
     clearBtnPressed: { backgroundColor: 'rgba(255,255,255,0.18)' },
     contextRow: { flexDirection: 'row', gap: 6, marginBottom: 12 },
-    contextChip: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 20, paddingVertical: 4, paddingHorizontal: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' },
+    contextChip: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 20, paddingVertical: 6, paddingHorizontal: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)' },
     contextChipPressed: { backgroundColor: 'rgba(255,255,255,0.18)' },
-    contextChipText: { fontSize: 10, color: 'rgba(255,255,255,0.75)', fontWeight: '700' },
+    contextChipText: { fontSize: 11.5, color: 'rgba(255,255,255,0.88)', fontWeight: '700' },
     featuresRow: { flexGrow: 0 },
-    featuresRowContent: { flexDirection: 'row', gap: 7, paddingRight: 4 },
-    featureBtn: { borderRadius: 12, overflow: 'hidden' },
+    featuresRowContent: { flexDirection: 'row', gap: 9, paddingRight: 4 },
+    featureBtn: { borderRadius: 18, overflow: 'hidden' },
     featureBtnPressed: { opacity: 0.75 },
-    featureBtnGrad: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 12 },
-    featureBtnText: { fontSize: 11, fontWeight: '800', color: '#fff', letterSpacing: 0.1 },
-    insightsBar: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(255,193,7,0.12)', marginHorizontal: -18, marginTop: 12, paddingHorizontal: 16, paddingVertical: 9, borderTopWidth: 1, borderTopColor: 'rgba(255,193,7,0.2)' },
-    insightsText: { flex: 1, fontSize: 11, color: 'rgba(255,255,255,0.85)', fontWeight: '500' },
+    featureBtnGrad: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 11, paddingHorizontal: 15, borderRadius: 18 },
+    featureBtnText: { fontSize: 12.5, fontWeight: '800', color: '#fff', letterSpacing: 0.1 },
+    insightsBar: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(255,193,7,0.14)', marginTop: 14, paddingHorizontal: 14, paddingVertical: 11, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,193,7,0.28)' },
+    insightsText: { flex: 1, fontSize: 12, color: 'rgba(255,255,255,0.92)', fontWeight: '600' },
     insightsCount: { fontSize: 10, color: '#fff', backgroundColor: colors.secondary, borderRadius: 10, paddingHorizontal: 7, paddingVertical: 2, fontWeight: '800' },
     messages: { padding: 16 },
-    emptyChat: { alignItems: 'center', paddingVertical: 32 },
-    emptyChatIcon: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#E8EEF9', alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
-    emptyChatTitle: { fontSize: 18, fontWeight: '800', color: colors.text, marginBottom: 10 },
-    emptyChatSubtitle: { fontSize: 13, color: colors.textSecondary, textAlign: 'center', lineHeight: 22, paddingHorizontal: 16 },
-    messageBubble: { flexDirection: 'row', marginBottom: 4 },
+    emptyChat: { alignItems: 'center', paddingVertical: 28 },
+    emptyChatIcon: { width: 104, height: 104, borderRadius: 52, alignItems: 'center', justifyContent: 'center', marginBottom: 18, shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.25, shadowRadius: 20, elevation: 6 },
+    emptyChatTitle: { fontSize: 24, fontWeight: '900', color: colors.text, marginBottom: 10, letterSpacing: -0.5 },
+    emptyChatSubtitle: { fontSize: 14, color: colors.textSecondary, textAlign: 'center', lineHeight: 22, paddingHorizontal: 20 },
+    messageBubble: { flexDirection: 'row', marginBottom: 8 },
     userBubble: { justifyContent: 'flex-end' },
     aiBubble: { justifyContent: 'flex-start', alignItems: 'flex-end', gap: 8 },
-    aiAvatarSmall: { width: 30, height: 30, borderRadius: 15, backgroundColor: '#E8EEF9', alignItems: 'center', justifyContent: 'center' },
-    bubbleContent: { maxWidth: '78%', borderRadius: 18, padding: 12 },
-    userBubbleContent: { backgroundColor: colors.primary, borderBottomRightRadius: 4 },
-    aiBubbleContent: { backgroundColor: colors.card, borderBottomLeftRadius: 4, borderWidth: 1, borderColor: colors.border },
-    bubbleText: { fontSize: 14, lineHeight: 21 },
+    aiAvatarSmall: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#EDE9FE', alignItems: 'center', justifyContent: 'center' },
+    bubbleContent: { maxWidth: '80%', borderRadius: 22, paddingVertical: 12, paddingHorizontal: 15 },
+    userBubbleContent: { backgroundColor: colors.primary, borderBottomRightRadius: 6, shadowColor: '#0F2952', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 8, elevation: 3 },
+    aiBubbleContent: { backgroundColor: colors.card, borderBottomLeftRadius: 6, borderWidth: 1, borderColor: colors.border, shadowColor: '#0F2952', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 },
+    bubbleText: { fontSize: 15, lineHeight: 22 },
     userBubbleText: { color: '#fff' },
     aiBubbleText: { color: colors.text },
     bubbleTime: { fontSize: 10, marginTop: 4 },
@@ -545,20 +549,21 @@ function makeStyles(colors: import('../../theme/ThemeContext').ThemeColors) {
     dot1: {},
     dot2: { opacity: 0.7 },
     dot3: { opacity: 0.4 },
-    actionBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#3730A3', borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12, marginBottom: 10, marginLeft: 38 },
-    actionBannerText: { flex: 1, fontSize: 12, color: '#fff', fontWeight: '600' },
-    actionConfirmBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#27AE60', alignItems: 'center', justifyContent: 'center' },
-    actionCancelBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
+    actionBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#5B21B6', borderRadius: 18, paddingVertical: 12, paddingHorizontal: 14, marginBottom: 12, marginLeft: 40 },
+    actionBannerText: { flex: 1, fontSize: 13, color: '#fff', fontWeight: '700' },
+    actionConfirmBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#27AE60', alignItems: 'center', justifyContent: 'center' },
+    actionCancelBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.22)', alignItems: 'center', justifyContent: 'center' },
     actionDoneBanner: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10, marginLeft: 38 },
     actionDoneText: { fontSize: 12, color: '#27AE60', fontWeight: '600' },
-    suggestions: { marginTop: 24 },
-    suggestionsTitle: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5 },
-    suggestionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-    suggestionChip: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.card, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, borderWidth: 1, borderColor: colors.border, width: '47%' },
-    suggestionText: { fontSize: 13, fontWeight: '600', color: colors.text, flex: 1 },
+    suggestions: { marginTop: 22 },
+    suggestionsTitle: { fontSize: 12, fontWeight: '800', color: colors.textSecondary, marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.8 },
+    suggestionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+    suggestionChip: { alignItems: 'flex-start', gap: 12, backgroundColor: colors.card, borderRadius: 22, padding: 14, borderWidth: 1, borderColor: colors.border, width: '47.5%', minHeight: 100, shadowColor: '#0F2952', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.07, shadowRadius: 10, elevation: 2 },
+    suggestionIcon: { width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+    suggestionText: { fontSize: 14, fontWeight: '800', color: colors.text },
     quickSuggestions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.background },
-    quickChip: { backgroundColor: '#E8EEF9', borderRadius: 20, paddingVertical: 8, paddingHorizontal: 14 },
-    quickChipText: { fontSize: 12, fontWeight: '600', color: colors.primary },
+    quickChip: { backgroundColor: '#EDE9FE', borderRadius: 20, paddingVertical: 9, paddingHorizontal: 15 },
+    quickChipText: { fontSize: 12.5, fontWeight: '800', color: '#5B21B6' },
     inputBar: { flexDirection: 'row', alignItems: 'flex-end', gap: 10, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.background },
     input: { flex: 1, backgroundColor: colors.card, borderRadius: 22, paddingVertical: 10, paddingHorizontal: 16, fontSize: 14, color: colors.text, maxHeight: 100, borderWidth: 1, borderColor: colors.border },
     sendBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },

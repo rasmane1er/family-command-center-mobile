@@ -27,7 +27,9 @@ import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
 import { Card } from '../../components/common/Card';
 import { ProgressBar } from '../../components/common/ProgressBar';
+import { ProgressRing } from '../../components/dashboard/ProgressRing';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { useGuardianStore } from '../../store/useGuardianStore';
 import { useFinancialHealth } from '../../hooks/useFinancialHealth';
 import { useTheme } from '../../theme/ThemeContext';
 import { useTranslation } from 'react-i18next';
@@ -187,6 +189,10 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
   const [newColor, setNewColor] = useState('#2980B9');
 
   const members = useFamilyStore((s) => s.members);
+  const guardianDevices = useGuardianStore((s) => s.devices.length);
+  const guardianZones = useGuardianStore((s) => s.geofenceZones.length);
+  const guardianOpenSos = useGuardianStore((s) => s.sosAlerts.filter((a) => !a.isResolved).length);
+  const guardianPending = useGuardianStore((s) => s.approvalRequests.filter((r) => r.status === 'pending').length);
   const isLoaded = useFamilyStore((s) => s.isLoaded);
   const fetchFromServer = useFamilyStore((s) => s.fetchFromServer);
   const activeMemberId = useFamilyStore((s) => s.activeMemberId);
@@ -485,12 +491,20 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
                   <View style={[dynStyles.memberStatusDot, { backgroundColor: statusColor }]} />
                 </View>
 
-                {/* Avatar */}
-                <Avatar
-                  name={member.name}
-                  color={member.avatarColor}
-                  size={56}
-                />
+                {/* Avatar, ringed by level progress */}
+                <ProgressRing
+                  size={70}
+                  strokeWidth={4}
+                  progress={progress}
+                  color={isActive ? '#5EEAD4' : member.avatarColor}
+                  trackColor={isActive ? 'rgba(255,255,255,0.22)' : member.avatarColor + '26'}
+                >
+                  <Avatar
+                    name={member.name}
+                    color={member.avatarColor}
+                    size={56}
+                  />
+                </ProgressRing>
 
                 {/* Name */}
                 <Text
@@ -514,25 +528,15 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
 
                 {/* Points & level */}
                 <View style={dynStyles.memberCardStats}>
-                  <Text style={[dynStyles.memberCardPoints, isActive && dynStyles.memberCardPointsActive]}>
-                    {t('family.screens.familyProfiles.pointsSuffix', { points: member.points.toLocaleString() })}
-                  </Text>
+                  <View style={[dynStyles.memberChip, isActive && dynStyles.memberChipActive]}>
+                    <Ionicons name="star" size={11} color={isActive ? '#FDE68A' : '#F5A623'} />
+                    <Text style={[dynStyles.memberCardPoints, isActive && dynStyles.memberCardPointsActive]}>
+                      {t('family.screens.familyProfiles.pointsSuffix', { points: member.points.toLocaleString() })}
+                    </Text>
+                  </View>
                   <Text style={[dynStyles.memberCardLevel, isActive && dynStyles.memberCardLevelActive]}>
                     {t('family.screens.familyProfiles.levelPrefix', { level: member.level })}
                   </Text>
-                </View>
-
-                {/* Mini progress */}
-                <View style={dynStyles.memberCardProgress}>
-                  <View
-                    style={[
-                      dynStyles.memberCardProgressFill,
-                      {
-                        width: `${Math.round(progress * 100)}%` as any,
-                        backgroundColor: isActive ? 'rgba(255,255,255,0.7)' : member.avatarColor,
-                      },
-                    ]}
-                  />
                 </View>
               </Pressable>
             );
@@ -568,29 +572,23 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
           <View style={dynStyles.healthCardTop}>
             <View style={dynStyles.healthCardLeft}>
               <View style={dynStyles.healthIconWrap}>
-                <Ionicons name="heart" size={20} color="#E53935" />
+                <Ionicons name="heart" size={22} color="#E53935" />
               </View>
-              <View>
+              <View style={{ flex: 1 }}>
                 <Text style={dynStyles.healthTitle}>{t('family.screens.familyProfiles.healthCardTitle')}</Text>
                 <Text style={dynStyles.healthSubtitle}>{t('family.screens.familyProfiles.healthCardSubtitle')}</Text>
               </View>
             </View>
-            <Text style={dynStyles.healthScore}>{healthScore}/100</Text>
-          </View>
-          <View style={dynStyles.healthBarTrack}>
-            <View
-              style={[
-                dynStyles.healthBarFill,
-                { width: `${healthScore}%` as any },
-              ]}
-            />
-          </View>
-          <View style={dynStyles.healthTicks}>
-            <Text style={dynStyles.healthTickLabel}>0</Text>
-            <Text style={dynStyles.healthTickLabel}>25</Text>
-            <Text style={dynStyles.healthTickLabel}>50</Text>
-            <Text style={dynStyles.healthTickLabel}>75</Text>
-            <Text style={dynStyles.healthTickLabel}>100</Text>
+            <ProgressRing
+              size={78}
+              strokeWidth={8}
+              progress={healthScore / 100}
+              color={healthScore >= 80 ? '#27AE60' : healthScore >= 60 ? '#F5A623' : '#F97316'}
+              trackColor="#E8EEF9"
+            >
+              <Text style={dynStyles.healthScore}>{healthScore}</Text>
+              <Text style={dynStyles.healthScoreMax}>/100</Text>
+            </ProgressRing>
           </View>
         </View>
 
@@ -603,21 +601,64 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
             style={dynStyles.guardianCard}
           >
             <LinearGradient
-              colors={['#0F2952', '#1B3A6B']}
+              colors={['#1B1446', '#3B1E8A', '#7C3AED']}
               style={StyleSheet.absoluteFillObject}
               start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
+              end={{ x: 1, y: 1 }}
             />
-            <View style={dynStyles.guardianCardLeft}>
-              <View style={dynStyles.guardianIcon}>
-                <Ionicons name="shield-checkmark" size={26} color="#fff" />
+            <View style={dynStyles.guardianRing1} pointerEvents="none" />
+            <View style={dynStyles.guardianRing2} pointerEvents="none" />
+            <View style={dynStyles.guardianRing3} pointerEvents="none" />
+            <View style={dynStyles.guardianGlowSmall} pointerEvents="none" />
+
+            <View style={dynStyles.guardianTopRow}>
+              <View style={dynStyles.guardianShieldRing}>
+                <LinearGradient colors={['#5EEAD4', '#22D3EE']} style={dynStyles.guardianIcon}>
+                  <Ionicons name="location" size={28} color="#1B1446" />
+                </LinearGradient>
+                <View style={dynStyles.guardianIconBadge}>
+                  <Ionicons name="shield-checkmark" size={12} color="#fff" />
+                </View>
               </View>
               <View style={dynStyles.guardianText}>
+                <View
+                  style={[
+                    dynStyles.guardianStatusPill,
+                    { backgroundColor: guardianOpenSos > 0 ? 'rgba(248,113,113,0.22)' : 'rgba(52,211,153,0.22)' },
+                  ]}
+                >
+                  <View style={[dynStyles.guardianStatusDot, { backgroundColor: guardianOpenSos > 0 ? '#F87171' : '#34D399' }]} />
+                  <Text style={[dynStyles.guardianStatusText, { color: guardianOpenSos > 0 ? '#FCA5A5' : '#6EE7B7' }]}>
+                    {guardianOpenSos > 0
+                      ? t('family.screens.familyProfiles.guardianStatusAlert', { count: guardianOpenSos, defaultValue: '{{count}} SOS active' })
+                      : t('family.screens.familyProfiles.guardianStatusSafe', { defaultValue: 'All clear' })}
+                  </Text>
+                </View>
                 <Text style={dynStyles.guardianTitle}>{t('family.screens.familyProfiles.guardianCardTitle')}</Text>
                 <Text style={dynStyles.guardianDesc}>{t('family.screens.familyProfiles.guardianCardDesc')}</Text>
               </View>
+              <View style={dynStyles.guardianArrow}>
+                <Ionicons name="arrow-forward" size={18} color="#0B1F3F" />
+              </View>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.6)" />
+
+            <View style={dynStyles.guardianStats}>
+              {[
+                { icon: 'phone-portrait', color: '#2563EB', value: guardianDevices, label: t('family.screens.familyProfiles.guardianStatDevices', { defaultValue: 'Devices' }) },
+                { icon: 'navigate-circle', color: '#EA580C', value: guardianZones, label: t('family.screens.familyProfiles.guardianStatZones', { defaultValue: 'Safe zones' }) },
+                { icon: 'hand-left', color: '#7C3AED', value: guardianPending, label: t('family.screens.familyProfiles.guardianStatApprovals', { defaultValue: 'Approvals' }) },
+              ].map((stat) => (
+                <View key={stat.label} style={dynStyles.guardianStat}>
+                  <View style={[dynStyles.guardianStatIcon, { backgroundColor: stat.color + '1A' }]}>
+                    <Ionicons name={stat.icon as any} size={17} color={stat.color} />
+                  </View>
+                  <View>
+                    <Text style={dynStyles.guardianStatValue}>{stat.value}</Text>
+                    <Text style={dynStyles.guardianStatLabel} numberOfLines={1}>{stat.label}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
           </Pressable>
         )}
 
@@ -632,13 +673,12 @@ export function FamilyProfilesScreen({ navigation, route }: any) {
               style={dynStyles.quickNavTile}
             >
               <View style={[dynStyles.quickNavIcon, { backgroundColor: item.iconBg }]}>
-                <Ionicons name={item.icon as any} size={22} color={item.iconColor} />
+                <Ionicons name={item.icon as any} size={24} color={item.iconColor} />
               </View>
               <View style={dynStyles.quickNavText}>
-                <Text style={dynStyles.quickNavLabel}>{item.label}</Text>
-                <Text style={dynStyles.quickNavDesc}>{item.desc}</Text>
+                <Text style={dynStyles.quickNavLabel} numberOfLines={1}>{item.label}</Text>
+                <Text style={dynStyles.quickNavDesc} numberOfLines={2}>{item.desc}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={14} color="#94A3B8" />
             </Pressable>
           ))}
         </View>
@@ -967,13 +1007,12 @@ function makeStyles(
   },
 
   sectionTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#64748B',
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
+    fontSize: 19,
+    fontWeight: '900',
+    color: colors.text,
+    letterSpacing: -0.4,
     marginBottom: 12,
-    marginTop: 20,
+    marginTop: 22,
   },
 
   // ── MEMBER AVATAR CARDS (horizontal scroll) ──
@@ -983,12 +1022,15 @@ function makeStyles(
   },
 
   memberAvatarCard: {
-    width: 110,
+    width: 150,
     backgroundColor: '#fff',
-    borderRadius: 18,
-    padding: 14,
+    borderRadius: 24,
+    paddingVertical: 16,
+    paddingHorizontal: 12,
     alignItems: 'center',
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#E4EAF2',
     ...CARD_SHADOW,
   },
 
@@ -1018,12 +1060,14 @@ function makeStyles(
   },
 
   memberCardName: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '800',
     color: '#0F2952',
-    marginTop: 10,
-    marginBottom: 5,
+    marginTop: 12,
+    marginBottom: 6,
     textAlign: 'center',
+    maxWidth: '100%',
+    letterSpacing: -0.2,
   },
 
   memberCardNameActive: {
@@ -1032,9 +1076,9 @@ function makeStyles(
 
   roleBadge: {
     borderRadius: 20,
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     paddingVertical: 3,
-    marginBottom: 8,
+    marginBottom: 12,
   },
 
   roleBadgeText: {
@@ -1050,15 +1094,29 @@ function makeStyles(
 
   memberCardStats: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    marginBottom: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+
+  memberChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+
+  memberChipActive: {
+    backgroundColor: 'rgba(255,255,255,0.18)',
   },
 
   memberCardPoints: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#1E4A8A',
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#B45309',
   },
 
   memberCardPointsActive: {
@@ -1066,8 +1124,8 @@ function makeStyles(
   },
 
   memberCardLevel: {
-    fontSize: 10,
-    fontWeight: '700',
+    fontSize: 11,
+    fontWeight: '800',
     color: '#64748B',
   },
 
@@ -1089,9 +1147,9 @@ function makeStyles(
   },
 
   addMemberCard: {
-    width: 90,
+    width: 120,
     backgroundColor: '#fff',
-    borderRadius: 18,
+    borderRadius: 24,
     padding: 14,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1140,9 +1198,11 @@ function makeStyles(
   // ── HEALTH CARD ──
   healthCard: {
     backgroundColor: '#fff',
-    borderRadius: 18,
+    borderRadius: 24,
     padding: 18,
     marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#E4EAF2',
     ...CARD_SHADOW,
   },
 
@@ -1150,7 +1210,7 @@ function makeStyles(
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 14,
+    gap: 14,
   },
 
   healthCardLeft: {
@@ -1161,30 +1221,39 @@ function makeStyles(
   },
 
   healthIconWrap: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
+    width: 46,
+    height: 46,
+    borderRadius: 16,
     backgroundColor: '#FEECEC',
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   healthTitle: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '800',
     color: '#0F2952',
   },
 
   healthSubtitle: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#64748B',
     marginTop: 2,
+    fontWeight: '600',
   },
 
   healthScore: {
-    fontSize: 18,
-    fontWeight: '800',
+    fontSize: 22,
+    fontWeight: '900',
     color: '#0F2952',
+    letterSpacing: -0.6,
+  },
+
+  healthScoreMax: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#94A3B8',
+    marginTop: -2,
   },
 
   healthBarTrack: {
@@ -1213,88 +1282,200 @@ function makeStyles(
 
   // ── GUARDIAN CARD ──
   guardianCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderRadius: 18,
-    padding: 16,
+    borderRadius: 28,
+    padding: 18,
     marginTop: 20,
     overflow: 'hidden',
     ...CARD_SHADOW,
   },
 
-  guardianCardLeft: {
+  guardianTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
-    flex: 1,
+  },
+
+  // Concentric "radar" rings anchored top-right
+  guardianRing1: {
+    position: 'absolute', width: 120, height: 120, borderRadius: 60,
+    borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.16)', right: -20, top: -30,
+  },
+  guardianRing2: {
+    position: 'absolute', width: 210, height: 210, borderRadius: 105,
+    borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.11)', right: -65, top: -75,
+  },
+  guardianRing3: {
+    position: 'absolute', width: 310, height: 310, borderRadius: 155,
+    borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.07)', right: -115, top: -125,
+  },
+
+  guardianGlowSmall: {
+    position: 'absolute',
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: '#22D3EE',
+    opacity: 0.16,
+    left: -50,
+    bottom: -70,
+  },
+
+  guardianShieldRing: {
+    width: 68,
+    height: 68,
+    borderRadius: 24,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.3)',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   guardianIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 13,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    width: 52,
+    height: 52,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  guardianIconBadge: {
+    position: 'absolute',
+    right: -5,
+    bottom: -5,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#16A34A',
+    borderWidth: 2,
+    borderColor: '#2A1670',
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   guardianText: { flex: 1 },
 
+  guardianStatusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 6,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    borderRadius: 999,
+    marginBottom: 6,
+  },
+
+  guardianStatusDot: { width: 7, height: 7, borderRadius: 4 },
+
+  guardianStatusText: { fontSize: 11, fontWeight: '800' },
+
   guardianTitle: {
-    fontSize: 15,
-    fontWeight: '800',
+    fontSize: 18,
+    fontWeight: '900',
     color: '#fff',
+    letterSpacing: -0.3,
   },
 
   guardianDesc: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.65)',
+    fontSize: 12.5,
+    color: 'rgba(255,255,255,0.74)',
     marginTop: 3,
+    fontWeight: '600',
+  },
+
+  guardianArrow: {
+    width: 38,
+    height: 38,
+    borderRadius: 18,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  guardianStats: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 16,
+  },
+
+  guardianStat: {
+    flex: 1,
+    alignItems: 'flex-start',
+    gap: 8,
+    padding: 11,
+    borderRadius: 18,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+
+  guardianStatIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  guardianStatValue: { fontSize: 22, fontWeight: '900', color: '#0F1E36', letterSpacing: -0.5 },
+
+  guardianStatLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#64748B',
   },
 
   // ── QUICK NAV TILES ──
   quickNavGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: 12,
   },
 
   quickNavTile: {
-    width: (contentWidth - 32 - (quickNavColumns - 1) * 10) / quickNavColumns,
+    width: (contentWidth - 32 - (quickNavColumns - 1) * 12) / quickNavColumns,
     backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+    borderRadius: 22,
+    padding: 16,
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: 14,
+    minHeight: 124,
+    borderWidth: 1,
+    borderColor: '#E4EAF2',
     ...CARD_SHADOW,
   },
 
   quickNavIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
+    width: 48,
+    height: 48,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
 
   quickNavText: {
-    flex: 1,
-    minWidth: 0,
+    alignSelf: 'stretch',
   },
 
   quickNavLabel: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '800',
     color: '#0F2952',
+    letterSpacing: -0.2,
   },
 
   quickNavDesc: {
-    fontSize: 10,
+    fontSize: 12,
     color: '#64748B',
-    marginTop: 2,
+    marginTop: 3,
+    fontWeight: '600',
+    lineHeight: 16,
   },
 
   // ── MODALS ──

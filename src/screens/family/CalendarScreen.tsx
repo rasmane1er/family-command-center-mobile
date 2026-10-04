@@ -9,7 +9,6 @@ import { PremiumHeader } from '../../components/common/PremiumHeader';
 import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/spacing';
 import { Avatar } from '../../components/common/Avatar';
-import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { useFinanceStore } from '../../store/useFinanceStore';
@@ -190,10 +189,17 @@ export function CalendarScreen({ navigation, route }: any) {
   const prevMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
   const nextMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1));
 
+  const goToToday = () => {
+    const now = new Date();
+    setCurrentMonth(now);
+    setSelectedDate(now);
+  };
+
   const screenHeader = (
     <PremiumHeader
       title={t('calendar.title')}
       onBack={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()}
+      style={styles.headerRound}
       rightAction={
         <Pressable accessibilityRole="button" onPress={() => setShowModal(true)} style={styles.addBtn}>
           <Ionicons name="add" size={26} color="#fff" />
@@ -203,43 +209,51 @@ export function CalendarScreen({ navigation, route }: any) {
       {/* Month navigator */}
       <View style={styles.monthNav}>
         <Pressable accessibilityRole="button" onPress={prevMonth} style={styles.monthBtn}>
-          <Ionicons name="chevron-back" size={22} color="rgba(255,255,255,0.8)" />
+          <Ionicons name="chevron-back" size={20} color="#fff" />
         </Pressable>
-        <Text style={styles.monthTitle}>{format(currentMonth, 'MMMM yyyy')}</Text>
+        <View style={styles.monthCenter}>
+          <Text style={styles.monthTitle}>{format(currentMonth, 'MMMM yyyy')}</Text>
+          {!isSameDay(selectedDate, new Date()) && (
+            <Pressable accessibilityRole="button" onPress={goToToday} style={styles.todayJump} hitSlop={8}>
+              <Text style={styles.todayJumpText}>Today</Text>
+            </Pressable>
+          )}
+        </View>
         <Pressable accessibilityRole="button" onPress={nextMonth} style={styles.monthBtn}>
-          <Ionicons name="chevron-forward" size={22} color="rgba(255,255,255,0.8)" />
+          <Ionicons name="chevron-forward" size={20} color="#fff" />
         </Pressable>
       </View>
 
-      {/* Day labels */}
-      <View style={styles.dayLabels}>
-        {DAY_LABELS.map((d) => (
-          <Text key={d} style={styles.dayLabel}>{d}</Text>
-        ))}
-      </View>
+      {/* Calendar card */}
+      <View style={styles.calCard}>
+        <View style={styles.dayLabels}>
+          {DAY_LABELS.map((d) => (
+            <Text key={d} style={styles.dayLabel}>{d}</Text>
+          ))}
+        </View>
 
-      {/* Calendar grid */}
-      <View style={styles.calGrid}>
-        {emptyDays.map((_, i) => <View key={`empty-${i}`} style={styles.dayCell} />)}
-        {days.map((day) => {
-          const dayEvents = getDayEvents(day);
-          const selected = isSameDay(day, selectedDate);
-          const today = isToday(day);
-          return (
-            <Pressable accessibilityRole="button" key={day.toISOString()} onPress={() => setSelectedDate(day)} style={[styles.dayCell, selected && styles.dayCellSelected, today && !selected && styles.dayCellToday]}>
-              <Text style={[styles.dayNum, selected && styles.dayNumSelected, today && !selected && styles.dayNumToday]}>
-                {format(day, 'd')}
-              </Text>
-              {dayEvents.length > 0 && (
+        <View style={styles.calGrid}>
+          {emptyDays.map((_, i) => <View key={`empty-${i}`} style={styles.dayCell} />)}
+          {days.map((day) => {
+            const dayEvents = getDayEvents(day);
+            const selected = isSameDay(day, selectedDate);
+            const today = isToday(day);
+            return (
+              <Pressable accessibilityRole="button" key={day.toISOString()} onPress={() => setSelectedDate(day)} style={styles.dayCell}>
+                <View style={[styles.dayCircle, today && !selected && styles.dayCircleToday, selected && styles.dayCircleSelected]}>
+                  <Text style={[styles.dayNum, today && !selected && styles.dayNumToday, selected && styles.dayNumSelected]}>
+                    {format(day, 'd')}
+                  </Text>
+                </View>
                 <View style={styles.eventDots}>
                   {dayEvents.slice(0, 3).map((e, i) => (
-                    <View key={i} style={[styles.eventDot, { backgroundColor: selected ? 'rgba(255,255,255,0.8)' : e.color }]} />
+                    <View key={i} style={[styles.eventDot, { backgroundColor: e.color }]} />
                   ))}
                 </View>
-              )}
-            </Pressable>
-          );
-        })}
+              </Pressable>
+            );
+          })}
+        </View>
       </View>
     </PremiumHeader>
   );
@@ -269,65 +283,78 @@ export function CalendarScreen({ navigation, route }: any) {
         onScrollEndDrag={onScrollEndDrag}
         onMomentumScrollEnd={onMomentumScrollEnd}
         scrollEventThrottle={scrollEventThrottle}
-        contentContainerStyle={[styles.content, { paddingBottom: 100, paddingTop: contentPaddingTop }]}
+        contentContainerStyle={[styles.content, { paddingBottom: 110, paddingTop: contentPaddingTop + 18 }]}
         refreshControl={<RefreshControl refreshing={isHydratingEvents} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
         <View style={styles.selectedDateRow}>
-          <Text style={styles.selectedDateText}>{format(selectedDate, 'EEEE, MMMM d')}</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.selectedDateText}>{format(selectedDate, 'EEEE, MMMM d')}</Text>
+            <Text style={styles.selectedDateSub}>
+              {selectedEvents.length === 0 ? 'Nothing scheduled' : `${selectedEvents.length} ${selectedEvents.length === 1 ? 'item' : 'items'}`}
+            </Text>
+          </View>
           {isToday(selectedDate) && (
             <View style={styles.todayBadge}><Text style={styles.todayBadgeText}>Today</Text></View>
           )}
         </View>
 
         {selectedEvents.length > 0 ? (
-          selectedEvents.map((event) => {
+          selectedEvents
+            .slice()
+            .sort((a, b) => (a.allDay === b.allDay ? new Date(a.startDate).getTime() - new Date(b.startDate).getTime() : a.allDay ? -1 : 1))
+            .map((event) => {
             const attendees = members.filter((m) => event.attendees.includes(m.id));
             const card = (
-              <Card style={{ ...styles.eventCard, ...(event.isVirtual ? styles.eventCardVirtual : {}) }} variant="elevated">
-                <View style={styles.eventRow}>
-                  <View style={[styles.eventBar, { backgroundColor: event.color }]} />
-                  <View style={{ flex: 1, marginLeft: 14 }}>
-                    <View style={styles.eventHeader}>
-                      <Text style={styles.eventTitle}>{event.title}</Text>
-                      <View style={styles.eventHeaderRight}>
-                        <Text style={styles.eventCategory}>{event.category}</Text>
-                        {event.isVirtual ? (
-                          <Ionicons name="link-outline" size={14} color={colors.textMuted} />
-                        ) : (
-                          <Pressable accessibilityRole="button" onPress={() => handleDeleteEvent(event.id, event.title)} style={styles.eventDeleteBtn}>
-                            <Ionicons name="trash-outline" size={14} color={colors.danger} />
-                          </Pressable>
-                        )}
-                      </View>
-                    </View>
-                    {event.isVirtual && event.description && (
-                      <Text style={styles.eventLocationText}>{event.description}</Text>
-                    )}
-                    {!event.allDay && (
-                      <View style={styles.eventTime}>
-                        <Ionicons name="time-outline" size={14} color={colors.textMuted} />
-                        <Text style={styles.eventTimeText}>
-                          {format(new Date(event.startDate), 'h:mm a')} – {format(new Date(event.endDate), 'h:mm a')}
-                        </Text>
-                      </View>
-                    )}
-                    {event.location && (
-                      <View style={styles.eventLocation}>
-                        <Ionicons name="location-outline" size={14} color={colors.textMuted} />
-                        <Text style={styles.eventLocationText}>{event.location}</Text>
-                      </View>
-                    )}
-                    {attendees.length > 0 && (
-                      <View style={styles.attendeesRow}>
-                        {attendees.map((a, i) => (
-                          <Avatar key={a.id} name={a.name} color={a.avatarColor} size={26} style={{ marginLeft: i > 0 ? -8 : 0 }} />
-                        ))}
-                        <Text style={styles.attendeeCount}>{attendees.length} attending</Text>
-                      </View>
+              <View style={[styles.eventCard, event.isVirtual && styles.eventCardVirtual]}>
+                <View style={styles.timeCol}>
+                  {event.allDay ? (
+                    <Text style={styles.timeAllDay}>All{'\n'}day</Text>
+                  ) : (
+                    <>
+                      <Text style={styles.timeStart}>{format(new Date(event.startDate), 'h:mm')}</Text>
+                      <Text style={styles.timeAmPm}>{format(new Date(event.startDate), 'a')}</Text>
+                      <Text style={styles.timeEnd}>{format(new Date(event.endDate), 'h:mm a')}</Text>
+                    </>
+                  )}
+                </View>
+                <View style={[styles.eventBar, { backgroundColor: event.color }]} />
+                <View style={{ flex: 1 }}>
+                  <View style={styles.eventHeader}>
+                    <Text style={styles.eventTitle}>{event.title}</Text>
+                    {event.isVirtual ? (
+                      <Ionicons name="link-outline" size={15} color={colors.textMuted} />
+                    ) : (
+                      <Pressable accessibilityRole="button" onPress={() => handleDeleteEvent(event.id, event.title)} style={styles.eventDeleteBtn} hitSlop={8}>
+                        <Ionicons name="trash-outline" size={15} color={colors.textMuted} />
+                      </Pressable>
                     )}
                   </View>
+                  <View style={[styles.catPill, { backgroundColor: event.color + '22' }]}>
+                    <Text style={[styles.catPillText, { color: event.color }]}>{event.category}</Text>
+                  </View>
+                  {event.isVirtual && event.description && (
+                    <Text style={styles.eventLocationText}>{event.description}</Text>
+                  )}
+                  {event.location && (
+                    <View style={styles.eventLocation}>
+                      <Ionicons name="location" size={13} color={colors.textMuted} />
+                      <Text style={styles.eventLocationText}>{event.location}</Text>
+                    </View>
+                  )}
+                  {attendees.length > 0 && (
+                    <View style={styles.attendeesRow}>
+                      <View style={{ flexDirection: 'row' }}>
+                        {attendees.slice(0, 5).map((a, i) => (
+                          <View key={a.id} style={[styles.attendeeRing, { marginLeft: i > 0 ? -9 : 0 }]}>
+                            <Avatar name={a.name} color={a.avatarColor} size={26} />
+                          </View>
+                        ))}
+                      </View>
+                      <Text style={styles.attendeeCount}>{attendees.length} attending</Text>
+                    </View>
+                  )}
                 </View>
-              </Card>
+              </View>
             );
             return event.isVirtual ? (
               <Pressable accessibilityRole="button" key={event.id} onPress={() => handleVirtualEventPress(event)}>{card}</Pressable>
@@ -337,9 +364,15 @@ export function CalendarScreen({ navigation, route }: any) {
           })
         ) : (
           <View style={styles.noEvents}>
-            <Ionicons name="calendar-outline" size={48} color={colors.textMuted} />
+            <LinearGradient colors={['#E0E7FF', '#DBEAFE']} style={styles.noEventsIcon}>
+              <Ionicons name="calendar" size={34} color={colors.primaryLight} />
+            </LinearGradient>
             <Text style={styles.noEventsTitle}>No events</Text>
             <Text style={styles.noEventsDesc}>Tap + to add an event for this day</Text>
+            <Pressable accessibilityRole="button" onPress={() => setShowModal(true)} style={styles.noEventsCta}>
+              <Ionicons name="add" size={18} color="#fff" />
+              <Text style={styles.noEventsCtaText}>Add Event</Text>
+            </Pressable>
           </View>
         )}
       </ScrollView>
@@ -374,7 +407,7 @@ export function CalendarScreen({ navigation, route }: any) {
           </View>
 
           <Text style={styles.modalLabel}>Category</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 18 }}>
             {EVENT_CATEGORIES.map((cat) => (
               <Pressable accessibilityRole="button" key={cat} onPress={() => setNewCategory(cat)} style={[styles.catChip, newCategory === cat && styles.catChipActive]}>
                 <Text style={[styles.catChipText, newCategory === cat && styles.catChipTextActive]}>{cat}</Text>
@@ -385,7 +418,9 @@ export function CalendarScreen({ navigation, route }: any) {
           <Text style={styles.modalLabel}>Color</Text>
           <View style={styles.colorRow}>
             {EVENT_COLORS.map((c) => (
-              <Pressable accessibilityRole="button" key={c} onPress={() => setNewColor(c)} style={[styles.colorSwatch, { backgroundColor: c }, newColor === c && styles.colorSwatchSelected]} />
+              <Pressable accessibilityRole="button" key={c} onPress={() => setNewColor(c)} style={[styles.colorSwatch, { backgroundColor: c }, newColor === c && styles.colorSwatchSelected]}>
+                {newColor === c && <Ionicons name="checkmark" size={18} color="#fff" />}
+              </Pressable>
             ))}
           </View>
 
@@ -409,60 +444,85 @@ export function CalendarScreen({ navigation, route }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  addBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
-  monthNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
-  monthBtn: { padding: 8 },
-  monthTitle: { fontSize: 18, fontWeight: '700', color: '#fff' },
-  dayLabels: { flexDirection: 'row', marginBottom: 8 },
-  dayLabel: { flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.5)' },
+  headerRound: { borderBottomLeftRadius: 30, borderBottomRightRadius: 30, paddingBottom: 18 },
+  addBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
+
+  /* ── Month navigator ── */
+  monthNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, marginBottom: 14 },
+  monthBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.16)', alignItems: 'center', justifyContent: 'center' },
+  monthCenter: { alignItems: 'center', gap: 4 },
+  monthTitle: { fontSize: 19, fontWeight: '900', color: '#fff', letterSpacing: -0.3 },
+  todayJump: { paddingVertical: 2, paddingHorizontal: 10, borderRadius: 999, backgroundColor: 'rgba(245,166,35,0.9)' },
+  todayJumpText: { fontSize: 11, fontWeight: '800', color: '#fff' },
+
+  /* ── Calendar card ── */
+  calCard: { backgroundColor: colors.card, borderRadius: 24, paddingHorizontal: 8, paddingTop: 12, paddingBottom: 6, ...shadows.md },
+  dayLabels: { flexDirection: 'row', marginBottom: 4 },
+  dayLabel: { flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '800', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.4 },
   calGrid: { flexDirection: 'row', flexWrap: 'wrap' },
-  dayCell: { width: `${100 / 7}%`, alignItems: 'center', paddingVertical: 6, borderRadius: 10, marginBottom: 4 },
-  dayCellSelected: { backgroundColor: 'rgba(255,255,255,0.25)' },
-  dayCellToday: { backgroundColor: 'rgba(245,166,35,0.25)' },
-  dayNum: { fontSize: 15, fontWeight: '500', color: 'rgba(255,255,255,0.8)' },
-  dayNumSelected: { color: '#fff', fontWeight: '700' },
-  dayNumToday: { color: colors.secondary, fontWeight: '700' },
-  eventDots: { flexDirection: 'row', gap: 2, marginTop: 3 },
+  dayCell: { width: `${100 / 7}%`, alignItems: 'center', paddingTop: 3, height: 50 },
+  dayCircle: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
+  dayCircleSelected: { backgroundColor: colors.primary },
+  dayCircleToday: { borderWidth: 2, borderColor: colors.secondary },
+  dayNum: { fontSize: 15, fontWeight: '700', color: colors.text },
+  dayNumSelected: { color: '#fff', fontWeight: '800' },
+  dayNumToday: { color: '#B45309', fontWeight: '800' },
+  eventDots: { flexDirection: 'row', gap: 3, marginTop: 3, height: 5 },
   eventDot: { width: 5, height: 5, borderRadius: 2.5 },
+
+  /* ── Selected day ── */
   content: { padding: 16 },
-  selectedDateRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
-  selectedDateText: { fontSize: 18, fontWeight: '700', color: colors.text },
-  todayBadge: { backgroundColor: '#E8EEF9', borderRadius: 10, paddingVertical: 3, paddingHorizontal: 10 },
-  todayBadgeText: { fontSize: 12, fontWeight: '700', color: colors.primary },
-  eventCard: { marginBottom: 10, borderRadius: 16 },
-  eventCardVirtual: { opacity: 0.85, borderWidth: 1, borderColor: colors.border, borderStyle: 'dashed' },
-  eventRow: { flexDirection: 'row', alignItems: 'flex-start' },
-  eventBar: { width: 4, height: '100%', minHeight: 60, borderRadius: 2 },
-  eventHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 },
-  eventTitle: { fontSize: 16, fontWeight: '700', color: colors.text, flex: 1 },
-  eventHeaderRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  eventCategory: { fontSize: 11, color: colors.textSecondary },
+  selectedDateRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16, marginTop: 4 },
+  selectedDateText: { fontSize: 20, fontWeight: '900', color: colors.text, letterSpacing: -0.4 },
+  selectedDateSub: { fontSize: 13, fontWeight: '600', color: colors.textSecondary, marginTop: 2 },
+  todayBadge: { backgroundColor: colors.primary, borderRadius: 999, paddingVertical: 5, paddingHorizontal: 12 },
+  todayBadgeText: { fontSize: 12, fontWeight: '800', color: '#fff' },
+
+  /* ── Event cards ── */
+  eventCard: { flexDirection: 'row', alignItems: 'stretch', gap: 12, marginBottom: 12, padding: 14, borderRadius: 22, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, ...shadows.sm },
+  eventCardVirtual: { opacity: 0.9, borderStyle: 'dashed', backgroundColor: colors.surface },
+  timeCol: { width: 50, alignItems: 'center', justifyContent: 'center' },
+  timeStart: { fontSize: 17, fontWeight: '900', color: colors.text, letterSpacing: -0.3 },
+  timeAmPm: { fontSize: 10.5, fontWeight: '800', color: colors.textSecondary, textTransform: 'uppercase' },
+  timeEnd: { fontSize: 10, fontWeight: '600', color: colors.textMuted, marginTop: 6 },
+  timeAllDay: { fontSize: 12, fontWeight: '800', color: colors.textSecondary, textAlign: 'center', lineHeight: 16 },
+  eventBar: { width: 4, borderRadius: 2 },
+  eventHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 6 },
+  eventTitle: { fontSize: 16, fontWeight: '800', color: colors.text, flex: 1, letterSpacing: -0.2 },
   eventDeleteBtn: { padding: 2 },
-  eventTime: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 5 },
-  eventTimeText: { fontSize: 13, color: colors.textSecondary },
+  catPill: { alignSelf: 'flex-start', paddingVertical: 3, paddingHorizontal: 9, borderRadius: 999, marginBottom: 8 },
+  catPillText: { fontSize: 11.5, fontWeight: '800' },
   eventLocation: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 8 },
-  eventLocationText: { fontSize: 13, color: colors.textSecondary },
+  eventLocationText: { fontSize: 13, color: colors.textSecondary, fontWeight: '600' },
   attendeesRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  attendeeCount: { fontSize: 12, color: colors.textSecondary, marginLeft: 4 },
-  noEvents: { alignItems: 'center', paddingVertical: 60 },
-  noEventsTitle: { fontSize: 20, fontWeight: '700', color: colors.text, marginTop: 16 },
-  noEventsDesc: { fontSize: 14, color: colors.textSecondary, marginTop: 8 },
+  attendeeRing: { borderRadius: 15, borderWidth: 2, borderColor: colors.card, overflow: 'hidden' },
+  attendeeCount: { fontSize: 12, color: colors.textSecondary, fontWeight: '600' },
+
+  /* ── Empty ── */
+  noEvents: { alignItems: 'center', paddingVertical: 40 },
+  noEventsIcon: { width: 84, height: 84, borderRadius: 42, alignItems: 'center', justifyContent: 'center' },
+  noEventsTitle: { fontSize: 20, fontWeight: '900', color: colors.text, marginTop: 18 },
+  noEventsDesc: { fontSize: 14, color: colors.textSecondary, marginTop: 6 },
+  noEventsCta: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 20, backgroundColor: colors.primary, paddingVertical: 11, paddingHorizontal: 20, borderRadius: 999, ...shadows.md },
+  noEventsCtaText: { fontSize: 14.5, fontWeight: '800', color: '#fff' },
+
+  /* ── Add-event sheet ── */
   modal: { flex: 1, padding: 24, backgroundColor: colors.background },
   modalHandle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 24 },
-  modalTitle: { fontSize: 20, fontWeight: '800', color: colors.text, marginBottom: 4 },
-  modalDate: { fontSize: 14, color: colors.textSecondary, marginBottom: 20 },
-  modalInput: { backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 16, color: colors.text, borderWidth: 1.5, borderColor: colors.border, marginBottom: 14, ...shadows.sm },
-  modalLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
-  allDayRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.card, borderRadius: 12, padding: 14, marginBottom: 16, borderWidth: 1.5, borderColor: colors.border },
-  allDayLabel: { fontSize: 15, fontWeight: '600', color: colors.text },
-  catChip: { paddingVertical: 7, paddingHorizontal: 14, borderRadius: 20, marginRight: 8, backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.border },
+  modalTitle: { fontSize: 22, fontWeight: '900', color: colors.text, marginBottom: 4, letterSpacing: -0.4 },
+  modalDate: { fontSize: 14, color: colors.textSecondary, marginBottom: 20, fontWeight: '600' },
+  modalInput: { backgroundColor: colors.card, borderRadius: 16, padding: 15, fontSize: 16, color: colors.text, borderWidth: 1.5, borderColor: colors.border, marginBottom: 14, ...shadows.sm },
+  modalLabel: { fontSize: 12, fontWeight: '800', color: colors.textSecondary, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.8 },
+  allDayRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.card, borderRadius: 16, padding: 14, marginBottom: 18, borderWidth: 1.5, borderColor: colors.border },
+  allDayLabel: { fontSize: 15, fontWeight: '700', color: colors.text },
+  catChip: { paddingVertical: 8, paddingHorizontal: 15, borderRadius: 20, marginRight: 8, backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.border },
   catChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  catChipText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  catChipText: { fontSize: 13, fontWeight: '700', color: colors.textSecondary },
   catChipTextActive: { color: '#fff' },
-  colorRow: { flexDirection: 'row', gap: 10, marginBottom: 20, flexWrap: 'wrap' },
-  colorSwatch: { width: 34, height: 34, borderRadius: 17 },
-  colorSwatchSelected: { borderWidth: 3, borderColor: colors.text },
-  attendeePickChip: { alignItems: 'center', marginRight: 12, padding: 10, borderRadius: 12, borderWidth: 1.5, borderColor: 'transparent' },
+  colorRow: { flexDirection: 'row', gap: 10, marginBottom: 22, flexWrap: 'wrap' },
+  colorSwatch: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  colorSwatchSelected: { borderWidth: 3, borderColor: colors.card, ...shadows.md },
+  attendeePickChip: { alignItems: 'center', marginRight: 10, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 16, borderWidth: 1.5, borderColor: 'transparent' },
   attendeePickChipActive: { borderColor: colors.primary, backgroundColor: '#E8EEF9' },
-  attendeePickName: { fontSize: 11, color: colors.textSecondary, marginTop: 4 },
+  attendeePickName: { fontSize: 11, color: colors.textSecondary, marginTop: 4, fontWeight: '600' },
 });

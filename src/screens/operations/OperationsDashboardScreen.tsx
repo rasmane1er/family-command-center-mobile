@@ -47,7 +47,9 @@ const FILTERS = ['All', 'Home', 'Family', 'Mobility', 'Admin', 'Safety'];
 export function OperationsDashboardScreen({ navigation }: any) {
   const { t } = useTranslation('ops');
   const insets = useSafeAreaInsets();
-  const { contentWidth } = useResponsiveLayout();
+  const { contentWidth, gridColumns } = useResponsiveLayout();
+  const moduleColumns = gridColumns(2, 150, 12);
+  const moduleWidth = (contentWidth - 36 - (moduleColumns - 1) * 12) / moduleColumns;
   const { pantryItems, vehicles, documents } = useOperationsStore();
   const [activeFilter, setActiveFilter] = useState('All');
 
@@ -219,9 +221,6 @@ export function OperationsDashboardScreen({ navigation }: any) {
                 onPress={() => navigation.navigate(item.screen)}
                 style={({ pressed }) => [styles.alertCardInner, pressed && styles.pressed]}
               >
-                {/* Colored top bar */}
-                <View style={[styles.alertTopBar, { backgroundColor: hasAlert ? item.color : 'rgba(255,255,255,0.15)' }]} />
-
                 {/* Icon */}
                 <View style={[styles.alertIconWrap, { backgroundColor: hasAlert ? item.color + '18' : 'rgba(255,255,255,0.08)' }]}>
                   <Ionicons
@@ -397,6 +396,11 @@ export function OperationsDashboardScreen({ navigation }: any) {
                     >
                       {filter}
                     </Text>
+                    <View style={[styles.filterCount, active && styles.filterCountActive]}>
+                      <Text style={[styles.filterCountText, active && styles.filterCountTextActive]}>
+                        {filter === 'All' ? OPS_MODULES.length : OPS_MODULES.filter((m) => m.group === filter).length}
+                      </Text>
+                    </View>
                   </Pressable>
                 );
               })}
@@ -409,20 +413,22 @@ export function OperationsDashboardScreen({ navigation }: any) {
                   onPress={() => navigation.navigate(mod.key)}
                   style={({ pressed }) => [
                     styles.moduleRow,
+                    { width: moduleWidth },
                     pressed && styles.pressed,
                   ]}
                 >
-                  <View style={[styles.moduleIcon, { backgroundColor: mod.bg }]}>
-                    <Ionicons name={mod.icon as any} size={24} color={mod.color} />
+                  <View style={styles.moduleTopRow}>
+                    <View style={[styles.moduleIcon, { backgroundColor: mod.bg }]}>
+                      <Ionicons name={mod.icon as any} size={24} color={mod.color} />
+                    </View>
+                    <View style={styles.moduleArrow}>
+                      <Ionicons name="arrow-forward" size={14} color="#7890AA" />
+                    </View>
                   </View>
 
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.moduleTitle}>{mod.label}</Text>
-                    <Text style={styles.moduleSubtitle}>{mod.desc}</Text>
-                  </View>
-
-                  <View style={styles.moduleArrow}>
-                    <Ionicons name="chevron-forward" size={18} color="#7890AA" />
+                  <View>
+                    <Text style={styles.moduleTitle} numberOfLines={1}>{mod.label}</Text>
+                    <Text style={styles.moduleSubtitle} numberOfLines={1}>{mod.desc}</Text>
                   </View>
                 </Pressable>
               ))}
@@ -498,7 +504,9 @@ function QuickTile({ title, subtitle, icon, color, onPress }: any) {
 function SnapshotItem({ icon, label, value, color }: any) {
   return (
     <View style={styles.snapshotItem}>
-      <Ionicons name={icon as any} size={20} color={color} />
+      <View style={[styles.snapshotIconWrap, { backgroundColor: color + '33' }]}>
+        <Ionicons name={icon as any} size={20} color={color} />
+      </View>
       <Text style={styles.snapshotValue}>{value}</Text>
       <Text style={styles.snapshotLabel}>{label}</Text>
     </View>
@@ -582,19 +590,19 @@ const styles = StyleSheet.create({
   },
 
   headerGreeting: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
-    color: 'rgba(255,255,255,0.6)',
+    color: 'rgba(255,255,255,0.78)',
     letterSpacing: 0.2,
     marginBottom: 2,
   },
 
   headerTitle: {
-    fontSize: 24,
+    fontSize: 30,
     fontWeight: '900',
     color: '#FFFFFF',
     letterSpacing: -1,
-    lineHeight: 28,
+    lineHeight: 36,
   },
 
   datePill: {
@@ -647,17 +655,17 @@ const styles = StyleSheet.create({
 
   alertCard: {
     flex: 1,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.10)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
+    borderColor: 'rgba(255,255,255,0.18)',
     overflow: 'hidden',
   },
 
   alertCardInner: {
     alignItems: 'center',
-    paddingBottom: 12,
-    gap: 5,
+    paddingVertical: 13,
+    gap: 6,
   },
 
   alertTopBar: {
@@ -676,15 +684,15 @@ const styles = StyleSheet.create({
   },
 
   alertNumber: {
-    fontSize: 22,
+    fontSize: 26,
     fontWeight: '900',
     lineHeight: 24,
     letterSpacing: -0.5,
   },
 
   alertLabel: {
-    fontSize: 9,
-    fontWeight: '700',
+    fontSize: 10.5,
+    fontWeight: '800',
     textAlign: 'center',
     letterSpacing: 0.2,
   },
@@ -695,7 +703,9 @@ const styles = StyleSheet.create({
 
   priorityCard: {
     minHeight: 96,
-    borderRadius: 28,
+    borderWidth: 1,
+    borderColor: '#E4EAF2',
+    borderRadius: 26,
     backgroundColor: '#FFFFFF',
     padding: 16,
     flexDirection: 'row',
@@ -761,7 +771,7 @@ const styles = StyleSheet.create({
   },
 
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '900',
     color: '#0F1E36',
     letterSpacing: -0.5,
@@ -863,10 +873,38 @@ const styles = StyleSheet.create({
   },
 
   filterChip: {
-    paddingHorizontal: 18,
-    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingLeft: 16,
+    paddingRight: 8,
+    paddingVertical: 8,
     borderRadius: 999,
     backgroundColor: '#EEF2F7',
+  },
+
+  filterCount: {
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#DDE5F0',
+  },
+
+  filterCountActive: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+
+  filterCountText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#617086',
+  },
+
+  filterCountTextActive: {
+    color: '#fff',
   },
 
   filterChipActive: {
@@ -884,22 +922,31 @@ const styles = StyleSheet.create({
   },
 
   moduleList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 12,
   },
 
   moduleRow: {
-    minHeight: 78,
+    minHeight: 124,
     borderRadius: 24,
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    flexDirection: 'row',
-    alignItems: 'center',
+    padding: 14,
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: '#E4EAF2',
     shadowColor: '#10345F',
-    shadowOpacity: 0.045,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 7 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
     elevation: 2,
+  },
+
+  moduleTopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 14,
   },
 
   moduleIcon: {
@@ -908,13 +955,13 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 13,
   },
 
   moduleTitle: {
-    fontSize: 15,
+    fontSize: 15.5,
     fontWeight: '900',
     color: '#0F1E36',
+    letterSpacing: -0.2,
   },
 
   moduleSubtitle: {
@@ -925,9 +972,9 @@ const styles = StyleSheet.create({
   },
 
   moduleArrow: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: '#F3F6FC',
     alignItems: 'center',
     justifyContent: 'center',
@@ -936,11 +983,19 @@ const styles = StyleSheet.create({
   snapshotCard: {
     marginTop: 26,
     borderRadius: 28,
-    padding: 18,
+    padding: 20,
+  },
+
+  snapshotIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   snapshotHeader: {
-    marginBottom: 8,
+    marginBottom: 16,
   },
 
   snapshotTitle: {
@@ -966,14 +1021,15 @@ const styles = StyleSheet.create({
   },
 
   snapshotValue: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: '900',
     color: '#FFFFFF',
-    marginTop: 5,
+    marginTop: 8,
+    letterSpacing: -0.4,
   },
 
   snapshotLabel: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
     color: 'rgba(255,255,255,0.75)',
     marginTop: 2,

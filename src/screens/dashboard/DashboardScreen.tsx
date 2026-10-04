@@ -10,6 +10,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
+import { Image } from 'expo-image';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
@@ -35,6 +36,7 @@ import { shadows } from '../../theme/spacing';
 import { getVisibleTasks, getVisibleEvents } from '../../utils/roleVisibility';
 import { getAllowedNotificationTypes } from '../../utils/roleFilters';
 import { DailyBriefCard } from '../../components/dashboard/DailyBriefCard';
+import { ProgressRing } from '../../components/dashboard/ProgressRing';
 
 import { MemoryOfTheDayCard } from '../../components/dashboard/MemoryOfTheDayCard';
 import { ChoreLeaderboardCard } from '../../components/dashboard/ChoreLeaderboardCard';
@@ -508,7 +510,36 @@ export function DashboardScreen({ navigation }: any) {
     handleRoleActionPress(route);
   };
 
-  const dynStyles = makeStyles(colors, kpiColumns, contentWidth);
+  // The household/family score already has its own hero card, so its KPI tile
+  // (the one routing to the weekly report) would just repeat it.
+  const snapshotCards = kpiCards.filter((item) => item.route !== 'WeeklyReport');
+  const snapshotColumns = snapshotCards.length === 3 ? 3 : kpiColumns;
+
+  const dynStyles = makeStyles(colors, snapshotColumns, contentWidth);
+
+  const pressable = (base: any) => ({ pressed }: { pressed: boolean }) => [
+    base,
+    pressed && dynStyles.pressed,
+  ];
+
+  const heroMembers = members.slice(0, 5);
+  const extraMembers = Math.max(0, members.length - heroMembers.length);
+
+  const quickActions = [
+    { key: 'task', label: t('dashboard.screens.main.fabAddTask'), icon: 'checkmark-done', route: 'Tasks', gradient: ['#14B8A6', '#0D9488'] as const },
+    { key: 'event', label: t('dashboard.screens.main.fabAddEvent'), icon: 'calendar', route: 'Calendar', gradient: ['#3B82F6', '#2563EB'] as const },
+    ...(isParent
+      ? [{ key: 'expense', label: t('dashboard.screens.main.fabAddExpense'), icon: 'wallet', route: 'Budgeting', gradient: ['#F59E0B', '#D97706'] as const }]
+      : []),
+    { key: 'ai', label: t('dashboard.screens.main.fabAskAi'), icon: 'sparkles', route: 'AIAssistant', gradient: ['#8B5CF6', '#6D28D9'] as const },
+  ];
+
+  const progressRings = [
+    { label: t('dashboard.screens.main.progressFinance'), value: healthScore.financial },
+    { label: t('dashboard.screens.main.progressTasks'), value: healthScore.tasks },
+    { label: t('dashboard.screens.main.progressGoals'), value: healthScore.goals },
+    { label: t('dashboard.screens.main.progressWellness'), value: healthScore.health },
+  ];
 
   return (
     <View style={dynStyles.container}>
@@ -518,138 +549,262 @@ export function DashboardScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[dynStyles.scrollContent, { paddingBottom: 132 + insets.bottom }]}
       >
-        <LinearGradient
-          colors={[COMMAND_COLORS.navy900, COMMAND_COLORS.navy800, COMMAND_COLORS.navy700]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[dynStyles.header, { paddingTop: insets.top + 12 }]}
-        >
-          <View style={StyleSheet.absoluteFill} pointerEvents="none">
-            <View style={dynStyles.headerGlowGold} />
-            <View style={dynStyles.headerGlowTeal} />
-          </View>
+        {/* ── Hero ─────────────────────────────────────────────────────── */}
+        <View style={[dynStyles.hero, { paddingTop: insets.top + 10 }]}>
+          <Image
+            source={require('../../assets/images/family-hero.png')}
+            style={StyleSheet.absoluteFill}
+            contentFit="cover"
+            contentPosition="right"
+          />
+          <LinearGradient
+            colors={['rgba(8,17,32,0.97)', 'rgba(12,26,48,0.84)', 'rgba(14,30,54,0.3)']}
+            locations={[0, 0.5, 1]}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={StyleSheet.absoluteFill}
+          />
+          <LinearGradient
+            colors={['rgba(8,17,32,0.25)', 'rgba(8,17,32,0)', 'rgba(8,17,32,0.7)']}
+            style={StyleSheet.absoluteFill}
+          />
 
           <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-            <View style={dynStyles.headerTop}>
-              <View style={dynStyles.headerIdentity}>
-                <Text style={dynStyles.eyebrow}>{t('dashboard.screens.main.eyebrow')}</Text>
-                <Text style={dynStyles.greeting}>{greeting()}</Text>
-                <Text style={dynStyles.familyName} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
-                  {family?.name ?? t('dashboard.screens.main.defaultFamilyName')}
-                </Text>
-                <Text style={dynStyles.dateText}>{format(new Date(), 'EEEE, MMMM d')}</Text>
-
-                {(activeMember || authUser) && (
-                  <Pressable accessibilityRole="button"
-                    style={dynStyles.activeProfileBadge}
-                    onPress={() =>
-                      navigation.navigate('Family', {
-                        screen: 'ProfileSwitcher',
-                        params: { source: 'dashboard' },
-                        initial: false,
-                      })
-                    }
-                  >
-                    <Avatar
-                      name={activeMember?.name ?? authUser?.displayName ?? 'Me'}
-                      color={activeMember?.avatarColor ?? authUser?.avatarColor ?? '#4A8FD9'}
-                      size={24}
-                    />
-                    <Text style={dynStyles.activeProfileName} numberOfLines={1}>
-                      {activeMember?.name ?? authUser?.displayName ?? 'Me'} • {activeMember ? roleLabel : 'Parent'}
-                    </Text>
-                    <Ionicons name="chevron-down" size={13} color="#fff" />
-                  </Pressable>
-                )}
-              </View>
-
+            <View style={dynStyles.heroTop}>
+              <Text style={dynStyles.eyebrow}>{t('dashboard.screens.main.eyebrow')}</Text>
               <View style={dynStyles.headerActions}>
-                <Pressable accessibilityRole="button" style={dynStyles.headerIconBtn} onPress={() => navigation.navigate('Search')}>
-                  <Ionicons name="search-outline" size={20} color="#fff" />
+                <Pressable accessibilityRole="button" style={pressable(dynStyles.headerIconBtn)} onPress={() => navigation.navigate('Search')}>
+                  <Ionicons name="search" size={19} color="#fff" />
                 </Pressable>
-
-                <Pressable accessibilityRole="button" style={dynStyles.headerIconBtn} onPress={() => navigation.navigate('Notifications')}>
-                  <Ionicons name="notifications-outline" size={20} color="#fff" />
+                <Pressable accessibilityRole="button" style={pressable(dynStyles.headerIconBtn)} onPress={() => navigation.navigate('Notifications')}>
+                  <Ionicons name="notifications" size={19} color="#fff" />
                   {unreadNotifications > 0 && (
                     <View style={dynStyles.notifDot}>
                       <Text style={dynStyles.notifCount}>{unreadNotifications > 9 ? '9+' : unreadNotifications}</Text>
                     </View>
                   )}
                 </Pressable>
-
-                <Pressable accessibilityRole="button" style={dynStyles.headerIconBtn} onPress={() => navigation.navigate('Settings')}>
-                  <Ionicons name="settings-outline" size={20} color="#fff" />
+                <Pressable accessibilityRole="button" style={pressable(dynStyles.headerIconBtn)} onPress={() => navigation.navigate('Settings')}>
+                  <Ionicons name="settings" size={19} color="#fff" />
                 </Pressable>
               </View>
             </View>
 
-            <View style={dynStyles.smartStatusCard}>
-              <View style={[dynStyles.statusIcon, { backgroundColor: operationalStatus.tone + '22' }]}> 
-                <Ionicons name={operationalStatus.icon as any} size={18} color={operationalStatus.tone} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={dynStyles.statusLabel}>{operationalStatus.label}</Text>
-                <Text style={dynStyles.statusMessage}>{operationalStatus.message}</Text>
-              </View>
-              <Text style={dynStyles.statusScore}>{healthScore.overall}</Text>
-            </View>
+            <Text style={dynStyles.greeting}>{greeting()}</Text>
+            <Text style={dynStyles.familyName} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
+              {family?.name ?? t('dashboard.screens.main.defaultFamilyName')}
+            </Text>
+            <Text style={dynStyles.dateText}>{format(new Date(), 'EEEE, MMMM d')}</Text>
 
-            <View style={dynStyles.smartBar}>
-              <View style={dynStyles.smartBarItem}>
-                <Text style={dynStyles.smartBarValue}>{pendingTasks}</Text>
-                <Text style={dynStyles.smartBarLabel}>{t('dashboard.screens.main.pendingLabel')}</Text>
-              </View>
-              <View style={dynStyles.smartBarDivider} />
-              <View style={dynStyles.smartBarItem}>
-                <Text style={[dynStyles.smartBarValue, overdueTasks > 0 && { color: COMMAND_COLORS.orange }]}>{overdueTasks}</Text>
-                <Text style={dynStyles.smartBarLabel}>{t('dashboard.screens.main.urgentLabel')}</Text>
-              </View>
-              <View style={dynStyles.smartBarDivider} />
-              <View style={dynStyles.smartBarItem}>
-                <Text style={[dynStyles.smartBarValue, { color: monthlySavings < 0 ? COMMAND_COLORS.red : COMMAND_COLORS.teal }]}>
-                  {hideBalances ? '••••' : `$${Math.abs(monthlySavings).toLocaleString('en-US', { maximumFractionDigits: 0 })}`}
-                </Text>
-                <Text style={dynStyles.smartBarLabel}>{monthlySavings < 0 ? t('dashboard.screens.main.deficitLabel') : t('dashboard.screens.main.savedLabel')}</Text>
-              </View>
+            <View style={dynStyles.heroBottom}>
+              {(activeMember || authUser) && (
+                <Pressable
+                  accessibilityRole="button"
+                  style={pressable(dynStyles.activeProfileBadge)}
+                  onPress={() =>
+                    navigation.navigate('Family', {
+                      screen: 'ProfileSwitcher',
+                      params: { source: 'dashboard' },
+                      initial: false,
+                    })
+                  }
+                >
+                  <Avatar
+                    name={activeMember?.name ?? authUser?.displayName ?? 'Me'}
+                    color={activeMember?.avatarColor ?? authUser?.avatarColor ?? '#4A8FD9'}
+                    size={24}
+                  />
+                  <Text style={dynStyles.activeProfileName} numberOfLines={1}>
+                    {activeMember?.name ?? authUser?.displayName ?? 'Me'} • {activeMember ? roleLabel : 'Parent'}
+                  </Text>
+                  <Ionicons name="chevron-down" size={13} color="#fff" />
+                </Pressable>
+              )}
+
+              {heroMembers.length > 0 && (
+                <Pressable accessibilityRole="button" onPress={openFamilyMembers} style={dynStyles.avatarStack}>
+                  {heroMembers.map((member, index) => (
+                    <View key={member.id} style={[dynStyles.stackItem, { marginLeft: index === 0 ? 0 : -10, zIndex: 10 - index }]}>
+                      <Avatar name={member.name} color={member.avatarColor} size={30} imageUri={member.avatar} />
+                    </View>
+                  ))}
+                  {extraMembers > 0 && (
+                    <View style={[dynStyles.stackItem, dynStyles.stackMore, { marginLeft: -10 }]}>
+                      <Text style={dynStyles.stackMoreText}>+{extraMembers}</Text>
+                    </View>
+                  )}
+                </Pressable>
+              )}
             </View>
           </Animated.View>
-        </LinearGradient>
+        </View>
 
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+          {/* ── Household health (overlaps the hero) ───────────────────── */}
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => handleRoleActionPress('WeeklyReport')}
+            style={pressable([dynStyles.healthCard, shadows.md])}
+          >
+            <View style={dynStyles.healthTop}>
+              <ProgressRing
+                size={92}
+                strokeWidth={9}
+                progress={healthScore.overall / 100}
+                color={operationalStatus.tone}
+                trackColor={colors.border}
+              >
+                <Text style={dynStyles.ringValue}>{healthScore.overall}</Text>
+                <Text style={dynStyles.ringCaption}>/100</Text>
+              </ProgressRing>
+
+              <View style={{ flex: 1 }}>
+                <View style={[dynStyles.statusPill, { backgroundColor: operationalStatus.tone + '1F' }]}>
+                  <Ionicons name={operationalStatus.icon as any} size={13} color={operationalStatus.tone} />
+                  <Text style={[dynStyles.statusPillText, { color: operationalStatus.tone }]}>{operationalStatus.label}</Text>
+                </View>
+                <Text style={dynStyles.statusMessage}>{operationalStatus.message}</Text>
+              </View>
+            </View>
+
+            <View style={dynStyles.healthStats}>
+              <View style={dynStyles.healthStat}>
+                <Text style={dynStyles.healthStatValue}>{pendingTasks}</Text>
+                <Text style={dynStyles.healthStatLabel}>{t('dashboard.screens.main.pendingLabel')}</Text>
+              </View>
+              <View style={dynStyles.healthDivider} />
+              <View style={dynStyles.healthStat}>
+                <Text style={[dynStyles.healthStatValue, overdueTasks > 0 && { color: COMMAND_COLORS.orange }]}>{overdueTasks}</Text>
+                <Text style={dynStyles.healthStatLabel}>{t('dashboard.screens.main.urgentLabel')}</Text>
+              </View>
+              <View style={dynStyles.healthDivider} />
+              <View style={dynStyles.healthStat}>
+                <Text style={[dynStyles.healthStatValue, { color: monthlySavings < 0 ? COMMAND_COLORS.red : COMMAND_COLORS.teal }]}>
+                  {hideBalances ? '••••' : `$${Math.abs(monthlySavings).toLocaleString('en-US', { maximumFractionDigits: 0 })}`}
+                </Text>
+                <Text style={dynStyles.healthStatLabel}>{monthlySavings < 0 ? t('dashboard.screens.main.deficitLabel') : t('dashboard.screens.main.savedLabel')}</Text>
+              </View>
+            </View>
+          </Pressable>
+
+          {/* ── Quick actions ──────────────────────────────────────────── */}
+          <View style={dynStyles.quickRow}>
+            {quickActions.map((action) => (
+              <Pressable
+                accessibilityRole="button"
+                key={action.key}
+                style={pressable(dynStyles.quickTile)}
+                onPress={() => handleQuickAction(action.route)}
+              >
+                <LinearGradient colors={action.gradient} style={dynStyles.quickIcon}>
+                  <Ionicons name={action.icon as any} size={22} color="#fff" />
+                </LinearGradient>
+                <Text style={dynStyles.quickLabel} numberOfLines={2}>{action.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+
+          {/* ── Family circle ──────────────────────────────────────────── */}
+          <SectionHeader
+            s={dynStyles}
+            accent={colors.primary}
+            title={t('dashboard.screens.main.familyStatusBoardTitle')}
+            subtitle={t('dashboard.screens.main.familyStatusBoardSubtitle')}
+            action={t('dashboard.screens.main.manageButton')}
+            onAction={openFamilyMembers}
+          />
+
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={dynStyles.memberBoardScroll}>
+            {members.map((member) => {
+              const memberTasks = visibleTasks.filter((task: any) => task.assignedTo?.includes(member.id) && task.status === 'pending').length;
+              return (
+                <Pressable accessibilityRole="button" key={member.id} style={pressable(dynStyles.memberStatusCard)} onPress={() => openMemberDetails(member.id)}>
+                  <LinearGradient
+                    colors={[member.avatarColor + '2E', member.avatarColor + '00']}
+                    style={dynStyles.memberWash}
+                    pointerEvents="none"
+                  />
+                  <Avatar
+                    name={member.name}
+                    color={member.avatarColor}
+                    size={58}
+                    imageUri={member.avatar}
+                    showBadge
+                    badgeColor={member.status === 'ACTIVE' ? colors.success : colors.warning}
+                  />
+                  <Text style={dynStyles.memberName} numberOfLines={1}>{member.name}</Text>
+                  <View style={[dynStyles.memberRolePill, { backgroundColor: member.avatarColor + '22' }]}>
+                    <Text style={[dynStyles.memberRoleText, { color: colors.text }]}>{member.role}</Text>
+                  </View>
+                  <View style={dynStyles.memberStatsRow}>
+                    <View style={dynStyles.memberChip}>
+                      <Ionicons name="checkmark-circle" size={13} color={COMMAND_COLORS.teal} />
+                      <Text style={dynStyles.memberChipText}>{memberTasks}</Text>
+                    </View>
+                    <View style={dynStyles.memberChip}>
+                      <Ionicons name="star" size={12} color="#F5A623" />
+                      <Text style={dynStyles.memberChipText}>{member.points?.toLocaleString?.() ?? 0}</Text>
+                    </View>
+                  </View>
+                </Pressable>
+              );
+            })}
+
+            {isParent && (
+              <Pressable accessibilityRole="button" style={pressable(dynStyles.inviteCard)} onPress={openInviteMember}>
+                <View style={dynStyles.inviteIcon}>
+                  <Ionicons name="person-add" size={20} color={colors.primary} />
+                </View>
+                <Text style={dynStyles.inviteTitle}>{t('dashboard.screens.main.inviteTitle')}</Text>
+                <Text style={dynStyles.inviteSubtitle} numberOfLines={2}>{t('dashboard.screens.main.inviteSubtitle')}</Text>
+              </Pressable>
+            )}
+          </ScrollView>
+
+          {/* ── Today's snapshot ───────────────────────────────────────── */}
           <View style={dynStyles.kpiGrid}>
-            {kpiCards.map((item) => (
-              <Pressable accessibilityRole="button"
+            {snapshotCards.map((item) => (
+              <Pressable
+                accessibilityRole="button"
                 key={item.label}
-                style={[dynStyles.kpiCard, shadows.sm]}
+                style={pressable([dynStyles.kpiCard, shadows.sm])}
                 onPress={() => handleRoleActionPress(item.route)}
               >
-                <View style={[dynStyles.kpiIcon, { backgroundColor: item.tone + '16' }]}> 
-                  <Ionicons name={item.icon as any} size={18} color={item.tone} />
+                <View style={dynStyles.kpiTop}>
+                  <View style={[dynStyles.kpiIcon, { backgroundColor: item.tone + '1A' }]}>
+                    <Ionicons name={item.icon.replace('-outline', '') as any} size={18} color={item.tone} />
+                  </View>
+                  <Ionicons name="arrow-forward" size={14} color={colors.textMuted} />
                 </View>
                 <Text style={dynStyles.kpiValue}>{item.value}</Text>
-                <Text style={dynStyles.kpiLabel}>{item.label}</Text>
-                <Text style={[dynStyles.kpiDetail, { color: item.tone }]}>{item.detail}</Text>
+                <Text style={dynStyles.kpiLabel} numberOfLines={1}>{item.label}</Text>
+                <Text style={[dynStyles.kpiDetail, { color: item.tone }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>{item.detail}</Text>
               </Pressable>
             ))}
           </View>
 
           <DailyBriefCard />
 
-          <View style={dynStyles.sectionHeader}>
-            <View>
-              <Text style={dynStyles.sectionTitle}>{t('dashboard.screens.main.actionCenterTitle')}</Text>
-              <Text style={dynStyles.sectionSubtitle}>{t('dashboard.screens.main.actionCenterSubtitle')}</Text>
-            </View>
-            <Pressable accessibilityRole="button" onPress={() => handleRoleActionPress('Tasks')} style={dynStyles.sectionButton}>
-              <Text style={dynStyles.sectionButtonText}>{t('dashboard.screens.main.review')}</Text>
-            </Pressable>
-          </View>
+          {/* ── Action center ──────────────────────────────────────────── */}
+          <SectionHeader
+            s={dynStyles}
+            accent={colors.primary}
+            title={t('dashboard.screens.main.actionCenterTitle')}
+            subtitle={t('dashboard.screens.main.actionCenterSubtitle')}
+            action={t('dashboard.screens.main.review')}
+            onAction={() => handleRoleActionPress('Tasks')}
+          />
 
           <View style={dynStyles.actionStack}>
             {actionItems.map((item) => (
-              <Pressable accessibilityRole="button" key={item.id} onPress={() => handleRoleActionPress(item.route)} style={dynStyles.actionCard}>
-                <View style={[dynStyles.actionIcon, { backgroundColor: item.tone + '16' }]}> 
-                  <Ionicons name={item.icon as any} size={18} color={item.tone} />
+              <Pressable
+                accessibilityRole="button"
+                key={item.id}
+                onPress={() => handleRoleActionPress(item.route)}
+                style={pressable([dynStyles.actionCard, { backgroundColor: item.tone + '0D', borderColor: item.tone + '33' }])}
+              >
+                <View style={[dynStyles.actionIcon, { backgroundColor: item.tone + '24' }]}>
+                  <Ionicons name={item.icon.replace('-outline', '') as any} size={19} color={item.tone} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={dynStyles.actionTitle}>{item.title}</Text>
@@ -660,26 +815,24 @@ export function DashboardScreen({ navigation }: any) {
             ))}
           </View>
 
-          <View style={dynStyles.sectionHeader}>
-            <View>
-              <Text style={dynStyles.sectionTitle}>{isChild ? t('dashboard.screens.main.myTimeline') : t('dashboard.screens.main.todayTimeline')}</Text>
-              <Text style={dynStyles.sectionSubtitle}>{t('dashboard.screens.main.timelineSubtitle')}</Text>
-            </View>
-            <Pressable accessibilityRole="button" onPress={() => handleRoleActionPress('Calendar')} style={dynStyles.sectionButton}>
-              <Text style={dynStyles.sectionButtonText}>{t('dashboard.screens.main.calendarButton')}</Text>
-            </Pressable>
-          </View>
+          {/* ── Timeline ───────────────────────────────────────────────── */}
+          <SectionHeader
+            s={dynStyles}
+            accent={colors.primary}
+            title={isChild ? t('dashboard.screens.main.myTimeline') : t('dashboard.screens.main.todayTimeline')}
+            subtitle={t('dashboard.screens.main.timelineSubtitle')}
+            action={t('dashboard.screens.main.calendarButton')}
+            onAction={() => handleRoleActionPress('Calendar')}
+          />
 
-          <View style={dynStyles.timelinePanel}>
+          <View style={[dynStyles.timelinePanel, shadows.sm]}>
             {timelineItems.length > 0 ? (
               timelineItems.map((event, index) => (
-                <Pressable accessibilityRole="button" key={event.id} onPress={() => handleRoleActionPress('Calendar')} style={dynStyles.timelineRow}>
-                  <View style={dynStyles.timelineLeft}>
-                    <Text style={dynStyles.timelineTime}>{event.allDay ? t('dashboard.screens.main.allDay') : format(new Date(event.startDate), 'h:mm a')}</Text>
-                    {index < timelineItems.length - 1 && <View style={dynStyles.timelineLine} />}
-                  </View>
-                  <View style={dynStyles.timelineDotWrap}>
+                <Pressable accessibilityRole="button" key={event.id} onPress={() => handleRoleActionPress('Calendar')} style={pressable(dynStyles.timelineRow)}>
+                  <Text style={dynStyles.timelineTime}>{event.allDay ? t('dashboard.screens.main.allDay') : format(new Date(event.startDate), 'h:mm a')}</Text>
+                  <View style={dynStyles.timelineRail}>
                     <View style={[dynStyles.timelineDot, { backgroundColor: event.color ?? COMMAND_COLORS.gold }]} />
+                    {index < timelineItems.length - 1 && <View style={dynStyles.timelineLine} />}
                   </View>
                   <View style={dynStyles.timelineContent}>
                     <Text style={dynStyles.timelineTitle}>{event.title}</Text>
@@ -691,85 +844,45 @@ export function DashboardScreen({ navigation }: any) {
               ))
             ) : (
               <Pressable accessibilityRole="button" style={dynStyles.emptyPanel} onPress={() => handleRoleActionPress('Calendar')}>
-                <Ionicons name="calendar-clear-outline" size={28} color={colors.textMuted} />
+                <View style={dynStyles.emptyIcon}>
+                  <Ionicons name="calendar-clear" size={26} color={colors.primary} />
+                </View>
                 <Text style={dynStyles.emptyTitle}>{t('dashboard.screens.main.noScheduledEventsTitle')}</Text>
                 <Text style={dynStyles.emptyText}>{t('dashboard.screens.main.noScheduledEventsDesc')}</Text>
               </Pressable>
             )}
           </View>
 
-          <View style={dynStyles.sectionHeader}>
-            <View>
-              <Text style={dynStyles.sectionTitle}>{t('dashboard.screens.main.familyStatusBoardTitle')}</Text>
-              <Text style={dynStyles.sectionSubtitle}>{t('dashboard.screens.main.familyStatusBoardSubtitle')}</Text>
-            </View>
-            <Pressable accessibilityRole="button" onPress={openFamilyMembers} style={dynStyles.sectionButton}>
-              <Text style={dynStyles.sectionButtonText}>{t('dashboard.screens.main.manageButton')}</Text>
-            </Pressable>
-          </View>
-
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={dynStyles.memberBoardScroll}>
-            {members.map((member) => {
-              const memberTasks = visibleTasks.filter((task: any) => task.assignedTo?.includes(member.id) && task.status === 'pending').length;
-              return (
-                <Pressable accessibilityRole="button" key={member.id} style={dynStyles.memberStatusCard} onPress={() => openMemberDetails(member.id)}>
-                  <View style={dynStyles.memberTopRow}>
-                    <Avatar
-                      name={member.name}
-                      color={member.avatarColor}
-                      size={44}
-                      showBadge
-                      badgeColor={member.status === 'ACTIVE' ? colors.success : colors.warning}
-                    />
-                    <View style={[dynStyles.memberRolePill, { backgroundColor: colors.primary + '12' }]}> 
-                      <Text style={[dynStyles.memberRoleText, { color: colors.primary }]}>{member.role}</Text>
-                    </View>
-                  </View>
-                  <Text style={dynStyles.memberName} numberOfLines={1}>{member.name}</Text>
-                  <Text style={dynStyles.memberStatusText}>{t('dashboard.screens.main.pendingTaskCount', { count: memberTasks })}</Text>
-                  <View style={dynStyles.memberFooter}>
-                    <Ionicons name="trophy-outline" size={13} color={COMMAND_COLORS.gold} />
-                    <Text style={dynStyles.memberPoints}>{member.points?.toLocaleString?.() ?? 0} pts</Text>
-                  </View>
-                </Pressable>
-              );
-            })}
-
-            {isParent && (
-              <Pressable accessibilityRole="button" style={dynStyles.inviteCard} onPress={openInviteMember}>
-                <View style={dynStyles.inviteIcon}>
-                  <Ionicons name="add" size={22} color={colors.primary} />
-                </View>
-                <Text style={dynStyles.inviteTitle}>{t('dashboard.screens.main.inviteTitle')}</Text>
-                <Text style={dynStyles.inviteSubtitle}>{t('dashboard.screens.main.inviteSubtitle')}</Text>
-              </Pressable>
-            )}
-          </ScrollView>
-
+          {/* ── Finance snapshot ───────────────────────────────────────── */}
           {isParent && (
             <>
-              <View style={dynStyles.sectionHeader}>
-                <View>
-                  <Text style={dynStyles.sectionTitle}>{t('dashboard.screens.main.financeSnapshotTitle')}</Text>
-                  <Text style={dynStyles.sectionSubtitle}>{t('dashboard.screens.main.financeSnapshotSubtitle')}</Text>
-                </View>
-                <Pressable accessibilityRole="button" onPress={() => handleRoleActionPress('Finance')} style={dynStyles.sectionButton}>
-                  <Text style={dynStyles.sectionButtonText}>{t('dashboard.screens.main.openButton')}</Text>
-                </Pressable>
-              </View>
+              <SectionHeader
+            s={dynStyles}
+            accent={colors.primary}
+                title={t('dashboard.screens.main.financeSnapshotTitle')}
+                subtitle={t('dashboard.screens.main.financeSnapshotSubtitle')}
+                action={t('dashboard.screens.main.openButton')}
+                onAction={() => handleRoleActionPress('Finance')}
+              />
 
-              <Pressable accessibilityRole="button"
-                style={dynStyles.financeCard}
+              <Pressable
+                accessibilityRole="button"
+                style={pressable([dynStyles.financeCard, shadows.md])}
                 onPress={() => (hasFinanceAccess ? handleRoleActionPress('Finance') : showPaywall('premium'))}
               >
-                <LinearGradient colors={[COMMAND_COLORS.navy800, COMMAND_COLORS.navy700]} style={dynStyles.financeGradient}>
+                <LinearGradient
+                  colors={['#0B1F3F', '#12376B', '#0E6B72']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={dynStyles.financeGradient}
+                >
                   <View style={dynStyles.financeTopRow}>
                     <View>
                       <Text style={dynStyles.financeTitle}>{t('dashboard.screens.main.monthlyCashFlow')}</Text>
                       <Text style={dynStyles.financeSubtitle}>{t('dashboard.screens.main.savingsRatePercent', { rate: savingsRate })}</Text>
                     </View>
-                    <View style={[dynStyles.financeBadge, { backgroundColor: monthlySavings < 0 ? COMMAND_COLORS.red + '22' : COMMAND_COLORS.teal + '22' }]}>
-                      <Text style={[dynStyles.financeBadgeText, { color: monthlySavings < 0 ? COMMAND_COLORS.red : COMMAND_COLORS.teal }]}>
+                    <View style={[dynStyles.financeBadge, { backgroundColor: monthlySavings < 0 ? COMMAND_COLORS.red + '33' : COMMAND_COLORS.teal + '33' }]}>
+                      <Text style={[dynStyles.financeBadgeText, { color: monthlySavings < 0 ? '#FCA5A5' : '#5EEAD4' }]}>
                         {monthlySavings < 0 ? t('dashboard.screens.main.deficitBadge') : t('dashboard.screens.main.positiveBadge')}
                       </Text>
                     </View>
@@ -778,15 +891,15 @@ export function DashboardScreen({ navigation }: any) {
                   <View style={dynStyles.financeMetricRow}>
                     <View style={dynStyles.financeMetric}>
                       <Text style={dynStyles.financeMetricLabel}>{t('dashboard.screens.main.incomeLabel')}</Text>
-                      <Text style={dynStyles.financeMetricValue}>{maskAmount(monthlyIncome)}</Text>
+                      <Text style={dynStyles.financeMetricValue} numberOfLines={1} adjustsFontSizeToFit>{maskAmount(monthlyIncome)}</Text>
                     </View>
                     <View style={dynStyles.financeMetric}>
                       <Text style={dynStyles.financeMetricLabel}>{t('dashboard.screens.main.expensesLabel')}</Text>
-                      <Text style={dynStyles.financeMetricValue}>{maskAmount(monthlyExpenses)}</Text>
+                      <Text style={dynStyles.financeMetricValue} numberOfLines={1} adjustsFontSizeToFit>{maskAmount(monthlyExpenses)}</Text>
                     </View>
                     <View style={dynStyles.financeMetric}>
                       <Text style={dynStyles.financeMetricLabel}>{t('dashboard.screens.main.savingsLabel')}</Text>
-                      <Text style={dynStyles.financeMetricValue}>{maskAmount(monthlySavings)}</Text>
+                      <Text style={dynStyles.financeMetricValue} numberOfLines={1} adjustsFontSizeToFit>{maskAmount(monthlySavings)}</Text>
                     </View>
                   </View>
 
@@ -796,9 +909,9 @@ export function DashboardScreen({ navigation }: any) {
                   </View>
                   <ProgressBar
                     progress={expenseRate}
-                    color={expenseRate > 0.85 ? COMMAND_COLORS.orange : COMMAND_COLORS.teal}
-                    backgroundColor="rgba(255,255,255,0.12)"
-                    height={7}
+                    color={expenseRate > 0.85 ? COMMAND_COLORS.orange : '#2DD4BF'}
+                    backgroundColor="rgba(255,255,255,0.14)"
+                    height={8}
                   />
                 </LinearGradient>
 
@@ -823,21 +936,22 @@ export function DashboardScreen({ navigation }: any) {
             </>
           )}
 
-          <View style={dynStyles.sectionHeader}>
-            <View>
-              <Text style={dynStyles.sectionTitle}>{t('dashboard.screens.main.commanderAiTitle')}</Text>
-              <Text style={dynStyles.sectionSubtitle}>{t('dashboard.screens.main.commanderAiSubtitle')}</Text>
-            </View>
-            <Pressable accessibilityRole="button" onPress={() => handleRoleActionPress('AIAssistant')} style={dynStyles.sectionButton}>
-              <Text style={dynStyles.sectionButtonText}>{t('dashboard.screens.main.askAiButton')}</Text>
-            </Pressable>
-          </View>
+          {/* ── Commander AI ───────────────────────────────────────────── */}
+          <SectionHeader
+            s={dynStyles}
+            accent={colors.primary}
+            title={t('dashboard.screens.main.commanderAiTitle')}
+            subtitle={t('dashboard.screens.main.commanderAiSubtitle')}
+            action={t('dashboard.screens.main.askAiButton')}
+            onAction={() => handleRoleActionPress('AIAssistant')}
+          />
 
-          <Pressable accessibilityRole="button" onPress={() => handleRoleActionPress('AIAssistant')} style={dynStyles.aiCard}>
-            <LinearGradient colors={[COMMAND_COLORS.navy900, COMMAND_COLORS.navy700]} style={dynStyles.aiGradient}>
+          <Pressable accessibilityRole="button" onPress={() => handleRoleActionPress('AIAssistant')} style={pressable([dynStyles.aiCard, shadows.md])}>
+            <LinearGradient colors={['#1D2F6F', '#4C2A9B', '#7C3AED']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={dynStyles.aiGradient}>
+              <View style={dynStyles.aiGlow} pointerEvents="none" />
               <View style={dynStyles.aiTopRow}>
                 <View style={dynStyles.aiIconWrap}>
-                  <Ionicons name="sparkles-outline" size={20} color={COMMAND_COLORS.gold} />
+                  <Ionicons name="sparkles" size={20} color="#fff" />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={dynStyles.aiTitle}>{featuredInsight?.title ?? t('dashboard.screens.main.aiDefaultTitle')}</Text>
@@ -853,7 +967,7 @@ export function DashboardScreen({ navigation }: any) {
               </View>
               <View style={dynStyles.aiActionRow}>
                 <Text style={dynStyles.aiActionText}>{t('dashboard.screens.main.openCommanderAi')}</Text>
-                <Ionicons name="arrow-forward" size={16} color={COMMAND_COLORS.gold} />
+                <Ionicons name="arrow-forward" size={15} color="#4C2A9B" />
               </View>
             </LinearGradient>
           </Pressable>
@@ -863,29 +977,29 @@ export function DashboardScreen({ navigation }: any) {
           <StreakCounterCard onPress={() => navigation.navigate('Family', { screen: 'Habits', initial: false } as never)} />
           <ChoreLeaderboardCard onPress={() => navigation.navigate('Family', { screen: 'Tasks', initial: false } as never)} />
 
-          <View style={dynStyles.sectionHeader}>
-            <View>
-              <Text style={dynStyles.sectionTitle}>{t('dashboard.screens.main.weeklyProgressTitle')}</Text>
-              <Text style={dynStyles.sectionSubtitle}>{t('dashboard.screens.main.weeklyProgressSubtitle')}</Text>
-            </View>
-            <Pressable accessibilityRole="button" onPress={() => handleRoleActionPress('WeeklyReport')} style={dynStyles.sectionButton}>
-              <Text style={dynStyles.sectionButtonText}>{t('dashboard.screens.main.reportButton')}</Text>
-            </Pressable>
-          </View>
+          {/* ── Weekly progress ────────────────────────────────────────── */}
+          <SectionHeader
+            s={dynStyles}
+            accent={colors.primary}
+            title={t('dashboard.screens.main.weeklyProgressTitle')}
+            subtitle={t('dashboard.screens.main.weeklyProgressSubtitle')}
+            action={t('dashboard.screens.main.reportButton')}
+            onAction={() => handleRoleActionPress('WeeklyReport')}
+          />
 
-          <View style={dynStyles.progressCard}>
-            {[
-              { label: t('dashboard.screens.main.progressFinance'), value: healthScore.financial, color: SCORE_COLOR(healthScore.financial) },
-              { label: t('dashboard.screens.main.progressTasks'), value: healthScore.tasks, color: SCORE_COLOR(healthScore.tasks) },
-              { label: t('dashboard.screens.main.progressGoals'), value: healthScore.goals, color: SCORE_COLOR(healthScore.goals) },
-              { label: t('dashboard.screens.main.progressWellness'), value: healthScore.health, color: SCORE_COLOR(healthScore.health) },
-            ].map((item) => (
-              <View key={item.label} style={dynStyles.progressItem}>
-                <View style={dynStyles.progressLabelRowLight}>
-                  <Text style={dynStyles.progressItemLabel}>{item.label}</Text>
-                  <Text style={[dynStyles.progressItemValue, { color: item.color }]}>{item.value}%</Text>
-                </View>
-                <ProgressBar progress={item.value / 100} color={item.color} backgroundColor={colors.border} height={6} />
+          <View style={[dynStyles.progressCard, shadows.sm]}>
+            {progressRings.map((item) => (
+              <View key={item.label} style={dynStyles.ringItem}>
+                <ProgressRing
+                  size={64}
+                  strokeWidth={7}
+                  progress={item.value / 100}
+                  color={SCORE_COLOR(item.value)}
+                  trackColor={colors.border}
+                >
+                  <Text style={[dynStyles.ringSmallValue, { color: SCORE_COLOR(item.value) }]}>{item.value}%</Text>
+                </ProgressRing>
+                <Text style={dynStyles.ringLabel} numberOfLines={1}>{item.label}</Text>
               </View>
             ))}
           </View>
@@ -893,7 +1007,7 @@ export function DashboardScreen({ navigation }: any) {
       </ScrollView>
 
       {fabOpen && (
-        <View style={[dynStyles.fabMenu, { bottom: 92 + insets.bottom }]}> 
+        <View style={[dynStyles.fabMenu, { bottom: 92 + insets.bottom }]}>
           {[
             { label: t('dashboard.screens.main.fabAddTask'), icon: 'checkbox-outline', route: 'Tasks' },
             { label: t('dashboard.screens.main.fabAddEvent'), icon: 'calendar-outline', route: 'Calendar' },
@@ -917,6 +1031,42 @@ export function DashboardScreen({ navigation }: any) {
   );
 }
 
+function SectionHeader({
+  s,
+  accent,
+  title,
+  subtitle,
+  action,
+  onAction,
+}: {
+  s: ReturnType<typeof makeStyles>;
+  accent: string;
+  title: string;
+  subtitle?: string;
+  action?: string;
+  onAction?: () => void;
+}) {
+  return (
+    <View style={s.sectionHeader}>
+      <View style={{ flex: 1 }}>
+        <Text style={s.sectionTitle}>{title}</Text>
+        {!!subtitle && <Text style={s.sectionSubtitle}>{subtitle}</Text>}
+      </View>
+      {!!action && (
+        <Pressable
+          accessibilityRole="button"
+          onPress={onAction}
+          style={({ pressed }) => [s.sectionButton, pressed && s.pressed]}
+          hitSlop={8}
+        >
+          <Text style={s.sectionButtonText}>{action}</Text>
+          <Ionicons name="chevron-forward" size={13} color={accent} />
+        </Pressable>
+      )}
+    </View>
+  );
+}
+
 function makeStyles(colors: import('../../theme/ThemeContext').ThemeColors, kpiColumns: number, contentWidth: number) {
   // 36 = the kpiGrid's paddingHorizontal (18 * 2); gaps between columns are
   // 12pt each, and there's one fewer gap than there are columns.
@@ -936,43 +1086,26 @@ function makeStyles(colors: import('../../theme/ThemeContext').ThemeColors, kpiC
       maxWidth: contentWidth,
       alignSelf: 'center',
     },
-    header: {
+    pressed: {
+      opacity: 0.92,
+      transform: [{ scale: 0.985 }],
+    },
+
+    // ── Hero ──────────────────────────────────────────────────────────
+    hero: {
       paddingHorizontal: 18,
-      paddingBottom: 22,
-      borderBottomLeftRadius: 28,
-      borderBottomRightRadius: 28,
+      paddingBottom: 66,
+      borderBottomLeftRadius: 32,
+      borderBottomRightRadius: 32,
       overflow: 'hidden',
+      backgroundColor: COMMAND_COLORS.navy900,
     },
-    headerGlowGold: {
-      position: 'absolute',
-      width: 260,
-      height: 260,
-      borderRadius: 130,
-      backgroundColor: COMMAND_COLORS.gold,
-      opacity: 0.08,
-      right: -90,
-      top: -120,
-    },
-    headerGlowTeal: {
-      position: 'absolute',
-      width: 180,
-      height: 180,
-      borderRadius: 90,
-      backgroundColor: COMMAND_COLORS.teal,
-      opacity: 0.08,
-      left: -70,
-      bottom: -80,
-    },
-    headerTop: {
+    heroTop: {
       flexDirection: 'row',
-      alignItems: 'flex-start',
+      alignItems: 'center',
       justifyContent: 'space-between',
-      gap: 12,
-      marginBottom: 16,
-    },
-    headerIdentity: {
-      flex: 1,
-      minWidth: 0,
+      marginBottom: 14,
+      gap: 8,
     },
     eyebrow: {
       color: COMMAND_COLORS.gold,
@@ -980,46 +1113,6 @@ function makeStyles(colors: import('../../theme/ThemeContext').ThemeColors, kpiC
       fontWeight: '900',
       letterSpacing: 1.3,
       textTransform: 'uppercase',
-      marginBottom: 6,
-    },
-    greeting: {
-      color: 'rgba(255,255,255,0.64)',
-      fontSize: 13,
-      fontWeight: '600',
-      letterSpacing: 0.2,
-    },
-    familyName: {
-      color: '#fff',
-      fontSize: 25,
-      lineHeight: 30,
-      fontWeight: '900',
-      letterSpacing: -0.8,
-      marginTop: 2,
-    },
-    dateText: {
-      color: 'rgba(255,255,255,0.52)',
-      fontSize: 12,
-      fontWeight: '600',
-      marginTop: 3,
-    },
-    activeProfileBadge: {
-      marginTop: 12,
-      flexDirection: 'row',
-      alignItems: 'center',
-      alignSelf: 'flex-start',
-      gap: 7,
-      backgroundColor: 'rgba(255,255,255,0.12)',
-      borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.12)',
-      paddingHorizontal: 9,
-      paddingVertical: 6,
-      borderRadius: 999,
-      maxWidth: '95%',
-    },
-    activeProfileName: {
-      color: '#fff',
-      fontSize: 12,
-      fontWeight: '800',
       flexShrink: 1,
     },
     headerActions: {
@@ -1029,20 +1122,20 @@ function makeStyles(colors: import('../../theme/ThemeContext').ThemeColors, kpiC
       flexShrink: 0,
     },
     headerIconBtn: {
-      width: 39,
-      height: 39,
-      borderRadius: 14,
-      backgroundColor: 'rgba(255,255,255,0.11)',
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      backgroundColor: 'rgba(255,255,255,0.16)',
       borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.1)',
+      borderColor: 'rgba(255,255,255,0.2)',
       alignItems: 'center',
       justifyContent: 'center',
       position: 'relative',
     },
     notifDot: {
       position: 'absolute',
-      top: -6,
-      right: -6,
+      top: -5,
+      right: -5,
       minWidth: 18,
       height: 18,
       borderRadius: 9,
@@ -1058,155 +1151,368 @@ function makeStyles(colors: import('../../theme/ThemeContext').ThemeColors, kpiC
       fontSize: 9,
       fontWeight: '900',
     },
-    smartStatusCard: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 12,
-      backgroundColor: 'rgba(255,255,255,0.09)',
-      borderRadius: 20,
-      borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.12)',
-      padding: 14,
-      marginBottom: 12,
-    },
-    statusIcon: {
-      width: 40,
-      height: 40,
-      borderRadius: 14,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    statusLabel: {
-      color: '#fff',
+    greeting: {
+      color: 'rgba(255,255,255,0.8)',
       fontSize: 14,
-      fontWeight: '900',
-      letterSpacing: -0.2,
-      marginBottom: 2,
-    },
-    statusMessage: {
-      color: 'rgba(255,255,255,0.62)',
-      fontSize: 12,
       fontWeight: '600',
-      lineHeight: 17,
+      letterSpacing: 0.2,
     },
-    statusScore: {
-      color: COMMAND_COLORS.gold,
-      fontSize: 26,
+    familyName: {
+      color: '#fff',
+      fontSize: 30,
+      lineHeight: 36,
       fontWeight: '900',
-      letterSpacing: -1,
+      letterSpacing: -0.8,
+      marginTop: 2,
     },
-    smartBar: {
+    dateText: {
+      color: 'rgba(255,255,255,0.66)',
+      fontSize: 12.5,
+      fontWeight: '600',
+      marginTop: 4,
+    },
+    heroBottom: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      backgroundColor: 'rgba(0,0,0,0.18)',
-      borderRadius: 16,
-      borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.09)',
-      paddingVertical: 11,
-      paddingHorizontal: 8,
+      gap: 10,
+      marginTop: 16,
     },
-    smartBarItem: {
+    activeProfileBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 7,
+      backgroundColor: 'rgba(255,255,255,0.16)',
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.2)',
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: 999,
+      flexShrink: 1,
+    },
+    activeProfileName: {
+      color: '#fff',
+      fontSize: 12,
+      fontWeight: '800',
+      flexShrink: 1,
+    },
+    avatarStack: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    stackItem: {
+      width: 34,
+      height: 34,
+      borderRadius: 17,
+      borderWidth: 2,
+      borderColor: '#fff',
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'hidden',
+      backgroundColor: '#fff',
+    },
+    stackMore: {
+      backgroundColor: 'rgba(255,255,255,0.28)',
+      borderColor: 'rgba(255,255,255,0.6)',
+    },
+    stackMoreText: {
+      color: '#fff',
+      fontSize: 11,
+      fontWeight: '800',
+    },
+
+    // ── Household health card ─────────────────────────────────────────
+    healthCard: {
+      marginHorizontal: 18,
+      marginTop: -46,
+      backgroundColor: colors.card,
+      borderRadius: 26,
+      padding: 18,
+    },
+    healthTop: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 16,
+    },
+    ringValue: {
+      fontSize: 28,
+      fontWeight: '900',
+      color: colors.text,
+      letterSpacing: -1,
+    },
+    ringCaption: {
+      fontSize: 10,
+      fontWeight: '700',
+      color: colors.textMuted,
+      marginTop: -2,
+    },
+    statusPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+      gap: 5,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: 999,
+    },
+    statusPillText: {
+      fontSize: 12.5,
+      fontWeight: '800',
+    },
+    statusMessage: {
+      fontSize: 13.5,
+      lineHeight: 19,
+      fontWeight: '600',
+      color: colors.textSecondary,
+      marginTop: 8,
+    },
+    healthStats: {
+      flexDirection: 'row',
+      marginTop: 16,
+      paddingTop: 14,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    healthStat: {
       flex: 1,
       alignItems: 'center',
     },
-    smartBarValue: {
-      color: '#fff',
-      fontSize: 15,
+    healthStatValue: {
+      fontSize: 20,
       fontWeight: '900',
-      letterSpacing: -0.3,
+      color: colors.text,
+      letterSpacing: -0.4,
     },
-    smartBarLabel: {
-      color: 'rgba(255,255,255,0.48)',
-      fontSize: 10,
+    healthStatLabel: {
+      fontSize: 11,
       fontWeight: '700',
-      marginTop: 2,
+      color: colors.textMuted,
       textTransform: 'uppercase',
       letterSpacing: 0.5,
+      marginTop: 2,
     },
-    smartBarDivider: {
+    healthDivider: {
       width: 1,
-      height: 28,
-      backgroundColor: 'rgba(255,255,255,0.12)',
+      height: 30,
+      alignSelf: 'center',
+      backgroundColor: colors.border,
     },
+
+    // ── Quick actions ─────────────────────────────────────────────────
+    quickRow: {
+      flexDirection: 'row',
+      gap: 10,
+      paddingHorizontal: 18,
+      marginTop: 18,
+    },
+    quickTile: {
+      flex: 1,
+      alignItems: 'center',
+      gap: 8,
+      backgroundColor: colors.card,
+      borderRadius: 20,
+      paddingVertical: 14,
+      paddingHorizontal: 6,
+      borderWidth: 1,
+      borderColor: colors.border,
+      ...shadows.sm,
+    },
+    quickIcon: {
+      width: 48,
+      height: 48,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    quickLabel: {
+      fontSize: 11.5,
+      fontWeight: '800',
+      color: colors.text,
+      textAlign: 'center',
+    },
+
+    // ── Section headers ───────────────────────────────────────────────
+    sectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+      paddingHorizontal: 18,
+      marginTop: 26,
+      marginBottom: 12,
+    },
+    sectionTitle: {
+      fontSize: 19,
+      fontWeight: '900',
+      color: colors.text,
+      letterSpacing: -0.4,
+    },
+    sectionSubtitle: {
+      fontSize: 12.5,
+      fontWeight: '600',
+      color: colors.textSecondary,
+      marginTop: 2,
+    },
+    sectionButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 2,
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+      borderRadius: 999,
+      backgroundColor: colors.primary + '14',
+    },
+    sectionButtonText: {
+      fontSize: 12.5,
+      fontWeight: '800',
+      color: colors.primary,
+    },
+
+    // ── Family circle ─────────────────────────────────────────────────
+    memberBoardScroll: {
+      paddingHorizontal: 18,
+      paddingBottom: 6,
+      gap: 12,
+    },
+    memberStatusCard: {
+      width: 138,
+      backgroundColor: colors.card,
+      borderRadius: 24,
+      padding: 14,
+      alignItems: 'center',
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: colors.border,
+      ...shadows.sm,
+    },
+    memberWash: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      height: 84,
+    },
+    memberName: {
+      marginTop: 10,
+      fontSize: 15,
+      fontWeight: '800',
+      color: colors.text,
+      maxWidth: '100%',
+    },
+    memberRolePill: {
+      marginTop: 6,
+      paddingHorizontal: 10,
+      paddingVertical: 3,
+      borderRadius: 999,
+    },
+    memberRoleText: {
+      fontSize: 11,
+      fontWeight: '800',
+      textTransform: 'capitalize',
+    },
+    memberStatsRow: {
+      flexDirection: 'row',
+      gap: 6,
+      marginTop: 12,
+    },
+    memberChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: colors.surface,
+      paddingHorizontal: 8,
+      paddingVertical: 5,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    memberChipText: {
+      fontSize: 12,
+      fontWeight: '800',
+      color: colors.text,
+    },
+    inviteCard: {
+      width: 138,
+      borderRadius: 24,
+      padding: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1.5,
+      borderStyle: 'dashed',
+      borderColor: colors.border,
+    },
+    inviteIcon: {
+      width: 46,
+      height: 46,
+      borderRadius: 23,
+      backgroundColor: colors.primary + '14',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    inviteTitle: {
+      marginTop: 10,
+      fontSize: 14,
+      fontWeight: '800',
+      color: colors.text,
+    },
+    inviteSubtitle: {
+      marginTop: 2,
+      fontSize: 11.5,
+      fontWeight: '600',
+      color: colors.textSecondary,
+      textAlign: 'center',
+    },
+
+    // ── Today's snapshot ──────────────────────────────────────────────
     kpiGrid: {
       flexDirection: 'row',
       flexWrap: 'wrap',
       gap: 12,
       paddingHorizontal: 18,
-      marginTop: 18,
+      marginTop: 22,
     },
     kpiCard: {
       width: cardWidth,
-      minHeight: 130,
-      borderRadius: 22,
       backgroundColor: colors.card,
+      borderRadius: 22,
+      padding: 14,
       borderWidth: 1,
       borderColor: colors.border,
-      padding: 15,
+    },
+    kpiTop: {
+      flexDirection: 'row',
+      alignItems: 'center',
       justifyContent: 'space-between',
     },
     kpiIcon: {
-      width: 38,
-      height: 38,
-      borderRadius: 14,
+      width: 36,
+      height: 36,
+      borderRadius: 12,
       alignItems: 'center',
       justifyContent: 'center',
-      marginBottom: 10,
     },
     kpiValue: {
-      color: colors.text,
-      fontSize: 23,
+      fontSize: 28,
       fontWeight: '900',
-      letterSpacing: -0.8,
+      color: colors.text,
+      letterSpacing: -1,
+      marginTop: 12,
     },
     kpiLabel: {
+      fontSize: 13,
+      fontWeight: '700',
       color: colors.textSecondary,
-      fontSize: 12,
-      fontWeight: '800',
-      marginTop: 2,
+      marginTop: 1,
     },
     kpiDetail: {
       fontSize: 11,
       fontWeight: '900',
-      marginTop: 6,
       textTransform: 'uppercase',
-      letterSpacing: 0.4,
+      letterSpacing: 0.6,
+      marginTop: 6,
     },
-    sectionHeader: {
-      flexDirection: 'row',
-      alignItems: 'flex-end',
-      justifyContent: 'space-between',
-      paddingHorizontal: 18,
-      marginTop: 26,
-      marginBottom: 12,
-      gap: 12,
-    },
-    sectionTitle: {
-      color: colors.text,
-      fontSize: 19,
-      fontWeight: '900',
-      letterSpacing: -0.5,
-    },
-    sectionSubtitle: {
-      color: colors.textSecondary,
-      fontSize: 12,
-      fontWeight: '600',
-      marginTop: 3,
-      lineHeight: 16,
-    },
-    sectionButton: {
-      backgroundColor: colors.primary + '12',
-      borderRadius: 999,
-      paddingHorizontal: 12,
-      paddingVertical: 7,
-      flexShrink: 0,
-    },
-    sectionButtonText: {
-      color: colors.primary,
-      fontSize: 12,
-      fontWeight: '900',
-    },
+
+    // ── Action center ─────────────────────────────────────────────────
     actionStack: {
       paddingHorizontal: 18,
       gap: 10,
@@ -1215,11 +1521,9 @@ function makeStyles(colors: import('../../theme/ThemeContext').ThemeColors, kpiC
       flexDirection: 'row',
       alignItems: 'center',
       gap: 12,
-      backgroundColor: colors.card,
-      borderRadius: 18,
-      borderWidth: 1,
-      borderColor: colors.border,
       padding: 14,
+      borderRadius: 20,
+      borderWidth: 1,
     },
     actionIcon: {
       width: 40,
@@ -1229,186 +1533,175 @@ function makeStyles(colors: import('../../theme/ThemeContext').ThemeColors, kpiC
       justifyContent: 'center',
     },
     actionTitle: {
+      fontSize: 14.5,
+      fontWeight: '800',
       color: colors.text,
-      fontSize: 14,
-      fontWeight: '900',
-      letterSpacing: -0.2,
     },
     actionSubtitle: {
-      color: colors.textSecondary,
-      fontSize: 12,
+      fontSize: 12.5,
       fontWeight: '600',
-      lineHeight: 17,
+      color: colors.textSecondary,
       marginTop: 2,
     },
+
+    // ── Timeline ──────────────────────────────────────────────────────
     timelinePanel: {
       marginHorizontal: 18,
       backgroundColor: colors.card,
-      borderRadius: 22,
+      borderRadius: 24,
+      padding: 8,
       borderWidth: 1,
       borderColor: colors.border,
-      paddingVertical: 4,
-      overflow: 'hidden',
     },
     timelineRow: {
       flexDirection: 'row',
-      minHeight: 72,
-      paddingHorizontal: 14,
-    },
-    timelineLeft: {
-      width: 66,
       alignItems: 'flex-start',
-      paddingTop: 17,
+      paddingVertical: 10,
+      paddingHorizontal: 8,
+      gap: 10,
     },
     timelineTime: {
+      width: 62,
+      fontSize: 12,
+      fontWeight: '800',
       color: colors.textSecondary,
-      fontSize: 11,
-      fontWeight: '900',
+      marginTop: 2,
     },
-    timelineLine: {
-      position: 'absolute',
-      top: 40,
-      left: 72,
-      width: 1,
-      height: 46,
-      backgroundColor: colors.border,
-    },
-    timelineDotWrap: {
-      width: 20,
+    timelineRail: {
+      width: 14,
       alignItems: 'center',
-      paddingTop: 22,
+      alignSelf: 'stretch',
     },
     timelineDot: {
-      width: 10,
-      height: 10,
-      borderRadius: 5,
+      width: 12,
+      height: 12,
+      borderRadius: 6,
+      marginTop: 3,
+    },
+    timelineLine: {
+      flex: 1,
+      width: 2,
+      minHeight: 24,
+      marginTop: 4,
+      borderRadius: 1,
+      backgroundColor: colors.border,
     },
     timelineContent: {
       flex: 1,
-      paddingVertical: 16,
-      paddingLeft: 8,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: colors.border,
     },
     timelineTitle: {
+      fontSize: 14.5,
+      fontWeight: '800',
       color: colors.text,
-      fontSize: 14,
-      fontWeight: '900',
-      letterSpacing: -0.2,
     },
     timelineMeta: {
-      color: colors.textSecondary,
-      fontSize: 12,
+      fontSize: 12.5,
       fontWeight: '600',
-      marginTop: 4,
+      color: colors.textSecondary,
+      marginTop: 2,
     },
     emptyPanel: {
       alignItems: 'center',
-      paddingHorizontal: 24,
       paddingVertical: 26,
+      gap: 6,
+    },
+    emptyIcon: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: colors.primary + '12',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 4,
     },
     emptyTitle: {
-      color: colors.text,
       fontSize: 15,
-      fontWeight: '900',
-      marginTop: 10,
+      fontWeight: '800',
+      color: colors.text,
     },
     emptyText: {
-      color: colors.textSecondary,
-      fontSize: 12,
-      textAlign: 'center',
-      lineHeight: 18,
-      marginTop: 4,
-    },
-    memberBoardScroll: {
-      paddingHorizontal: 18,
-      gap: 12,
-    },
-    memberStatusCard: {
-      width: 168,
-      backgroundColor: colors.card,
-      borderRadius: 22,
-      borderWidth: 1,
-      borderColor: colors.border,
-      padding: 14,
-      marginRight: 12,
-    },
-    memberTopRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      marginBottom: 12,
-    },
-    memberRolePill: {
-      paddingHorizontal: 8,
-      paddingVertical: 4,
-      borderRadius: 999,
-    },
-    memberRoleText: {
-      fontSize: 9,
-      fontWeight: '900',
-      textTransform: 'uppercase',
-    },
-    memberName: {
-      color: colors.text,
-      fontSize: 14,
-      fontWeight: '900',
-      letterSpacing: -0.2,
-    },
-    memberStatusText: {
-      color: colors.textSecondary,
-      fontSize: 12,
+      fontSize: 12.5,
       fontWeight: '600',
-      marginTop: 4,
-    },
-    memberFooter: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 5,
-      marginTop: 14,
-    },
-    memberPoints: {
       color: colors.textSecondary,
-      fontSize: 12,
-      fontWeight: '800',
-    },
-    inviteCard: {
-      width: 132,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: colors.card,
-      borderRadius: 22,
-      borderWidth: 1.5,
-      borderStyle: 'dashed',
-      borderColor: colors.border,
-      padding: 14,
-      marginRight: 18,
-    },
-    inviteIcon: {
-      width: 44,
-      height: 44,
-      borderRadius: 16,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: colors.primary + '12',
-      marginBottom: 10,
-    },
-    inviteTitle: {
-      color: colors.text,
-      fontSize: 14,
-      fontWeight: '900',
-    },
-    inviteSubtitle: {
-      color: colors.textSecondary,
-      fontSize: 11,
-      fontWeight: '600',
       textAlign: 'center',
-      marginTop: 3,
+      paddingHorizontal: 24,
     },
+
+    // ── Finance snapshot ──────────────────────────────────────────────
     financeCard: {
       marginHorizontal: 18,
-      borderRadius: 24,
+      borderRadius: 26,
       overflow: 'hidden',
+    },
+    financeGradient: {
+      padding: 18,
+    },
+    financeTopRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      marginBottom: 16,
+    },
+    financeTitle: {
+      color: '#fff',
+      fontSize: 16,
+      fontWeight: '900',
+    },
+    financeSubtitle: {
+      color: 'rgba(255,255,255,0.68)',
+      fontSize: 12.5,
+      fontWeight: '600',
+      marginTop: 2,
+    },
+    financeBadge: {
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: 999,
+    },
+    financeBadgeText: {
+      fontSize: 11.5,
+      fontWeight: '900',
+    },
+    financeMetricRow: {
+      flexDirection: 'row',
+      gap: 8,
+      marginBottom: 16,
+    },
+    financeMetric: {
+      flex: 1,
+      backgroundColor: 'rgba(255,255,255,0.1)',
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.08)',
+      padding: 10,
+    },
+    financeMetricLabel: {
+      color: 'rgba(255,255,255,0.64)',
+      fontSize: 11,
+      fontWeight: '700',
+      textTransform: 'uppercase',
+      letterSpacing: 0.4,
+    },
+    financeMetricValue: {
+      color: '#fff',
+      fontSize: 16,
+      fontWeight: '900',
+      marginTop: 4,
+    },
+    progressLabelRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: 8,
+    },
+    progressLabel: {
+      color: 'rgba(255,255,255,0.72)',
+      fontSize: 12,
+      fontWeight: '700',
+    },
+    progressValue: {
+      color: '#fff',
+      fontSize: 12,
+      fontWeight: '900',
     },
     financeLockScrim: {
       ...StyleSheet.absoluteFillObject,
@@ -1433,158 +1726,95 @@ function makeStyles(colors: import('../../theme/ThemeContext').ThemeColors, kpiC
       fontWeight: '700',
       color: '#fff',
     },
-    financeGradient: {
-      padding: 18,
-      borderRadius: 24,
-    },
-    financeTopRow: {
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-      justifyContent: 'space-between',
-      gap: 12,
-      marginBottom: 18,
-    },
-    financeTitle: {
-      color: '#fff',
-      fontSize: 17,
-      fontWeight: '900',
-      letterSpacing: -0.3,
-    },
-    financeSubtitle: {
-      color: 'rgba(255,255,255,0.58)',
-      fontSize: 12,
-      fontWeight: '700',
-      marginTop: 4,
-    },
-    financeBadge: {
-      borderRadius: 999,
-      paddingHorizontal: 10,
-      paddingVertical: 6,
-    },
-    financeBadgeText: {
-      fontSize: 11,
-      fontWeight: '900',
-      textTransform: 'uppercase',
-      letterSpacing: 0.4,
-    },
-    financeMetricRow: {
-      flexDirection: 'row',
-      gap: 8,
-      marginBottom: 16,
-    },
-    financeMetric: {
-      flex: 1,
-      backgroundColor: 'rgba(255,255,255,0.08)',
-      borderRadius: 16,
-      padding: 11,
-    },
-    financeMetricLabel: {
-      color: 'rgba(255,255,255,0.52)',
-      fontSize: 10,
-      fontWeight: '800',
-      textTransform: 'uppercase',
-      letterSpacing: 0.4,
-    },
-    financeMetricValue: {
-      color: '#fff',
-      fontSize: 14,
-      fontWeight: '900',
-      marginTop: 6,
-      letterSpacing: -0.4,
-    },
-    progressLabelRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: 8,
-    },
-    progressLabel: {
-      color: 'rgba(255,255,255,0.62)',
-      fontSize: 12,
-      fontWeight: '800',
-    },
-    progressValue: {
-      color: COMMAND_COLORS.gold,
-      fontSize: 12,
-      fontWeight: '900',
-    },
+
+    // ── Commander AI ──────────────────────────────────────────────────
     aiCard: {
       marginHorizontal: 18,
-      borderRadius: 24,
+      borderRadius: 26,
       overflow: 'hidden',
     },
     aiGradient: {
-      borderRadius: 24,
       padding: 18,
+      overflow: 'hidden',
+    },
+    aiGlow: {
+      position: 'absolute',
+      width: 180,
+      height: 180,
+      borderRadius: 90,
+      backgroundColor: '#fff',
+      opacity: 0.08,
+      right: -50,
+      top: -60,
     },
     aiTopRow: {
       flexDirection: 'row',
-      gap: 13,
       alignItems: 'flex-start',
+      gap: 14,
     },
     aiIconWrap: {
-      width: 42,
-      height: 42,
-      borderRadius: 15,
+      width: 44,
+      height: 44,
+      borderRadius: 16,
+      backgroundColor: 'rgba(255,255,255,0.2)',
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: 'rgba(198,166,100,0.14)',
-      borderWidth: 1,
-      borderColor: 'rgba(198,166,100,0.18)',
     },
     aiTitle: {
       color: '#fff',
       fontSize: 16,
       fontWeight: '900',
-      letterSpacing: -0.3,
     },
     aiText: {
-      color: 'rgba(255,255,255,0.66)',
-      fontSize: 13,
-      fontWeight: '600',
+      color: 'rgba(255,255,255,0.84)',
+      fontSize: 13.5,
       lineHeight: 19,
-      marginTop: 5,
+      fontWeight: '600',
+      marginTop: 4,
     },
     aiActionRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
+      alignSelf: 'flex-start',
+      gap: 6,
       marginTop: 16,
-      paddingTop: 14,
-      borderTopWidth: 1,
-      borderTopColor: 'rgba(255,255,255,0.1)',
+      backgroundColor: '#fff',
+      paddingHorizontal: 14,
+      paddingVertical: 9,
+      borderRadius: 999,
     },
     aiActionText: {
-      color: COMMAND_COLORS.gold,
+      color: '#4C2A9B',
       fontSize: 13,
       fontWeight: '900',
     },
+
+    // ── Weekly progress ───────────────────────────────────────────────
     progressCard: {
       marginHorizontal: 18,
       backgroundColor: colors.card,
-      borderRadius: 22,
+      borderRadius: 24,
+      padding: 16,
+      flexDirection: 'row',
       borderWidth: 1,
       borderColor: colors.border,
-      padding: 16,
-      gap: 14,
     },
-    progressItem: {
-      gap: 7,
-    },
-    progressLabelRowLight: {
-      flexDirection: 'row',
+    ringItem: {
+      flex: 1,
       alignItems: 'center',
-      justifyContent: 'space-between',
+      gap: 8,
     },
-    progressItemLabel: {
-      color: colors.text,
-      fontSize: 13,
-      fontWeight: '800',
-    },
-    progressItemValue: {
-      fontSize: 12,
+    ringSmallValue: {
+      fontSize: 14,
       fontWeight: '900',
     },
+    ringLabel: {
+      fontSize: 11.5,
+      fontWeight: '800',
+      color: colors.textSecondary,
+    },
+
+    // ── Floating action button ────────────────────────────────────────
     fab: {
       position: 'absolute',
       right: 22,
