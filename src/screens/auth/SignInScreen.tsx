@@ -202,7 +202,11 @@ export default function SignInScreen({ navigation }: Props) {
         Alert.alert(t('auth.screens.signIn.googleProfileErrorTitle'), t('auth.screens.signIn.googleProfileErrorMsg'));
         return;
       }
-      const credential = GoogleAuthProvider.credential(idToken);
+      // React Native Firebase 25 sends '' for a missing access token, which the
+      // Firebase Android SDK rejects ("accessToken cannot be empty") — so an
+      // idToken-only credential can never sign in. Pass the real access token.
+      const { accessToken: googleAccessToken } = await GoogleSignin.getTokens();
+      const credential = GoogleAuthProvider.credential(idToken, googleAccessToken);
       const userCredential = await signInWithCredential(getAuth(), credential);
       const firebaseIdToken = await getIdToken(userCredential.user);
 
