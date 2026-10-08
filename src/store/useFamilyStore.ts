@@ -73,6 +73,9 @@ export const useFamilyStore = create<FamilyState>()(persist((set, get) => ({
           m.id === memberId ? { ...m, points: m.points + task.points } : m
         ),
       }));
+      import('../services/AnalyticsService').then(({ Analytics }) =>
+        Analytics.track('task_complete', { taskId: id, memberId })
+      );
     }
   },
   deleteTask: (id) => set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) })),

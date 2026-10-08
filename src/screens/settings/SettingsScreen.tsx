@@ -257,7 +257,13 @@ export function SettingsScreen({ navigation }: any) {
             { icon: 'star-outline', label: 'Rate the App' },
             { icon: 'share-outline', label: 'Share with Friends' },
           ].map((item, i, arr) => (
-            <Pressable key={item.label} style={[styles.toggleRow, i < arr.length - 1 && styles.toggleRowBorder]}>
+            <Pressable
+              key={item.label}
+              onPress={() => {
+                if (item.label === 'Privacy Policy' || item.label === 'Terms of Service') return;
+              }}
+              style={[styles.toggleRow, i < arr.length - 1 && styles.toggleRowBorder]}
+            >
               <Ionicons name={item.icon as any} size={20} color={colors.primary} />
               <Text style={[styles.toggleLabel, { marginLeft: 12, flex: 1 }]}>{item.label}</Text>
               <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
@@ -272,6 +278,14 @@ export function SettingsScreen({ navigation }: any) {
             <View style={{ flex: 1, marginLeft: 12 }}>
               <Text style={styles.toggleLabel}>Load Demo Data</Text>
               <Text style={styles.toggleDesc}>Populate with Johnson Family data</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+          </Pressable>
+          <Pressable onPress={() => navigation.navigate('DataExport')} style={[styles.toggleRow, styles.toggleRowBorder]}>
+            <Ionicons name="download-outline" size={20} color={colors.primary} />
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={styles.toggleLabel}>Export Data</Text>
+              <Text style={styles.toggleDesc}>Save or share your family data as JSON</Text>
             </View>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </Pressable>

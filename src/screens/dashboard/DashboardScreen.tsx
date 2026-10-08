@@ -16,6 +16,8 @@ import { useFamilyStore } from '../../store/useFamilyStore';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { useAIStore } from '../../store/useAIStore';
 import { useNotificationsStore } from '../../store/useNotificationsStore';
+import { useAIInsights } from '../../hooks/useAIInsights';
+import { Analytics } from '../../services/AnalyticsService';
 
 const { width } = Dimensions.get('window');
 
@@ -33,6 +35,7 @@ export function DashboardScreen({ navigation }: any) {
   const { monthlyIncome, monthlyExpenses, monthlySavings, bills } = useFinanceStore();
   const insights = useAIStore((s) => s.insights);
   const { notifications, seedDemoData: seedNotifications } = useNotificationsStore();
+  const { refresh: refreshInsights } = useAIInsights();
   if (notifications.length === 0) seedNotifications();
 
   const pendingTasks = tasks.filter((t) => t.status === 'pending').length;
@@ -48,6 +51,7 @@ export function DashboardScreen({ navigation }: any) {
 
   useEffect(() => {
     Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }).start();
+    Analytics.track('screen_view', { screen: 'Dashboard' });
   }, []);
 
   const greeting = () => {
@@ -177,7 +181,14 @@ export function DashboardScreen({ navigation }: any) {
           </View>
 
           {/* AI Insights */}
-          {insights.filter((i) => !i.isRead).slice(0, 2).map((insight) => (
+          <View style={styles.insightsHeader}>
+            <Text style={styles.insightsLabel}>AI Insights</Text>
+            <Pressable onPress={refreshInsights} style={styles.refreshBtn}>
+              <Ionicons name="refresh" size={14} color={colors.primary} />
+              <Text style={styles.refreshText}>Refresh</Text>
+            </Pressable>
+          </View>
+          {insights.filter((i) => !i.isRead).slice(0, 3).map((insight) => (
             <Card key={insight.id} style={styles.insightCard} onPress={() => {}} variant="elevated">
               <View style={styles.insightRow}>
                 <View style={[styles.insightIcon, {
@@ -185,7 +196,13 @@ export function DashboardScreen({ navigation }: any) {
                     insight.priority === 'medium' ? colors.warningLight : '#E8EEF9'
                 }]}>
                   <Ionicons
-                    name={insight.type === 'financial' ? 'wallet' : insight.type === 'alert' ? 'warning' : insight.type === 'task' ? 'list' : 'bulb'}
+                    name={
+                      insight.type === 'financial' ? 'wallet' :
+                      insight.type === 'alert' ? 'warning' :
+                      insight.type === 'task' ? 'checkbox' :
+                      insight.type === 'health' ? 'heart' :
+                      insight.type === 'goal' ? 'flag' : 'bulb'
+                    }
                     size={18}
                     color={insight.priority === 'high' ? colors.danger : insight.priority === 'medium' ? colors.warning : colors.primary}
                   />
@@ -438,6 +455,10 @@ const styles = StyleSheet.create({
   statValue: { fontSize: 16, fontWeight: '700', marginTop: 8, marginBottom: 2 },
   statLabel: { fontSize: 11, color: colors.textSecondary, fontWeight: '500' },
   urgentDot: { position: 'absolute', top: 10, right: 10, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.danger },
+  insightsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  insightsLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary },
+  refreshBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  refreshText: { fontSize: 12, color: colors.primary, fontWeight: '600' },
   insightCard: { marginBottom: 10, borderRadius: 14 },
   insightRow: { flexDirection: 'row', alignItems: 'center' },
   insightIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },

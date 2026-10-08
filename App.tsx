@@ -5,6 +5,8 @@ import { StatusBar } from 'expo-status-bar';
 import * as Notifications from 'expo-notifications';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { NotificationScheduler } from './src/components/NotificationScheduler';
+import { AppInitializer } from './src/components/AppInitializer';
+import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { requestPermissions } from './src/services/NotificationService';
 
 export default function App() {
@@ -35,8 +37,11 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <StatusBar style="auto" />
-        <NotificationScheduler />
-        <AppNavigator navigationRef={navigationRef} />
+        <ErrorBoundary>
+          <NotificationScheduler />
+          <AppInitializer />
+          <AppNavigator navigationRef={navigationRef} />
+        </ErrorBoundary>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

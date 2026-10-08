@@ -61,8 +61,12 @@ export const useFinanceStore = create<FinanceState>()(persist((set) => ({
   updateBill: (id, updates) =>
     set((s) => ({ bills: s.bills.map((b) => (b.id === id ? { ...b, ...updates } : b)) })),
   deleteBill: (id) => set((s) => ({ bills: s.bills.filter((b) => b.id !== id) })),
-  markBillPaid: (id) =>
-    set((s) => ({ bills: s.bills.map((b) => (b.id === id ? { ...b, status: 'paid' } : b)) })),
+  markBillPaid: (id) => {
+    set((s) => ({ bills: s.bills.map((b) => (b.id === id ? { ...b, status: 'paid' } : b)) }));
+    import('../services/AnalyticsService').then(({ Analytics }) =>
+      Analytics.track('bill_marked_paid', { billId: id })
+    );
+  },
   addSubscription: (s_) => set((s) => ({ subscriptions: [...s.subscriptions, s_] })),
   updateSubscription: (id, updates) =>
     set((s) => ({ subscriptions: s.subscriptions.map((sub) => (sub.id === id ? { ...sub, ...updates } : sub)) })),
