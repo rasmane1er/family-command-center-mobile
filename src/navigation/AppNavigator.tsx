@@ -12,7 +12,7 @@ import { SecurityScreen } from '../screens/auth/SecurityScreen';
 
 const Stack = createNativeStackNavigator();
 
-export function AppNavigator() {
+export function AppNavigator({ navigationRef }: { navigationRef?: React.MutableRefObject<any> }) {
   const isOnboarded = useAppStore((s) => s.isOnboarded);
   const { hasPinSet, isAuthenticated, checkShouldLock, setAuthenticated, updateLastActive } = useAuthStore();
   const appState = useRef(AppState.currentState);
@@ -36,7 +36,7 @@ export function AppNavigator() {
   const showLock = isOnboarded && hasPinSet && !isAuthenticated;
 
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
         {showLock ? (
           // Locked — show PIN/biometric gate

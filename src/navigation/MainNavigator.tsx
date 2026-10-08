@@ -14,6 +14,7 @@ import { NutritionTrackerScreen } from '../screens/health/NutritionTrackerScreen
 import { MedicalRecordsScreen } from '../screens/health/MedicalRecordsScreen';
 import { SecurityScreen } from '../screens/auth/SecurityScreen';
 import { PinSetupScreen } from '../screens/auth/PinSetupScreen';
+import { NotificationSettingsScreen } from '../screens/settings/NotificationSettingsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -34,6 +35,7 @@ export function MainNavigator() {
       <Stack.Screen name="MedicalRecords" component={MedicalRecordsScreen} options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="Security" component={SecurityScreen} options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="PinSetup" component={PinSetupScreen} options={{ animation: 'slide_from_bottom', presentation: 'modal' }} />
+      <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} options={{ animation: 'slide_from_right' }} />
     </Stack.Navigator>
   );
 }

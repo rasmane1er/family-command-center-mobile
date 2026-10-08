@@ -181,28 +181,14 @@ export function SettingsScreen({ navigation }: any) {
 
         {/* Notifications */}
         <Text style={styles.sectionTitle}>Notifications</Text>
-        <Card style={styles.settingCard} variant="elevated">
-          {[
-            { key: 'billReminders', label: 'Bill Reminders', desc: 'Alerts before bills are due', icon: 'receipt-outline' },
-            { key: 'taskReminders', label: 'Task Reminders', desc: 'Daily task summary', icon: 'checkbox-outline' },
-            { key: 'lowStockAlerts', label: 'Low Stock Alerts', desc: 'When pantry items run low', icon: 'nutrition-outline' },
-            { key: 'budgetAlerts', label: 'Budget Alerts', desc: 'When spending approaches limits', icon: 'wallet-outline' },
-          ].map((setting, i, arr) => (
-            <View key={setting.key} style={[styles.toggleRow, i < arr.length - 1 && styles.toggleRowBorder]}>
-              <Ionicons name={setting.icon as any} size={20} color={colors.primary} />
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={styles.toggleLabel}>{setting.label}</Text>
-                <Text style={styles.toggleDesc}>{setting.desc}</Text>
-              </View>
-              <Switch
-                value={true}
-                onValueChange={() => {}}
-                trackColor={{ false: colors.border, true: colors.primary + '60' }}
-                thumbColor={colors.primary}
-              />
-            </View>
-          ))}
-        </Card>
+        <Pressable onPress={() => navigation.navigate('NotificationSettings')} style={styles.securityBanner}>
+          <Ionicons name="notifications" size={22} color="#1A237E" />
+          <View style={{ flex: 1, marginLeft: 12 }}>
+            <Text style={styles.securityBannerTitle}>Notification Settings</Text>
+            <Text style={styles.securityBannerSub}>Bills, medications, birthdays, calendar & more</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#1A237E" />
+        </Pressable>
 
         {/* Appearance */}
         <Text style={styles.sectionTitle}>Appearance</Text>
