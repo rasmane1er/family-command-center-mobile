@@ -237,11 +237,17 @@ export function SettingsScreen({ navigation }: any) {
 
         {/* Security */}
         <Text style={styles.sectionTitle}>Privacy & Security</Text>
+        <Pressable onPress={() => navigation.navigate('Security')} style={styles.securityBanner}>
+          <Ionicons name="shield-checkmark" size={22} color="#1A237E" />
+          <View style={{ flex: 1, marginLeft: 12 }}>
+            <Text style={styles.securityBannerTitle}>PIN & Biometric Lock</Text>
+            <Text style={styles.securityBannerSub}>Manage app lock, Face ID & auto-lock timeout</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#1A237E" />
+        </Pressable>
         <Card style={styles.settingCard} variant="elevated">
           {[
-            { icon: 'finger-print', label: 'Biometric Lock', desc: 'Use Face ID or fingerprint to lock app' },
             { icon: 'eye-off-outline', label: 'Hide Balances', desc: 'Hide financial balances on dashboard' },
-            { icon: 'lock-closed-outline', label: 'Auto-Lock', desc: 'Lock app after 5 minutes of inactivity' },
             { icon: 'cloud-upload-outline', label: 'Cloud Backup', desc: 'Automatically back up your data' },
           ].map((item, i, arr) => (
             <Pressable key={item.label} style={[styles.toggleRow, i < arr.length - 1 && styles.toggleRowBorder]}>
@@ -324,6 +330,9 @@ const styles = StyleSheet.create({
   featureRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
   featureText: { fontSize: 13, color: colors.textSecondary },
   settingCard: { borderRadius: 14, marginBottom: 4 },
+  securityBanner: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E8EAF6', borderRadius: 14, padding: 14, marginBottom: 10, borderWidth: 1.5, borderColor: '#C5CAE9' },
+  securityBannerTitle: { fontSize: 14, fontWeight: '700', color: '#1A237E' },
+  securityBannerSub: { fontSize: 12, color: '#5C6BC0', marginTop: 2 },
   settingLabel: { fontSize: 15, fontWeight: '700', color: colors.text, marginBottom: 4 },
   settingDesc: { fontSize: 12, color: colors.textSecondary, marginBottom: 10 },
   apiKeyRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.background, borderRadius: 10, borderWidth: 1, borderColor: colors.border, marginBottom: 10 },

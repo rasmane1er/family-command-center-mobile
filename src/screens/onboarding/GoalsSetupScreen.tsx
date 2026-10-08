@@ -44,6 +44,8 @@ export function GoalsSetupScreen({ navigation }: any) {
       seedDemoAI();
     }
     setOnboarded(true);
+    // Navigate to PIN setup — user can skip it and still reach Main
+    navigation.navigate('PinSetup');
   };
 
   return (
