@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -37,7 +39,7 @@ interface FamilyGoalsState {
   seedDemoData: () => void;
 }
 
-export const useFamilyGoalsStore = create<FamilyGoalsState>((set) => ({
+export const useFamilyGoalsStore = create<FamilyGoalsState>()(persist((set) => ({
   goals: [],
   addGoal: (g) => set((s) => ({ goals: [{ ...g, id: generateId(), createdAt: new Date().toISOString() }, ...s.goals] })),
   updateGoal: (id, updates) => set((s) => ({ goals: s.goals.map((g) => g.id === id ? { ...g, ...updates } : g) })),
@@ -62,4 +64,9 @@ export const useFamilyGoalsStore = create<FamilyGoalsState>((set) => ({
     ];
     set({ goals });
   },
-}));
+}),
+{
+  name: 'family-goals-store',
+  storage: createJSONStorage(() => AsyncStorage),
+}
+));

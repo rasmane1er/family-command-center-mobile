@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -212,7 +214,7 @@ const SEED_INGREDIENTS: PrepIngredient[] = [
   { id: 'ing14', sessionId: 'ps2', name: 'Marinara sauce', quantity: '2 jars', purchased: false, aisle: 'Sauces' },
 ];
 
-export const useMealPrepStore = create<MealPrepState>()((set, get) => ({
+export const useMealPrepStore = create<MealPrepState>()(persist((set, get) => ({
   sessions: SEED_SESSIONS,
   items: SEED_ITEMS,
   ingredients: SEED_INGREDIENTS,
@@ -277,4 +279,9 @@ export const useMealPrepStore = create<MealPrepState>()((set, get) => ({
     get()
       .items.filter((item) => item.sessionId === sessionId)
       .reduce((sum, item) => sum + item.prepTimeMinutes + item.cookTimeMinutes, 0),
-}));
+}),
+{
+  name: 'meal-prep-store',
+  storage: createJSONStorage(() => AsyncStorage),
+}
+));

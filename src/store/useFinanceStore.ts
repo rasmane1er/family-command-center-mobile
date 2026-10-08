@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Transaction, Budget, Bill, Subscription, FinancialAccount, FinancialGoal } from '../types';
 
 interface FinanceState {
@@ -34,7 +36,7 @@ interface FinanceState {
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
-export const useFinanceStore = create<FinanceState>((set) => ({
+export const useFinanceStore = create<FinanceState>()(persist((set) => ({
   accounts: [],
   transactions: [],
   budgets: [],
@@ -145,4 +147,9 @@ export const useFinanceStore = create<FinanceState>((set) => ({
       monthlySavings: monthlyIncome - monthlyExpenses,
     });
   },
-}));
+}),
+{
+  name: 'finance-store',
+  storage: createJSONStorage(() => AsyncStorage),
+}
+));

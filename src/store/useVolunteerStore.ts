@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -164,7 +166,7 @@ const SEED_GOALS: VolunteerGoal[] = [
   { memberId: 'emma', memberName: 'Emma', yearlyHoursGoal: 30, year: 2026 },
 ];
 
-export const useVolunteerStore = create<VolunteerState>()((set, get) => ({
+export const useVolunteerStore = create<VolunteerState>()(persist((set, get) => ({
   logs: SEED_LOGS,
   goals: SEED_GOALS,
 
@@ -214,4 +216,9 @@ export const useVolunteerStore = create<VolunteerState>()((set, get) => ({
     get()
       .logs.filter((l) => l.memberId === memberId)
       .reduce((sum, l) => sum + l.hours, 0),
-}));
+}),
+{
+  name: 'volunteer-store',
+  storage: createJSONStorage(() => AsyncStorage),
+}
+));

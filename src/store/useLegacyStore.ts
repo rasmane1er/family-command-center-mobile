@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { LegacyItem, LegacyItemType } from '../types';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
@@ -13,7 +15,7 @@ interface LegacyState {
   seedDemoData: () => void;
 }
 
-export const useLegacyStore = create<LegacyState>((set, get) => ({
+export const useLegacyStore = create<LegacyState>()(persist((set, get) => ({
   items: [],
 
   addItem: (i) => {
@@ -53,4 +55,9 @@ export const useLegacyStore = create<LegacyState>((set, get) => ({
     ];
     set({ items });
   },
-}));
+}),
+{
+  name: 'legacy-store',
+  storage: createJSONStorage(() => AsyncStorage),
+}
+));

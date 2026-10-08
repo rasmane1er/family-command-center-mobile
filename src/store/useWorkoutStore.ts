@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -28,7 +30,7 @@ interface WorkoutState {
   seedDemoData: () => void;
 }
 
-export const useWorkoutStore = create<WorkoutState>((set, get) => ({
+export const useWorkoutStore = create<WorkoutState>()(persist((set, get) => ({
   workouts: [],
   addWorkout: (w) => set((s) => ({ workouts: [{ ...w, id: generateId(), createdAt: new Date().toISOString() }, ...s.workouts] })),
   deleteWorkout: (id) => set((s) => ({ workouts: s.workouts.filter((w) => w.id !== id) })),
@@ -52,4 +54,9 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     ];
     set({ workouts });
   },
-}));
+}),
+{
+  name: 'workout-store',
+  storage: createJSONStorage(() => AsyncStorage),
+}
+));

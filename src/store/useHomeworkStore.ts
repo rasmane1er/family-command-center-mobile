@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type SubjectColor = '#E74C3C' | '#2980B9' | '#27AE60' | '#F5A623' | '#8E44AD' | '#16A085' | '#E67E22' | '#C0392B';
 export type AssignmentStatus = 'todo' | 'in_progress' | 'submitted' | 'graded';
@@ -35,7 +37,7 @@ interface HomeworkState {
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
-export const useHomeworkStore = create<HomeworkState>((set, get) => ({
+export const useHomeworkStore = create<HomeworkState>()(persist((set, get) => ({
   assignments: [],
 
   addAssignment: (a) =>
@@ -237,4 +239,9 @@ export const useHomeworkStore = create<HomeworkState>((set, get) => ({
 
     set({ assignments });
   },
-}));
+}),
+{
+  name: 'homework-store',
+  storage: createJSONStorage(() => AsyncStorage),
+}
+));

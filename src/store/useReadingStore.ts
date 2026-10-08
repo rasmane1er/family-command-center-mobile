@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -184,7 +186,7 @@ const seedChallenges: ReadingChallenge[] = [
   { id: 'rc3', memberId: 'member-2', memberName: 'Mom', year: 2025, targetBooks: 15 },
 ];
 
-export const useReadingStore = create<ReadingState>()((set, get) => ({
+export const useReadingStore = create<ReadingState>()(persist((set, get) => ({
   books: seedBooks,
   challenges: seedChallenges,
 
@@ -238,4 +240,9 @@ export const useReadingStore = create<ReadingState>()((set, get) => ({
     get()
       .books.filter((b) => b.memberId === memberId)
       .reduce((acc, b) => acc + b.currentPage, 0),
-}));
+}),
+{
+  name: 'reading-store',
+  storage: createJSONStorage(() => AsyncStorage),
+}
+));

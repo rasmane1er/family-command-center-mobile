@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Family, FamilyMember, Task, CalendarEvent, Goal, Reward, Achievement } from '../types';
 import { colors } from '../theme/colors';
 
@@ -40,7 +42,7 @@ interface FamilyState {
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
-export const useFamilyStore = create<FamilyState>((set, get) => ({
+export const useFamilyStore = create<FamilyState>()(persist((set, get) => ({
   family: null,
   members: [],
   tasks: [],
@@ -380,4 +382,9 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
 
     set({ family, members, tasks, events, goals, rewards });
   },
-}));
+}),
+{
+  name: 'family-store',
+  storage: createJSONStorage(() => AsyncStorage),
+}
+));

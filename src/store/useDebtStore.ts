@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -30,7 +32,7 @@ interface DebtState {
   seedDemoData: () => void;
 }
 
-export const useDebtStore = create<DebtState>((set, get) => ({
+export const useDebtStore = create<DebtState>()(persist((set, get) => ({
   debts: [],
 
   addDebt: (d) =>
@@ -112,4 +114,9 @@ export const useDebtStore = create<DebtState>((set, get) => ({
     ];
     set({ debts });
   },
-}));
+}),
+{
+  name: 'debt-store',
+  storage: createJSONStorage(() => AsyncStorage),
+}
+));

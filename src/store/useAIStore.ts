@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { ChatMessage, AIInsight } from '../types';
 
 interface AIState {
@@ -19,7 +21,7 @@ interface AIState {
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
-export const useAIStore = create<AIState>((set, get) => ({
+export const useAIStore = create<AIState>()(persist((set, get) => ({
   messages: [],
   insights: [],
   isTyping: false,
@@ -126,7 +128,12 @@ Always provide specific, personalized advice based on the family context provide
     ];
     set({ insights });
   },
-}));
+}),
+{
+  name: 'ai-store',
+  storage: createJSONStorage(() => AsyncStorage),
+}
+));
 
 function getDemoResponse(input: string): string {
   const lower = input.toLowerCase();

@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type CaregiverType = 'babysitter' | 'nanny' | 'daycare' | 'relative' | 'au_pair' | 'other';
 
@@ -45,7 +47,7 @@ interface ChildcareState {
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
-export const useChildcareStore = create<ChildcareState>((set, get) => ({
+export const useChildcareStore = create<ChildcareState>()(persist((set, get) => ({
   caregivers: [],
   bookings: [],
 
@@ -204,4 +206,9 @@ export const useChildcareStore = create<ChildcareState>((set, get) => ({
 
     set({ caregivers, bookings });
   },
-}));
+}),
+{
+  name: 'childcare-store',
+  storage: createJSONStorage(() => AsyncStorage),
+}
+));

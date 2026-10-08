@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type MoodLevel = 1 | 2 | 3 | 4 | 5;
 
@@ -23,7 +25,7 @@ interface MoodState {
 const generateId = () => Math.random().toString(36).substring(2, 11);
 const toDateStr = (d: Date) => d.toISOString().split('T')[0];
 
-export const useMoodStore = create<MoodState>((set, get) => ({
+export const useMoodStore = create<MoodState>()(persist((set, get) => ({
   entries: [],
 
   addMoodEntry: (entry) => {
@@ -71,4 +73,9 @@ export const useMoodStore = create<MoodState>((set, get) => ({
     }
     set({ entries });
   },
-}));
+}),
+{
+  name: 'mood-store',
+  storage: createJSONStorage(() => AsyncStorage),
+}
+));

@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -33,7 +35,7 @@ interface HomeMaintenanceState {
   seedDemoData: () => void;
 }
 
-export const useHomeMaintenanceStore = create<HomeMaintenanceState>((set) => ({
+export const useHomeMaintenanceStore = create<HomeMaintenanceState>()(persist((set) => ({
   tasks: [],
   addTask: (t) => set((s) => ({ tasks: [{ ...t, id: generateId(), createdAt: new Date().toISOString() }, ...s.tasks] })),
   updateTask: (id, updates) => set((s) => ({ tasks: s.tasks.map((t) => t.id === id ? { ...t, ...updates } : t) })),
@@ -53,4 +55,9 @@ export const useHomeMaintenanceStore = create<HomeMaintenanceState>((set) => ({
     ];
     set({ tasks });
   },
-}));
+}),
+{
+  name: 'home-maintenance-store',
+  storage: createJSONStorage(() => AsyncStorage),
+}
+));

@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -32,7 +34,7 @@ interface GiftState {
   seedDemoData: () => void;
 }
 
-export const useGiftStore = create<GiftState>((set) => ({
+export const useGiftStore = create<GiftState>()(persist((set) => ({
   gifts: [],
   addGift: (g) => set((s) => ({ gifts: [{ ...g, id: generateId(), createdAt: new Date().toISOString() }, ...s.gifts] })),
   updateGift: (id, updates) => set((s) => ({ gifts: s.gifts.map((g) => g.id === id ? { ...g, ...updates } : g) })),
@@ -50,4 +52,9 @@ export const useGiftStore = create<GiftState>((set) => ({
     ];
     set({ gifts });
   },
-}));
+}),
+{
+  name: 'gift-store',
+  storage: createJSONStorage(() => AsyncStorage),
+}
+));

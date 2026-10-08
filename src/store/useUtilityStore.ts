@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -28,7 +30,7 @@ interface UtilityState {
   seedDemoData: () => void;
 }
 
-export const useUtilityStore = create<UtilityState>((set, get) => ({
+export const useUtilityStore = create<UtilityState>()(persist((set, get) => ({
   bills: [],
 
   addBill: (b) =>
@@ -145,4 +147,9 @@ export const useUtilityStore = create<UtilityState>((set, get) => ({
 
     set({ bills });
   },
-}));
+}),
+{
+  name: 'utility-store',
+  storage: createJSONStorage(() => AsyncStorage),
+}
+));

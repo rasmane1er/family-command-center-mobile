@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -244,7 +246,7 @@ const DEMO_MEETINGS: HOAMeeting[] = [
   },
 ];
 
-export const useHOAStore = create<HOAState>()((set, get) => ({
+export const useHOAStore = create<HOAState>()(persist((set, get) => ({
   dues: DEMO_DUES,
   rules: DEMO_RULES,
   amenities: DEMO_AMENITIES,
@@ -299,4 +301,9 @@ export const useHOAStore = create<HOAState>()((set, get) => ({
       .reduce((sum, d) => sum + d.amount, 0),
 
   getOverdueDues: () => get().dues.filter((d) => d.status === 'overdue'),
-}));
+}),
+{
+  name: 'hoa-store',
+  storage: createJSONStorage(() => AsyncStorage),
+}
+));

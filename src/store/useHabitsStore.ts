@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface Habit {
   id: string;
@@ -43,7 +45,7 @@ function calcStreak(dates: string[], from: string): number {
   return streak;
 }
 
-export const useHabitsStore = create<HabitsState>((set, get) => ({
+export const useHabitsStore = create<HabitsState>()(persist((set, get) => ({
   habits: [],
 
   addHabit: (h) =>
@@ -104,4 +106,9 @@ export const useHabitsStore = create<HabitsState>((set, get) => ({
       ],
     });
   },
-}));
+}),
+{
+  name: 'habits-store',
+  storage: createJSONStorage(() => AsyncStorage),
+}
+));

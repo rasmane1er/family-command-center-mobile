@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { FamilyMemory, MemoryType } from '../types';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
@@ -13,7 +15,7 @@ interface MemoryState {
   seedDemoData: () => void;
 }
 
-export const useMemoryStore = create<MemoryState>((set, get) => ({
+export const useMemoryStore = create<MemoryState>()(persist((set, get) => ({
   memories: [],
 
   addMemory: (m) => {
@@ -49,4 +51,9 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
     ];
     set({ memories });
   },
-}));
+}),
+{
+  name: 'memory-store',
+  storage: createJSONStorage(() => AsyncStorage),
+}
+));

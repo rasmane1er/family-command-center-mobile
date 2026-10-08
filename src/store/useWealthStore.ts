@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { WealthEntry, WealthProjection, ReputationScore } from '../types';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
@@ -14,7 +16,7 @@ interface WealthState {
   seedDemoData: () => void;
 }
 
-export const useWealthStore = create<WealthState>((set, get) => ({
+export const useWealthStore = create<WealthState>()(persist((set, get) => ({
   entries: [],
   projections: [],
   reputationScores: [],
@@ -64,4 +66,9 @@ export const useWealthStore = create<WealthState>((set, get) => ({
 
     set({ entries, projections, reputationScores });
   },
-}));
+}),
+{
+  name: 'wealth-store',
+  storage: createJSONStorage(() => AsyncStorage),
+}
+));

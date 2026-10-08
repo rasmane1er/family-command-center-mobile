@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -58,7 +60,7 @@ function getWeekOffset(baseDate: Date, offsetWeeks: number): string {
   return getISOWeek(d);
 }
 
-export const useCarpoolStore = create<CarpoolState>((set, get) => ({
+export const useCarpoolStore = create<CarpoolState>()(persist((set, get) => ({
   routes: [],
 
   addRoute: (r) =>
@@ -153,6 +155,11 @@ export const useCarpoolStore = create<CarpoolState>((set, get) => ({
 
     set({ routes });
   },
-}));
+}),
+{
+  name: 'carpool-store',
+  storage: createJSONStorage(() => AsyncStorage),
+}
+));
 
 export type { CarpoolRoute, CarpoolParticipant, CarpoolDriver, CarpoolStatus };

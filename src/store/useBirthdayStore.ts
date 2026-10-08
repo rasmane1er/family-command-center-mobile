@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -50,7 +52,7 @@ function getDaysUntilDate(mmdd: string): number {
   return Math.round((nextYear.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24));
 }
 
-export const useBirthdayStore = create<BirthdayState>((set, get) => ({
+export const useBirthdayStore = create<BirthdayState>()(persist((set, get) => ({
   birthdays: [],
 
   addBirthday: (b) =>
@@ -178,6 +180,11 @@ export const useBirthdayStore = create<BirthdayState>((set, get) => ({
     ];
     set({ birthdays });
   },
-}));
+}),
+{
+  name: 'birthday-store',
+  storage: createJSONStorage(() => AsyncStorage),
+}
+));
 
 export type { Birthday, Relationship };

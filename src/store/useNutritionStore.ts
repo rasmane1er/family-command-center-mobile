@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -140,7 +142,7 @@ const seedGoals: NutritionGoal[] = [
   },
 ];
 
-export const useNutritionStore = create<NutritionState>()((set, get) => ({
+export const useNutritionStore = create<NutritionState>()(persist((set, get) => ({
   entries: seedEntries,
   goals: seedGoals,
 
@@ -178,4 +180,9 @@ export const useNutritionStore = create<NutritionState>()((set, get) => ({
       { calories: 0, protein: 0, carbs: 0, fat: 0 }
     );
   },
-}));
+}),
+{
+  name: 'nutrition-store',
+  storage: createJSONStorage(() => AsyncStorage),
+}
+));

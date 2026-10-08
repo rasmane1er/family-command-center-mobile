@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -162,7 +164,7 @@ const SEED_EXPENSES: EventExpense[] = [
   { id: 'ex5', eventId: 'evt3', category: 'Catering', description: 'Snacks and beverages', amount: 55, paid: true },
 ];
 
-export const useEventPlannerStore = create<EventPlannerState>()((set, get) => ({
+export const useEventPlannerStore = create<EventPlannerState>()(persist((set, get) => ({
   events: SEED_EVENTS,
   guests: SEED_GUESTS,
   tasks: SEED_TASKS,
@@ -214,4 +216,9 @@ export const useEventPlannerStore = create<EventPlannerState>()((set, get) => ({
       .reduce((sum, ex) => sum + ex.amount, 0),
   getConfirmedGuestCount: (eventId) =>
     get().guests.filter((g) => g.eventId === eventId && g.rsvp === 'yes').length,
-}));
+}),
+{
+  name: 'event-planner-store',
+  storage: createJSONStorage(() => AsyncStorage),
+}
+));

@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type ActivityType = 'sport' | 'music' | 'art' | 'academic' | 'social' | 'religious' | 'other';
 export type DayOfWeek = 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri' | 'Sat' | 'Sun';
@@ -33,7 +35,7 @@ interface ActivitiesState {
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
-export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
+export const useActivitiesStore = create<ActivitiesState>()(persist((set, get) => ({
   activities: [],
 
   addActivity: (a) =>
@@ -143,4 +145,9 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
 
     set({ activities });
   },
-}));
+}),
+{
+  name: 'activities-store',
+  storage: createJSONStorage(() => AsyncStorage),
+}
+));

@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -34,7 +36,7 @@ interface InsuranceState {
   seedDemoData: () => void;
 }
 
-export const useInsuranceStore = create<InsuranceState>((set, get) => ({
+export const useInsuranceStore = create<InsuranceState>()(persist((set, get) => ({
   policies: [],
   addPolicy: (p) => set((s) => ({ policies: [{ ...p, id: generateId(), createdAt: new Date().toISOString() }, ...s.policies] })),
   updatePolicy: (id, updates) => set((s) => ({ policies: s.policies.map((p) => p.id === id ? { ...p, ...updates } : p) })),
@@ -59,4 +61,9 @@ export const useInsuranceStore = create<InsuranceState>((set, get) => ({
     ];
     set({ policies });
   },
-}));
+}),
+{
+  name: 'insurance-store',
+  storage: createJSONStorage(() => AsyncStorage),
+}
+));

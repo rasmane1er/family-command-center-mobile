@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -167,7 +169,7 @@ const seedDoctors: Doctor[] = [
   },
 ];
 
-export const useMedicalRecordsStore = create<MedicalRecordsState>()((set, get) => ({
+export const useMedicalRecordsStore = create<MedicalRecordsState>()(persist((set, get) => ({
   records: seedRecords,
   doctors: seedDoctors,
 
@@ -192,4 +194,9 @@ export const useMedicalRecordsStore = create<MedicalRecordsState>()((set, get) =
 
   getCriticalRecords: () =>
     get().records.filter((r) => r.isCritical),
-}));
+}),
+{
+  name: 'medical-records-store',
+  storage: createJSONStorage(() => AsyncStorage),
+}
+));

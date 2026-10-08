@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { PantryItem, ShoppingList, MealPlan, Asset, Vehicle, Document } from '../types';
 
 interface OperationsState {
@@ -29,7 +31,7 @@ interface OperationsState {
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
-export const useOperationsStore = create<OperationsState>((set) => ({
+export const useOperationsStore = create<OperationsState>()(persist((set) => ({
   pantryItems: [],
   shoppingLists: [],
   mealPlans: [],
@@ -137,4 +139,9 @@ export const useOperationsStore = create<OperationsState>((set) => ({
 
     set({ pantryItems, vehicles, documents, assets });
   },
-}));
+}),
+{
+  name: 'operations-store',
+  storage: createJSONStorage(() => AsyncStorage),
+}
+));

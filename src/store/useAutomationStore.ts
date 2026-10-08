@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { AutomationRule, MarketplaceListing, ConflictRecord, TimeBlock, SmartDevice } from '../types';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
@@ -36,7 +38,7 @@ interface AutomationState {
   seedDemoData: () => void;
 }
 
-export const useAutomationStore = create<AutomationState>((set) => ({
+export const useAutomationStore = create<AutomationState>()(persist((set) => ({
   rules: [],
   listings: [],
   conflicts: [],
@@ -128,4 +130,9 @@ export const useAutomationStore = create<AutomationState>((set) => ({
 
     set({ rules, listings, conflicts, devices, timeBlocks });
   },
-}));
+}),
+{
+  name: 'automation-store',
+  storage: createJSONStorage(() => AsyncStorage),
+}
+));

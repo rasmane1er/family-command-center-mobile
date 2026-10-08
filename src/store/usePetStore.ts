@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -42,7 +44,7 @@ interface PetState {
   seedDemoData: () => void;
 }
 
-export const usePetStore = create<PetState>((set) => ({
+export const usePetStore = create<PetState>()(persist((set) => ({
   pets: [],
   events: [],
   addPet: (p) => set((s) => ({ pets: [{ ...p, id: generateId() }, ...s.pets] })),
@@ -65,4 +67,9 @@ export const usePetStore = create<PetState>((set) => ({
     ];
     set({ pets, events });
   },
-}));
+}),
+{
+  name: 'pet-store',
+  storage: createJSONStorage(() => AsyncStorage),
+}
+));

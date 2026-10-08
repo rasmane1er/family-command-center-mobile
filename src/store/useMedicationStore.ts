@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -41,7 +43,7 @@ interface MedicationState {
   seedDemoData: () => void;
 }
 
-export const useMedicationStore = create<MedicationState>((set) => ({
+export const useMedicationStore = create<MedicationState>()(persist((set) => ({
   medications: [],
   logs: [],
   addMedication: (m) => set((s) => ({ medications: [{ ...m, id: generateId(), createdAt: new Date().toISOString() }, ...s.medications] })),
@@ -60,4 +62,9 @@ export const useMedicationStore = create<MedicationState>((set) => ({
     ];
     set({ medications, logs: [] });
   },
-}));
+}),
+{
+  name: 'medication-store',
+  storage: createJSONStorage(() => AsyncStorage),
+}
+));

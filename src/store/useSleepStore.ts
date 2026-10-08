@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -25,7 +27,7 @@ interface SleepState {
   seedDemoData: () => void;
 }
 
-export const useSleepStore = create<SleepState>((set, get) => ({
+export const useSleepStore = create<SleepState>()(persist((set, get) => ({
   logs: [],
   addLog: (l) => set((s) => ({ logs: [{ ...l, id: generateId(), createdAt: new Date().toISOString() }, ...s.logs] })),
   deleteLog: (id) => set((s) => ({ logs: s.logs.filter((l) => l.id !== id) })),
@@ -60,4 +62,9 @@ export const useSleepStore = create<SleepState>((set, get) => ({
     }
     set({ logs });
   },
-}));
+}),
+{
+  name: 'sleep-store',
+  storage: createJSONStorage(() => AsyncStorage),
+}
+));

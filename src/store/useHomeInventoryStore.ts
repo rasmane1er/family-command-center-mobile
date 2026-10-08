@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -56,7 +58,7 @@ interface HomeInventoryState {
   seedDemoData: () => void;
 }
 
-export const useHomeInventoryStore = create<HomeInventoryState>((set, get) => ({
+export const useHomeInventoryStore = create<HomeInventoryState>()(persist((set, get) => ({
   items: [],
 
   addItem: (i) =>
@@ -248,4 +250,9 @@ export const useHomeInventoryStore = create<HomeInventoryState>((set, get) => ({
     ];
     set({ items });
   },
-}));
+}),
+{
+  name: 'home-inventory-store',
+  storage: createJSONStorage(() => AsyncStorage),
+}
+));

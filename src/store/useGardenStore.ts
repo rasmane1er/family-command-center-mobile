@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -217,7 +219,7 @@ const DEMO_TASKS: GardenTask[] = [
   },
 ];
 
-export const useGardenStore = create<GardenState>()((set, get) => ({
+export const useGardenStore = create<GardenState>()(persist((set, get) => ({
   plants: DEMO_PLANTS,
   tasks: DEMO_TASKS,
 
@@ -280,4 +282,9 @@ export const useGardenStore = create<GardenState>()((set, get) => ({
       (t) => !t.completed && new Date(t.dueDate).toDateString() === todayStr
     );
   },
-}));
+}),
+{
+  name: 'garden-store',
+  storage: createJSONStorage(() => AsyncStorage),
+}
+));

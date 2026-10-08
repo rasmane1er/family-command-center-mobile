@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { HealthRecord, HealthGoal, HealthMetricType } from '../types';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
@@ -14,7 +16,7 @@ interface HealthState {
   seedDemoData: () => void;
 }
 
-export const useHealthStore = create<HealthState>((set, get) => ({
+export const useHealthStore = create<HealthState>()(persist((set, get) => ({
   records: [],
   goals: [],
 
@@ -72,4 +74,9 @@ export const useHealthStore = create<HealthState>((set, get) => ({
 
     set({ records, goals });
   },
-}));
+}),
+{
+  name: 'health-store',
+  storage: createJSONStorage(() => AsyncStorage),
+}
+));

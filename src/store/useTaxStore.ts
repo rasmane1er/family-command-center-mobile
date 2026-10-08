@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -207,7 +209,7 @@ const DEMO_DEDUCTIONS: TaxDeduction[] = [
   },
 ];
 
-export const useTaxStore = create<TaxState>()((set, get) => ({
+export const useTaxStore = create<TaxState>()(persist((set, get) => ({
   documents: DEMO_DOCUMENTS,
   deductions: DEMO_DEDUCTIONS,
   selectedYear: 2026,
@@ -248,4 +250,9 @@ export const useTaxStore = create<TaxState>()((set, get) => ({
 
   getDocumentsByStatus: (year, status) =>
     get().documents.filter((d) => d.year === year && d.status === status),
-}));
+}),
+{
+  name: 'tax-store',
+  storage: createJSONStorage(() => AsyncStorage),
+}
+));

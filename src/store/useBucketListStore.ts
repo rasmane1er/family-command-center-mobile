@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -30,7 +32,7 @@ interface BucketListState {
   seedDemoData: () => void;
 }
 
-export const useBucketListStore = create<BucketListState>((set) => ({
+export const useBucketListStore = create<BucketListState>()(persist((set) => ({
   items: [],
   addItem: (item) => set((s) => ({ items: [{ ...item, id: generateId(), createdAt: new Date().toISOString() }, ...s.items] })),
   updateItem: (id, updates) => set((s) => ({ items: s.items.map((i) => i.id === id ? { ...i, ...updates } : i) })),
@@ -50,4 +52,9 @@ export const useBucketListStore = create<BucketListState>((set) => ({
     ];
     set({ items });
   },
-}));
+}),
+{
+  name: 'bucket-list-store',
+  storage: createJSONStorage(() => AsyncStorage),
+}
+));

@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -29,7 +31,7 @@ interface FamilyBoardState {
   seedDemoData: () => void;
 }
 
-export const useFamilyBoardStore = create<FamilyBoardState>((set, get) => ({
+export const useFamilyBoardStore = create<FamilyBoardState>()(persist((set, get) => ({
   posts: [],
 
   addPost: (p) =>
@@ -168,6 +170,11 @@ export const useFamilyBoardStore = create<FamilyBoardState>((set, get) => ({
     ];
     set({ posts });
   },
-}));
+}),
+{
+  name: 'family-board-store',
+  storage: createJSONStorage(() => AsyncStorage),
+}
+));
 
 export type { BoardPost, PostPriority, PostCategory };
