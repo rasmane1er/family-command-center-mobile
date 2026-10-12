@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { useNotificationsStore } from '../../store/useNotificationsStore';
 import { Button } from '../../components/common/Button';
 import { useJoinRequestsStore } from '../../store/useJoinRequestsStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { colors } from '../../theme/colors';
 
 type JoinRole = 'parent' | 'child' | 'guardian' | 'grandparent' | 'caregiver';
@@ -36,6 +37,12 @@ export function JoinFamilyScreen({ navigation }: any) {
   const [requesterName, setRequesterName] = useState('');
   const [requesterRole, setRequesterRole] = useState<JoinRole>('child');
 
+  // Prefill "Your Name" from the signed-in account (Apple/Google/email), skipping
+  // the placeholder names social sign-in falls back to when the provider
+  // didn't share one.
+  const accountName = useAuthStore((s) => s.user?.displayName ?? '');
+  const prefillName = accountName && !['Apple User', 'Google User'].includes(accountName) ? accountName : '';
+
   const addRequest = useJoinRequestsStore((s) => s.addRequest);
   const addNotification = useNotificationsStore((s) => s.addNotification);
 
@@ -57,7 +64,7 @@ export function JoinFamilyScreen({ navigation }: any) {
       }
 
       setInviteData(parsed);
-      setRequesterName('');
+      setRequesterName(prefillName);
       setRequesterRole('child');
       setShowJoinModal(true);
     } catch {

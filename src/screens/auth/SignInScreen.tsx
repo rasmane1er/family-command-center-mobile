@@ -215,6 +215,9 @@ export default function SignInScreen({ navigation }: Props) {
           id: googleUser.id,
           email: googleUser.email ?? '',
           displayName: googleUser.name || (googleUser.email ? googleUser.email.split('@')[0] : 'Google User'),
+          ...(googleUser.givenName ? { firstName: googleUser.givenName } : {}),
+          ...(googleUser.familyName ? { lastName: googleUser.familyName } : {}),
+          ...(googleUser.photo ? { avatarUri: googleUser.photo } : {}),
           avatarColor: '#4285F4',
           provider: 'google',
         },
@@ -273,6 +276,9 @@ export default function SignInScreen({ navigation }: Props) {
             id: info.id ?? Math.random().toString(36),
             email: info.email ?? '',
             displayName: info.name || (info.email ? info.email.split('@')[0] : 'Google User'),
+            ...(info.given_name ? { firstName: info.given_name } : {}),
+            ...(info.family_name ? { lastName: info.family_name } : {}),
+            ...(info.picture ? { avatarUri: info.picture } : {}),
             avatarColor: '#4285F4',
             provider: 'google',
           },
@@ -322,7 +328,7 @@ export default function SignInScreen({ navigation }: Props) {
   // flows below — once either one has produced Apple's identityToken + the
   // raw nonce that was hashed into it, signing into Firebase and syncing
   // with the backend is identical either way.
-  const finishAppleSignIn = async (identityToken: string, rawNonce: string, appleUserId: string, email: string | null, fullName: string) => {
+  const finishAppleSignIn = async (identityToken: string, rawNonce: string, appleUserId: string, email: string | null, fullName: string, firstName?: string, lastName?: string) => {
     const emailAddr = email ?? `${appleUserId}@privaterelay.appleid.com`;
     const fallbackName = email ? emailAddr.split('@')[0] : 'Apple User';
 
@@ -338,6 +344,8 @@ export default function SignInScreen({ navigation }: Props) {
         id: appleUserId,
         email: emailAddr,
         displayName: fullName || fallbackName,
+        ...(firstName ? { firstName } : {}),
+        ...(lastName ? { lastName } : {}),
         avatarColor: '#000000',
         provider: 'apple',
       },
@@ -392,7 +400,15 @@ export default function SignInScreen({ navigation }: Props) {
       const name = credential.fullName
         ? `${credential.fullName.givenName ?? ''} ${credential.fullName.familyName ?? ''}`.trim()
         : '';
-      await finishAppleSignIn(credential.identityToken, rawNonce, credential.user, credential.email, name);
+      await finishAppleSignIn(
+        credential.identityToken,
+        rawNonce,
+        credential.user,
+        credential.email,
+        name,
+        credential.fullName?.givenName ?? undefined,
+        credential.fullName?.familyName ?? undefined,
+      );
     } catch (e: any) {
       if (e.code !== 'ERR_REQUEST_CANCELED') {
         console.error('[auth] Apple sign-in failed', e);
@@ -486,11 +502,15 @@ export default function SignInScreen({ navigation }: Props) {
       // Apple only includes name/email in `user` on the very first
       // authorization for this app+Apple ID pair, as a JSON string.
       let name = '';
+      let firstName: string | undefined;
+      let lastName: string | undefined;
       let email: string | null = typeof claims.email === 'string' ? claims.email : null;
       if (params.user) {
         try {
           const parsedUser = JSON.parse(params.user);
           if (parsedUser.name) {
+            firstName = parsedUser.name.firstName || undefined;
+            lastName = parsedUser.name.lastName || undefined;
             name = `${parsedUser.name.firstName ?? ''} ${parsedUser.name.lastName ?? ''}`.trim();
           }
           if (!email && parsedUser.email) email = parsedUser.email;
@@ -499,7 +519,7 @@ export default function SignInScreen({ navigation }: Props) {
         }
       }
 
-      await finishAppleSignIn(params.id_token, rawNonce, appleUserId, email, name);
+      await finishAppleSignIn(params.id_token, rawNonce, appleUserId, email, name, firstName, lastName);
     } catch (e: any) {
       console.error('[auth] Apple sign-in (Android) failed', e?.message ?? e, e?.code);
       captureError(e instanceof Error ? e : new Error(String(e)), { stage: 'handleAppleSignInAndroid', code: e?.code });

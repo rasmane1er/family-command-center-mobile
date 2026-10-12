@@ -458,6 +458,15 @@ export const useFamilyStore = create<FamilyState>()(
           });
         }
 
+        // Backfill anything still empty on the server-side member from what
+        // Apple/Google shared at sign-in (photo, name). Never overwrites a
+        // value the user already has.
+        const backfill: Partial<FamilyMember> = {};
+        if (!self.avatar && authUser.avatarUri) backfill.avatar = authUser.avatarUri;
+        if (!self.name?.trim() && authUser.displayName) backfill.name = authUser.displayName;
+        if (!self.email && authUser.email) backfill.email = authUser.email;
+        if (Object.keys(backfill).length > 0) get().updateMember(self.id, backfill);
+
         const activeStillValid = get().members.some((m) => m.id === get().activeMemberId);
         if (!activeStillValid) set({ activeMemberId: self.id });
       }

@@ -41,7 +41,7 @@ export async function populateFromSignUp(user: AuthUser) {
 
   const family: Family = {
     id: localFamilyId,
-    name: user.familyName || `The ${user.displayName.split(' ').pop() || user.displayName} Family`,
+    name: user.familyName || `The ${user.lastName || user.displayName.split(' ').pop() || user.displayName} Family`,
     motto: user.familyMotto,
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     currency: 'USD',
