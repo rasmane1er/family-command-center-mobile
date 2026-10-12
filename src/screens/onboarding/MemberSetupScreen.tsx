@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +9,7 @@ import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { Card } from '../../components/common/Card';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import type { FamilyMember, MemberRole } from '../../types';
 
 const roles: { value: MemberRole; label: string; icon: string }[] = [
@@ -26,6 +27,15 @@ export function MemberSetupScreen({ navigation }: any) {
   const [email, setEmail] = useState('');
   const familyId = useFamilyStore((s) => s.family?.id || 'family-1');
   const addMember = useFamilyStore((s) => s.addMember);
+  const oauthProfile = useAuthStore((s) => s.oauthProfile);
+
+  // Pre-fill the first member's name and email from the OAuth sign-in
+  useEffect(() => {
+    if (oauthProfile && members.length === 0) {
+      if (oauthProfile.givenName && !name) setName(oauthProfile.givenName);
+      if (oauthProfile.email && !email) setEmail(oauthProfile.email);
+    }
+  }, [oauthProfile]);
 
   const addMemberLocal = () => {
     if (!name.trim()) return;

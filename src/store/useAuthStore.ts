@@ -15,12 +15,22 @@ function hashPin(pin: string): string {
 
 export type LockTimeout = 'immediate' | '1min' | '5min' | '15min' | '1hour' | 'never';
 
+export interface OAuthProfile {
+  provider: 'apple' | 'google';
+  userId: string;
+  givenName: string;
+  familyName: string;
+  email: string;
+  photo?: string;
+}
+
 interface AuthState {
   // Setup
   hasPinSet: boolean;
   pinHash: string;
   biometricEnabled: boolean;
   lockTimeout: LockTimeout;
+  oauthProfile: OAuthProfile | null;
 
   // Runtime (not persisted)
   isAuthenticated: boolean;
@@ -39,6 +49,7 @@ interface AuthState {
   updateLastActive: () => void;
   checkShouldLock: () => boolean;
   resetFailedAttempts: () => void;
+  setOAuthProfile: (profile: OAuthProfile | null) => void;
   logout: () => void;
 }
 
@@ -58,6 +69,7 @@ export const useAuthStore = create<AuthState>()(
       pinHash: '',
       biometricEnabled: false,
       lockTimeout: '5min',
+      oauthProfile: null,
 
       isAuthenticated: false,
       lastActiveAt: 0,
@@ -114,6 +126,8 @@ export const useAuthStore = create<AuthState>()(
 
       resetFailedAttempts: () => set({ failedAttempts: 0, lockedUntil: null }),
 
+      setOAuthProfile: (profile) => set({ oauthProfile: profile }),
+
       logout: () => set({ isAuthenticated: false, lastActiveAt: 0 }),
     }),
     {
@@ -125,6 +139,7 @@ export const useAuthStore = create<AuthState>()(
         pinHash: state.pinHash,
         biometricEnabled: state.biometricEnabled,
         lockTimeout: state.lockTimeout,
+        oauthProfile: state.oauthProfile,
       }),
     }
   )

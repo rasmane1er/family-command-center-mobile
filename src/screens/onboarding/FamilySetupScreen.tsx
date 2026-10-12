@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +7,7 @@ import { colors } from '../../theme/colors';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { useFamilyStore } from '../../store/useFamilyStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import type { Family } from '../../types';
 
 const timezones = ['America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles', 'America/Phoenix', 'Pacific/Honolulu'];
@@ -20,6 +21,13 @@ export function FamilySetupScreen({ navigation }: any) {
   const [timezone, setTimezone] = useState('America/Chicago');
   const [militaryMode, setMilitaryMode] = useState(false);
   const setFamily = useFamilyStore((s) => s.setFamily);
+  const oauthProfile = useAuthStore((s) => s.oauthProfile);
+
+  useEffect(() => {
+    if (oauthProfile?.familyName && !familyName) {
+      setFamilyName(`The ${oauthProfile.familyName} Family`);
+    }
+  }, [oauthProfile]);
 
   const handleNext = () => {
     if (!familyName.trim()) return;

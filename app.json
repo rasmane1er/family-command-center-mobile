@@ -28,6 +28,7 @@
     "plugins": [
       "expo-font",
       "expo-notifications",
+      "expo-apple-authentication",
       [
         "expo-image-picker",
         {
