@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CollapsibleHeader } from '../../components/common/CollapsibleHeader';
 import { format } from 'date-fns';
 import { ChatInputBar } from '../../components/ai/ChatInputBar';
+import { isTtsAvailable, getVoiceRepliesEnabled, setVoiceRepliesEnabled, speak, stopSpeaking } from '../../services/speech';
 import { useVoiceInput } from '../../hooks/useVoiceInput';
 import { useTheme } from '../../theme/ThemeContext';
 import { useTranslation } from 'react-i18next';
@@ -72,7 +73,24 @@ export function AIAssistantScreen({ navigation }: any) {
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [confirmedActions, setConfirmedActions] = useState<Set<string>>(new Set());
   const scrollRef = useRef<ScrollView>(null);
-  const { messages, insights, isTyping, sendMessage, clearMessages } = useAIStore();
+  const { messages, insights, isTyping, sendMessage, clearMessages, undoAction } = useAIStore();
+
+  // Spoken replies (opt-in). Speaks each NEW assistant message once; stops when
+  // switched off or when leaving the screen.
+  const [voiceReplies, setVoiceReplies] = useState(getVoiceRepliesEnabled());
+  const lastSpokenId = useRef<string | null>(messages[messages.length - 1]?.id ?? null);
+  useEffect(() => {
+    const last = messages[messages.length - 1];
+    if (!last || last.id === lastSpokenId.current) return;
+    lastSpokenId.current = last.id;
+    if (voiceReplies && last.role === 'assistant') speak(last.content);
+  }, [messages, voiceReplies]);
+  useEffect(() => () => stopSpeaking(), []);
+  const toggleVoiceReplies = () => {
+    const next = !voiceReplies;
+    setVoiceReplies(next);
+    setVoiceRepliesEnabled(next);
+  };
   const { features } = useSubscription();
   const aiQueryCount = useAIStore((s) => s.messages?.filter((m) => m.role === 'user').length ?? 0);
   const serverQuotaExceeded = useAIStore((s) => s.quotaExceeded);
@@ -256,6 +274,17 @@ export function AIAssistantScreen({ navigation }: any) {
             </View>
           </View>
         </View>
+        {isTtsAvailable() && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={voiceReplies ? 'Turn off spoken replies' : 'Read replies aloud'}
+            accessibilityState={{ selected: voiceReplies }}
+            onPress={toggleVoiceReplies}
+            style={({ pressed }) => [dynStyles.clearBtn, pressed && dynStyles.clearBtnPressed, { marginRight: 8 }]}
+          >
+            <Ionicons name={voiceReplies ? 'volume-high' : 'volume-mute-outline'} size={18} color={voiceReplies ? '#fff' : 'rgba(255,255,255,0.75)'} />
+          </Pressable>
+        )}
         <Pressable accessibilityRole="button" onPress={clearMessages} style={({ pressed }) => [dynStyles.clearBtn, pressed && dynStyles.clearBtnPressed]}>
           <Ionicons name="refresh-outline" size={18} color="rgba(255,255,255,0.75)" />
         </Pressable>
@@ -407,6 +436,32 @@ export function AIAssistantScreen({ navigation }: any) {
                   >
                     <Ionicons name="close" size={16} color="#fff" />
                   </Pressable>
+                </View>
+              )}
+
+              {msg.role === 'assistant' && (msg.actions?.length ?? 0) > 0 && (
+                <View style={{ marginLeft: 38, marginBottom: 10, gap: 6 }}>
+                  {msg.actions!.map((a) => (
+                    <View
+                      key={a.id}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(39,174,96,0.12)', borderRadius: 14, paddingVertical: 8, paddingHorizontal: 12 }}
+                    >
+                      <Ionicons name="checkmark-circle" size={16} color="#27AE60" />
+                      <Text style={{ flex: 1, fontSize: 13, color: '#1B6B3A', fontWeight: '600' }} numberOfLines={2}>
+                        {a.summary}
+                      </Text>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={`Undo: ${a.summary}`}
+                        onPress={async () => {
+                          const ok = await undoAction(msg.id, a.id);
+                          if (!ok) Alert.alert('Could not undo', 'Please try again, or change it from the relevant screen.');
+                        }}
+                      >
+                        <Text style={{ fontSize: 13, fontWeight: '800', color: '#5B21B6' }}>Undo</Text>
+                      </Pressable>
+                    </View>
+                  ))}
                 </View>
               )}
 

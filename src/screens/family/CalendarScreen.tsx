@@ -21,6 +21,9 @@ import { useTranslation } from 'react-i18next';
 const EVENT_CATEGORIES = ['Family', 'School', 'Medical', 'Sports', 'Work', 'Social', 'Holiday', 'Other'];
 const EVENT_COLORS = ['#E74C3C', '#E67E22', '#F1C40F', '#27AE60', '#2980B9', '#9B59B6', '#E91E63', '#00BCD4'];
 import { generateId } from '../../utils/generateId';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
+import { importIcs } from '../../services/calendarService';
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -166,6 +169,32 @@ export function CalendarScreen({ navigation, route }: any) {
     setShowModal(false);
   };
 
+  const handleImportCalendar = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({ type: ['text/calendar', '*/*'], copyToCacheDirectory: true, multiple: false });
+      if (result.canceled) return;
+      const asset = result.assets[0];
+      if (!/\.(ics|ical|ifb)$/i.test(asset.name)) {
+        Alert.alert('Unsupported file', 'Please choose a calendar export ending in .ics (Google, Apple and Outlook can all export one).');
+        return;
+      }
+      const content = await FileSystem.readAsStringAsync(asset.uri, { encoding: FileSystem.EncodingType.UTF8 });
+      const out = await importIcs(content);
+      await useFamilyStore.getState().hydrateEvents();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      const extra = out.recurringImportedOnce > 0 ? `\n${out.recurringImportedOnce} repeating event(s) were added once — add repeats manually.` : '';
+      Alert.alert(
+        'Calendar imported',
+        `${out.imported} new event${out.imported === 1 ? '' : 's'} added` +
+          (out.duplicates ? `, ${out.duplicates} already on your calendar` : '') +
+          (out.skipped ? `, ${out.skipped} skipped` : '') +
+          '.' + extra,
+      );
+    } catch {
+      Alert.alert('Import failed', 'Could not import that calendar file. Check your connection and try again.');
+    }
+  };
+
   const handleDeleteEvent = (id: string, title: string) => {
     Alert.alert(t('common.deleteTitle'), `Remove "${title}"?`, [
       { text: 'Cancel', style: 'cancel' },
@@ -201,9 +230,14 @@ export function CalendarScreen({ navigation, route }: any) {
       onBack={() => route.params?.source === 'dashboard' ? navigation.getParent()?.navigate('Home') : navigation.goBack()}
       style={styles.headerRound}
       rightAction={
-        <Pressable accessibilityRole="button" onPress={() => setShowModal(true)} style={styles.addBtn}>
-          <Ionicons name="add" size={26} color="#fff" />
-        </Pressable>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Import calendar file" onPress={handleImportCalendar} style={styles.addBtn}>
+            <Ionicons name="download-outline" size={22} color="#fff" />
+          </Pressable>
+          <Pressable accessibilityRole="button" onPress={() => setShowModal(true)} style={styles.addBtn}>
+            <Ionicons name="add" size={26} color="#fff" />
+          </Pressable>
+        </View>
       }
     >
       {/* Month navigator */}

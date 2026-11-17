@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { getSpeechLocale } from '../utils/speechLocale';
 import { Alert, Platform } from 'react-native';
 import {
   ExpoSpeechRecognitionModule,
@@ -131,7 +132,7 @@ export function useVoiceInput({ onResult }: UseVoiceInputOptions = {}) {
       heldRef.current = true;
       setPartial('');
       ExpoSpeechRecognitionModule.start({
-        lang: 'en-US',
+        lang: getSpeechLocale(),
         interimResults: true,
         continuous: true,
       });

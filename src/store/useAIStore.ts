@@ -24,6 +24,8 @@ interface AIState {
   markInsightRead: (id: string) => void;
   setApiKey: (key: string) => void;
   sendMessage: (content: string, familyContext: string) => Promise<void>;
+  // Reverses a change the assistant made (POST /ai/agent/actions/:id/undo).
+  undoAction: (messageId: string, actionId: string) => Promise<boolean>;
   dismissQuotaExceeded: () => void;
   seedDemoInsights: () => void;
 }
@@ -36,6 +38,85 @@ import { generateId } from '../utils/generateId';
 // the MMKV payload doesn't grow for the lifetime of the install.
 const MAX_MESSAGES = 500;
 const MAX_INSIGHTS = 200;
+
+type AgentAction = {
+  id?: string;
+  tool: string;
+  summary: string;
+  write: boolean;
+  undoable?: boolean;
+  proposal?: { type: string; payload: Record<string, unknown> };
+};
+
+type ChatHistory = { role: 'user' | 'model'; content: string }[];
+
+// Re-pulls whatever the assistant just changed on the server, so a task,
+// event or shopping item it created shows up without a manual refresh.
+function refreshAfterAgentWrite(): void {
+  try {
+    const { useFamilyStore } = require('./useFamilyStore');
+    const { useShoppingStore } = require('./useShoppingStore');
+    useFamilyStore.getState().hydrateTasks?.();
+    useFamilyStore.getState().hydrateEvents?.();
+    useShoppingStore.getState().fetchFromServer?.();
+  } catch {
+    // best-effort — the next normal sync picks it up
+  }
+}
+
+// The assistant can now act (calendar, shopping, tasks) and look things up,
+// using the family's real data on the server — see /ai/agent on the API.
+async function askAgent(content: string, history: ChatHistory): Promise<ChatMessage> {
+  const data = await apiRequest<{ reply: string; actions?: AgentAction[] }>('/ai/agent', {
+    method: 'POST',
+    body: JSON.stringify({ message: content, history }),
+  });
+  const actions = data.actions ?? [];
+  const proposal = actions.find((a) => a.proposal)?.proposal;
+  const done = actions.filter((a) => a.write && a.id).map((a) => ({ id: a.id as string, summary: a.summary }));
+  if (done.length > 0) refreshAfterAgentWrite();
+  return {
+    id: generateId(),
+    role: 'assistant',
+    content: data.reply || AI_UNAVAILABLE_MESSAGE,
+    timestamp: new Date().toISOString(),
+    suggestions: [],
+    ...(proposal ? { pendingAction: proposal } : {}),
+    ...(done.length > 0 ? { actions: done } : {}),
+  };
+}
+
+// Previous advice-only endpoint — kept as a fallback if /ai/agent is
+// unavailable (older server, outage), so chat never goes fully dark.
+async function askLegacyChat(content: string, familyContext: string, history: ChatHistory): Promise<ChatMessage> {
+  // Must go through apiRequest (not a raw fetch) — access tokens are
+  // short-lived (15m, see api/src/utils/jwt.ts). apiRequest transparently
+  // retries once with a refreshed token on a 401.
+  const data = await apiRequest<{ reply: string; suggestions?: string[]; action?: { type: string; payload: Record<string, unknown> } }>(
+    '/ai/chat',
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        message: content,
+        // On the first message history is empty and some backends choose a
+        // shorter "intro" response. Embedding the completion directive in
+        // context is the safest mobile-side nudge without touching the API.
+        context: history.length === 0
+          ? `${familyContext}\n\n[Assistant instruction: This is the start of the conversation. Always respond completely and thoroughly — never cut off mid-sentence or mid-thought. Include all relevant advice, steps, or details in a single response.]`
+          : familyContext,
+        history,
+      }),
+    },
+  );
+  return {
+    id: generateId(),
+    role: 'assistant',
+    content: data.reply || AI_UNAVAILABLE_MESSAGE,
+    timestamp: new Date().toISOString(),
+    suggestions: data.reply ? (data.suggestions ?? []) : [],
+    ...(data.action ? { pendingAction: data.action } : {}),
+  };
+}
 
 export const useAIStore = create<AIState>()(
   persist(
@@ -67,45 +148,21 @@ export const useAIStore = create<AIState>()(
     set((s) => ({ messages: [...s.messages, userMessage].slice(-MAX_MESSAGES), isTyping: true }));
 
     try {
-      const history = messages.slice(-10).map((m) => ({
-        role: m.role === 'assistant' ? 'model' : 'user' as 'user' | 'model',
+      const history: ChatHistory = messages.slice(-10).map((m) => ({
+        role: m.role === 'assistant' ? 'model' : 'user',
         content: m.content,
       }));
 
-      // Must go through apiRequest (not a raw fetch) — access tokens are
-      // short-lived (15m, see api/src/utils/jwt.ts). apiRequest transparently
-      // retries once with a refreshed token on a 401; a raw fetch here meant
-      // any chat sent after the token expired silently fell through to
-      // AI_UNAVAILABLE_MESSAGE instead of refreshing and retrying like every
-      // other authenticated call in the app already does.
-      const data = await apiRequest<{ reply: string; suggestions?: string[]; action?: { type: string; payload: Record<string, unknown> } }>(
-        '/ai/chat',
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            message: content,
-            // On the first message history is empty and some backends choose a
-            // shorter "intro" response. Embedding the completion directive in
-            // context is the safest mobile-side nudge without touching the API.
-            context: history.length === 0
-              ? `${familyContext}\n\n[Assistant instruction: This is the start of the conversation. Always respond completely and thoroughly — never cut off mid-sentence or mid-thought. Include all relevant advice, steps, or details in a single response.]`
-              : familyContext,
-            history,
-          }),
-        },
-      );
-
-      const assistantContent = data.reply || AI_UNAVAILABLE_MESSAGE;
-      const suggestions = data.reply ? (data.suggestions ?? []) : [];
-
-      const assistantMessage: ChatMessage = {
-        id: generateId(),
-        role: 'assistant',
-        content: assistantContent,
-        timestamp: new Date().toISOString(),
-        suggestions,
-        ...(data.action ? { pendingAction: data.action } : {}),
-      };
+      let assistantMessage: ChatMessage;
+      try {
+        assistantMessage = await askAgent(content, history);
+      } catch (agentErr) {
+        // Quota / auth problems are real answers, not reasons to retry elsewhere.
+        if (agentErr instanceof ApiRequestError && (agentErr.status === 429 || agentErr.status === 401 || agentErr.status === 400)) {
+          throw agentErr;
+        }
+        assistantMessage = await askLegacyChat(content, familyContext, history);
+      }
 
       set((s) => ({ messages: [...s.messages, assistantMessage].slice(-MAX_MESSAGES), isTyping: false }));
     } catch (err) {
@@ -128,6 +185,21 @@ export const useAIStore = create<AIState>()(
         suggestions: [],
       };
       set((s) => ({ messages: [...s.messages, assistantMessage].slice(-MAX_MESSAGES), isTyping: false }));
+    }
+  },
+
+  undoAction: async (messageId, actionId) => {
+    try {
+      await apiRequest(`/ai/agent/actions/${actionId}/undo`, { method: 'POST' });
+      set((s) => ({
+        messages: s.messages.map((m) =>
+          m.id === messageId ? { ...m, actions: m.actions?.filter((a) => a.id !== actionId) } : m,
+        ),
+      }));
+      refreshAfterAgentWrite();
+      return true;
+    } catch {
+      return false;
     }
   },
 

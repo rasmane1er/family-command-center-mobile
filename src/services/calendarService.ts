@@ -29,3 +29,18 @@ export function updateEventRemote(id: string, updates: UpdateEventInput): Promis
 export function deleteEventRemote(id: string): Promise<void> {
   return apiRequest(`/calendar/events/${id}`, { method: 'DELETE' });
 }
+
+export interface IcsImportResult {
+  imported: number;
+  duplicates: number;
+  skipped: number;
+  recurringImportedOnce: number;
+}
+
+// Sends the text of a calendar export (.ics from Google/Apple/Outlook) to be imported.
+export function importIcs(ics: string): Promise<IcsImportResult> {
+  return apiRequest('/calendar/import-ics', {
+    method: 'POST',
+    body: JSON.stringify({ ics }),
+  });
+}

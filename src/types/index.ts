@@ -825,6 +825,8 @@ export interface ChatMessage {
   isLoading?: boolean;
   suggestions?: string[];
   pendingAction?: { type: string; payload: Record<string, unknown> };
+  // Changes the assistant made on the server for this reply; each can be undone.
+  actions?: { id: string; summary: string }[];
 }
 
 export interface AIInsight {
