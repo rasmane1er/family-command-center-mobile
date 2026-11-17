@@ -23,7 +23,14 @@
       "package": "com.familycommandcenter.app"
     },
     "web": {
-      "favicon": "./src/assets/favicon.png"
+      "favicon": "./src/assets/favicon.png",
+      "bundler": "metro",
+      "output": "static",
+      "name": "Family Command Center",
+      "shortName": "FCC",
+      "description": "Your AI-powered household headquarters",
+      "themeColor": "#0F2952",
+      "backgroundColor": "#F8F9FB"
     },
     "plugins": [
       "expo-font",
