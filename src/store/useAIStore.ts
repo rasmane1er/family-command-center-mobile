@@ -85,7 +85,7 @@ You can help with:
 - Kid reward system management`;
 
     // Build message content (with optional image)
-    const userContent: any[] = imageBase64
+    const userContent: any = imageBase64
       ? [
           { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: imageBase64 } },
           { type: 'text', text: content },

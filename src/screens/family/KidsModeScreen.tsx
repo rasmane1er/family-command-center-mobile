@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, Pressable, Animated,
+  View, Text, StyleSheet, ScrollView, Pressable, Animated, Modal, TextInput, Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
+import * as Speech from 'expo-speech';
 import { format } from 'date-fns';
 import { colors } from '../../theme/colors';
 import { Card } from '../../components/common/Card';
@@ -14,6 +15,17 @@ import { Avatar } from '../../components/common/Avatar';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { useMoodStore, MoodLevel } from '../../store/useMoodStore';
 import { useHabitsStore } from '../../store/useHabitsStore';
+
+const PARENT_PIN = '1234'; // Default PIN — parents change this in family settings
+
+const REWARD_SHOP = [
+  { id: 'r1', emoji: '🎮', label: '30 min screen time', cost: 200 },
+  { id: 'r2', emoji: '🍕', label: 'Pick dinner tonight', cost: 300 },
+  { id: 'r3', emoji: '🎬', label: 'Movie night pick', cost: 400 },
+  { id: 'r4', emoji: '🛍️', label: '$5 treat budget', cost: 500 },
+  { id: 'r5', emoji: '🌙', label: 'Stay up 30 min late', cost: 350 },
+  { id: 'r6', emoji: '🎲', label: 'Game night pick', cost: 250 },
+];
 
 const MOOD_CONFIG: Record<MoodLevel, { emoji: string; label: string; color: string; bg: string }> = {
   1: { emoji: '😔', label: 'Not great', color: '#E74C3C', bg: '#FDEDEC' },
@@ -58,7 +70,42 @@ export function KidsModeScreen({ navigation }: any) {
   const { habits, isCompletedToday, completeHabit, uncompleteHabit, seedDemoData: seedHabits } = useHabitsStore();
   const [selectedKid, setSelectedKid] = useState<string | null>(null);
   const [showBurst, setShowBurst] = useState(false);
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinInput, setPinInput] = useState('');
+  const [pinError, setPinError] = useState(false);
+  const [showRewardShop, setShowRewardShop] = useState(false);
   const today = new Date().toISOString().split('T')[0];
+
+  const handleExitKidsMode = () => setShowPinModal(true);
+
+  const handlePinSubmit = () => {
+    if (pinInput === PARENT_PIN) {
+      setShowPinModal(false);
+      setPinInput('');
+      setPinError(false);
+      navigation.goBack();
+    } else {
+      setPinError(true);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setPinInput('');
+    }
+  };
+
+  const speakTask = (title: string) => {
+    Speech.stop();
+    Speech.speak(`Your task is: ${title}`, { language: 'en-US', pitch: 1.1, rate: 0.9 });
+  };
+
+  const handleRedeemReward = (reward: typeof REWARD_SHOP[0]) => {
+    if (!activeKid) return;
+    if ((activeKid.points || 0) < reward.cost) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('Not enough XP!', `You need ${reward.cost - (activeKid.points || 0)} more XP for "${reward.label}". Keep completing quests!`);
+      return;
+    }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    Alert.alert('🎉 Reward Unlocked!', `Ask a parent to give you: ${reward.emoji} ${reward.label}`);
+  };
 
   const kids = members.filter((m) => m.role === 'child');
   const activeKid = selectedKid ? members.find((m) => m.id === selectedKid) : (kids[0] || members[0]);
@@ -112,11 +159,13 @@ export function KidsModeScreen({ navigation }: any) {
       <StatusBar style="light" />
       <LinearGradient colors={GRADIENT_COLORS} style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <View style={styles.headerRow}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
+          <Pressable onPress={handleExitKidsMode} style={styles.back}>
+            <Ionicons name="lock-closed" size={22} color="#fff" />
           </Pressable>
           <Text style={styles.headerTitle}>Kids Mode 🎮</Text>
-          <View style={{ width: 38 }} />
+          <Pressable onPress={() => setShowRewardShop(!showRewardShop)} style={styles.shopBtn}>
+            <Text style={styles.shopBtnText}>🛍️ Shop</Text>
+          </Pressable>
         </View>
 
         {/* Kid selector */}
@@ -226,6 +275,9 @@ export function KidsModeScreen({ navigation }: any) {
                     <Text style={styles.questDue}>Due {format(new Date(task.dueDate), 'MMM d')}</Text>
                   )}
                 </View>
+                <Pressable onPress={(e) => { e.stopPropagation(); speakTask(task.title); }} style={styles.speakBtn}>
+                  <Ionicons name="volume-medium-outline" size={18} color={questColor} />
+                </Pressable>
                 <View style={styles.questReward}>
                   <Text style={styles.questXP}>+{XP_PER_TASK}</Text>
                   <Text style={styles.questXPLabel}>XP</Text>
@@ -309,7 +361,62 @@ export function KidsModeScreen({ navigation }: any) {
             </View>
           ))}
         </ScrollView>
+
+        {/* Reward Shop */}
+        {showRewardShop && (
+          <View style={styles.rewardShop}>
+            <View style={styles.rewardShopHeader}>
+              <Text style={styles.rewardShopTitle}>🛍️ Reward Shop</Text>
+              <Text style={styles.rewardShopXP}>You have {activeKid?.points || 0} XP</Text>
+            </View>
+            <View style={styles.rewardGrid}>
+              {REWARD_SHOP.map((r) => {
+                const canAfford = (activeKid?.points || 0) >= r.cost;
+                return (
+                  <Pressable key={r.id} onPress={() => handleRedeemReward(r)} style={[styles.rewardCard, !canAfford && styles.rewardCardLocked]}>
+                    <Text style={styles.rewardEmoji}>{r.emoji}</Text>
+                    <Text style={styles.rewardLabel}>{r.label}</Text>
+                    <View style={[styles.rewardCost, canAfford && styles.rewardCostAffordable]}>
+                      <Text style={[styles.rewardCostText, canAfford && styles.rewardCostTextAffordable]}>{r.cost} XP</Text>
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        )}
       </ScrollView>
+
+      {/* Parent PIN Modal */}
+      <Modal visible={showPinModal} transparent animationType="fade" onRequestClose={() => { setShowPinModal(false); setPinInput(''); setPinError(false); }}>
+        <View style={styles.pinOverlay}>
+          <View style={styles.pinModal}>
+            <Ionicons name="lock-closed" size={36} color={colors.primary} style={{ marginBottom: 12 }} />
+            <Text style={styles.pinTitle}>Parent PIN Required</Text>
+            <Text style={styles.pinSub}>Enter the 4-digit PIN to exit Kids Mode</Text>
+            <TextInput
+              style={[styles.pinInput, pinError && styles.pinInputError]}
+              value={pinInput}
+              keyboardType="number-pad"
+              secureTextEntry
+              maxLength={4}
+              placeholder="••••"
+              placeholderTextColor={colors.textMuted}
+              autoFocus
+              onChangeText={(t) => { setPinInput(t); setPinError(false); if (t.length === 4) setTimeout(handlePinSubmit, 100); }}
+            />
+            {pinError && <Text style={styles.pinError}>Incorrect PIN. Try again.</Text>}
+            <View style={styles.pinBtns}>
+              <Pressable onPress={() => { setShowPinModal(false); setPinInput(''); setPinError(false); }} style={styles.pinCancelBtn}>
+                <Text style={styles.pinCancelText}>Cancel</Text>
+              </Pressable>
+              <Pressable onPress={handlePinSubmit} style={styles.pinConfirmBtn}>
+                <Text style={styles.pinConfirmText}>Confirm</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -320,6 +427,34 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
   back: { width: 38, height: 38, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   headerTitle: { flex: 1, fontSize: 22, fontWeight: '800', color: '#fff' },
+  shopBtn: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 12, paddingVertical: 6, paddingHorizontal: 10 },
+  shopBtnText: { fontSize: 13, fontWeight: '700', color: '#fff' },
+  speakBtn: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginRight: 4 },
+  rewardShop: { backgroundColor: colors.card, borderRadius: 20, margin: 16, padding: 16, borderWidth: 1, borderColor: colors.border },
+  rewardShopHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
+  rewardShopTitle: { fontSize: 17, fontWeight: '800', color: colors.text },
+  rewardShopXP: { fontSize: 13, fontWeight: '700', color: colors.secondary, backgroundColor: '#FEF3E2', borderRadius: 10, paddingVertical: 3, paddingHorizontal: 10 },
+  rewardGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  rewardCard: { width: '47%', backgroundColor: colors.background, borderRadius: 14, padding: 12, alignItems: 'center', borderWidth: 1.5, borderColor: colors.border },
+  rewardCardLocked: { opacity: 0.55 },
+  rewardEmoji: { fontSize: 28, marginBottom: 6 },
+  rewardLabel: { fontSize: 12, fontWeight: '600', color: colors.text, textAlign: 'center', marginBottom: 8, lineHeight: 16 },
+  rewardCost: { backgroundColor: colors.border, borderRadius: 10, paddingVertical: 3, paddingHorizontal: 10 },
+  rewardCostAffordable: { backgroundColor: '#D5F5E3' },
+  rewardCostText: { fontSize: 12, fontWeight: '700', color: colors.textSecondary },
+  rewardCostTextAffordable: { color: '#1A6B3C' },
+  pinOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', padding: 32 },
+  pinModal: { backgroundColor: colors.card, borderRadius: 24, padding: 28, alignItems: 'center', width: '100%', maxWidth: 340 },
+  pinTitle: { fontSize: 20, fontWeight: '800', color: colors.text, marginBottom: 6 },
+  pinSub: { fontSize: 14, color: colors.textSecondary, textAlign: 'center', marginBottom: 20 },
+  pinInput: { width: 160, textAlign: 'center', fontSize: 28, letterSpacing: 12, borderBottomWidth: 2, borderBottomColor: colors.primary, paddingVertical: 8, color: colors.text, marginBottom: 8 },
+  pinInputError: { borderBottomColor: colors.danger },
+  pinError: { fontSize: 13, color: colors.danger, fontWeight: '600', marginBottom: 12 },
+  pinBtns: { flexDirection: 'row', gap: 12, marginTop: 16, width: '100%' },
+  pinCancelBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, borderWidth: 1.5, borderColor: colors.border, alignItems: 'center' },
+  pinCancelText: { fontSize: 15, fontWeight: '600', color: colors.textSecondary },
+  pinConfirmBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: colors.primary, alignItems: 'center' },
+  pinConfirmText: { fontSize: 15, fontWeight: '700', color: '#fff' },
   kidChip: { alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
   kidChipActive: { backgroundColor: 'rgba(255,255,255,0.25)' },
   kidChipName: { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.9)' },
