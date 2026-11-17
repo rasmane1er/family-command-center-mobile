@@ -4,6 +4,7 @@ import { useOperationsStore } from '../store/useOperationsStore';
 import { useMedicationStore } from '../store/useMedicationStore';
 import { useHealthStore } from '../store/useHealthStore';
 import { useAppStore } from '../store/useAppStore';
+import { useMemoryStore } from '../store/useMemoryStore';
 
 /**
  * Builds a rich natural-language context string from live store state.
@@ -16,6 +17,7 @@ export function buildFamilyContext(): string {
   const { medications } = useMedicationStore.getState();
   const { records: healthRecords } = useHealthStore.getState();
   const healthScore = useAppStore.getState().healthScore;
+  const { memories } = useMemoryStore.getState();
 
   const now = new Date();
   const lines: string[] = [];
@@ -111,6 +113,14 @@ export function buildFamilyContext(): string {
   // ── Health Score ─────────────────────────────────────────────────
   if (healthScore) {
     lines.push(`FAMILY HEALTH SCORE: ${healthScore.overall}/100 (Financial:${healthScore.financial} Tasks:${healthScore.tasks} Goals:${healthScore.goals} Health:${healthScore.health} Communication:${healthScore.communication})`);
+  }
+
+  // ── AI Memory ────────────────────────────────────────────────────
+  const pinnedMemories = memories.filter((m) => m.isPinned);
+  const recentMemories = memories.filter((m) => !m.isPinned).slice(0, 5);
+  const allRelevant = [...pinnedMemories, ...recentMemories];
+  if (allRelevant.length > 0) {
+    lines.push(`REMEMBERED FACTS [${allRelevant.length}]: ${allRelevant.map((m) => `[${m.type}] ${m.content}`).join(' | ')}`);
   }
 
   return lines.join('\n');

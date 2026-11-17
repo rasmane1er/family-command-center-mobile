@@ -26,6 +26,7 @@ interface AIState {
   setTtsEnabled: (v: boolean) => void;
   sendMessage: (content: string, imageBase64?: string) => Promise<string>;
   streamMessage: (content: string) => Promise<string>;
+  saveMemoryFromConversation: (userMsg: string, aiReply: string) => void;
   seedDemoInsights: () => void;
 }
 
@@ -141,7 +142,36 @@ You can help with:
       suggestions: getContextSuggestions(content),
     };
     set((s) => ({ messages: [...s.messages, assistantMessage], isTyping: false }));
+    get().saveMemoryFromConversation(content, assistantContent);
     return assistantContent;
+  },
+
+  saveMemoryFromConversation: (userMsg: string, aiReply: string) => {
+    // Heuristically detect memory-worthy facts from the user message
+    const lower = userMsg.toLowerCase();
+    const { addMemory } = (require('../store/useMemoryStore').useMemoryStore as any).getState();
+    const family = (require('../store/useFamilyStore').useFamilyStore as any).getState().family;
+    if (!family) return;
+
+    // Detect food preferences
+    if (/\b(love|hate|allergic|don't like|don't eat|favorite food|prefer)\b/i.test(userMsg)) {
+      addMemory({ familyId: family.id, type: 'preference', title: 'Food/Preference', content: userMsg, isPinned: false });
+      return;
+    }
+    // Detect important dates
+    if (/\b(birthday|anniversary|graduation|wedding|due date|appointment)\b/i.test(userMsg)) {
+      addMemory({ familyId: family.id, type: 'important_date', title: 'Important Date', content: userMsg, isPinned: false });
+      return;
+    }
+    // Detect medical info
+    if (/\b(doctor|medication|allerg|diagnos|prescription|health|therapy)\b/i.test(userMsg)) {
+      addMemory({ familyId: family.id, type: 'health', title: 'Health Note', content: userMsg, isPinned: false });
+      return;
+    }
+    // Detect goals or wishes
+    if (/\b(want to|goal|dream|plan to|saving for|hope to|wish)\b/i.test(userMsg)) {
+      addMemory({ familyId: family.id, type: 'goal', title: 'Family Goal', content: userMsg, isPinned: false });
+    }
   },
 
   streamMessage: async (content: string): Promise<string> => {
@@ -195,6 +225,7 @@ Always reference the specific family data provided.\n\nLIVE FAMILY DATA:\n${fami
       }));
     }
     set({ isStreaming: false });
+    get().saveMemoryFromConversation(content, full);
     return full;
   },
 
