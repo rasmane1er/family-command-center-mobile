@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { buildFamilyContext } from '../utils/buildFamilyContext';
 import type { ChatMessage, AIInsight } from '../types';
 
 interface AIState {
@@ -8,6 +9,9 @@ interface AIState {
   insights: AIInsight[];
   isTyping: boolean;
   apiKey: string;
+  railwayUrl: string;
+  voiceEnabled: boolean;
+  ttsEnabled: boolean;
 
   addMessage: (m: ChatMessage) => void;
   setTyping: (v: boolean) => void;
@@ -15,7 +19,10 @@ interface AIState {
   addInsight: (i: AIInsight) => void;
   markInsightRead: (id: string) => void;
   setApiKey: (key: string) => void;
-  sendMessage: (content: string, familyContext: string) => Promise<void>;
+  setRailwayUrl: (url: string) => void;
+  setVoiceEnabled: (v: boolean) => void;
+  setTtsEnabled: (v: boolean) => void;
+  sendMessage: (content: string, imageBase64?: string) => Promise<string>;
   seedDemoInsights: () => void;
 }
 
@@ -26,6 +33,9 @@ export const useAIStore = create<AIState>()(persist((set, get) => ({
   insights: [],
   isTyping: false,
   apiKey: '',
+  railwayUrl: '',
+  voiceEnabled: false,
+  ttsEnabled: true,
 
   addMessage: (m) => set((s) => ({ messages: [...s.messages, m] })),
   setTyping: (v) => set({ isTyping: v }),
@@ -34,9 +44,12 @@ export const useAIStore = create<AIState>()(persist((set, get) => ({
   markInsightRead: (id) =>
     set((s) => ({ insights: s.insights.map((i) => (i.id === id ? { ...i, isRead: true } : i)) })),
   setApiKey: (key) => set({ apiKey: key }),
+  setRailwayUrl: (url) => set({ railwayUrl: url }),
+  setVoiceEnabled: (v) => set({ voiceEnabled: v }),
+  setTtsEnabled: (v) => set({ ttsEnabled: v }),
 
-  sendMessage: async (content: string, familyContext: string) => {
-    const { messages, apiKey } = get();
+  sendMessage: async (content: string, imageBase64?: string): Promise<string> => {
+    const { messages, apiKey, railwayUrl } = get();
     const userMessage: ChatMessage = {
       id: generateId(),
       role: 'user',
@@ -45,40 +58,58 @@ export const useAIStore = create<AIState>()(persist((set, get) => ({
     };
     set((s) => ({ messages: [...s.messages, userMessage], isTyping: true }));
 
-    try {
-      const systemPrompt = `You are the Family Command Center AI — an intelligent, warm, and proactive household chief of staff.
+    // Build rich real-time context from all stores
+    const familyContext = buildFamilyContext();
+
+    const systemPrompt = `You are the Family Command Center AI — an intelligent, warm, and proactive household chief of staff.
 You help families manage their finances, schedules, tasks, health, and home operations.
 You speak in a supportive, organized, and occasionally encouraging tone.
-Keep responses concise and actionable. Use emoji sparingly for visual clarity.
+Keep responses concise and actionable (2-4 short paragraphs max). Use emoji sparingly for visual clarity.
+Always reference the specific family data provided — never give generic advice when you have real numbers.
 
-Current family context:
+LIVE FAMILY DATA (as of right now):
 ${familyContext}
 
 You can help with:
-- Financial planning and budget analysis
-- Task management and scheduling
+- Financial planning and budget analysis based on the real numbers above
+- Task management — mention specific overdue tasks by name
 - Meal planning and pantry management
 - Health and wellness suggestions
 - Goal tracking and milestone celebrations
 - Home operations and vehicle maintenance
 - Emergency preparedness
-- Kid reward system management
-- Military family support
+- Kid reward system management`;
 
-Always provide specific, personalized advice based on the family context provided.`;
+    // Build message content (with optional image)
+    const userContent: any[] = imageBase64
+      ? [
+          { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: imageBase64 } },
+          { type: 'text', text: content },
+        ]
+      : content;
 
-      const allMessages = [
-        ...messages.slice(-10),
-        userMessage,
-      ].map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
+    const allMessages = [...messages.slice(-10), userMessage].map((m) => ({
+      role: m.role as 'user' | 'assistant',
+      content: m.id === userMessage.id && imageBase64 ? userContent : m.content,
+    }));
 
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+    let assistantContent = '';
+
+    try {
+      // Use Railway proxy if configured, otherwise call Anthropic directly
+      const endpoint = railwayUrl
+        ? `${railwayUrl}/api/ai/chat`
+        : 'https://api.anthropic.com/v1/messages';
+
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (!railwayUrl) {
+        headers['x-api-key'] = apiKey || '';
+        headers['anthropic-version'] = '2023-06-01';
+      }
+
+      const response = await fetch(endpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey || 'demo-key',
-          'anthropic-version': '2023-06-01',
-        },
+        headers,
         body: JSON.stringify({
           model: 'claude-haiku-4-5-20251001',
           max_tokens: 1024,
@@ -87,34 +118,26 @@ Always provide specific, personalized advice based on the family context provide
         }),
       });
 
-      let assistantContent = '';
-
-      if (!response.ok || !apiKey) {
-        assistantContent = getDemoResponse(content);
-      } else {
+      if (response.ok && (apiKey || railwayUrl)) {
         const data = await response.json();
-        assistantContent = data.content?.[0]?.text || getDemoResponse(content);
+        // Support both direct Anthropic response and Railway proxy response shapes
+        assistantContent = data.content?.[0]?.text ?? data.message ?? getDemoResponse(content);
+      } else {
+        assistantContent = getDemoResponse(content);
       }
-
-      const assistantMessage: ChatMessage = {
-        id: generateId(),
-        role: 'assistant',
-        content: assistantContent,
-        timestamp: new Date().toISOString(),
-        suggestions: getContextSuggestions(content),
-      };
-
-      set((s) => ({ messages: [...s.messages, assistantMessage], isTyping: false }));
     } catch {
-      const assistantMessage: ChatMessage = {
-        id: generateId(),
-        role: 'assistant',
-        content: getDemoResponse(content),
-        timestamp: new Date().toISOString(),
-        suggestions: getContextSuggestions(content),
-      };
-      set((s) => ({ messages: [...s.messages, assistantMessage], isTyping: false }));
+      assistantContent = getDemoResponse(content);
     }
+
+    const assistantMessage: ChatMessage = {
+      id: generateId(),
+      role: 'assistant',
+      content: assistantContent,
+      timestamp: new Date().toISOString(),
+      suggestions: getContextSuggestions(content),
+    };
+    set((s) => ({ messages: [...s.messages, assistantMessage], isTyping: false }));
+    return assistantContent;
   },
 
   seedDemoInsights: () => {

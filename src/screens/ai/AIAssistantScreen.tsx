@@ -1,15 +1,17 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable,
-  TextInput, KeyboardAvoidingView, Platform, ActivityIndicator,
+  TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
+import * as Speech from 'expo-speech';
+import * as ImagePicker from 'expo-image-picker';
+import { Audio } from 'expo-av';
 import { colors } from '../../theme/colors';
-import { Card } from '../../components/common/Card';
 import { useAIStore } from '../../store/useAIStore';
 import { useFamilyStore } from '../../store/useFamilyStore';
 import { useFinanceStore } from '../../store/useFinanceStore';
@@ -17,11 +19,11 @@ import { useOperationsStore } from '../../store/useOperationsStore';
 
 const QUICK_SUGGESTIONS = [
   { label: 'Budget check', prompt: 'How are we doing with our budget this month?', icon: 'wallet-outline' },
-  { label: 'Meal ideas', prompt: 'What meals can I make with chicken breast tonight?', icon: 'restaurant-outline' },
+  { label: 'Meal ideas', prompt: 'What can I make for dinner tonight from what we have?', icon: 'restaurant-outline' },
   { label: 'Task summary', prompt: 'What tasks need attention this week?', icon: 'checkbox-outline' },
-  { label: 'Savings tips', prompt: 'Give me tips to save more money this month', icon: 'trending-up-outline' },
-  { label: 'Vehicle check', prompt: 'Do any vehicles need service soon?', icon: 'car-outline' },
-  { label: 'Family goals', prompt: "How are we progressing on our family goals?", icon: 'flag-outline' },
+  { label: 'Savings tips', prompt: 'Give me specific tips to save more money this month based on our spending', icon: 'trending-up-outline' },
+  { label: 'Vehicle check', prompt: 'Do any of our vehicles need service soon?', icon: 'car-outline' },
+  { label: 'Family goals', prompt: 'How are we progressing on our family goals?', icon: 'flag-outline' },
 ];
 
 const AI_FEATURES = [
@@ -31,30 +33,157 @@ const AI_FEATURES = [
   { label: 'Digital Twin', icon: 'git-network', color: '#2D2D8F', screen: 'DigitalTwin' },
 ];
 
+type VoiceState = 'idle' | 'recording' | 'processing';
+
 export function AIAssistantScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const [input, setInput] = useState('');
+  const [voiceState, setVoiceState] = useState<VoiceState>('idle');
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
-  const { messages, insights, isTyping, sendMessage, clearMessages } = useAIStore();
+  const recordingRef = useRef<Audio.Recording | null>(null);
+
+  const { messages, insights, isTyping, sendMessage, clearMessages, ttsEnabled, setTtsEnabled } = useAIStore();
   const family = useFamilyStore((s) => s.family);
   const members = useFamilyStore((s) => s.members);
   const { accounts } = useFinanceStore();
-  const { pantryItems, vehicles } = useOperationsStore();
+  const { pantryItems } = useOperationsStore();
 
   const netWorth = accounts.reduce((sum, a) => sum + a.balance, 0);
+  const unreadInsights = insights.filter((i) => !i.isRead);
 
   useEffect(() => {
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
   }, [messages, isTyping]);
 
-  const handleSend = async (text?: string) => {
-    const msg = text || input.trim();
-    if (!msg) return;
-    setInput('');
-    await sendMessage(msg, '');
+  // Speak AI response if TTS is on
+  const speak = useCallback(async (text: string) => {
+    if (!ttsEnabled) return;
+    try {
+      await Speech.stop();
+      setIsSpeaking(true);
+      Speech.speak(text, {
+        language: 'en-US',
+        pitch: 1.0,
+        rate: 0.95,
+        onDone: () => setIsSpeaking(false),
+        onError: () => setIsSpeaking(false),
+      });
+    } catch {
+      setIsSpeaking(false);
+    }
+  }, [ttsEnabled]);
+
+  const stopSpeaking = async () => {
+    await Speech.stop();
+    setIsSpeaking(false);
   };
 
-  const unreadInsights = insights.filter((i) => !i.isRead);
+  const handleSend = async (text?: string, imageBase64?: string) => {
+    const msg = text || input.trim();
+    if (!msg && !imageBase64) return;
+    setInput('');
+    const reply = await sendMessage(msg || '(image)', imageBase64);
+    if (reply) speak(reply);
+  };
+
+  // ── Voice recording ───────────────────────────────────────────────
+  const startRecording = async () => {
+    try {
+      const { status } = await Audio.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Microphone Permission', 'Please allow microphone access to use voice input.');
+        return;
+      }
+      await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+      const { recording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+      recordingRef.current = recording;
+      setVoiceState('recording');
+    } catch {
+      Alert.alert('Recording Error', 'Could not start microphone. Please try again.');
+    }
+  };
+
+  const stopRecording = async () => {
+    if (!recordingRef.current) return;
+    setVoiceState('processing');
+    try {
+      await recordingRef.current.stopAndUnloadAsync();
+      await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
+      // Note: Native speech-to-text would require @react-native-voice/voice.
+      // For now, prompt the user to type after recording ends (foundation for STT integration).
+      Alert.alert(
+        'Voice Recorded',
+        'Voice-to-text requires a STT backend. Your recording is ready — connect Whisper via Railway to enable full transcription.',
+        [{ text: 'OK' }]
+      );
+    } catch {
+      // silent
+    } finally {
+      recordingRef.current = null;
+      setVoiceState('idle');
+    }
+  };
+
+  const handleMicPress = () => {
+    if (voiceState === 'idle') {
+      startRecording();
+    } else if (voiceState === 'recording') {
+      stopRecording();
+    }
+  };
+
+  // ── Camera / image input ──────────────────────────────────────────
+  const handleImagePick = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Photo Permission', 'Allow photo access to analyze images.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.7,
+      base64: true,
+    });
+    if (!result.canceled && result.assets[0]?.base64) {
+      Alert.prompt(
+        'What should I analyze?',
+        'Describe what you want to know about this image (e.g. "Log this receipt", "What\'s in this pantry?")',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Analyze',
+            onPress: (prompt) => {
+              if (prompt) handleSend(prompt, result.assets[0].base64!);
+            },
+          },
+        ],
+        'plain-text',
+        'Analyze this image'
+      );
+    }
+  };
+
+  const handleCameraCapture = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Camera Permission', 'Allow camera access to capture images for analysis.');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      quality: 0.7,
+      base64: true,
+    });
+    if (!result.canceled && result.assets[0]?.base64) {
+      handleSend('Analyze this image and help me log or act on what you see.', result.assets[0].base64!);
+    }
+  };
+
+  const micColor = voiceState === 'recording' ? '#E74C3C' : voiceState === 'processing' ? colors.secondary : colors.textMuted;
 
   return (
     <View style={styles.container}>
@@ -71,6 +200,9 @@ export function AIAssistantScreen({ navigation }: any) {
               <Text style={styles.statusText}>Online • Powered by Claude</Text>
             </View>
           </View>
+          <Pressable onPress={() => setTtsEnabled(!ttsEnabled)} style={styles.ttsBtn}>
+            <Ionicons name={ttsEnabled ? 'volume-high' : 'volume-mute'} size={18} color={ttsEnabled ? colors.secondary : 'rgba(255,255,255,0.4)'} />
+          </Pressable>
           <Pressable onPress={clearMessages} style={styles.clearBtn}>
             <Ionicons name="refresh-outline" size={20} color="rgba(255,255,255,0.6)" />
           </Pressable>
@@ -91,7 +223,6 @@ export function AIAssistantScreen({ navigation }: any) {
           </View>
         </View>
 
-        {/* AI Feature shortcuts */}
         <View style={styles.featuresRow}>
           {AI_FEATURES.map((f) => (
             <Pressable key={f.screen} onPress={() => navigation.navigate(f.screen)} style={[styles.featureBtn, { backgroundColor: f.color + '30', borderColor: f.color + '60' }]}>
@@ -112,6 +243,16 @@ export function AIAssistantScreen({ navigation }: any) {
         </View>
       )}
 
+      {isSpeaking && (
+        <Pressable onPress={stopSpeaking} style={styles.speakingBar}>
+          <Ionicons name="volume-high" size={16} color="#fff" />
+          <Text style={styles.speakingText}>Speaking… tap to stop</Text>
+          <View style={styles.speakingDots}>
+            {[0, 1, 2].map((i) => <View key={i} style={[styles.speakDot, { opacity: 0.4 + i * 0.3 }]} />)}
+          </View>
+        </Pressable>
+      )}
+
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -127,31 +268,32 @@ export function AIAssistantScreen({ navigation }: any) {
               <View style={styles.emptyChatIcon}>
                 <Ionicons name="sparkles" size={40} color={colors.primary} />
               </View>
-              <Text style={styles.emptyChatTitle}>Hi{family?.name ? `, ${family.name} family` : ''}!</Text>
+              <Text style={styles.emptyChatTitle}>Hi{family?.name ? `, ${family.name.replace('The ', '').replace(' Family', '')} family` : ''}!</Text>
               <Text style={styles.emptyChatSubtitle}>
-                I'm your AI Household Chief of Staff. I have full context of your family's finances, tasks, pantry, vehicles, and goals. Ask me anything!
+                I'm your AI Household Chief of Staff. I know your real finances, tasks, pantry, and goals. Ask me anything — or tap the mic to speak.
               </Text>
             </View>
           )}
 
           {messages.map((msg) => (
-            <View
-              key={msg.id}
-              style={[styles.messageBubble, msg.role === 'user' ? styles.userBubble : styles.aiBubble]}
-            >
+            <View key={msg.id} style={[styles.messageBubble, msg.role === 'user' ? styles.userBubble : styles.aiBubble]}>
               {msg.role === 'assistant' && (
                 <View style={styles.aiAvatarSmall}>
                   <Ionicons name="sparkles" size={14} color={colors.secondary} />
                 </View>
               )}
-              <View style={[styles.bubbleContent, msg.role === 'user' ? styles.userBubbleContent : styles.aiBubbleContent]}>
+              <Pressable
+                style={[styles.bubbleContent, msg.role === 'user' ? styles.userBubbleContent : styles.aiBubbleContent]}
+                onLongPress={() => msg.role === 'assistant' && speak(msg.content)}
+              >
                 <Text style={[styles.bubbleText, msg.role === 'user' ? styles.userBubbleText : styles.aiBubbleText]}>
                   {msg.content}
                 </Text>
                 <Text style={[styles.bubbleTime, msg.role === 'user' ? styles.userBubbleTime : styles.aiBubbleTime]}>
                   {format(new Date(msg.timestamp), 'h:mm a')}
+                  {msg.role === 'assistant' && ttsEnabled && '  🔊'}
                 </Text>
-              </View>
+              </Pressable>
             </View>
           ))}
 
@@ -196,6 +338,16 @@ export function AIAssistantScreen({ navigation }: any) {
         )}
 
         <View style={[styles.inputBar, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+          {/* Camera button */}
+          <Pressable onPress={handleCameraCapture} style={styles.iconBtn}>
+            <Ionicons name="camera-outline" size={22} color={colors.textMuted} />
+          </Pressable>
+
+          {/* Image gallery button */}
+          <Pressable onPress={handleImagePick} style={styles.iconBtn}>
+            <Ionicons name="image-outline" size={22} color={colors.textMuted} />
+          </Pressable>
+
           <TextInput
             style={styles.input}
             placeholder="Ask about your family, finances, tasks..."
@@ -207,6 +359,20 @@ export function AIAssistantScreen({ navigation }: any) {
             returnKeyType="send"
             onSubmitEditing={() => handleSend()}
           />
+
+          {/* Mic button */}
+          <Pressable
+            onPress={handleMicPress}
+            style={[styles.iconBtn, voiceState === 'recording' && styles.micActive]}
+          >
+            {voiceState === 'processing' ? (
+              <ActivityIndicator size="small" color={colors.secondary} />
+            ) : (
+              <Ionicons name={voiceState === 'recording' ? 'stop-circle' : 'mic-outline'} size={22} color={micColor} />
+            )}
+          </Pressable>
+
+          {/* Send button */}
           <Pressable
             onPress={() => handleSend()}
             style={[styles.sendBtn, (!input.trim() || isTyping) && styles.sendBtnDisabled]}
@@ -233,6 +399,7 @@ const styles = StyleSheet.create({
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
   statusDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#2ECC71' },
   statusText: { fontSize: 12, color: 'rgba(255,255,255,0.6)' },
+  ttsBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
   clearBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
   contextRow: { flexDirection: 'row', gap: 8 },
   contextChip: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 20, paddingVertical: 4, paddingHorizontal: 10 },
@@ -243,6 +410,10 @@ const styles = StyleSheet.create({
   insightsBar: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FEF3E2', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
   insightsText: { flex: 1, fontSize: 12, color: colors.text, fontWeight: '500' },
   insightsCount: { fontSize: 11, color: '#fff', backgroundColor: colors.secondary, borderRadius: 10, paddingHorizontal: 7, paddingVertical: 2, fontWeight: '700' },
+  speakingBar: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#1A6B3C', paddingHorizontal: 16, paddingVertical: 10 },
+  speakingText: { flex: 1, fontSize: 12, color: '#fff', fontWeight: '600' },
+  speakingDots: { flexDirection: 'row', gap: 3 },
+  speakDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#fff' },
   messages: { padding: 16 },
   emptyChat: { alignItems: 'center', paddingVertical: 32 },
   emptyChatIcon: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#E8EEF9', alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
@@ -275,7 +446,9 @@ const styles = StyleSheet.create({
   quickSuggestions: { maxHeight: 44, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.background },
   quickChip: { backgroundColor: '#E8EEF9', borderRadius: 20, paddingVertical: 8, paddingHorizontal: 14 },
   quickChipText: { fontSize: 12, fontWeight: '600', color: colors.primary },
-  inputBar: { flexDirection: 'row', alignItems: 'flex-end', gap: 10, paddingHorizontal: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.background },
+  inputBar: { flexDirection: 'row', alignItems: 'flex-end', gap: 6, paddingHorizontal: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.background },
+  iconBtn: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
+  micActive: { backgroundColor: '#FDE8E8' },
   input: { flex: 1, backgroundColor: colors.card, borderRadius: 22, paddingVertical: 10, paddingHorizontal: 16, fontSize: 14, color: colors.text, maxHeight: 100, borderWidth: 1, borderColor: colors.border },
   sendBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
   sendBtnDisabled: { backgroundColor: colors.textMuted },
