@@ -25,7 +25,7 @@
     "web": {
       "favicon": "./src/assets/favicon.png",
       "bundler": "metro",
-      "output": "static",
+      "output": "single",
       "name": "Family Command Center",
       "shortName": "FCC",
       "description": "Your AI-powered household headquarters",
