@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Switch } from 'react-native';
+import { format } from 'date-fns';
 import { colors } from '../../theme/colors';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { useAutomationStore } from '../../store/useAutomationStore';
+import { evaluateRules, fireRuleNow } from '../../services/AutomationEngine';
 
 const TRIGGER_LABELS: Record<string, string> = {
   time: 'Time-based',
@@ -27,18 +29,19 @@ const ACTION_ICONS: Record<string, string> = {
 };
 
 const TEMPLATES = [
-  { name: 'School Morning Routine', desc: 'Alerts + reminders every school day at 7am', icon: 'school', color: '#2980B9' },
-  { name: 'Bill Payment Reminder', desc: 'Auto-remind 3 days before each bill is due', icon: 'card', color: '#E74C3C' },
-  { name: 'Weekly Chore Assignment', desc: 'Auto-assign and notify kids every Friday', icon: 'checkbox', color: '#27AE60' },
-  { name: 'Pantry Low Alert', desc: 'Alert when grocery items run below minimum', icon: 'nutrition', color: '#F5A623' },
-  { name: 'Bedtime Wind-Down', desc: 'Dim lights and screen-off alerts at bedtime', icon: 'moon', color: '#8E44AD' },
-  { name: 'Family Weekly Report', desc: 'AI-generated family health summary on Sundays', icon: 'document-text', color: '#16A085' },
+  { name: 'School Morning Routine', desc: 'Alerts + reminders every school day at 7am', icon: 'school', color: '#2980B9', condition: 'daily:07:00', actionType: 'notify' as const, actionValue: 'Time for school! Check tasks and pack your bag.' },
+  { name: 'Bill Payment Reminder', desc: 'Auto-remind 3 days before each bill is due', icon: 'card', color: '#E74C3C', condition: 'bill due 3 days', actionType: 'notify' as const, actionValue: 'You have bills due soon. Review in Finance.' },
+  { name: 'Weekly Chore Assignment', desc: 'Auto-assign and notify kids every Friday', icon: 'checkbox', color: '#27AE60', condition: 'weekly:friday:08:00', actionType: 'notify' as const, actionValue: 'Weekly chores are assigned! Check your tasks.' },
+  { name: 'Pantry Low Alert', desc: 'Alert when grocery items run below minimum', icon: 'nutrition', color: '#F5A623', condition: 'pantry low items', actionType: 'notify' as const, actionValue: 'Some pantry items are running low. Time to shop!' },
+  { name: 'Bedtime Wind-Down', desc: 'Dim lights and screen-off alerts at bedtime', icon: 'moon', color: '#8E44AD', condition: 'daily:21:00', actionType: 'reminder' as const, actionValue: 'Bedtime in 30 minutes. Wind down screens.' },
+  { name: 'Family Weekly Report', desc: 'AI-generated family health summary on Sundays', icon: 'document-text', color: '#16A085', condition: 'weekly:sunday:09:00', actionType: 'message' as const, actionValue: 'Your weekly family report is ready. Check the AI Assistant.' },
 ];
 
 export function AutomationScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<'rules' | 'templates'>('rules');
-  const { rules, toggleRule, deleteRule, seedDemoData } = useAutomationStore();
+  const [isEvaluating, setIsEvaluating] = useState(false);
+  const { rules, toggleRule, deleteRule, addRule, seedDemoData } = useAutomationStore();
 
   if (rules.length === 0) seedDemoData();
 
@@ -52,6 +55,57 @@ export function AutomationScreen({ navigation }: any) {
     ]);
   };
 
+  const handleEvaluateAll = useCallback(async () => {
+    setIsEvaluating(true);
+    setTimeout(() => {
+      const results = evaluateRules();
+      setIsEvaluating(false);
+      const fired = results.filter((r) => r.fired);
+      if (fired.length === 0) {
+        Alert.alert('No Rules Triggered', 'All conditions checked — no rules fired at this time. Rules will fire automatically when their conditions are met.', [{ text: 'OK' }]);
+      } else {
+        const summary = fired.map((r) => `✅ ${r.ruleName}: ${r.actionTaken}`).join('\n');
+        Alert.alert(`${fired.length} Rule${fired.length > 1 ? 's' : ''} Fired!`, summary, [{ text: 'Great!' }]);
+      }
+    }, 400);
+  }, []);
+
+  const handleRunNow = useCallback((ruleId: string, ruleName: string) => {
+    const result = fireRuleNow(ruleId);
+    if (result?.fired) {
+      Alert.alert('Action Fired!', `"${ruleName}"\n\n${result.actionTaken}`, [{ text: 'OK' }]);
+    } else {
+      Alert.alert('No Action', `"${ruleName}" ran but its action did not fire.\n${result?.actionTaken || ''}`, [{ text: 'OK' }]);
+    }
+  }, []);
+
+  const handleAddTemplate = useCallback((template: typeof TEMPLATES[number]) => {
+    Alert.alert(
+      `Add "${template.name}"?`,
+      template.desc,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Add Rule',
+          onPress: () => {
+            addRule({
+              familyId: 'family',
+              name: template.name,
+              description: template.desc,
+              isActive: true,
+              trigger: { type: 'condition', value: template.condition, condition: template.condition },
+              action: { type: template.actionType, value: template.actionValue },
+              lastRun: undefined,
+              icon: template.icon,
+              color: template.color,
+            });
+            setActiveTab('rules');
+          },
+        },
+      ]
+    );
+  }, [addRule]);
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
@@ -62,10 +116,11 @@ export function AutomationScreen({ navigation }: any) {
           </Pressable>
           <Text style={styles.headerTitle}>Automation Engine</Text>
           <Pressable
-            onPress={() => Alert.alert('Add Automation', 'Switch to the Templates tab to quickly add pre-built automations to your family rules.', [{ text: 'Got It' }])}
-            style={styles.addBtn}
+            onPress={handleEvaluateAll}
+            style={[styles.addBtn, isEvaluating && { opacity: 0.5 }]}
+            disabled={isEvaluating}
           >
-            <Ionicons name="add" size={24} color="#fff" />
+            <Ionicons name={isEvaluating ? 'hourglass-outline' : 'play'} size={20} color="#fff" />
           </Pressable>
         </View>
 
@@ -129,17 +184,25 @@ export function AutomationScreen({ navigation }: any) {
                 </View>
               </View>
               <View style={styles.ruleStats}>
-                <Text style={styles.runCount}>Ran {rule.runCount}x</Text>
-                <Pressable onPress={() => handleDelete(rule.id, rule.name)}>
-                  <Ionicons name="trash-outline" size={16} color={colors.danger} />
-                </Pressable>
+                <View>
+                  <Text style={styles.runCount}>Ran {rule.runCount}x{rule.lastRun ? ` · ${format(new Date(rule.lastRun), 'MMM d')}` : ''}</Text>
+                </View>
+                <View style={styles.ruleActions}>
+                  <Pressable onPress={() => handleRunNow(rule.id, rule.name)} style={styles.runNowBtn}>
+                    <Ionicons name="play-circle" size={14} color={rule.color} />
+                    <Text style={[styles.runNowText, { color: rule.color }]}>Run</Text>
+                  </Pressable>
+                  <Pressable onPress={() => handleDelete(rule.id, rule.name)}>
+                    <Ionicons name="trash-outline" size={16} color={colors.danger} />
+                  </Pressable>
+                </View>
               </View>
             </View>
           </Card>
         ))}
 
         {activeTab === 'templates' && TEMPLATES.map((t, i) => (
-          <Pressable key={i} onPress={() => Alert.alert('Add Automation', `Add "${t.name}" to your automation rules?`)}>
+          <Pressable key={i} onPress={() => handleAddTemplate(t)}>
             <Card style={styles.templateCard} variant="elevated">
               <View style={[styles.templateIcon, { backgroundColor: t.color + '15' }]}>
                 <Ionicons name={t.icon as any} size={24} color={t.color} />
@@ -190,6 +253,9 @@ const styles = StyleSheet.create({
   actionText: { fontSize: 10, fontWeight: '700', color: colors.success },
   ruleStats: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   runCount: { fontSize: 11, color: colors.textMuted },
+  ruleActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  runNowBtn: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  runNowText: { fontSize: 11, fontWeight: '700' },
   templateCard: { flexDirection: 'row', alignItems: 'center', marginBottom: 10, borderRadius: 14 },
   templateIcon: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   templateName: { fontSize: 14, fontWeight: '700', color: colors.text },
