@@ -43,7 +43,7 @@ export function AIAssistantScreen({ navigation }: any) {
   const scrollRef = useRef<ScrollView>(null);
   const recordingRef = useRef<Audio.Recording | null>(null);
 
-  const { messages, insights, isTyping, sendMessage, clearMessages, ttsEnabled, setTtsEnabled } = useAIStore();
+  const { messages, insights, isTyping, isStreaming, sendMessage, streamMessage, clearMessages, ttsEnabled, setTtsEnabled, railwayUrl } = useAIStore();
   const family = useFamilyStore((s) => s.family);
   const members = useFamilyStore((s) => s.members);
   const { accounts } = useFinanceStore();
@@ -83,7 +83,13 @@ export function AIAssistantScreen({ navigation }: any) {
     const msg = text || input.trim();
     if (!msg && !imageBase64) return;
     setInput('');
-    const reply = await sendMessage(msg || '(image)', imageBase64);
+    // Use streaming when Railway is configured and no image attached
+    let reply: string;
+    if (railwayUrl && !imageBase64) {
+      reply = await streamMessage(msg || '');
+    } else {
+      reply = await sendMessage(msg || '(image)', imageBase64);
+    }
     if (reply) speak(reply);
   };
 
@@ -375,10 +381,10 @@ export function AIAssistantScreen({ navigation }: any) {
           {/* Send button */}
           <Pressable
             onPress={() => handleSend()}
-            style={[styles.sendBtn, (!input.trim() || isTyping) && styles.sendBtnDisabled]}
-            disabled={!input.trim() || isTyping}
+            style={[styles.sendBtn, (!input.trim() || isTyping || isStreaming) && styles.sendBtnDisabled]}
+            disabled={!input.trim() || isTyping || isStreaming}
           >
-            {isTyping ? (
+            {isTyping || isStreaming ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
               <Ionicons name="send" size={18} color="#fff" />

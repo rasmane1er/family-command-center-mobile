@@ -43,10 +43,13 @@ export function SettingsScreen({ navigation }: any) {
   const family = useFamilyStore((s) => s.family);
   const [apiKey, setApiKey] = useState('');
   const [showApiKey, setShowApiKey] = useState(false);
+  const [railwayUrlInput, setRailwayUrlInput] = useState('');
+  const { setRailwayUrl, railwayUrl } = useAIStore();
   const { seedDemoData: seedFamily } = useFamilyStore();
   const { seedDemoData: seedFinance } = useFinanceStore();
   const { seedDemoData: seedOps } = useOperationsStore();
   const { seedDemoInsights } = useAIStore();
+
   const { seedDemoData: seedMemory } = useMemoryStore();
   const { seedDemoData: seedLegacy } = useLegacyStore();
   const { seedDemoData: seedHealth } = useHealthStore();
@@ -174,8 +177,41 @@ export function SettingsScreen({ navigation }: any) {
               <Ionicons name={showApiKey ? 'eye-off' : 'eye'} size={18} color={colors.textMuted} />
             </Pressable>
           </View>
-          <Pressable style={styles.saveKeyBtn}>
+          <Pressable style={styles.saveKeyBtn} onPress={() => useAIStore.getState().setApiKey(apiKey)}>
             <Text style={styles.saveKeyText}>Save API Key</Text>
+          </Pressable>
+        </Card>
+
+        <Card style={styles.settingCard} variant="elevated">
+          <Text style={styles.settingLabel}>Railway Backend URL</Text>
+          <Text style={styles.settingDesc}>Connect your Railway backend to keep your AI API key secure and enable sync</Text>
+          {railwayUrl ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+              <Ionicons name="checkmark-circle" size={16} color="#1A6B3C" />
+              <Text style={{ marginLeft: 6, fontSize: 12, color: '#1A6B3C', fontWeight: '600' }}>Connected: {railwayUrl}</Text>
+            </View>
+          ) : null}
+          <View style={styles.apiKeyRow}>
+            <TextInput
+              style={styles.apiKeyInput}
+              value={railwayUrlInput}
+              onChangeText={setRailwayUrlInput}
+              placeholder="https://your-app.railway.app"
+              placeholderTextColor={colors.textMuted}
+              autoCapitalize="none"
+              keyboardType="url"
+            />
+          </View>
+          <Pressable
+            style={styles.saveKeyBtn}
+            onPress={() => {
+              const url = railwayUrlInput.trim().replace(/\/$/, '');
+              setRailwayUrl(url);
+              setRailwayUrlInput('');
+              Alert.alert('Connected', url ? `Railway backend connected:\n${url}` : 'Railway URL cleared.');
+            }}
+          >
+            <Text style={styles.saveKeyText}>{railwayUrl ? 'Update URL' : 'Connect Railway'}</Text>
           </Pressable>
         </Card>
 

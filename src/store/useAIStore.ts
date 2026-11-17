@@ -2,12 +2,14 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { buildFamilyContext } from '../utils/buildFamilyContext';
+import { ApiService } from '../services/ApiService';
 import type { ChatMessage, AIInsight } from '../types';
 
 interface AIState {
   messages: ChatMessage[];
   insights: AIInsight[];
   isTyping: boolean;
+  isStreaming: boolean;
   apiKey: string;
   railwayUrl: string;
   voiceEnabled: boolean;
@@ -23,6 +25,7 @@ interface AIState {
   setVoiceEnabled: (v: boolean) => void;
   setTtsEnabled: (v: boolean) => void;
   sendMessage: (content: string, imageBase64?: string) => Promise<string>;
+  streamMessage: (content: string) => Promise<string>;
   seedDemoInsights: () => void;
 }
 
@@ -32,6 +35,7 @@ export const useAIStore = create<AIState>()(persist((set, get) => ({
   messages: [],
   insights: [],
   isTyping: false,
+  isStreaming: false,
   apiKey: '',
   railwayUrl: '',
   voiceEnabled: false,
@@ -138,6 +142,60 @@ You can help with:
     };
     set((s) => ({ messages: [...s.messages, assistantMessage], isTyping: false }));
     return assistantContent;
+  },
+
+  streamMessage: async (content: string): Promise<string> => {
+    const { messages } = get();
+    const userMessage: ChatMessage = {
+      id: generateId(),
+      role: 'user',
+      content,
+      timestamp: new Date().toISOString(),
+    };
+    // Placeholder assistant message that grows as chunks arrive
+    const assistantId = generateId();
+    const assistantMessage: ChatMessage = {
+      id: assistantId,
+      role: 'assistant',
+      content: '',
+      timestamp: new Date().toISOString(),
+    };
+    set((s) => ({ messages: [...s.messages, userMessage, assistantMessage], isStreaming: true }));
+
+    const familyContext = buildFamilyContext();
+    const systemPrompt = `You are the Family Command Center AI — an intelligent, warm, and proactive household chief of staff.
+Keep responses concise and actionable. Use emoji sparingly.
+Always reference the specific family data provided.\n\nLIVE FAMILY DATA:\n${familyContext}`;
+
+    const allMessages = [...messages.slice(-10), userMessage].map((m) => ({
+      role: m.role as 'user' | 'assistant',
+      content: m.content,
+    }));
+
+    let full = '';
+    try {
+      full = await ApiService.stream(
+        '/api/ai/chat/stream',
+        { model: 'claude-haiku-4-5-20251001', max_tokens: 1024, system: systemPrompt, messages: allMessages, stream: true },
+        (delta) => {
+          set((s) => ({
+            messages: s.messages.map((m) =>
+              m.id === assistantId ? { ...m, content: m.content + delta } : m
+            ),
+          }));
+        }
+      );
+    } catch {
+      // Fallback to non-streaming if stream endpoint not available
+      full = getDemoResponse(content);
+      set((s) => ({
+        messages: s.messages.map((m) =>
+          m.id === assistantId ? { ...m, content: full } : m
+        ),
+      }));
+    }
+    set({ isStreaming: false });
+    return full;
   },
 
   seedDemoInsights: () => {
