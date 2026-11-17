@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { buildFamilyContext } from '../utils/buildFamilyContext';
 import { ApiService } from '../services/ApiService';
+import { AI_TOOLS, executeTool, type ToolName } from '../services/AIToolService';
 import type { ChatMessage, AIInsight } from '../types';
 
 interface AIState {
@@ -120,13 +121,70 @@ You can help with:
           max_tokens: 1024,
           system: systemPrompt,
           messages: allMessages,
+          tools: AI_TOOLS,
         }),
       });
 
       if (response.ok && (apiKey || railwayUrl)) {
         const data = await response.json();
-        // Support both direct Anthropic response and Railway proxy response shapes
-        assistantContent = data.content?.[0]?.text ?? data.message ?? getDemoResponse(content);
+        const stopReason = data.stop_reason;
+
+        // Handle tool_use — execute tools then get final reply
+        if (stopReason === 'tool_use' && Array.isArray(data.content)) {
+          const toolUseBlocks = data.content.filter((b: any) => b.type === 'tool_use');
+          const toolResults: any[] = [];
+          const actionSummaries: string[] = [];
+
+          for (const block of toolUseBlocks) {
+            const result = await executeTool(block.name as ToolName, block.input || {});
+            toolResults.push({
+              type: 'tool_result',
+              tool_use_id: block.id,
+              content: result.success ? result.message : `Error: ${result.message}`,
+            });
+            actionSummaries.push(result.message);
+          }
+
+          // Follow-up call with tool results to get Claude's final reply
+          const followUpMessages = [
+            ...allMessages,
+            { role: 'assistant' as const, content: data.content },
+            { role: 'user' as const, content: toolResults },
+          ];
+          const followUpResponse = await fetch(endpoint, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+              model: 'claude-haiku-4-5-20251001',
+              max_tokens: 1024,
+              system: systemPrompt,
+              messages: followUpMessages,
+              tools: AI_TOOLS,
+            }),
+          });
+          if (followUpResponse.ok) {
+            const followUpData = await followUpResponse.json();
+            const textBlock = followUpData.content?.find((b: any) => b.type === 'text');
+            assistantContent = textBlock?.text ?? `Done! ${actionSummaries.join('; ')}`;
+          } else {
+            assistantContent = `✅ ${actionSummaries.join('\n✅ ')}`;
+          }
+
+          const assistantMessageWithTools: ChatMessage = {
+            id: generateId(),
+            role: 'assistant',
+            content: assistantContent,
+            timestamp: new Date().toISOString(),
+            toolActions: actionSummaries,
+          };
+          set((s) => ({ messages: [...s.messages, assistantMessageWithTools], isTyping: false }));
+          get().saveMemoryFromConversation(content, assistantContent);
+          return assistantContent;
+        } else {
+          // Support both direct Anthropic response and Railway proxy response shapes
+          const textBlock = data.content?.find((b: any) => b.type === 'text');
+          assistantContent = textBlock?.text ?? data.content?.[0]?.text ?? data.message ?? getDemoResponse(content);
+        }
       } else {
         assistantContent = getDemoResponse(content);
       }

@@ -414,6 +414,7 @@ export interface ChatMessage {
   timestamp: string;
   isLoading?: boolean;
   suggestions?: string[];
+  toolActions?: string[];
 }
 
 export interface AIInsight {

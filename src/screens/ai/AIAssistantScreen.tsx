@@ -26,6 +26,14 @@ const QUICK_SUGGESTIONS = [
   { label: 'Family goals', prompt: 'How are we progressing on our family goals?', icon: 'flag-outline' },
 ];
 
+// Action prompts that trigger Claude tool use
+const ACTION_PROMPTS = [
+  { label: 'Add task', prompt: 'Add a high priority task to clean the garage this Saturday', icon: 'add-circle-outline', color: '#1A6B3C' },
+  { label: 'Shopping', prompt: 'Add milk, eggs, and bread to the shopping list', icon: 'cart-outline', color: '#E67E22' },
+  { label: 'Schedule', prompt: 'Add a dentist appointment to the calendar next Monday at 2pm', icon: 'calendar-outline', color: '#4A90D9' },
+  { label: 'Pay bill', prompt: 'Mark the electricity bill as paid', icon: 'checkmark-circle-outline', color: '#8E44AD' },
+];
+
 const AI_FEATURES = [
   { label: 'Memory', icon: 'albums', color: '#6A1B9A', screen: 'AIMemory' },
   { label: 'Coach', icon: 'school', color: '#1A6B3C', screen: 'ParentingCoach' },
@@ -292,6 +300,14 @@ export function AIAssistantScreen({ navigation }: any) {
                 style={[styles.bubbleContent, msg.role === 'user' ? styles.userBubbleContent : styles.aiBubbleContent]}
                 onLongPress={() => msg.role === 'assistant' && speak(msg.content)}
               >
+                {msg.role === 'assistant' && msg.toolActions && msg.toolActions.length > 0 && (
+                  <View style={styles.toolBadge}>
+                    <Ionicons name="flash" size={11} color="#1A6B3C" />
+                    <Text style={styles.toolBadgeText}>
+                      {msg.toolActions.length} action{msg.toolActions.length > 1 ? 's' : ''} taken
+                    </Text>
+                  </View>
+                )}
                 <Text style={[styles.bubbleText, msg.role === 'user' ? styles.userBubbleText : styles.aiBubbleText]}>
                   {msg.content}
                 </Text>
@@ -341,6 +357,20 @@ export function AIAssistantScreen({ navigation }: any) {
               </Pressable>
             ))}
           </ScrollView>
+        )}
+
+        {messages.length === 0 && (
+          <View style={styles.actionBar}>
+            <Text style={styles.actionBarLabel}>⚡ Quick actions</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
+              {ACTION_PROMPTS.map((a) => (
+                <Pressable key={a.label} onPress={() => handleSend(a.prompt)} style={[styles.actionChip, { borderColor: a.color }]}>
+                  <Ionicons name={a.icon as any} size={14} color={a.color} />
+                  <Text style={[styles.actionChipText, { color: a.color }]}>{a.label}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
         )}
 
         <View style={[styles.inputBar, { paddingBottom: Math.max(insets.bottom, 16) }]}>
@@ -452,6 +482,12 @@ const styles = StyleSheet.create({
   quickSuggestions: { maxHeight: 44, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.background },
   quickChip: { backgroundColor: '#E8EEF9', borderRadius: 20, paddingVertical: 8, paddingHorizontal: 14 },
   quickChipText: { fontSize: 12, fontWeight: '600', color: colors.primary },
+  actionBar: { borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.background, paddingTop: 8, paddingBottom: 4 },
+  actionBarLabel: { fontSize: 11, fontWeight: '600', color: colors.textMuted, paddingHorizontal: 16, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 },
+  actionChip: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1.5, borderRadius: 20, paddingVertical: 7, paddingHorizontal: 12 },
+  actionChipText: { fontSize: 12, fontWeight: '700' },
+  toolBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#E8F5E9', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3, marginBottom: 6, alignSelf: 'flex-start' },
+  toolBadgeText: { fontSize: 11, fontWeight: '600', color: '#1A6B3C' },
   inputBar: { flexDirection: 'row', alignItems: 'flex-end', gap: 6, paddingHorizontal: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.background },
   iconBtn: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
   micActive: { backgroundColor: '#FDE8E8' },
